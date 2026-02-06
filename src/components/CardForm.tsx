@@ -16,6 +16,7 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
     const [content, setContent] = useState(card?.content || '');
     const [details, setDetails] = useState(card?.details || '');
     const [tagsInput, setTagsInput] = useState(card?.tags.join(', ') || '');
+    const [imageUrl, setImageUrl] = useState(card?.imageUrl || '');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,8 +27,9 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
             title,
             subtitle,
             content,
-            details: details || `<p>${content}</p>`,
+            details: details || content, // Use content as fallback, no HTML wrapper needed for Markdown
             tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
+            ...(imageUrl && { imageUrl }), // Only include if not empty
         };
 
         onSave(newCard);
@@ -100,13 +102,13 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="details">Contenu détaillé (HTML supporté)</label>
+                        <label htmlFor="details">Contenu détaillé (Markdown supporté)</label>
                         <textarea
                             id="details"
                             value={details}
                             onChange={(e) => setDetails(e.target.value)}
-                            placeholder="<p>Contenu riche avec <strong>gras</strong>, listes, etc.</p>"
-                            rows={5}
+                            placeholder="# Titre&#10;&#10;- Liste item&#10;- **Gras** et *italique*&#10;&#10;> Citation"
+                            rows={6}
                         />
                     </div>
 
@@ -118,6 +120,17 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
                             value={tagsInput}
                             onChange={(e) => setTagsInput(e.target.value)}
                             placeholder="Ex: Diabète, Pancréas, Endocrino"
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="imageUrl">Image (URL ou chemin local)</label>
+                        <input
+                            id="imageUrl"
+                            type="text"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            placeholder="https://example.com/image.jpg ou /chemin/local/image.png"
                         />
                     </div>
 

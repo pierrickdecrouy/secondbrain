@@ -1,6 +1,6 @@
-import { LayoutGrid, Share2 } from 'lucide-react';
+import { LayoutGrid, Share2, AlignJustify } from 'lucide-react';
 
-export type ViewMode = 'grid' | 'network';
+export type ViewMode = 'grid' | 'network' | 'list';
 
 interface ViewToggleProps {
     viewMode: ViewMode;
@@ -17,6 +17,14 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({ viewMode, onViewChange }
             >
                 <LayoutGrid size={18} />
                 <span>Grille</span>
+            </button>
+            <button
+                className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => onViewChange('list')}
+                title="Vue Liste"
+            >
+                <AlignJustify size={18} />
+                <span>Liste</span>
             </button>
             <button
                 className={`view-toggle-btn ${viewMode === 'network' ? 'active' : ''}`}

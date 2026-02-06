@@ -7,11 +7,10 @@ export const initialCards: Card[] = [
         title: 'Insuline',
         subtitle: 'Hormone hypoglycémiante',
         content: 'Hormone polypeptidique sécrétée par les cellules bêta des îlots de Langerhans du pancréas.',
-        details: `<p>L'<strong>Insuline</strong> est essentielle à la régulation de la glycémie. Elle permet l'entrée du glucose dans les cellules.</p>
-    <ul>
-      <li>Indication : Diabète de type 1 et type 2 insulinorequérant.</li>
-      <li>Mécanisme : Active les récepteurs tyrosine kinase.</li>
-    </ul>`,
+        details: `L'**Insuline** est essentielle à la régulation de la glycémie. Elle permet l'entrée du glucose dans les cellules.
+
+- Indication : Diabète de type 1 et type 2 insulinorequérant.
+- Mécanisme : Active les récepteurs tyrosine kinase.`,
         tags: ['Diabète', 'Pancréas', 'Endocrino'],
     },
     {
@@ -20,8 +19,9 @@ export const initialCards: Card[] = [
         title: 'Metformine',
         subtitle: 'Biguanide',
         content: 'Antidiabétique oral de première intention pour le diabète de type 2.',
-        details: `<p>La <strong>Metformine</strong> diminue la production hépatique de glucose (néoglucogenèse) et augmente la sensibilité à l'insuline.</p>
-    <p>Elle ne provoque pas d'hypoglycémie seule.</p>`,
+        details: `La **Metformine** diminue la production hépatique de glucose (néoglucogenèse) et augmente la sensibilité à l'insuline.
+
+Elle ne provoque pas d'hypoglycémie seule.`,
         tags: ['Diabète', 'T2', 'Foie'],
     },
     {
@@ -30,8 +30,9 @@ export const initialCards: Card[] = [
         title: 'Diabète Type 1',
         subtitle: 'Maladie auto-immune',
         content: 'Destruction des cellules bêta du pancréas conduisant à une carence absolue en insuline.',
-        details: `<p>Le <strong>Diabète Type 1</strong> nécessite un traitement substitutif à vie par Insuline.</p>
-    <p>Complications : Acidocétose (si carence), rétinopathie, néphropathie.</p>`,
+        details: `Le **Diabète Type 1** nécessite un traitement substitutif à vie par Insuline.
+
+Complications : Acidocétose (si carence), rétinopathie, néphropathie.`,
         tags: ['Auto-immun', 'Pancréas', 'Pédiatrie'],
     },
     {
@@ -40,8 +41,9 @@ export const initialCards: Card[] = [
         title: 'Diabète Type 2',
         subtitle: 'Insulinorésistance',
         content: 'Maladie métabolique caractérisée par une résistance à l\'insuline et une carence relative.',
-        details: `<p>Le <strong>Diabète Type 2</strong> est souvent associé à l'obésité. Le traitement commence par les modifications du mode de vie et la Metformine.</p>
-    <p>À terme, l'Insuline peut devenir nécessaire.</p>`,
+        details: `Le **Diabète Type 2** est souvent associé à l'obésité. Le traitement commence par les modifications du mode de vie et la Metformine.
+
+À terme, l'Insuline peut devenir nécessaire.`,
         tags: ['Métabolisme', 'Obésité', 'CV'],
     },
     {
@@ -50,8 +52,9 @@ export const initialCards: Card[] = [
         title: 'Cycle de Krebs',
         subtitle: 'Respiration cellulaire',
         content: 'Série de réactions biochimiques produisant de l\'ATP dans la mitochondrie.',
-        details: `<p>Aussi appelé cycle de l'acide citrique. Il est central dans le métabolisme des glucides, lipides et protéines.</p>
-    <p>Le glucose est transformé en pyruvate, puis en Acétyl-CoA pour entrer dans le cycle.</p>`,
+        details: `Aussi appelé cycle de l'acide citrique. Il est central dans le métabolisme des glucides, lipides et protéines.
+
+Le glucose est transformé en pyruvate, puis en Acétyl-CoA pour entrer dans le cycle.`,
         tags: ['Bioch', 'Énergie', 'Mitochondrie'],
     },
     {
@@ -60,12 +63,13 @@ export const initialCards: Card[] = [
         title: 'HbA1c',
         subtitle: 'Hémoglobine glyquée',
         content: 'Reflet de la glycémie moyenne sur les 3 derniers mois.',
-        details: `<p>L'<strong>HbA1c</strong> est le marqueur de surveillance du Diabète.</p>
-    <ul>
-      <li>Normale : < 5.7%</li>
-      <li>Diabète : ≥ 6.5%</li>
-      <li>Objectif : Généralement < 7%</li>
-    </ul>`,
+        details: `L'**HbA1c** est le marqueur de surveillance du Diabète.
+
+| Catégorie | Valeur |
+|-----------|--------|
+| Normale | < 5.7% |
+| Diabète | ≥ 6.5% |
+| Objectif | < 7% |`,
         tags: ['Bioch', 'Surveillance', 'Sang'],
     },
     {
@@ -74,7 +78,7 @@ export const initialCards: Card[] = [
         title: 'Seuil rénal du glucose',
         subtitle: 'TmG',
         content: 'Concentration plasmatique de glucose au-delà de laquelle il apparaît dans les urines.',
-        details: `<p>Environ <strong>1.80 g/L</strong> (10 mmol/L). Au-delà, le cotransporteur SGLT2 est saturé et une glycosurie apparaît.</p>`,
+        details: `Environ **1.80 g/L** (10 mmol/L). Au-delà, le cotransporteur SGLT2 est saturé et une glycosurie apparaît.`,
         tags: ['Rein', 'Physio', 'Diabète'],
     },
 ];

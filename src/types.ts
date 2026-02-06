@@ -6,6 +6,7 @@ export interface Card {
     title: string;
     subtitle: string;
     content: string; // Plain text summary
-    details: string; // HTML-like content with rich text
+    details: string; // Markdown content (supports rich text)
     tags: string[];
+    imageUrl?: string; // Optional image URL or local path
 }
