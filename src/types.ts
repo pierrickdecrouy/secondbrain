@@ -10,3 +10,6 @@ export interface Card {
     tags: string[];
     imageUrl?: string; // Optional image URL or local path
 }
+
+// Export a value to ensure this file is treated as a module at runtime
+export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;

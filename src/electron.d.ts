@@ -9,6 +9,10 @@ interface ElectronAPI {
     loadAbbreviations: () => Promise<Record<string, string[]>>;
     saveAbbreviations: (abbrevs: Record<string, string[]>) => Promise<{ success: boolean; error?: string }>;
 
+    // Vector Index
+    loadVectorIndex: () => Promise<Uint8Array | null>;
+    saveVectorIndex: (buffer: Uint8Array) => Promise<{ success: boolean; error?: string }>;
+
     // AI Model
     checkModelExists: (filename: string) => Promise<boolean>;
     downloadModel: (url: string, filename: string) => Promise<{ success: boolean; path: string }>;

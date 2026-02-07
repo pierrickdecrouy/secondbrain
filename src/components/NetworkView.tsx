@@ -208,40 +208,47 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     const nodeCanvasObject = useCallback((node: Node, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const isHighlighted = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
         const label = node.name;
+        const hasSearch = highlightedNodeIds.size > 0;
 
-        // Circle styling - Obsidian uses smaller, consistent circles
-        const r = 6;
+        // Circle styling - differentiate matched vs dimmed
+        const baseR = 6;
+        const r = (hasSearch && isHighlighted) ? 8 : baseR; // Larger if matched
+
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
 
         // Fill color based on type
         ctx.fillStyle = isHighlighted ? getTypeColor(node.type) : '#cbd5e1';
-        ctx.globalAlpha = isHighlighted ? 1 : 0.5;
+        // Much lower alpha for non-matches to make matches pop
+        ctx.globalAlpha = hasSearch && !isHighlighted ? 0.1 : 1;
         ctx.fill();
 
-        // White border
-        ctx.lineWidth = 1.5;
+        // White border - thicker for matches
+        ctx.lineWidth = (hasSearch && isHighlighted) ? 2.5 : 1.5;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
         // Reset alpha
         ctx.globalAlpha = 1;
 
-        // Label - only show when zoomed in enough (like Obsidian)
+        // Label - always show if highlighted, otherwise rely on zoom
         // globalScale < 0.8 means user has zoomed out
-        if (globalScale > 0.8) {
+        const shouldShowLabel = (hasSearch && isHighlighted) || globalScale > 0.8;
+
+        if (shouldShowLabel) {
             const labelY = node.y! + r + 4;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.font = `${Math.max(10, 12 / globalScale)}px Inter, system-ui, sans-serif`;
+            ctx.font = `${(hasSearch && isHighlighted) ? 'bold ' : ''}${Math.max(10, 12 / globalScale)}px Inter, system-ui, sans-serif`;
 
             // Text shadow for readability
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(label, node.x! + 0.5, labelY + 0.5);
-            ctx.fillText(label, node.x! - 0.5, labelY - 0.5);
+            // Increase stroke width for better shadow on matches
+            ctx.lineWidth = 3;
+            ctx.strokeText(label, node.x!, labelY);
 
             // Main text
-            ctx.fillStyle = isHighlighted ? '#1e293b' : '#64748b';
+            ctx.fillStyle = isHighlighted ? '#1e293b' : 'rgba(100, 116, 139, 0.2)'; // Faint text for non-matches
             ctx.fillText(label, node.x!, labelY);
         }
     }, [highlightedNodeIds]);

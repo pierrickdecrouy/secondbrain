@@ -21,6 +21,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     loadAbbreviations: () => ipcRenderer.invoke('load-abbreviations'),
     saveAbbreviations: (abbrevs) => ipcRenderer.invoke('save-abbreviations', abbrevs),
 
+    // Vector Index
+    loadVectorIndex: () => ipcRenderer.invoke('load-vector-index'),
+    saveVectorIndex: (buffer) => ipcRenderer.invoke('save-vector-index', buffer),
+
     // AI Model Management
     checkModelExists: (filename) => ipcRenderer.invoke('check-model-exists', filename),
     downloadModel: (url, filename) => ipcRenderer.invoke('download-model', { url, filename }),

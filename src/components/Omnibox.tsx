@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 interface OmniboxProps {
     searchQuery: string;
@@ -57,6 +57,28 @@ export const Omnibox: React.FC<OmniboxProps> = ({
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
+                {searchQuery && (
+                    <button
+                        onClick={() => {
+                            onSearchChange('');
+                            inputRef.current?.focus();
+                        }}
+                        className="search-clear-btn"
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#94a3b8',
+                            padding: 4,
+                            marginRight: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <X size={16} />
+                    </button>
+                )}
                 <kbd className="search-kbd">⌘K</kbd>
             </div>
 

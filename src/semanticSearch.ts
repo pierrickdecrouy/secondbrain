@@ -4,7 +4,7 @@
  */
 
 import type { Card } from './types';
-import { vectorStore } from './embeddings/vectorStore';
+import { vectorStore } from './embeddings/VoyVectorStore';
 
 // Worker instance
 let embeddingWorker: Worker | null = null;
@@ -40,6 +40,15 @@ export function initSemanticSearch(
         new URL('./workers/embedding.worker.ts', import.meta.url),
         { type: 'module' }
     );
+
+    // Try to load existing index
+    vectorStore.load().then(loaded => {
+        if (loaded) {
+            console.log('Semantic index loaded, ready for search even if model is lazy loading');
+            // Optionally trigger ready if we trust the index matches the model
+            // But we still need the model for new queries.
+        }
+    });
 
     embeddingWorker.onmessage = (e) => {
         const { type, id, embedding, embeddings, progress, error } = e.data;
@@ -145,8 +154,9 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
         throw new Error('Semantic search not initialized');
     }
 
-    // Only process cards without embeddings
-    const cardsToProcess = cards.filter(c => !vectorStore.has(c.id));
+    // Only process cards - for now we re-process to ensure sync, or we can track IDs separately
+    // Ideally we'd check against an in-memory Set of IDs
+    const cardsToProcess = cards;
 
     if (cardsToProcess.length === 0) return;
 
@@ -158,9 +168,17 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
 
     return new Promise((resolve, reject) => {
         batchResolve = (embeddings) => {
-            embeddings.forEach(({ cardId, embedding }) => {
-                vectorStore.set(cardId, embedding);
+            const entries = embeddings.map(({ cardId, embedding }) => {
+                const card = cards.find(c => c.id === cardId);
+                return {
+                    id: cardId,
+                    title: card ? card.title : 'Unknown',
+                    embeddings: embedding
+                };
             });
+
+            vectorStore.add(entries);
+            vectorStore.save(); // Persist changes
             resolve();
         };
         batchReject = reject;
@@ -185,9 +203,9 @@ export async function semanticSearch(query: string, topK: number = 20): Promise<
         const queryEmbedding = await generateEmbedding(`query: ${query}`);
 
         // Find similar cards with higher threshold for precision
-        const results = vectorStore.findSimilar(queryEmbedding, topK, 0.5);
+        const results = vectorStore.search(queryEmbedding, topK);
 
-        return results.map(r => r.cardId);
+        return results.map(r => r.id);
     } catch (error) {
         console.error('Semantic search error:', error);
         return [];

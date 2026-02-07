@@ -1,0 +1,378 @@
+/* SettingsPage.css */
+
+:root {
+    --primary: #4fb286;
+    /* Vert PharmaBrain */
+    --primary-light: #e8f5f0;
+    --text-dark: #2c3e50;
+    --text-grey: #8c9b9f;
+    --bg-body: #6e7a85;
+    --border-color: #eef2f5;
+}
+
+/* --- Modal Container --- */
+.settings-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    /* Same as original overlay but using user's preference if needed, sticking to functional overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    /* User CSS applies to body, but we are inside a React app. 
+       We use a wrapping div for the modal center alignment logic if not using strictly the user's body flex.
+       Actually, existing modal overlay logic is fine, we just need the internal .modal styling. */
+}
+
+.settings-modal {
+    background: white;
+    width: 900px;
+    height: 600px;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-dark);
+}
+
+/* --- Sidebar (Gauche) --- */
+.sidebar {
+    width: 240px;
+    background-color: #f8fbfd;
+    border-right: 1px solid var(--border-color);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #1a2a36;
+}
+
+.sidebar-version {
+    font-size: 0.75rem;
+    color: var(--text-grey);
+    margin-bottom: 40px;
+}
+
+.nav-menu {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--text-grey);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-item i,
+.nav-item svg {
+    margin-right: 12px;
+    /* font-size: 1.1rem; handled by lucide size rely */
+    width: 20px;
+    text-align: center;
+}
+
+.nav-item.active {
+    background-color: white;
+    color: var(--primary);
+    box-shadow: 0 4px 15px rgba(79, 178, 134, 0.1);
+    font-weight: 600;
+}
+
+.nav-item:hover:not(.active) {
+    background-color: #edf2f6;
+    color: var(--text-dark);
+}
+
+/* --- Main Content (Droite) --- */
+.settings-main-content {
+    flex: 1;
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: white;
+}
+
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+    color: var(--text-grey);
+    /* font-size: 1.2rem; handled by lucide */
+    padding: 5px;
+    transition: color 0.2s;
+    z-index: 10;
+}
+
+.close-btn:hover {
+    color: var(--text-dark);
+}
+
+/* Section Ajout */
+.section-header {
+    margin-bottom: 25px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text-dark);
+}
+
+.add-icon-circle {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 0.8rem;
+}
+
+.input-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.input-field {
+    background: #fcfdfe;
+    border: 1px solid #e1e8ed;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-field::placeholder {
+    color: #bdc3c7;
+}
+
+.input-field:focus {
+    border-color: var(--primary);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(79, 178, 134, 0.1);
+}
+
+.input-short {
+    flex: 1;
+}
+
+.input-long {
+    flex: 3;
+}
+
+.btn-add {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-add:hover {
+    background-color: #3da075;
+}
+
+.btn-add:active {
+    transform: scale(0.98);
+}
+
+/* Section Liste/Dictionnaire */
+.list-section {
+    margin-top: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.list-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-grey);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+}
+
+.counter {
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-left: 8px;
+    font-weight: 600;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box input {
+    padding: 8px 12px 8px 35px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background-color: #f8fbfd;
+    font-size: 0.9rem;
+    width: 200px;
+    transition: all 0.2s;
+    color: var(--text-dark);
+}
+
+.search-box input::placeholder {
+    color: #bdc3c7;
+}
+
+.search-box input:focus {
+    background-color: white;
+    border-color: #e1e8ed;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(225, 232, 237, 0.4);
+}
+
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #bdc3c7;
+    pointer-events: none;
+}
+
+/* La liste scrollable */
+.scroll-area {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 5px;
+}
+
+/* Scrollbar custom */
+.scroll-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+    background: #e1e8ed;
+    border-radius: 10px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e0;
+}
+
+.definition-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f9fafb;
+    transition: all 0.2s;
+    cursor: default;
+}
+
+.definition-row:hover {
+    background-color: #f8fbfd;
+    border-radius: 8px;
+    border-bottom-color: transparent;
+}
+
+.badge {
+    min-width: 65px;
+    text-align: center;
+    background-color: white;
+    color: var(--primary);
+    border: 1px solid var(--primary-light);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    border-radius: 20px;
+    margin-right: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    text-transform: lowercase;
+}
+
+.def-text {
+    color: #4a5568;
+    font-size: 0.95rem;
+    flex: 1;
+    font-weight: 400;
+}
+
+/* Capitalize first letter of def text via CSS just for style consistency */
+.def-text::first-letter {
+    text-transform: uppercase;
+}
+
+.delete-icon {
+    opacity: 0;
+    color: #e74c3c;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.delete-icon:hover {
+    background-color: #fce8e6;
+}
+
+.definition-row:hover .delete-icon {
+    opacity: 1;
+}
+
+/* Petit fix pour la responsivité de la modale si l'écran est petit */
+@media (max-height: 700px) {
+    .settings-modal {
+        height: 90vh;
+    }
+}

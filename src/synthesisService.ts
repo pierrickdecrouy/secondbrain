@@ -15,7 +15,7 @@ import { expandMedicalQuery } from './medicalAbbreviations';
 export function generateSearchSynthesis(
     query: string,
     matchedCards: Card[]
-): { title: string; points: string[]; sources: string[] } | null {
+): { title: string; points: string[]; sources: string[]; keywords: string[] } | null {
     if (matchedCards.length === 0) return null;
 
     const normalizedQuery = query.toLowerCase().trim();
@@ -127,7 +127,8 @@ export function generateSearchSynthesis(
     return {
         title: 'Synthèse : ' + query,
         points: points.slice(0, 5),
-        sources: sources
+        sources: sources,
+        keywords: expandedQueries
     };
 }
 

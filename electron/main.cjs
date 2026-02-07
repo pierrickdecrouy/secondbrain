@@ -159,6 +159,32 @@ ipcMain.handle('save-abbreviations', async (event, abbreviations) => {
     }
 });
 
+// Vector Index Persistence
+const vectorIndexPath = path.join(userDataPath, 'vector-index.bin');
+
+ipcMain.handle('load-vector-index', async () => {
+    try {
+        if (fs.existsSync(vectorIndexPath)) {
+            const buffer = fs.readFileSync(vectorIndexPath);
+            return new Uint8Array(buffer);
+        }
+        return null;
+    } catch (error) {
+        console.error('Error loading vector index:', error);
+        return null;
+    }
+});
+
+ipcMain.handle('save-vector-index', async (event, buffer) => {
+    try {
+        fs.writeFileSync(vectorIndexPath, Buffer.from(buffer));
+        return { success: true };
+    } catch (error) {
+        console.error('Error saving vector index:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 // App Lifecycle
 app.whenReady().then(() => {
     // Register custom protocol for images

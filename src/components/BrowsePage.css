@@ -1,0 +1,484 @@
+/* BrowsePage.css */
+
+:root {
+    --primary: #0ca678;
+    /* Teal brand color */
+    --primary-gradient: linear-gradient(135deg, #0ca678 0%, #20c997 100%);
+    /* Dégradé */
+    --bg-body: #f8f9fa;
+    --text-dark: #212529;
+    --text-grey: #868e96;
+    --border-light: #e9ecef;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+    /* Tag Colors */
+    --tag-drug-bg: #e6fcf5;
+    --tag-drug-text: #087f5b;
+    --tag-patho-bg: #fff5f5;
+    --tag-patho-text: #e03131;
+    --tag-physio-bg: #f3f0ff;
+    --tag-physio-text: #7950f2;
+    --tag-data-bg: #fff4e6;
+    --tag-data-text: #e8590c;
+}
+
+.browse-container {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-dark);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* --- Header (Sticky) --- */
+.browse-header {
+    background: white;
+    border-bottom: 1px solid var(--border-light);
+    padding: 0 32px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+}
+
+.browse-header-left {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.browse-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: var(--text-dark);
+    text-decoration: none;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+/* Format spécifique pour icon.svg */
+/* Format spécifique pour icon.svg */
+.browse-logo-img {
+    height: 42px;
+    width: auto;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Teal filter for #0ca678 */
+    filter: invert(48%) sepia(63%) saturate(632%) hue-rotate(113deg) brightness(89%) contrast(92%);
+    animation: logoPulse 3s infinite ease-in-out;
+}
+
+.browse-logo-container:hover .browse-logo-img {
+    transform: scale(1.1);
+}
+
+@keyframes logoPulse {
+    0% {
+        transform: scale(1);
+        filter: invert(48%) sepia(63%) saturate(632%) hue-rotate(113deg) brightness(89%) contrast(92%) drop-shadow(0 0 2px rgba(12, 166, 120, 0.2));
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: invert(48%) sepia(63%) saturate(632%) hue-rotate(113deg) brightness(89%) contrast(92%) drop-shadow(0 0 8px rgba(12, 166, 120, 0.5));
+    }
+
+    100% {
+        transform: scale(1);
+        filter: invert(48%) sepia(63%) saturate(632%) hue-rotate(113deg) brightness(89%) contrast(92%) drop-shadow(0 0 2px rgba(12, 166, 120, 0.2));
+    }
+}
+
+/* Effet dégradé sur le texte */
+.browse-brand-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Search Bar intégrée au header */
+.browse-search-container {
+    position: relative;
+    width: 400px;
+}
+
+.browse-search-container input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: #f1f3f5;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    color: var(--text-dark);
+}
+
+.browse-search-container input:focus {
+    background: white;
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(12, 166, 120, 0.1);
+}
+
+.browse-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-grey);
+    width: 16px;
+    height: 16px;
+}
+
+.browse-shortcut-hint {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    font-size: 0.7rem;
+    color: var(--text-grey);
+}
+
+.browse-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.browse-btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.browse-btn-icon:hover {
+    background: #f8f9fa;
+    border-color: #ced4da;
+    color: var(--primary);
+}
+
+.browse-btn-primary {
+    background: var(--primary-gradient);
+    /* Utilisation du dégradé */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 6px rgba(12, 166, 120, 0.2);
+}
+
+.browse-btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* --- Toolbar (Filtres & View) --- */
+.browse-toolbar {
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.browse-filter-group {
+    display: flex;
+    gap: 8px;
+}
+
+.browse-filter-pill {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: var(--text-grey);
+    transition: all 0.2s;
+}
+
+.browse-filter-pill:hover {
+    background: #e9ecef;
+    color: var(--text-dark);
+}
+
+.browse-filter-pill.active {
+    background: #e6fcf5;
+    color: var(--primary);
+    font-weight: 600;
+    border-color: rgba(12, 166, 120, 0.1);
+}
+
+/* Style "Segmented Control" pour les vues */
+.browse-view-toggle {
+    background: #e9ecef;
+    padding: 4px;
+    border-radius: 10px;
+    display: flex;
+    gap: 2px;
+}
+
+.browse-view-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-grey);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Espace entre icône et texte */
+    transition: all 0.2s;
+}
+
+.browse-view-btn:hover:not(.active) {
+    color: var(--text-dark);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.browse-view-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+}
+
+/* --- Content Area --- */
+.browse-content-area {
+    flex: 1;
+    padding: 0 32px 32px 32px;
+    overflow-y: auto;
+    /* Custom scrollbar for content area */
+}
+
+.browse-content-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.browse-content-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.browse-content-area::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+}
+
+.browse-content-area::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+.browse-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+/* Animation d'entrée pour les cartes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Card Design --- */
+.browse-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    padding: 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeInUp 0.5s ease-out backwards;
+    cursor: pointer;
+}
+
+.browse-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    /* Ombre plus douce et large au survol */
+    border-color: #ced4da;
+}
+
+.browse-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+/* Tags style amélioré */
+.browse-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+}
+
+/* Variantes de tags */
+.browse-tag.drug {
+    background: var(--tag-drug-bg);
+    color: var(--tag-drug-text);
+}
+
+.browse-tag.patho {
+    background: var(--tag-patho-bg);
+    color: var(--tag-patho-text);
+}
+
+.browse-tag.physio {
+    background: var(--tag-physio-bg);
+    color: var(--tag-physio-text);
+}
+
+.browse-tag.data {
+    background: var(--tag-data-bg);
+    color: var(--tag-data-text);
+}
+
+.browse-card-actions {
+    opacity: 0;
+    /* Caché par défaut */
+    transition: opacity 0.2s;
+    display: flex;
+    gap: 4px;
+}
+
+.browse-card:hover .browse-card-actions {
+    opacity: 1;
+}
+
+.browse-action-btn {
+    color: var(--text-grey);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    transition: all 0.2s;
+}
+
+.browse-action-btn:hover {
+    color: var(--text-dark);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.browse-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.browse-card-subtitle {
+    font-family: 'Courier New', monospace;
+    /* Monospace pour le sous-titre scientifique */
+    font-size: 0.85rem;
+    color: var(--text-grey);
+    margin-bottom: 8px;
+}
+
+.browse-card-desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #495057;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    /* Limite à 3 lignes */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
+
+/* Network Mode Container */
+.browse-network-container {
+    height: 100%;
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+/* Custom Table for List View */
+.browse-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.browse-list-table th {
+    background: #f8f9fa;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-grey);
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.browse-list-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-dark);
+}
+
+.browse-list-table tr:last-child td {
+    border-bottom: none;
+}
+
+.browse-list-table tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}

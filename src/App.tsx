@@ -3,18 +3,17 @@ import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
 import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
-import { CardItem } from './components/CardItem';
-import { Omnibox } from './components/Omnibox';
 import { DetailModal } from './components/DetailModal';
 import { NetworkView } from './components/NetworkView';
 import { CardForm } from './components/CardForm';
 import { BatchImportModal } from './components/BatchImportModal';
 import { HomePage } from './components/HomePage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { ViewToggle, type ViewMode } from './components/ViewToggle';
-import { SearchSynthesis } from './components/SearchSynthesis';
-import { SettingsPage } from './components/SettingsPage';
-import { Plus, Edit2, Upload, Trash2, Download, Settings } from 'lucide-react';
+import SettingsPage from './components/SettingsPage';
+import { BrowsePage } from './components/BrowsePage';
+import { Edit2, Trash2 } from 'lucide-react';
+
+type ViewMode = 'grid' | 'list' | 'network';
 
 // Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -279,22 +278,19 @@ function App() {
 
 
 
-  // Compute available types from current cards
-  const availableTypes = useMemo(() => {
-    const types = new Set(cards.map(c => c.type));
-    return Array.from(types).sort();
-  }, [cards]);
+
 
   // Show settings page
   if (showSettings) {
     return (
-      <div className="app-container">
-        <SettingsPage onClose={() => {
+      <SettingsPage
+        onClose={() => {
           setShowSettings(false);
           setShowHome(true);
-        }} />
-      </div>
+        }}
+      />
     );
+
   }
 
   // Show home page
@@ -327,151 +323,38 @@ function App() {
   }
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <div className="header-top">
-          <button className="home-btn" onClick={() => setShowHome(true)} title="Retour à l'accueil">
-            <div className="header-logo-group">
-              <div className="logo-gradient-header" />
-            </div>
-          </button>
-        </div>
-
-        <div className="header-controls">
-          <div className="toolbar">
-            <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
-
-            <div className="toolbar-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="btn-secondary" onClick={handleExportBackup} title="Sauvegarde de sécurité">
-                <Download size={18} />
-              </button>
-              <button className="btn-secondary" onClick={() => setShowSettings(true)} title="Paramètres">
-                <Settings size={18} />
-              </button>
-              <button className="btn-secondary" onClick={() => setShowImport(true)} title="Import JSON">
-                <Upload size={18} />
-              </button>
-
-              <button className="btn-primary add-btn" onClick={() => setShowForm(true)}>
-                <Plus size={18} />
-                <span>Nouvelle fiche</span>
-              </button>
-            </div>
-          </div>
-
-          <Omnibox
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            activeFilters={activeFilters}
-            onFilterToggle={handleFilterToggle}
-            availableTypes={availableTypes}
-          />
-        </div>
-      </header>
-
-      {/* Search Query Header */}
-      {debouncedSearchQuery && (
-        <div className="search-results-header" style={{
-          padding: '1rem 2rem 0',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          width: '100%'
-        }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#475569' }}>
-            Résultats de recherche pour : <span style={{ color: '#0d9488' }}>{debouncedSearchQuery}</span>
-            <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400, marginLeft: '0.5rem' }}>
-              ({filteredCards.length} résultats)
-            </span>
-          </h2>
-        </div>
-      )}
-
-      {/* AI Synthesis Panel */}
-      {debouncedSearchQuery && filteredCards.length > 0 && (
-        <div style={{ padding: '0 2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-          <SearchSynthesis query={debouncedSearchQuery} matchedCards={filteredCards} />
-        </div>
-      )}
-
-      <div className={`main-content ${viewMode === 'network' ? 'network-mode' : ''}`}>
-        {viewMode === 'grid' ? (
-          filteredCards.length > 0 ? (
-            <div className="card-grid">
-              {filteredCards.map(card => (
-                <CardItem
-                  key={card.id}
-                  card={card}
-                  onClick={(c) => setSelectedCardId(c.id)}
-                  onEdit={handleEditCard}
-                  onDelete={handleDeleteCard}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="card-empty">
-              <p>Aucun résultat trouvé</p>
-            </div>
-          )
-        ) : viewMode === 'list' ? (
-          filteredCards.length > 0 ? (
-            <div className="card-list-container">
-              <table className="card-list-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '60px' }}>Type</th>
-                    <th>Titre</th>
-                    <th>Description</th>
-                    <th style={{ width: '100px' }}>Tags</th>
-                    <th style={{ width: '80px' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCards.map(card => (
-                    <tr key={card.id} onClick={() => setSelectedCardId(card.id)} className="card-list-row">
-                      <td>
-                        <div className={`list-type-indicator type-${card.type}`} title={card.type}></div>
-                      </td>
-                      <td className="font-medium">{card.title}</td>
-                      <td className="text-muted">{card.subtitle}</td>
-                      <td>
-                        <div className="flex gap-1 flex-wrap">
-                          {card.tags.slice(0, 2).map(tag => (
-                            <span key={tag} className="list-tag">{tag}</span>
-                          ))}
-                          {card.tags.length > 2 && <span className="list-tag">+{card.tags.length - 2}</span>}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button className="btn-icon-small" onClick={() => handleEditCard(card)}>
-                            <Edit2 size={16} />
-                          </button>
-                          <button className="btn-icon-small" onClick={() => handleDeleteCard(card)}>
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="card-empty">
-              <p>Aucun résultat trouvé</p>
-            </div>
-          )
-        ) : (
+    <>
+      <BrowsePage
+        cards={filteredCards}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeFilters={activeFilters}
+        onFilterToggle={(type) => {
+          if (type === 'all') {
+            if (activeFilters.length > 0) setActiveFilters([]);
+          } else {
+            handleFilterToggle(type);
+          }
+        }}
+        onHome={() => setShowHome(true)}
+        onSettings={() => setShowSettings(true)}
+        onExport={handleExportBackup}
+        onAddCard={() => setShowForm(true)}
+        onCardClick={(id) => setSelectedCardId(id)}
+        onEditCard={handleEditCard}
+        onDeleteCard={handleDeleteCard}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        renderNetworkView={() => (
           <NetworkView
-            cards={cards} // Full graph context - highlighted nodes from searchQuery
+            cards={cards}
             onNodeClick={(id) => setSelectedCardId(id)}
-            searchQuery={searchQuery} // Highlighting handled by NetworkView
+            searchQuery={searchQuery}
           />
         )}
-      </div>
-
+      />
       {modals}
-    </div>
+    </>
   );
 }
 

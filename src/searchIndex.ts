@@ -129,18 +129,28 @@ export async function hybridSearch(query: string, limit = 50): Promise<string[]>
             }
         }
 
-        // Merge: keyword results first, then semantic (avoiding duplicates)
-        const merged = [...keywordResults];
-        const seen = new Set(keywordResults);
+        // Compute RRF scores
+        const scores = new Map<string, number>();
+        const k = 60; // RRF constant
 
-        for (const id of semanticResultsAll) {
-            if (!seen.has(id)) {
-                merged.push(id);
-                seen.add(id);
-            }
-        }
+        // Score keyword results
+        keywordResults.forEach((id, rank) => {
+            const score = 1 / (k + rank + 1);
+            scores.set(id, (scores.get(id) || 0) + score);
+        });
 
-        return merged.slice(0, limit);
+        // Score semantic results
+        semanticResultsAll.forEach((id, rank) => {
+            const score = 1 / (k + rank + 1);
+            scores.set(id, (scores.get(id) || 0) + score);
+        });
+
+        // Sort by score DESC
+        const sortedIds = Array.from(scores.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([id]) => id);
+
+        return sortedIds.slice(0, limit);
     } catch (error) {
         console.error('Hybrid search error:', error);
         return keywordResults.slice(0, limit);
