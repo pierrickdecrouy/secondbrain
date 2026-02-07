@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Pill, Stethoscope, Brain, BarChart2, Plus, X, FileText, Upload } from 'lucide-react';
+import { Search, Pill, Stethoscope, Brain, BarChart2, Plus, X, FileText, Upload, Settings } from 'lucide-react';
 
 interface HomePageProps {
     onSearch: (query: string) => void;
@@ -7,6 +7,7 @@ interface HomePageProps {
     onAddCard: () => void;
     onBatchImport: () => void;
     onBackgroundExport?: () => void;
+    onSettings: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -15,6 +16,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     onAddCard,
     onBatchImport,
     onBackgroundExport,
+    onSettings,
 }) => {
     const [showFabMenu, setShowFabMenu] = useState(false);
 
@@ -94,6 +96,16 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Settings Button - Fixed to viewport */}
+            <button
+                onClick={onSettings}
+                className="fixed top-6 right-6 z-[100] p-3.5 bg-white/90 backdrop-blur-md text-slate-400 hover:text-slate-700 rounded-full shadow-sm hover:shadow-md transition-all border border-slate-200 group"
+                title="Paramètres"
+                style={{ position: 'fixed', top: '24px', right: '24px' }}
+            >
+                <Settings size={24} className="group-hover:rotate-45 transition-transform duration-500 ease-out" />
+            </button>
 
             {/* Unified FAB with menu */}
             <div className="fab-container">

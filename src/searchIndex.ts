@@ -12,10 +12,16 @@ const index = new (FlexSearch as any).Document({
         index: ['title', 'subtitle', 'content', 'details'],
         store: ['id']
     },
-    tokenize: 'forward', // Partial matching (e.g., "para" finds "paracetamol")
-    charset: 'latin:extra', // French accents support
+    tokenize: 'full', // Index all substrings for robust matching
+    charset: 'latin:extra',
+    minlength: 2, // Ensure short terms like "IV" or "dt1" are indexed
     optimize: true,
     cache: 100,
+    context: {
+        depth: 1,
+        resolution: 3,
+        bidirectional: true
+    }
 });
 
 // Rebuild the entire index with new cards

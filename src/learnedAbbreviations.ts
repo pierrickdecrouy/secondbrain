@@ -8,6 +8,47 @@ import type { Card } from './types';
 // Learned abbreviations storage (merged with static dictionary)
 let learnedAbbreviations: Map<string, Set<string>> = new Map();
 
+// Static dictionary of common medical abbreviations (French)
+const STATIC_ABBREVIATIONS: Record<string, string[]> = {
+    "dt1": ["diabète de type 1", "diabète insulinodépendant", "did"],
+    "dt2": ["diabète de type 2", "diabète non insulinodépendant", "dnid"],
+    "hta": ["hypertension artérielle"],
+    "avc": ["accident vasculaire cérébral"],
+    "idm": ["infarctus du myocarde"],
+    "bpco": ["bronchopneumopathie chronique obstructive"],
+    "iv": ["intraveineuse"],
+    "im": ["intramusculaire"],
+    "sc": ["sous-cutanée"],
+    "per os": ["voie orale"],
+    "ecg": ["électrocardiogramme"],
+    "eeg": ["électroencéphalogramme"],
+    "crp": ["protéine c-réactive"],
+    "nf": ["numération formule", "nfs"],
+    "iono": ["ionogramme"],
+    "bu": ["bandelette urinaire"],
+    "ecbu": ["examen cytobactériologique des urines"],
+    "aains": ["anti-inflammatoire non stéroïdien"],
+    "ais": ["anti-inflammatoire stéroïdien"],
+    "atb": ["antibiotique"],
+    "ttt": ["traitement"],
+    "diag": ["diagnostic"],
+    "diff": ["différentiel"],
+    "sd": ["syndrome"],
+    "mal": ["maladie"],
+    "ir": ["insuffisance rénale"],
+    "ih": ["insuffisance hépatique"],
+    "ic": ["insuffisance cardiaque"],
+    "oap": ["oedème aigu du poumon"],
+    "ep": ["embolie pulmonaire"],
+    "tvp": ["thrombose veineuse profonde"],
+    "mvted": ["maladie veineuse thrombo-embolique"],
+};
+
+// Initialize with static abbreviations
+Object.entries(STATIC_ABBREVIATIONS).forEach(([abbr, defs]) => {
+    learnedAbbreviations.set(abbr, new Set(defs));
+});
+
 // Pattern regexes to detect abbreviation definitions in text
 // Matches: "DT1 (Diabete type 1)", "HTA = Hypertension", "AVC : Accident", "DT1/Diabete"
 const PATTERNS = [
@@ -157,8 +198,47 @@ export function expandWithLearned(query: string): string[] {
 }
 
 /**
+ * Add a custom abbreviation
+ */
+export function addAbbreviation(abbrev: string, definition: string): void {
+    const lowerAbbrev = abbrev.toLowerCase().trim();
+    const lowerDef = definition.toLowerCase().trim();
+
+    if (!lowerAbbrev || !lowerDef) return;
+
+    if (!learnedAbbreviations.has(lowerAbbrev)) {
+        learnedAbbreviations.set(lowerAbbrev, new Set());
+    }
+    learnedAbbreviations.get(lowerAbbrev)!.add(lowerDef);
+}
+
+/**
+ * Remove a specific definition for an abbreviation
+ */
+export function removeAbbreviation(abbrev: string, definition: string): void {
+    const lowerAbbrev = abbrev.toLowerCase().trim();
+    const lowerDef = definition.toLowerCase().trim();
+
+    if (learnedAbbreviations.has(lowerAbbrev)) {
+        learnedAbbreviations.get(lowerAbbrev)!.delete(lowerDef);
+        if (learnedAbbreviations.get(lowerAbbrev)!.size === 0) {
+            learnedAbbreviations.delete(lowerAbbrev);
+        }
+    }
+}
+
+/**
+ * Delete an abbreviation entirely
+ */
+export function deleteAbbreviation(abbrev: string): void {
+    const lowerAbbrev = abbrev.toLowerCase().trim();
+    learnedAbbreviations.delete(lowerAbbrev);
+}
+
+/**
  * Get count of learned abbreviations
  */
 export function getLearnedCount(): number {
     return learnedAbbreviations.size;
 }
+

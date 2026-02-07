@@ -161,7 +161,7 @@ ipcMain.handle('save-abbreviations', async (event, abbreviations) => {
 
 // App Lifecycle
 app.whenReady().then(() => {
-    // Register custom protocol
+    // Register custom protocol for images
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         const url = request.url.replace('safe-file://', '');
         const decodedUrl = decodeURI(url);
@@ -179,7 +179,142 @@ app.whenReady().then(() => {
         }
     });
 
+    // Register custom protocol for models
+    protocol.registerFileProtocol('local-model', (request, callback) => {
+        const url = request.url.replace('local-model://', '');
+        const decodedUrl = decodeURI(url);
+        const modelsPath = path.join(userDataPath, 'models');
+
+        try {
+            const safePath = path.normalize(path.join(modelsPath, decodedUrl));
+            if (!safePath.startsWith(modelsPath)) {
+                return callback({ error: -2 });
+            }
+            callback({ path: safePath });
+        } catch (error) {
+            callback({ error: -2 });
+        }
+    });
+
+    // Enforce COOP/COEP for SharedArrayBuffer (Wllama multi-threading)
+    const { session } = require('electron');
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Cross-Origin-Opener-Policy': 'same-origin',
+                'Cross-Origin-Embedder-Policy': 'require-corp',
+            },
+        });
+    });
+
     createWindow();
+});
+
+// Model Management
+const modelsPath = path.join(userDataPath, 'models');
+if (!fs.existsSync(modelsPath)) {
+    fs.mkdirSync(modelsPath, { recursive: true });
+}
+
+ipcMain.handle('check-model-exists', async (event, filename) => {
+    return fs.existsSync(path.join(modelsPath, filename));
+});
+
+ipcMain.handle('read-model-as-buffer', async (event, filename) => {
+    const filePath = path.join(modelsPath, filename);
+    if (!fs.existsSync(filePath)) {
+        throw new Error('Model file not found');
+    }
+    const buffer = fs.readFileSync(filePath);
+    return buffer;
+});
+
+ipcMain.handle('download-model', async (event, { url, filename }) => {
+    const dest = path.join(modelsPath, filename);
+    const https = require('https');
+    const http = require('http');
+
+    // Recursive function to follow redirects
+    const downloadWithRedirects = (downloadUrl, maxRedirects = 5) => {
+        return new Promise((resolve, reject) => {
+            if (maxRedirects <= 0) {
+                reject(new Error('Too many redirects'));
+                return;
+            }
+
+            const protocol = downloadUrl.startsWith('https') ? https : http;
+
+            protocol.get(downloadUrl, (response) => {
+                // Handle redirects (301, 302, 307, 308)
+                if ([301, 302, 307, 308].includes(response.statusCode)) {
+                    const redirectUrl = response.headers.location;
+                    if (!redirectUrl) {
+                        reject(new Error('Redirect without location header'));
+                        return;
+                    }
+                    console.log(`[Download] Redirect to: ${redirectUrl}`);
+                    downloadWithRedirects(redirectUrl, maxRedirects - 1)
+                        .then(resolve)
+                        .catch(reject);
+                    return;
+                }
+
+                if (response.statusCode !== 200) {
+                    reject(new Error(`Failed to download: ${response.statusCode}`));
+                    return;
+                }
+
+                const file = fs.createWriteStream(dest);
+                const totalSize = parseInt(response.headers['content-length'], 10) || 0;
+                let downloaded = 0;
+
+                response.on('data', (chunk) => {
+                    downloaded += chunk.length;
+                    if (mainWindow && totalSize > 0) {
+                        mainWindow.webContents.send('model-download-progress', {
+                            filename,
+                            loaded: downloaded,
+                            total: totalSize
+                        });
+                    }
+                });
+
+                response.pipe(file);
+
+                file.on('finish', () => {
+                    file.close(() => {
+                        // Verify file is not too small (corrupted)
+                        const stats = fs.statSync(dest);
+                        if (stats.size < 1000000) { // Less than 1MB = likely error page
+                            fs.unlinkSync(dest);
+                            reject(new Error('Downloaded file too small, likely corrupted'));
+                            return;
+                        }
+                        resolve({ success: true, path: `local-model://${filename}` });
+                    });
+                });
+
+                file.on('error', (err) => {
+                    fs.unlink(dest, () => { });
+                    reject(err);
+                });
+            }).on('error', (err) => {
+                fs.unlink(dest, () => { });
+                reject(err);
+            });
+        });
+    };
+
+    try {
+        return await downloadWithRedirects(url);
+    } catch (error) {
+        // Clean up on error
+        if (fs.existsSync(dest)) {
+            fs.unlinkSync(dest);
+        }
+        throw error;
+    }
 });
 
 app.on('window-all-closed', () => {

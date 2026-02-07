@@ -8,6 +8,13 @@ interface ElectronAPI {
     onRequestSave: (callback: () => void) => void;
     loadAbbreviations: () => Promise<Record<string, string[]>>;
     saveAbbreviations: (abbrevs: Record<string, string[]>) => Promise<{ success: boolean; error?: string }>;
+
+    // AI Model
+    checkModelExists: (filename: string) => Promise<boolean>;
+    downloadModel: (url: string, filename: string) => Promise<{ success: boolean; path: string }>;
+    readModelAsBuffer: (filename: string) => Promise<ArrayBuffer>;
+    onDownloadProgress: (callback: (data: { filename: string; loaded: number; total: number }) => void) => void;
+
     isElectron: boolean;
 }
 

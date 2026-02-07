@@ -13,7 +13,8 @@ import { HomePage } from './components/HomePage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ViewToggle, type ViewMode } from './components/ViewToggle';
 import { SearchSynthesis } from './components/SearchSynthesis';
-import { Plus, Edit2, Upload, Trash2, Download } from 'lucide-react';
+import { SettingsPage } from './components/SettingsPage';
+import { Plus, Edit2, Upload, Trash2, Download, Settings } from 'lucide-react';
 
 // Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -42,6 +43,123 @@ function App() {
   const [showHome, setShowHome] = useState(true); // Start on home page
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [semanticReady, setSemanticReady] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+
+
+  // Manual Backup Feature
+  const handleExportBackup = () => {
+    const dataStr = JSON.stringify(cards, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pharma-brain-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSaveCard = useCallback((card: Card) => {
+    setCards(prev => {
+      const exists = prev.find(c => c.id === card.id);
+      if (exists) {
+        return prev.map(c => c.id === card.id ? card : c);
+      }
+      return [...prev, card];
+    });
+    setShowForm(false);
+    setEditingCard(null);
+  }, []);
+
+  const handleDeleteCard = useCallback((card: Card) => {
+    setCardToDelete(card);
+  }, []);
+
+  const confirmDelete = useCallback(() => {
+    if (cardToDelete) {
+      setCards(prev => prev.filter(c => c.id !== cardToDelete.id));
+      if (selectedCardId === cardToDelete.id) {
+        setSelectedCardId(null);
+      }
+      setCardToDelete(null);
+    }
+  }, [cardToDelete, selectedCardId]);
+
+  const handleEditCard = useCallback((card: Card) => {
+    setEditingCard(card);
+    setShowForm(true);
+    setSelectedCardId(null);
+  }, []);
+
+  const handleBatchImport = useCallback((newCards: Card[]) => {
+    setCards(prev => {
+      const merged = [...prev];
+      newCards.forEach(nc => {
+        const index = merged.findIndex(c => c.id === nc.id);
+        if (index >= 0) {
+          merged[index] = nc;
+        } else {
+          merged.push(nc);
+        }
+      });
+      return merged;
+    });
+  }, []);
+
+
+  const selectedCard = useMemo(() =>
+    cards.find(c => c.id === selectedCardId),
+    [cards, selectedCardId]);
+
+  const modals = (
+    <>
+      {selectedCard && (
+        <DetailModal
+          card={selectedCard}
+          allCards={cards}
+          onClose={() => setSelectedCardId(null)}
+          onLinkClick={(id) => setSelectedCardId(id)}
+          actions={
+            <div className="modal-actions">
+              <button className="btn-icon" onClick={() => handleEditCard(selectedCard)} title="Modifier">
+                <Edit2 size={18} />
+              </button>
+              <button className="btn-icon" onClick={() => handleDeleteCard(selectedCard)} title="Supprimer">
+                <Trash2 size={18} />
+              </button>
+            </div>
+          }
+        />
+      )}
+
+      {showForm && (
+        <CardForm
+          card={editingCard}
+          onSave={handleSaveCard}
+          onCancel={() => { setShowForm(false); setEditingCard(null); }}
+        />
+      )}
+
+      {showImport && (
+        <BatchImportModal
+          onImport={handleBatchImport}
+          onClose={() => setShowImport(false)}
+        />
+      )}
+
+      {cardToDelete && (
+        <ConfirmDeleteModal
+          title={cardToDelete.title}
+          onConfirm={confirmDelete}
+          onCancel={() => setCardToDelete(null)}
+        />
+      )}
+    </>
+  );
+
+
 
   // Initialize semantic search (loads model in background)
   useEffect(() => {
@@ -155,122 +273,29 @@ function App() {
     );
   };
 
-  const selectedCard = useMemo(() =>
-    cards.find(c => c.id === selectedCardId),
-    [cards, selectedCardId]);
 
-  const handleSaveCard = useCallback((card: Card) => {
-    setCards(prev => {
-      const exists = prev.find(c => c.id === card.id);
-      if (exists) {
-        return prev.map(c => c.id === card.id ? card : c);
-      }
-      return [...prev, card];
-    });
-    setShowForm(false);
-    setEditingCard(null);
-  }, []);
 
-  const handleDeleteCard = useCallback((card: Card) => {
-    setCardToDelete(card);
-  }, []);
 
-  const confirmDelete = useCallback(() => {
-    if (cardToDelete) {
-      setCards(prev => prev.filter(c => c.id !== cardToDelete.id));
-      if (selectedCardId === cardToDelete.id) {
-        setSelectedCardId(null);
-      }
-      setCardToDelete(null);
-    }
-  }, [cardToDelete, selectedCardId]);
 
-  const handleEditCard = useCallback((card: Card) => {
-    setEditingCard(card);
-    setShowForm(true);
-    setSelectedCardId(null);
-  }, []);
 
-  const handleBatchImport = useCallback((newCards: Card[]) => {
-    setCards(prev => {
-      const merged = [...prev];
-      newCards.forEach(nc => {
-        const index = merged.findIndex(c => c.id === nc.id);
-        if (index >= 0) {
-          merged[index] = nc;
-        } else {
-          merged.push(nc);
-        }
-      });
-      return merged;
-    });
-  }, []);
-
-  // Manual Backup Feature
-  const handleExportBackup = () => {
-    const dataStr = JSON.stringify(cards, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `pharma-brain-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const modals = (
-    <>
-      {selectedCard && (
-        <DetailModal
-          card={selectedCard}
-          allCards={cards}
-          onClose={() => setSelectedCardId(null)}
-          onLinkClick={(id) => setSelectedCardId(id)}
-          actions={
-            <div className="modal-actions">
-              <button className="btn-icon" onClick={() => handleEditCard(selectedCard)} title="Modifier">
-                <Edit2 size={18} />
-              </button>
-              <button className="btn-icon" onClick={() => handleDeleteCard(selectedCard)} title="Supprimer">
-                <Trash2 size={18} />
-              </button>
-            </div>
-          }
-        />
-      )}
-
-      {showForm && (
-        <CardForm
-          card={editingCard}
-          onSave={handleSaveCard}
-          onCancel={() => { setShowForm(false); setEditingCard(null); }}
-        />
-      )}
-
-      {showImport && (
-        <BatchImportModal
-          onImport={handleBatchImport}
-          onClose={() => setShowImport(false)}
-        />
-      )}
-
-      {cardToDelete && (
-        <ConfirmDeleteModal
-          title={cardToDelete.title}
-          onConfirm={confirmDelete}
-          onCancel={() => setCardToDelete(null)}
-        />
-      )}
-    </>
-  );
 
   // Compute available types from current cards
   const availableTypes = useMemo(() => {
     const types = new Set(cards.map(c => c.type));
     return Array.from(types).sort();
   }, [cards]);
+
+  // Show settings page
+  if (showSettings) {
+    return (
+      <div className="app-container">
+        <SettingsPage onBack={() => {
+          setShowSettings(false);
+          setShowHome(true);
+        }} />
+      </div>
+    );
+  }
 
   // Show home page
   if (showHome) {
@@ -291,6 +316,10 @@ function App() {
             setShowImport(true);
           }}
           onBackgroundExport={handleExportBackup}
+          onSettings={() => {
+            setShowHome(false);
+            setShowSettings(true);
+          }}
         />
         {modals}
       </div>
@@ -315,6 +344,9 @@ function App() {
             <div className="toolbar-actions" style={{ display: 'flex', gap: '0.5rem' }}>
               <button className="btn-secondary" onClick={handleExportBackup} title="Sauvegarde de sécurité">
                 <Download size={18} />
+              </button>
+              <button className="btn-secondary" onClick={() => setShowSettings(true)} title="Paramètres">
+                <Settings size={18} />
               </button>
               <button className="btn-secondary" onClick={() => setShowImport(true)} title="Import JSON">
                 <Upload size={18} />

@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     loadAbbreviations: () => ipcRenderer.invoke('load-abbreviations'),
     saveAbbreviations: (abbrevs) => ipcRenderer.invoke('save-abbreviations', abbrevs),
 
+    // AI Model Management
+    checkModelExists: (filename) => ipcRenderer.invoke('check-model-exists', filename),
+    downloadModel: (url, filename) => ipcRenderer.invoke('download-model', { url, filename }),
+    readModelAsBuffer: (filename) => ipcRenderer.invoke('read-model-as-buffer', filename),
+    onDownloadProgress: (callback) => ipcRenderer.on('model-download-progress', (event, data) => callback(data)),
+
     // Check if running in Electron
     isElectron: true,
 });
