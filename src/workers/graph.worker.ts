@@ -11,20 +11,25 @@ interface Link {
     target: string;
 }
 
-// Stopwords: common medical/structural terms that don't add meaning for linking
+// Stopwords: common terms that don't add meaning for linking
+// Includes French articles (2-3 chars) and generic medical terms
 const STOPWORDS = new Set([
+    // French articles and common words (2-3 chars)
+    'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'en', 'au', 'aux',
+    'ce', 'ces', 'son', 'ses', 'sur', 'par', 'qui', 'que', 'est', 'pas', 'plus',
+    // Generic medical/structural terms
     'syndrome', 'maladie', 'type', 'forme', 'stade', 'phase', 'niveau',
     'avec', 'sans', 'dans', 'pour', 'chez', 'depuis', 'sous', 'vers',
     'traitement', 'patient', 'diagnostic', 'symptomes', 'signes',
     'aigu', 'aigue', 'chronique', 'primaire', 'secondaire'
 ]);
 
-// Extract significant keywords (>=4 chars, excluding stopwords) from a string
+// Extract keywords (>=3 chars) from a string - captures medical acronyms like AVC, ORL, IVG
 function extractKeywords(text: string): string[] {
     return text.toLowerCase()
         .replace(/[^a-zàâäéèêëïîôùûüç0-9\s]/gi, '') // Keep accented chars
         .split(/\s+/)
-        .filter(w => w.length >= 4); // Only >=4 chars to avoid noise
+        .filter(w => w.length >= 3 && !STOPWORDS.has(w)); // >=3 chars, exclude stopwords
 }
 
 // Extract significant keywords (excluding stopwords) for threshold calculation
