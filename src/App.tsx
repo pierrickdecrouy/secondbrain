@@ -10,7 +10,21 @@ import { BatchImportModal } from './components/BatchImportModal';
 import { HomePage } from './components/HomePage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ViewToggle, type ViewMode } from './components/ViewToggle';
-import { Plus, Edit2, Upload, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Upload, Trash2, Download } from 'lucide-react';
+
+// Simple debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 function App() {
   const [cards, setCards] = useState<Card[]>([]);
@@ -49,17 +63,27 @@ function App() {
     }
   }, [cards, isLoading]);
 
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const filteredCards = useMemo(() => {
     return cards.filter(card => {
+      // 1. Filter by Type
       if (activeFilters.length > 0 && !activeFilters.includes(card.type)) {
         return false;
       }
-      if (viewMode === 'network') return true;
-      if (!searchQuery) return true;
 
-      // Enhanced search: Weighted scoring
-      const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      if (queryWords.length === 0) return card.title.toLowerCase().includes(searchQuery.toLowerCase());
+      // 2. Filter by Search (Weighted Scoring)
+      if (!debouncedSearchQuery) return true;
+
+      // Split query into words for "smart" matching
+      const queryWords = debouncedSearchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+      // Fallback for short queries or single words
+      if (queryWords.length === 0) {
+        const simpleMatch = card.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        (card as any).searchScore = simpleMatch ? 1 : 0;
+        return simpleMatch;
+      }
 
       let score = 0;
       const titleLower = card.title.toLowerCase();
@@ -67,40 +91,32 @@ function App() {
       const contentLower = (card.content + ' ' + card.details).toLowerCase();
       const tagsLower = card.tags.map(t => t.toLowerCase());
 
-      // Exact phrase match
-      if (titleLower.includes(searchQuery.toLowerCase())) score += 100;
-      if (contentLower.includes(searchQuery.toLowerCase())) score += 20;
+      // Exact phrase match (High Priority)
+      if (titleLower.includes(debouncedSearchQuery.toLowerCase())) score += 100;
+      if (contentLower.includes(debouncedSearchQuery.toLowerCase())) score += 20;
 
       // Word matches
       queryWords.forEach(word => {
         if (titleLower.includes(word)) score += 50; // High matches title
-        if (subtitleLower.includes(word)) score += 30;
+        if (subtitleLower.includes(word)) score += 30; // Medium matches subtitle
         tagsLower.forEach(tag => {
           if (tag.includes(word)) score += 40; // High match tags
         });
-        if (contentLower.includes(word)) score += 10;
+        if (contentLower.includes(word)) score += 10; // Low match content
       });
 
-      (card as any).searchScore = score; // Temporary property for sort (hacky but effective for memo)
+      (card as any).searchScore = score; // Store score for sorting
       return score > 0;
-    }).sort((a, b) => ((b as any).searchScore || 0) - ((a as any).searchScore || 0)); // Sort by relevance
-  }, [cards, searchQuery, activeFilters, viewMode]);
+    }).sort((a, b) => {
+      // Sort by search score descending
+      const scoreA = (a as any).searchScore || 0;
+      const scoreB = (b as any).searchScore || 0;
+      if (scoreA !== scoreB) return scoreB - scoreA;
 
-  const gridFilteredCards = useMemo(() => {
-    return cards.filter(card => {
-      if (activeFilters.length > 0 && !activeFilters.includes(card.type)) {
-        return false;
-      }
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        card.title.toLowerCase().includes(query) ||
-        card.subtitle.toLowerCase().includes(query) ||
-        card.content.toLowerCase().includes(query) ||
-        card.tags.some(tag => tag.toLowerCase().includes(query))
-      );
+      // Fallback to title
+      return a.title.localeCompare(b.title);
     });
-  }, [cards, searchQuery, activeFilters]);
+  }, [cards, debouncedSearchQuery, activeFilters]);
 
   const handleFilterToggle = (type: CardType) => {
     setActiveFilters(prev =>
@@ -161,14 +177,19 @@ function App() {
     });
   }, []);
 
-  const handleHomeSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    setShowHome(false);
-  }, []);
-
-  const handleStartBrowsing = useCallback(() => {
-    setShowHome(false);
-  }, []);
+  // Manual Backup Feature
+  const handleExportBackup = () => {
+    const dataStr = JSON.stringify(cards, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pharma-brain-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const modals = (
     <>
@@ -221,10 +242,20 @@ function App() {
     return (
       <div className="app-container">
         <HomePage
-          onSearch={handleHomeSearch}
-          onStartBrowsing={handleStartBrowsing}
-          onAddCard={() => setShowForm(true)}
-          onBatchImport={() => setShowImport(true)}
+          onSearch={(query) => {
+            setSearchQuery(query);
+            setShowHome(false);
+          }}
+          onStartBrowsing={() => setShowHome(false)}
+          onAddCard={() => {
+            setShowHome(false);
+            setShowForm(true);
+          }}
+          onBatchImport={() => {
+            setShowHome(false);
+            setShowImport(true);
+          }}
+          onBackgroundExport={handleExportBackup}
         />
         {modals}
       </div>
@@ -247,6 +278,9 @@ function App() {
             <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
 
             <div className="toolbar-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn-secondary" onClick={handleExportBackup} title="Sauvegarde de sécurité">
+                <Download size={18} />
+              </button>
               <button className="btn-secondary" onClick={() => setShowImport(true)} title="Import JSON">
                 <Upload size={18} />
               </button>
@@ -267,11 +301,28 @@ function App() {
         </div>
       </header>
 
+      {/* Search Query Header */}
+      {debouncedSearchQuery && (
+        <div className="search-results-header" style={{
+          padding: '1rem 2rem 0',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          width: '100%'
+        }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#475569' }}>
+            Résultats de recherche pour : <span style={{ color: '#0d9488' }}>{debouncedSearchQuery}</span>
+            <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400, marginLeft: '0.5rem' }}>
+              ({filteredCards.length} résultats)
+            </span>
+          </h2>
+        </div>
+      )}
+
       <div className={`main-content ${viewMode === 'network' ? 'network-mode' : ''}`}>
         {viewMode === 'grid' ? (
-          gridFilteredCards.length > 0 ? (
+          filteredCards.length > 0 ? (
             <div className="card-grid">
-              {gridFilteredCards.map(card => (
+              {filteredCards.map(card => (
                 <CardItem
                   key={card.id}
                   card={card}
@@ -287,7 +338,7 @@ function App() {
             </div>
           )
         ) : viewMode === 'list' ? (
-          gridFilteredCards.length > 0 ? (
+          filteredCards.length > 0 ? (
             <div className="card-list-container">
               <table className="card-list-table">
                 <thead>
@@ -300,7 +351,7 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {gridFilteredCards.map(card => (
+                  {filteredCards.map(card => (
                     <tr key={card.id} onClick={() => setSelectedCardId(card.id)} className="card-list-row">
                       <td>
                         <div className={`list-type-indicator type-${card.type}`} title={card.type}></div>
@@ -337,9 +388,9 @@ function App() {
           )
         ) : (
           <NetworkView
-            cards={filteredCards}
+            cards={filteredCards} // Or strict cards if you want full graph. filteredCards = focused graph
             onNodeClick={(id) => setSelectedCardId(id)}
-            searchQuery={searchQuery}
+            searchQuery={searchQuery} // Highlighting handled by NetworkView
           />
         )}
       </div>

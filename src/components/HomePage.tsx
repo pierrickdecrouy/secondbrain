@@ -6,6 +6,7 @@ interface HomePageProps {
     onStartBrowsing: () => void;
     onAddCard: () => void;
     onBatchImport: () => void;
+    onBackgroundExport?: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -13,6 +14,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     onStartBrowsing,
     onAddCard,
     onBatchImport,
+    onBackgroundExport,
 }) => {
     const [showFabMenu, setShowFabMenu] = useState(false);
 
@@ -33,6 +35,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     const handleBatchImport = () => {
         setShowFabMenu(false);
         onBatchImport();
+    };
+
+    const handleBackup = () => {
+        setShowFabMenu(false);
+        onBackgroundExport?.();
     };
 
     return (
@@ -100,6 +107,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                             <Upload size={18} />
                             <span>Import en masse</span>
                         </button>
+                        {onBackgroundExport && (
+                            <button className="fab-menu-item" onClick={handleBackup}>
+                                <Upload size={18} style={{ transform: 'rotate(180deg)' }} />
+                                <span>Sauvegarde</span>
+                            </button>
+                        )}
                     </div>
                 )}
                 <button

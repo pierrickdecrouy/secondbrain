@@ -1,6 +1,7 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
 import type { Card } from '../types';
+import { CARD_COLORS } from '../theme';
 
 interface NetworkViewProps {
     cards: Card[];
@@ -25,48 +26,31 @@ interface Link {
     target: string | Node;
 }
 
-const typeColors: Record<string, string> = {
-    drug: '#0d9488',
-    patho: '#dc2626',
-    physio: '#7c3aed',
-    data: '#d97706',
-};
-
-// Compute links based on content matching title
-const computeGraphData = (cards: Card[]) => {
-    const cardTitles = cards.map(c => ({ id: c.id, title: c.title.toLowerCase() }));
-    const links: Link[] = [];
-
-    cards.forEach(card => {
-        const searchText = (card.content + ' ' + card.details).toLowerCase();
-        cardTitles.forEach(target => {
-            if (target.id !== card.id && searchText.includes(target.title)) {
-                // Avoid duplicates in undirected graph visualization
-                const exists = links.some(
-                    l => (l.source === card.id && l.target === target.id) ||
-                        (l.source === target.id && l.target === card.id)
-                );
-                if (!exists) {
-                    links.push({ source: card.id, target: target.id });
-                }
-            }
-        });
-    });
-
-    const nodes = cards.map(c => ({
-        id: c.id,
-        name: c.title,
-        type: c.type
-    }));
-
-    return { nodes, links };
-};
-
 export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, searchQuery }) => {
     // Initialize with undefined to match ForceGraphMethods generic requirement often seeing issues with null
     const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+    const [graphData, setGraphData] = useState<{ nodes: Node[], links: Link[] }>({ nodes: [], links: [] });
+    const [isCalculating, setIsCalculating] = useState(false);
+
+    // Web Worker for graph computation
+    useEffect(() => {
+        setIsCalculating(true);
+        const worker = new Worker(new URL('../workers/graph.worker.ts', import.meta.url), { type: 'module' });
+
+        worker.onmessage = (e) => {
+            setGraphData(e.data);
+            setIsCalculating(false);
+            worker.terminate(); // Terminate after one-off calculation
+        };
+
+        worker.postMessage(cards);
+
+        return () => {
+            worker.terminate();
+        };
+    }, [cards]); // Re-run when cards change
 
     // Handle resize
     useEffect(() => {
@@ -87,8 +71,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
 
         return () => window.removeEventListener('resize', updateDimensions);
     }, []);
-
-    const graphData = useMemo(() => computeGraphData(cards), [cards]);
 
     // Determine highlighted nodes based on search
     const highlightedNodeIds = useMemo(() => {
@@ -119,7 +101,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         // Dynamic size based on zoom (optional, simply keep it readable)
         const fontSize = 14;
 
-        ctx.font = `${fontSize}px Inter, Sans-Serif`;
+        ctx.font = `${fontSize}px Inter, Sans - Serif`;
 
         // Circle styling
         const r = 8;
@@ -127,13 +109,16 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
 
         // Fill
+        // Color based on type
+        // @ts-ignore - access safe via key
+        ctx.fillStyle = isHighlighted ? (CARD_COLORS[node.type as keyof typeof CARD_COLORS] || '#94a3b8') : '#e2e8f0';
         if (isHighlighted) {
-            ctx.fillStyle = typeColors[node.type] || '#888';
             ctx.globalAlpha = 1;
         } else {
             ctx.fillStyle = '#cbd5e1'; // muted slate
             ctx.globalAlpha = 0.4;
         }
+
         ctx.fill();
 
         // Stroke
@@ -141,21 +126,44 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        // Label
-        if (isHighlighted && globalScale > 1.2) { // Show labels only when drilled in slightly
+        // Label - Always visible if highlighted OR if zoomed in enough
+        // improved readability with stroke (halo) instead of box
+        if (isHighlighted || globalScale > 1.5) {
+            const labelY = node.y! + r + 6;
+
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#1e293b'; // slate-800
-            ctx.globalAlpha = 1;
+            ctx.textBaseline = 'top';
 
-            // Background for text visibility (optional halo)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            // Halo (stroke) for readability
             ctx.lineWidth = 3;
-            ctx.strokeText(label, node.x!, node.y! + r + 10);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            if (isHighlighted) ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
 
-            ctx.fillText(label, node.x!, node.y! + r + 10);
+            ctx.strokeText(label, node.x!, labelY);
+
+            // Text
+            ctx.fillStyle = '#1e293b'; // slate-800
+            ctx.font = `${fontSize}px Inter, Sans-Serif`; // Standard font
+
+            if (isHighlighted) {
+                ctx.fillStyle = '#0f172a'; // darker slate/black
+                ctx.font = `600 ${fontSize}px Inter, Sans-Serif`; // Bold
+            }
+
+            ctx.fillText(label, node.x!, labelY);
         }
     }, [highlightedNodeIds]);
+
+    // Apply custom forces for better spacing
+    useEffect(() => {
+        if (fgRef.current) {
+            // Increase repulsion (default is often -30) - more negative = more spread
+            fgRef.current.d3Force('charge')?.strength(-200);
+            // Increase link distance (default is often 30)
+            fgRef.current.d3Force('link')?.distance(80);
+        }
+    }, []);
+
 
     return (
         <div
@@ -195,6 +203,21 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                 d3AlphaDecay={0.02} // Slower decay = more stable final layout
                 d3VelocityDecay={0.3} // Medium friction
             />
+            {isCalculating && (
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    pointerEvents: 'none'
+                }}>
+                    Calcul du réseau...
+                </div>
+            )}
             <div className="network-controls" style={{
                 position: 'absolute',
                 bottom: 20,
