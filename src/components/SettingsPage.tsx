@@ -1,254 +1,227 @@
 import React, { useState, useEffect } from 'react';
-import { getLearnedAbbreviations, addAbbreviation, deleteAbbreviation, removeAbbreviation } from '../learnedAbbreviations';
-import { Trash2, Plus, Search, Settings, CheckCircle2, Database, AlertCircle, X, BookOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+    BookOpen,
+    Settings,
+    Database,
+    X,
+    Plus,
+    Search,
+    Trash2
+} from 'lucide-react';
+import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults } from '../storage';
+import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbreviations';
 
 interface SettingsPageProps {
-    onBack: () => void;
+    onClose: () => void;
+    onSave?: () => void;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
-    const [activeTab, setActiveTab] = useState<'general' | 'abbreviations' | 'data'>('abbreviations');
-    const [abbreviations, setAbbreviations] = useState<Record<string, string[]>>({});
-    const [searchTerm, setSearchTerm] = useState('');
-    const [newAbbr, setNewAbbr] = useState('');
-    const [newDef, setNewDef] = useState('');
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+type Tab = 'dictionary' | 'general' | 'data';
+
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onSave }) => {
+    const [activeTab, setActiveTab] = useState<Tab>('dictionary');
+    const [abbreviations, setAbbreviations] = useState<{ [key: string]: string }>({});
+    const [newKey, setNewKey] = useState('');
+    const [newValue, setNewValue] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        loadData();
+        const loaded = loadCustomAbbreviations();
+        setAbbreviations(loaded);
     }, []);
-
-    const loadData = () => {
-        setAbbreviations(getLearnedAbbreviations());
-    };
 
     const handleAdd = () => {
-        if (!newAbbr.trim() || !newDef.trim()) {
-            setMessage({ type: 'error', text: 'Champs requis' });
-            return;
-        }
-
-        try {
-            addAbbreviation(newAbbr, newDef);
-            setAbbreviations(getLearnedAbbreviations());
-            setNewAbbr('');
-            setNewDef('');
-            setMessage({ type: 'success', text: 'Ajouté avec succès' });
-
-            if (window.electronAPI?.saveAbbreviations) {
-                window.electronAPI.saveAbbreviations(getLearnedAbbreviations());
-            }
-
-            setTimeout(() => setMessage(null), 2500);
-        } catch (e) {
-            setMessage({ type: 'error', text: 'Erreur lors de l\'ajout' });
+        if (newKey && newValue) {
+            const updated = { ...abbreviations, [newKey.toLowerCase()]: newValue };
+            setAbbreviations(updated);
+            saveCustomAbbreviations(updated);
+            setNewKey('');
+            setNewValue('');
+            if (onSave) onSave();
         }
     };
 
-    const handleDelete = (abbr: string, def?: string) => {
-        if (def) {
-            removeAbbreviation(abbr, def);
-        } else {
-            deleteAbbreviation(abbr);
-        }
-        setAbbreviations(getLearnedAbbreviations());
+    const handleDelete = (key: string) => {
+        const updated = { ...abbreviations };
+        delete updated[key];
+        setAbbreviations(updated);
+        saveCustomAbbreviations(updated);
+        if (onSave) onSave();
+    };
 
-        if (window.electronAPI?.saveAbbreviations) {
-            window.electronAPI.saveAbbreviations(getLearnedAbbreviations());
+    const handleReset = () => {
+        if (window.confirm('Voulez-vous vraiment réinitialiser le dictionnaire par défaut ?')) {
+            resetToDefaults();
+            // Convert Record<string, string[]> to Record<string, string> for the state
+            const defaultSimple: Record<string, string> = {};
+            Object.entries(defaultAbbreviations).forEach(([key, values]) => {
+                if (Array.isArray(values) && values.length > 0) {
+                    defaultSimple[key] = values[0];
+                }
+            });
+            setAbbreviations(defaultSimple);
+            if (onSave) onSave();
         }
     };
 
-    const filteredAbbrs = Object.entries(abbreviations)
-        .filter(([abbr, defs]) => {
-            const search = searchTerm.toLowerCase();
-            return abbr.toLowerCase().includes(search) ||
-                defs.some(d => d.toLowerCase().includes(search));
-        })
-        .sort((a, b) => a[0].localeCompare(b[0]));
+    // Filtrage pour la recherche
+    const filteredAbbreviations = Object.entries(abbreviations).filter(([key, value]) =>
+        key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        value.toLowerCase().includes(searchQuery.toLowerCase())
+    ).sort((a, b) => a[0].localeCompare(b[0]));
 
-    // Custom Scrollbar styles injected
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.textContent = `
-            .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-            .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        `;
-        document.head.appendChild(style);
-        return () => {
-            document.head.removeChild(style);
-        };
-    }, []);
-
-    const handleBackdropClick = (e: React.MouseEvent) => {
+    // Gestion du clic à l'extérieur pour fermer
+    const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) {
-            onBack();
+            onClose();
         }
     };
 
     return (
         <div
-            onClick={handleBackdropClick}
-            className="fixed inset-0 z-[200] flex items-center justify-center font-sans p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm transition-all"
+            className="fixed inset-0 z-[200] flex items-center justify-center font-sans p-6 bg-slate-900/60 backdrop-blur-md transition-all"
+            onClick={handleOverlayClick}
         >
-            {/* Modal Container - Matches Mockup Dimensions & Style */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="bg-white w-[960px] h-[640px] rounded-[24px] shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] flex relative overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-            >
+            <div className="bg-white w-[1080px] h-[720px] rounded-[32px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.15)] flex relative overflow-hidden ring-1 ring-slate-100">
+
                 {/* Sidebar */}
-                <aside className="w-[260px] bg-[#f8fafc] border-r border-[#e2e8f0] flex flex-col py-8">
-                    <div className="px-8 pb-8 border-b border-[#e2e8f0] mb-6">
-                        <h1 className="text-[1.5rem] font-bold text-[#334155] tracking-tight m-0">Paramètres</h1>
-                        <span className="text-[0.8rem] text-[#64748b] font-medium block mt-1.5">PharmaBrain v1.0</span>
+                <aside className="w-[280px] bg-slate-50/80 border-r border-slate-100 flex flex-col py-10 backdrop-blur-sm">
+                    <div className="px-8 pb-8 border-b border-slate-100 mb-8">
+                        <h1 className="text-[1.75rem] font-bold text-slate-800 tracking-tight m-0">Paramètres</h1>
+                        <span className="text-[0.85rem] text-slate-400 font-medium block mt-2">PharmaBrain v1.0</span>
                     </div>
 
-                    <nav className="flex flex-col gap-2 px-4">
-                        <NavButton
-                            active={activeTab === 'abbreviations'}
-                            onClick={() => setActiveTab('abbreviations')}
-                            icon={<BookOpen size={20} />}
-                            label="Dictionnaire"
-                        />
-                        <NavButton
-                            active={activeTab === 'general'}
+                    <nav className="flex flex-col gap-3 px-6">
+                        <button
+                            onClick={() => setActiveTab('dictionary')}
+                            className={`w-full flex items-center gap-4 px-6 py-4 text-[1rem] font-medium transition-all relative cursor-pointer rounded-[20px] group ${activeTab === 'dictionary'
+                                ? 'bg-white text-[#61b3a4] shadow-[0_4px_12px_rgba(97,179,164,0.1),0_0_0_1px_rgba(97,179,164,0.1)]'
+                                : 'text-slate-500 hover:bg-white hover:text-[#61b3a4] hover:shadow-sm'
+                                }`}
+                        >
+                            <BookOpen size={22} className={`transition-transform duration-300 ${activeTab === 'dictionary' ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            Dictionnaire
+                        </button>
+                        <button
                             onClick={() => setActiveTab('general')}
-                            icon={<Settings size={20} />}
-                            label="Général"
-                        />
-                        <NavButton
-                            active={activeTab === 'data'}
+                            className={`w-full flex items-center gap-4 px-6 py-4 text-[1rem] font-medium transition-all relative cursor-pointer rounded-[20px] group ${activeTab === 'general'
+                                ? 'bg-white text-[#61b3a4] shadow-[0_4px_12px_rgba(97,179,164,0.1),0_0_0_1px_rgba(97,179,164,0.1)]'
+                                : 'text-slate-500 hover:bg-white hover:text-[#61b3a4] hover:shadow-sm'
+                                }`}
+                        >
+                            <Settings size={22} className={`transition-transform duration-300 ${activeTab === 'general' ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            Général
+                        </button>
+                        <button
                             onClick={() => setActiveTab('data')}
-                            icon={<Database size={20} />}
-                            label="Données"
-                        />
+                            className={`w-full flex items-center gap-4 px-6 py-4 text-[1rem] font-medium transition-all relative cursor-pointer rounded-[20px] group ${activeTab === 'data'
+                                ? 'bg-white text-[#61b3a4] shadow-[0_4px_12px_rgba(97,179,164,0.1),0_0_0_1px_rgba(97,179,164,0.1)]'
+                                : 'text-slate-500 hover:bg-white hover:text-[#61b3a4] hover:shadow-sm'
+                                }`}
+                        >
+                            <Database size={22} className={`transition-transform duration-300 ${activeTab === 'data' ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            Données
+                        </button>
                     </nav>
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 p-[48px] flex flex-col relative bg-white">
-                    {/* Close Button */}
+                <main className="flex-1 p-[56px] flex flex-col relative bg-white">
                     <button
-                        onClick={onBack}
-                        className="absolute top-6 right-6 p-2 text-[#94a3b8] hover:text-[#ef4444] hover:bg-[#f1f5f9] rounded-full transition-colors cursor-pointer"
+                        onClick={onClose}
+                        className="absolute top-5 right-5 p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-[16px] transition-all cursor-pointer group z-10"
                     >
-                        <X size={24} />
+                        <X size={26} className="group-hover:rotate-90 transition-transform duration-300" />
                     </button>
 
-                    {activeTab === 'abbreviations' ? (
+                    {activeTab === 'dictionary' && (
                         <>
-                            {/* Add Section */}
-                            <div className="flex items-center gap-3 mb-8">
-                                <Plus size={18} className="text-[#61b3a4]" />
-                                <span className="uppercase text-[0.8rem] font-bold tracking-wider text-[#64748b]">Ajouter une définition</span>
+                            {/* Header Ajouter */}
+                            <div className="flex items-center gap-3 mb-8 pl-1">
+                                <span className="uppercase text-[0.75rem] font-bold tracking-widest text-[#64748b]/60">Ajouter une définition</span>
                             </div>
 
-                            <div className="grid grid-cols-[160px_1fr_auto] gap-4 mb-12">
+                            <div className="grid grid-cols-[180px_1fr_auto] gap-5 mb-14">
                                 <input
                                     type="text"
-                                    value={newAbbr}
-                                    onChange={(e) => setNewAbbr(e.target.value)}
-                                    placeholder="Raccourci (ex: IV)"
-                                    className="border-[1.5px] border-[#e2e8f0] rounded-[16px] px-5 py-3.5 text-[1rem] outline-none focus:border-[#61b3a4] focus:shadow-[0_0_0_4px_rgba(97,179,164,0.1)] transition-all placeholder:text-[#cbd5e1]"
+                                    placeholder="Raccourci"
+                                    className="h-[60px] bg-slate-50 border border-slate-100 rounded-[20px] px-8 text-[1.05rem] outline-none focus:bg-white focus:border-[#61b3a4] focus:shadow-[0_0_0_4px_rgba(97,179,164,0.1)] transition-all placeholder:text-slate-300 font-medium text-slate-700"
+                                    value={newKey}
+                                    onChange={(e) => setNewKey(e.target.value)}
                                 />
                                 <input
                                     type="text"
-                                    value={newDef}
-                                    onChange={(e) => setNewDef(e.target.value)}
-                                    placeholder="Définition (ex: Intraveineuse)"
-                                    className="border-[1.5px] border-[#e2e8f0] rounded-[16px] px-5 py-3.5 text-[1rem] outline-none focus:border-[#61b3a4] focus:shadow-[0_0_0_4px_rgba(97,179,164,0.1)] transition-all placeholder:text-[#cbd5e1]"
+                                    placeholder="Définition complète"
+                                    className="h-[60px] bg-slate-50 border border-slate-100 rounded-[20px] px-8 text-[1.05rem] outline-none focus:bg-white focus:border-[#61b3a4] focus:shadow-[0_0_0_4px_rgba(97,179,164,0.1)] transition-all placeholder:text-slate-300 text-slate-600"
+                                    value={newValue}
+                                    onChange={(e) => setNewValue(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                                 />
                                 <button
                                     onClick={handleAdd}
-                                    className="bg-[#61b3a4] hover:translate-y-px hover:shadow-[0_8px_16px_rgba(97,179,164,0.3)] text-white font-semibold px-8 rounded-[16px] flex items-center gap-2.5 shadow-sm transition-all border-none cursor-pointer text-[1rem]"
-                                    style={{ height: '54px' }}
+                                    className="h-[60px] bg-[#61b3a4] hover:bg-[#5aa899] hover:translate-y-[-2px] hover:shadow-[0_12px_24px_-8px_rgba(97,179,164,0.4)] text-white font-bold px-10 rounded-[20px] flex items-center gap-3 shadow-[0_4px_12px_-4px_rgba(97,179,164,0.3)] transition-all border-none cursor-pointer text-[1.05rem] active:translate-y-[0px]"
                                 >
-                                    <Plus size={20} />
+                                    <Plus size={22} strokeWidth={2.5} />
                                     Ajouter
                                 </button>
                             </div>
 
-                            {/* Feedback Message */}
-                            <AnimatePresence>
-                                {message && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                        animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
-                                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                        className={`overflow-hidden text-sm font-medium flex items-center gap-2 ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}
-                                    >
-                                        {message.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                                        {message.text}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {/* Library Header */}
-                            <div className="flex justify-between items-center mb-6">
-                                <div className="flex items-center gap-3">
-                                    <BookOpen size={18} className="text-[#61b3a4]" />
-                                    <span className="uppercase text-[0.8rem] font-bold tracking-wider text-[#64748b]">
-                                        Bibliothèque ({filteredAbbrs.length})
-                                    </span>
+                            {/* Header Bibliothèque */}
+                            <div className="flex justify-between items-end mb-6 pl-1 border-b border-slate-50 pb-6">
+                                <div className="flex flex-col gap-1">
+                                    <span className="uppercase text-[0.75rem] font-bold tracking-widest text-[#64748b]/60">Bibliothèque</span>
+                                    <span className="text-2xl font-bold text-slate-700">{Object.keys(abbreviations).length} termes</span>
                                 </div>
                                 <div className="relative">
-                                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+                                    <Search size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
                                     <input
                                         type="text"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
                                         placeholder="Rechercher..."
-                                        className="pl-11 pr-4 h-[42px] w-[240px] text-[0.9rem] bg-white border border-[#e2e8f0] rounded-[12px] outline-none focus:border-[#61b3a4] transition-all"
+                                        className="pl-16 pr-6 h-[50px] w-[320px] text-[0.95rem] bg-slate-50 border border-slate-100 rounded-[16px] outline-none focus:bg-white focus:border-[#61b3a4] focus:shadow-sm transition-all placeholder:text-slate-400"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            {/* List Container */}
-                            <div className="flex-1 overflow-y-auto pr-3 -mr-3 space-y-[12px] custom-scrollbar">
-                                {filteredAbbrs.length > 0 ? (
-                                    filteredAbbrs.map(([abbr, defs]) => (
-                                        <div key={abbr} className="group grid grid-cols-[120px_1fr_auto] items-center p-[16px_20px] bg-white border border-[#e2e8f0] rounded-[16px] hover:border-[#61b3a4] hover:bg-[rgba(97,179,164,0.05)] transition-all mb-[12px]">
-                                            {/* Badge */}
-                                            <div className="flex justify-start">
-                                                <div className="text-center font-bold text-[#61b3a4] bg-[#f0fdfa] border border-[rgba(97,179,164,0.3)] rounded-[8px] px-3 py-1.5 text-[0.9rem] inline-block w-full">
-                                                    {abbr}
-                                                </div>
-                                            </div>
+                            {/* Liste */}
+                            <div className="flex-1 overflow-y-auto pr-4 -mr-4 space-y-4 custom-scrollbar pb-6">
+                                {filteredAbbreviations.map(([key, value]) => (
+                                    <div key={key} className="group grid grid-cols-[140px_1fr_auto] items-center p-5 bg-white border border-slate-100 rounded-[20px] hover:border-[#61b3a4]/30 hover:shadow-[0_4px_20px_-12px_rgba(97,179,164,0.2)] transition-all">
 
-                                            {/* Definitions */}
-                                            <div className="pl-6 text-[0.95rem] text-[#334155] font-normal leading-relaxed">
-                                                {defs.map((def, idx) => (
-                                                    <span key={idx} className="block">
-                                                        {def}
-                                                    </span>
-                                                ))}
+                                        {/* Badge */}
+                                        <div className="flex justify-start">
+                                            <div className="text-center font-bold text-[#61b3a4] bg-[#f0fdfa] border border-[#ccfbf1] rounded-[12px] px-4 py-2.5 text-[0.95rem] inline-block shadow-sm">
+                                                {key}
                                             </div>
-
-                                            {/* Delete All Action */}
-                                            <button
-                                                onClick={() => handleDelete(abbr)}
-                                                className="text-[#cbd5e1] hover:text-[#ef4444] p-2 rounded-lg hover:bg-rose-50 cursor-pointer transition-all opacity-0 group-hover:opacity-100"
-                                                title="Supprimer"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-[#94a3b8] opacity-60">
-                                        <Search size={40} className="mb-3" />
-                                        <p className="text-base font-medium">Aucun résultat</p>
+
+                                        <div className="pl-6 text-[1rem] text-slate-600 font-medium leading-relaxed">
+                                            {value}
+                                        </div>
+                                        <button
+                                            onClick={() => handleDelete(key)}
+                                            className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-[12px] cursor-pointer transition-all opacity-0 group-hover:opacity-100"
+                                            title="Supprimer"
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {filteredAbbreviations.length === 0 && (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-60">
+                                        <div className="w-24 h-24 bg-slate-50 rounded-[32px] flex items-center justify-center mb-6">
+                                            <Search size={40} className="text-slate-200" />
+                                        </div>
+                                        <p className="text-lg font-medium">Aucun résultat</p>
                                     </div>
                                 )}
                             </div>
                         </>
-                    ) : (
+                    )}
+
+                    {activeTab === 'general' && (
                         <div className="h-full flex items-center justify-center text-center">
                             <div className="max-w-xs opacity-50">
                                 <div className="w-20 h-20 bg-slate-100 rounded-[24px] flex items-center justify-center mx-auto mb-6">
@@ -258,25 +231,30 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'data' && (
+                        <div className="flex flex-col gap-6">
+                            <div className="flex items-center gap-3">
+                                <Database size={18} className="text-[#61b3a4]" />
+                                <span className="uppercase text-[0.8rem] font-bold tracking-wider text-[#64748b]">Gestion des données</span>
+                            </div>
+
+                            <div className="p-8 border border-[#e2e8f0] rounded-[16px] bg-[#f8fafc]">
+                                <h3 className="font-bold text-[#334155] text-lg mb-2">Réinitialisation</h3>
+                                <p className="text-[#64748b] mb-6 leading-relaxed">
+                                    Restaurer le dictionnaire médical par défaut. Attention, vos ajouts personnels seront perdus si vous n'avez pas de sauvegarde.
+                                </p>
+                                <button
+                                    onClick={handleReset}
+                                    className="px-6 py-3 bg-white border border-[#e2e8f0] text-rose-500 font-bold rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors shadow-sm cursor-pointer"
+                                >
+                                    Réinitialiser le dictionnaire
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </main>
-            </motion.div>
+            </div>
         </div>
     );
 };
-
-// Sub-components
-const NavButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
-    <button
-        onClick={onClick}
-        className={`w-full flex items-center gap-3 px-6 py-4 text-[0.95rem] font-medium transition-all relative cursor-pointer rounded-r-xl mr-2 ${active
-            ? 'bg-white text-[#61b3a4] shadow-sm'
-            : 'text-[#64748b] hover:bg-white/60 hover:text-[#61b3a4]'
-            }`}
-    >
-        {active && (
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#61b3a4] rounded-r-full" />
-        )}
-        {icon}
-        {label}
-    </button>
-);

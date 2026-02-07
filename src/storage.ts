@@ -1,7 +1,9 @@
 import type { Card } from './types';
 import { initialCards } from './data';
+import { MEDICAL_ABBREVIATIONS } from './medicalAbbreviations';
 
 const STORAGE_KEY = 'pharmabrain_cards';
+const CUSTOM_ABBREVIATIONS_KEY = 'pharma_brain_custom_abbreviations';
 
 // Check if running in Electron
 export function isElectron(): boolean {
@@ -119,3 +121,38 @@ export function generateId(title: string): string {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 }
+
+// Abbreviation Storage Logic
+
+export const loadCustomAbbreviations = (): Record<string, string> => {
+    try {
+        const stored = localStorage.getItem(CUSTOM_ABBREVIATIONS_KEY);
+        if (stored) {
+            return JSON.parse(stored);
+        }
+    } catch (e) {
+        console.error("Failed to load custom abbreviations", e);
+    }
+
+    // Default to the static list if nothing is stored
+    const defaultSimple: Record<string, string> = {};
+    Object.entries(MEDICAL_ABBREVIATIONS).forEach(([key, values]) => {
+        if (Array.isArray(values) && values.length > 0) {
+            defaultSimple[key] = values[0];
+        }
+    });
+
+    return defaultSimple;
+};
+
+export const saveCustomAbbreviations = (abbreviations: Record<string, string>) => {
+    try {
+        localStorage.setItem(CUSTOM_ABBREVIATIONS_KEY, JSON.stringify(abbreviations));
+    } catch (e) {
+        console.error("Failed to save abbreviations", e);
+    }
+};
+
+export const resetToDefaults = () => {
+    localStorage.removeItem(CUSTOM_ABBREVIATIONS_KEY);
+};

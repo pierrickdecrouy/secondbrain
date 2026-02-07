@@ -289,7 +289,7 @@ function App() {
   if (showSettings) {
     return (
       <div className="app-container">
-        <SettingsPage onBack={() => {
+        <SettingsPage onClose={() => {
           setShowSettings(false);
           setShowHome(true);
         }} />
