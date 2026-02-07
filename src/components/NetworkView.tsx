@@ -34,6 +34,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     const [graphData, setGraphData] = useState<{ nodes: Node[], links: Link[] }>({ nodes: [], links: [] });
     const [isCalculating, setIsCalculating] = useState(false);
 
+    // Depth filter state: 0 = show all, 1-3 = show neighbors at depth N
+    const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+    const [depthFilter, setDepthFilter] = useState<number>(0); // 0 = all, 1/2/3 = depth
+
+    // Position cache to prevent graph "jumping" on updates
+    const positionCache = useRef<Map<string, { x: number, y: number }>>(new Map());
+
     // Web Worker for graph computation
     useEffect(() => {
         if (cards.length === 0) {
@@ -53,7 +60,18 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
 
         worker.onmessage = (e) => {
             clearTimeout(timeout);
-            setGraphData(e.data);
+
+            // Apply cached positions to nodes for stable layout
+            const newData = e.data;
+            newData.nodes = newData.nodes.map((node: Node) => {
+                const cached = positionCache.current.get(node.id);
+                if (cached) {
+                    return { ...node, x: cached.x, y: cached.y, fx: undefined, fy: undefined };
+                }
+                return node;
+            });
+
+            setGraphData(newData);
             setIsCalculating(false);
             worker.terminate();
         };
@@ -72,6 +90,23 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             worker.terminate();
         };
     }, [cards]);
+
+    // Save positions to cache periodically
+    useEffect(() => {
+        const savePositions = () => {
+            if (fgRef.current && graphData.nodes.length > 0) {
+                graphData.nodes.forEach((node: any) => {
+                    if (node.x !== undefined && node.y !== undefined) {
+                        positionCache.current.set(node.id, { x: node.x, y: node.y });
+                    }
+                });
+            }
+        };
+
+        // Save positions every 2 seconds after simulation has likely stabilized
+        const interval = setInterval(savePositions, 2000);
+        return () => clearInterval(interval);
+    }, [graphData]);
 
     // Handle resize
     useEffect(() => {
@@ -105,11 +140,70 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         return new Set(matches.map(m => m.id));
     }, [cards, searchQuery]);
 
+    // BFS to find neighbors within depth N
+    const getNeighborsAtDepth = useCallback((startId: string, maxDepth: number, links: Link[]) => {
+        const visited = new Set<string>([startId]);
+        const queue: [string, number][] = [[startId, 0]];
+
+        // Build adjacency list
+        const adjacency = new Map<string, Set<string>>();
+        links.forEach(link => {
+            const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+            const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+
+            if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
+            if (!adjacency.has(targetId)) adjacency.set(targetId, new Set());
+            adjacency.get(sourceId)!.add(targetId);
+            adjacency.get(targetId)!.add(sourceId);
+        });
+
+        // BFS traversal
+        while (queue.length > 0) {
+            const [currentId, depth] = queue.shift()!;
+            if (depth >= maxDepth) continue;
+
+            const neighbors = adjacency.get(currentId) || new Set();
+            neighbors.forEach(neighborId => {
+                if (!visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    queue.push([neighborId, depth + 1]);
+                }
+            });
+        }
+
+        return visited;
+    }, []);
+
+    // Filter graph data based on depth filter
+    const filteredGraphData = useMemo(() => {
+        if (depthFilter === 0 || !focusedNodeId) {
+            return graphData; // Show all nodes
+        }
+
+        const visibleNodeIds = getNeighborsAtDepth(focusedNodeId, depthFilter, graphData.links);
+
+        return {
+            nodes: graphData.nodes.filter(n => visibleNodeIds.has(n.id)),
+            links: graphData.links.filter(link => {
+                const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+                const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+                return visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
+            })
+        };
+    }, [graphData, focusedNodeId, depthFilter, getNeighborsAtDepth]);
+
     const handleNodeClick = useCallback((node: Node) => {
+        // If clicking same node, toggle focus off
+        if (focusedNodeId === node.id) {
+            setFocusedNodeId(null);
+        } else if (depthFilter > 0) {
+            // Focus on clicked node when depth filter is active
+            setFocusedNodeId(node.id);
+        }
         onNodeClick(node.id);
         fgRef.current?.centerAt(node.x!, node.y!, 1000);
         fgRef.current?.zoom(3, 1000);
-    }, [onNodeClick]);
+    }, [onNodeClick, focusedNodeId, depthFilter]);
 
     const nodeCanvasObject = useCallback((node: Node, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const isHighlighted = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
@@ -193,7 +287,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                 ref={fgRef}
                 width={dimensions.width}
                 height={dimensions.height}
-                graphData={graphData}
+                graphData={filteredGraphData}
                 nodeLabel="name"
                 nodeCanvasObject={nodeCanvasObject as any}
                 nodePointerAreaPaint={(node: any, color, ctx) => {
@@ -239,6 +333,49 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                 color: '#64748b'
             }}>
                 Molette: zoom • Glisser: déplacer • Clic: détails
+            </div>
+
+            {/* Depth filter controls */}
+            <div style={{
+                position: 'absolute',
+                top: 16,
+                left: 16,
+                background: 'white',
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center'
+            }}>
+                <span style={{ fontSize: 12, color: '#64748b', marginRight: 4 }}>Profondeur:</span>
+                {[0, 1, 2, 3].map(d => (
+                    <button
+                        key={d}
+                        onClick={() => {
+                            setDepthFilter(d);
+                            if (d === 0) setFocusedNodeId(null);
+                        }}
+                        style={{
+                            padding: '4px 10px',
+                            borderRadius: 4,
+                            border: depthFilter === d ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                            background: depthFilter === d ? '#eff6ff' : 'white',
+                            color: depthFilter === d ? '#3b82f6' : '#64748b',
+                            fontSize: 12,
+                            cursor: 'pointer',
+                            fontWeight: depthFilter === d ? 600 : 400
+                        }}
+                    >
+                        {d === 0 ? 'Tout' : `N+${d}`}
+                    </button>
+                ))}
+                {focusedNodeId && (
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>
+                        Focus: {graphData.nodes.find(n => n.id === focusedNodeId)?.name?.slice(0, 15)}...
+                    </span>
+                )}
             </div>
         </div>
     );

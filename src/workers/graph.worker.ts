@@ -12,7 +12,7 @@ interface Link {
 }
 
 // Stopwords: common terms that don't add meaning for linking
-// Includes French articles (2-3 chars) and generic medical terms
+// Includes French articles, generic medical terms, and pharmaceutical forms
 const STOPWORDS = new Set([
     // French articles and common words (2-3 chars)
     'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'en', 'au', 'aux',
@@ -21,7 +21,15 @@ const STOPWORDS = new Set([
     'syndrome', 'maladie', 'type', 'forme', 'stade', 'phase', 'niveau',
     'avec', 'sans', 'dans', 'pour', 'chez', 'depuis', 'sous', 'vers',
     'traitement', 'patient', 'diagnostic', 'symptomes', 'signes',
-    'aigu', 'aigue', 'chronique', 'primaire', 'secondaire'
+    'aigu', 'aigue', 'chronique', 'primaire', 'secondaire',
+    // Pharmaceutical dosages and units (prevent "500mg" linking all drugs)
+    'mg', 'ml', 'g', 'kg', 'mcg', 'ui', 'mmol', 'mol',
+    'jour', 'fois', 'heure', 'heures', 'semaine', 'mois',
+    // Drug forms (prevent "gélule" linking all capsule drugs)
+    'gelule', 'gelules', 'comprime', 'comprimes', 'sachet', 'sachets',
+    'solution', 'suspension', 'injectable', 'oral', 'orale',
+    'sirop', 'pommade', 'creme', 'gel', 'patch', 'spray',
+    'ampoule', 'ampoules', 'flacon', 'flacons', 'boite', 'boites'
 ]);
 
 // Extract keywords (>=3 chars) from a string - captures medical acronyms like AVC, ORL, IVG

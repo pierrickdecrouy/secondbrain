@@ -1,5 +1,7 @@
 import FlexSearch from 'flexsearch';
 import type { Card } from './types';
+import { semanticSearch, isSemanticSearchReady } from './semanticSearch';
+import { expandMedicalQuery } from './medicalAbbreviations';
 
 // FlexSearch Document Index for cards
 // Using 'any' to avoid TypeScript issues with FlexSearch's complex generics
@@ -51,7 +53,7 @@ export function removeFromIndex(cardId: string): void {
     }
 }
 
-// Search and return matching card IDs
+// Search and return matching card IDs (keyword-based)
 export function searchCards(query: string, limit = 50): string[] {
     if (!query.trim()) return [];
 
@@ -80,4 +82,64 @@ export function searchCards(query: string, limit = 50): string[] {
     return Array.from(idSet);
 }
 
+/**
+ * Hybrid search: combines keyword (FlexSearch) and semantic search
+ * Also expands medical abbreviations (DT1 -> Diabete type 1, HTA -> Hypertension, etc.)
+ */
+export async function hybridSearch(query: string, limit = 50): Promise<string[]> {
+    // Expand medical abbreviations to get all search variants
+    const queryVariants = expandMedicalQuery(query);
+
+    // Get keyword results for all variants (instant)
+    const keywordResults: string[] = [];
+    const seenKeyword = new Set<string>();
+    for (const variant of queryVariants) {
+        const results = searchCards(variant, limit);
+        for (const id of results) {
+            if (!seenKeyword.has(id)) {
+                keywordResults.push(id);
+                seenKeyword.add(id);
+            }
+        }
+    }
+
+    // If semantic search is not ready or query is too short, return keyword only
+    if (!isSemanticSearchReady() || query.length < 2) {
+        return keywordResults.slice(0, limit);
+    }
+
+    try {
+        // Get semantic results for all query variants (async)
+        const semanticResultsAll: string[] = [];
+        const seenSemantic = new Set<string>();
+
+        for (const variant of queryVariants) {
+            const results = await semanticSearch(variant, limit);
+            for (const id of results) {
+                if (!seenSemantic.has(id)) {
+                    semanticResultsAll.push(id);
+                    seenSemantic.add(id);
+                }
+            }
+        }
+
+        // Merge: keyword results first, then semantic (avoiding duplicates)
+        const merged = [...keywordResults];
+        const seen = new Set(keywordResults);
+
+        for (const id of semanticResultsAll) {
+            if (!seen.has(id)) {
+                merged.push(id);
+                seen.add(id);
+            }
+        }
+
+        return merged.slice(0, limit);
+    } catch (error) {
+        console.error('Hybrid search error:', error);
+        return keywordResults.slice(0, limit);
+    }
+}
+
 export { index };
+

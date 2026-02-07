@@ -133,6 +133,32 @@ ipcMain.handle('get-db-path', async () => {
     return dbPath;
 });
 
+// Learned abbreviations storage
+const abbreviationsPath = path.join(userDataPath, 'learned-abbreviations.json');
+
+ipcMain.handle('load-abbreviations', async () => {
+    try {
+        if (fs.existsSync(abbreviationsPath)) {
+            const data = fs.readFileSync(abbreviationsPath, 'utf-8');
+            return JSON.parse(data);
+        }
+        return {};
+    } catch (error) {
+        console.error('Error loading abbreviations:', error);
+        return {};
+    }
+});
+
+ipcMain.handle('save-abbreviations', async (event, abbreviations) => {
+    try {
+        fs.writeFileSync(abbreviationsPath, JSON.stringify(abbreviations, null, 2), 'utf-8');
+        return { success: true };
+    } catch (error) {
+        console.error('Error saving abbreviations:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 // App Lifecycle
 app.whenReady().then(() => {
     // Register custom protocol

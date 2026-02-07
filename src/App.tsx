@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
-import { rebuildIndex, searchCards } from './searchIndex';
+import { rebuildIndex, hybridSearch } from './searchIndex';
+import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
 import { CardItem } from './components/CardItem';
 import { Omnibox } from './components/Omnibox';
 import { DetailModal } from './components/DetailModal';
@@ -11,6 +12,7 @@ import { BatchImportModal } from './components/BatchImportModal';
 import { HomePage } from './components/HomePage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ViewToggle, type ViewMode } from './components/ViewToggle';
+import { SearchSynthesis } from './components/SearchSynthesis';
 import { Plus, Edit2, Upload, Trash2, Download } from 'lucide-react';
 
 // Simple debounce hook
@@ -39,12 +41,28 @@ function App() {
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [showHome, setShowHome] = useState(true); // Start on home page
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
+  const [semanticReady, setSemanticReady] = useState(false);
 
-  // Load cards on mount (async for Electron support)
+  // Initialize semantic search (loads model in background)
+  useEffect(() => {
+    initSemanticSearch(
+      undefined, // No progress callback needed
+      () => setSemanticReady(true)
+    );
+  }, []);
+
+  // Load cards and learned abbreviations on mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
+        // Load learned abbreviations first (if in Electron)
+        if (window.electronAPI?.loadAbbreviations) {
+          const savedAbbrevs = await window.electronAPI.loadAbbreviations();
+          const { loadLearnedAbbreviations } = await import('./learnedAbbreviations');
+          loadLearnedAbbreviations(savedAbbrevs);
+        }
+
         const loadedCards = await loadCardsAsync();
         setCards(loadedCards);
       } catch (e) {
@@ -55,6 +73,26 @@ function App() {
     };
     loadData();
   }, []);
+
+  // Learn abbreviations from cards and build embeddings when cards change
+  useEffect(() => {
+    if (cards.length > 0) {
+      // Learn abbreviations from card content
+      import('./learnedAbbreviations').then(({ learnFromCards, getLearnedAbbreviations }) => {
+        learnFromCards(cards);
+
+        // Persist learned abbreviations (if in Electron)
+        if (window.electronAPI?.saveAbbreviations) {
+          window.electronAPI.saveAbbreviations(getLearnedAbbreviations());
+        }
+      });
+
+      // Build semantic embeddings when ready
+      if (semanticReady) {
+        buildCardEmbeddings(cards).catch(console.error);
+      }
+    }
+  }, [cards, semanticReady]);
 
   // Save cards whenever they change (async for Electron support)
   useEffect(() => {
@@ -73,6 +111,20 @@ function App() {
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
+  // Search results - async for hybrid search
+  const [searchResultIds, setSearchResultIds] = useState<string[] | null>(null);
+
+  // Perform search when query changes
+  useEffect(() => {
+    if (!debouncedSearchQuery) {
+      setSearchResultIds(null);
+      return;
+    }
+
+    // Use hybrid search (keyword + semantic)
+    hybridSearch(debouncedSearchQuery).then(setSearchResultIds);
+  }, [debouncedSearchQuery]);
+
   const filteredCards = useMemo(() => {
     // 1. Type filter
     let result = cards;
@@ -80,21 +132,20 @@ function App() {
       result = result.filter(card => activeFilters.includes(card.type));
     }
 
-    // 2. Search filter using FlexSearch
-    if (debouncedSearchQuery) {
-      const matchingIds = searchCards(debouncedSearchQuery);
-      const idSet = new Set(matchingIds);
+    // 2. Search filter using hybrid (FlexSearch + semantic)
+    if (searchResultIds !== null) {
+      const idSet = new Set(searchResultIds);
 
-      // Filter to only matching IDs and maintain FlexSearch order (relevance)
+      // Filter to only matching IDs and maintain search order (relevance)
       const idToCard = new Map(result.map(c => [c.id, c]));
-      result = matchingIds
+      result = searchResultIds
         .filter(id => idSet.has(id) && idToCard.has(id))
         .map(id => idToCard.get(id)!)
         .filter(c => activeFilters.length === 0 || activeFilters.includes(c.type));
     }
 
     return result;
-  }, [cards, debouncedSearchQuery, activeFilters]);
+  }, [cards, searchResultIds, activeFilters]);
 
   const handleFilterToggle = (type: string) => {
     setActiveFilters(prev =>
@@ -300,6 +351,13 @@ function App() {
               ({filteredCards.length} résultats)
             </span>
           </h2>
+        </div>
+      )}
+
+      {/* AI Synthesis Panel */}
+      {debouncedSearchQuery && filteredCards.length > 0 && (
+        <div style={{ padding: '0 2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+          <SearchSynthesis query={debouncedSearchQuery} matchedCards={filteredCards} />
         </div>
       )}
 

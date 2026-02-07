@@ -6,6 +6,8 @@ interface ElectronAPI {
     saveImage: (data: { buffer: ArrayBuffer; name: string; type: string }) => Promise<string>;
     getDbPath: () => Promise<string>;
     onRequestSave: (callback: () => void) => void;
+    loadAbbreviations: () => Promise<Record<string, string[]>>;
+    saveAbbreviations: (abbrevs: Record<string, string[]>) => Promise<{ success: boolean; error?: string }>;
     isElectron: boolean;
 }
 
