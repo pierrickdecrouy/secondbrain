@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Get database path (for debugging)
     getDbPath: () => ipcRenderer.invoke('get-db-path'),
 
+    // Save image to disk
+    saveImage: (data) => ipcRenderer.invoke('save-image', data),
+
     // Listen for save request before app closes
     onRequestSave: (callback) => ipcRenderer.on('request-save', callback),
 

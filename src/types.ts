@@ -1,4 +1,4 @@
-export type CardType = 'drug' | 'patho' | 'physio' | 'data';
+export type CardType = string;
 
 export interface Card {
     id: string;

@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { X, Link2 } from 'lucide-react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
+import { MarkdownRenderer } from './MarkdownRenderer';
+import { searchCards } from '../searchIndex';
 
 interface DetailModalProps {
     card: Card;
@@ -14,29 +14,37 @@ interface DetailModalProps {
 }
 
 export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClose, onLinkClick, actions }) => {
-    // Find backlinks: cards that mention current card's title in their details
+    // Find backlinks using FlexSearch (cards that contain this card's title)
+    // This is faster and smarter (fuzzy, stemmed) than regex
     const backlinks = useMemo(() => {
-        const titleLower = card.title.toLowerCase();
-        return allCards.filter(c => {
-            if (c.id === card.id) return false;
-            const searchText = (c.details + ' ' + c.content).toLowerCase();
-            // Use word boundary check
-            const escapedTitle = titleLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`\\b${escapedTitle}\\b`, 'i');
-            return regex.test(searchText);
-        });
+        if (!card.title) return [];
+
+        // Search for the card title in the index
+        // This returns IDs of cards containing the title
+        const matchingIds = searchCards(card.title);
+        const uniqueIds = new Set(matchingIds);
+        uniqueIds.delete(card.id); // Exclude self
+
+        // Map IDs back to card objects
+        return allCards
+            .filter(c => uniqueIds.has(c.id))
+            .sort((a, b) => a.title.localeCompare(b.title));
     }, [card, allCards]);
 
     // Find forward links: cards mentioned in current card's details
+    // We keep this heuristic (checking if OTHER titles appear in THIS text)
     const forwardLinks = useMemo(() => {
+        const searchText = (card.details + ' ' + card.content).toLowerCase();
+
         return allCards.filter(c => {
             if (c.id === card.id) return false;
+            // Optimization: Only check titles > 3 chars to avoid noise
+            if (c.title.length < 3) return false;
+
             const titleLower = c.title.toLowerCase();
-            const searchText = (card.details + ' ' + card.content).toLowerCase();
-            const escapedTitle = titleLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`\\b${escapedTitle}\\b`, 'i');
-            return regex.test(searchText);
-        });
+            // Simple includes check is much faster than regex
+            return searchText.includes(titleLower);
+        }).sort((a, b) => a.title.localeCompare(b.title));
     }, [card, allCards]);
 
     const handleOverlayClick = (e: React.MouseEvent) => {
@@ -71,9 +79,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
 
                 {/* Markdown content */}
                 <div className="modal-body markdown-content">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {card.details}
-                    </ReactMarkdown>
+                    <MarkdownRenderer content={card.details} />
                 </div>
 
                 {/* Forward links (cards mentioned in this card) */}
@@ -81,7 +87,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     <div className="modal-links">
                         <h4 className="links-title">
                             <Link2 size={14} />
-                            Liens vers
+                            Liens sortants ({forwardLinks.length})
                         </h4>
                         <div className="links-list">
                             {forwardLinks.map(link => (
@@ -103,7 +109,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     <div className="modal-backlinks">
                         <h4 className="links-title">
                             <Link2 size={14} />
-                            Référencé par
+                            Références entrantes ({backlinks.length})
                         </h4>
                         <div className="links-list">
                             {backlinks.map(link => (
@@ -129,3 +135,4 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
         </div>
     );
 };
+

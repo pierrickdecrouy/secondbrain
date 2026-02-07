@@ -1,19 +1,20 @@
 import { useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
-import type { CardType } from '../types';
 
 interface OmniboxProps {
     searchQuery: string;
     onSearchChange: (query: string) => void;
-    activeFilters: CardType[];
-    onFilterToggle: (type: CardType) => void;
+    activeFilters: string[];
+    onFilterToggle: (type: string) => void;
+    availableTypes: string[];
 }
 
 export const Omnibox: React.FC<OmniboxProps> = ({
     searchQuery,
     onSearchChange,
     activeFilters,
-    onFilterToggle
+    onFilterToggle,
+    availableTypes
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -28,12 +29,21 @@ export const Omnibox: React.FC<OmniboxProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const filters: { type: CardType; label: string }[] = [
-        { type: 'drug', label: 'Médicaments' },
-        { type: 'patho', label: 'Pathologies' },
-        { type: 'physio', label: 'Physiologie' },
-        { type: 'data', label: 'Données' },
-    ];
+    // If no types available yet, show defaults or empty? 
+    // Let's show defaults if empty, or just what's passed.
+    // Actually, App.tsx should pass defaults + existing.
+    // For now, let's just use what's passed.
+
+    // Helper to prettify labels if they match known types, else Title Case
+    const getLabel = (type: string) => {
+        const known: Record<string, string> = {
+            drug: 'Médicaments',
+            patho: 'Pathologies',
+            physio: 'Physiologie',
+            data: 'Données'
+        };
+        return known[type] || type.charAt(0).toUpperCase() + type.slice(1);
+    };
 
     return (
         <div className="omnibox">
@@ -51,14 +61,14 @@ export const Omnibox: React.FC<OmniboxProps> = ({
             </div>
 
             <div className="filter-buttons">
-                {filters.map((f) => (
+                {availableTypes.map((type) => (
                     <button
-                        key={f.type}
-                        data-type={f.type}
-                        onClick={() => onFilterToggle(f.type)}
-                        className={`filter-btn ${activeFilters.includes(f.type) ? 'active' : ''}`}
+                        key={type}
+                        data-type={type}
+                        onClick={() => onFilterToggle(type)}
+                        className={`filter-btn ${activeFilters.includes(type) ? 'active' : ''}`}
                     >
-                        {f.label}
+                        {getLabel(type)}
                     </button>
                 ))}
             </div>

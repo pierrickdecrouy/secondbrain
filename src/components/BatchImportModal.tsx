@@ -17,17 +17,47 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
     const [previewCount, setPreviewCount] = useState<number | null>(null);
 
     // Parse text format: cards separated by #
+    // Enhanced parsing: first line = title, second = subtitle, rest = content
+    // Tags can be added with [tag1, tag2] on any line
     const parseTextFormat = (text: string): Card[] => {
         const sections = text.split('#').filter(s => s.trim());
         const cards: Card[] = [];
 
         sections.forEach(section => {
-            const lines = section.trim().split('\n').filter(l => l.trim());
+            const lines = section.trim().split('\n');
             if (lines.length === 0) return;
 
             const title = lines[0].trim();
-            const subtitle = lines[1]?.trim() || '';
-            const content = lines.slice(2).join('\n').trim();
+            if (!title) return;
+
+            // Check for tags in square brackets [tag1, tag2]
+            const extractedTags: string[] = [];
+            const processedLines: string[] = [];
+
+            lines.slice(1).forEach(line => {
+                const tagMatch = line.match(/^\s*\[([^\]]+)\]\s*$/);
+                if (tagMatch) {
+                    const tags = tagMatch[1].split(',').map(t => t.trim()).filter(Boolean);
+                    extractedTags.push(...tags);
+                } else if (line.trim()) {
+                    processedLines.push(line.trim());
+                }
+            });
+
+            // First non-empty line after title = subtitle
+            const subtitle = processedLines[0] || '';
+
+            // Rest = content and details
+            const contentLines = processedLines.slice(1);
+            const content = subtitle; // Short summary for grid view
+
+            // Build rich details in Markdown format
+            let details = '';
+            if (contentLines.length > 0) {
+                details = contentLines.join('\n\n');
+            } else {
+                details = subtitle;
+            }
 
             cards.push({
                 id: title.toLowerCase().replace(/[^a-z0-9à-ÿ]+/gi, '-').replace(/-+$/, ''),
@@ -35,8 +65,8 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                 title,
                 subtitle,
                 content,
-                details: content,
-                tags: [],
+                details,
+                tags: extractedTags,
             });
         });
 
@@ -170,15 +200,21 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                             placeholder={importMode === 'text'
                                 ? `# Aspirine
 Acide acétylsalicylique
-Antalgique et anti-inflammatoire. Inhibe les COX.
+Antalgique et anti-inflammatoire.
+Inhibe les COX-1 et COX-2.
+[Douleur, Fièvre, AINS]
 
 # Paracétamol
 Analgésique central
-Antalgique de palier 1. Mécanisme d'action mal connu.
+Antalgique de palier 1.
+Mécanisme d'action central mal connu.
+[Douleur, Fièvre]
 
 # Ibuprofène
 AINS
-Anti-inflammatoire non stéroïdien.`
+Anti-inflammatoire non stéroïdien.
+Dérivé de l'acide propionique.
+[Inflammation, Douleur]`
                                 : `[
   {
     "title": "Aspirine",

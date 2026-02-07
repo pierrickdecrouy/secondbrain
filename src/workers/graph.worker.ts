@@ -11,100 +11,132 @@ interface Link {
     target: string;
 }
 
-// Extract significant words (>=3 chars) from a string
+// Extract significant keywords (>=4 chars) from a string
 function extractKeywords(text: string): string[] {
     return text.toLowerCase()
         .replace(/[^a-zàâäéèêëïîôùûüç0-9\s]/gi, '') // Keep accented chars
         .split(/\s+/)
-        .filter(w => w.length >= 3);
+        .filter(w => w.length >= 4); // Only >=4 chars to avoid noise
 }
 
 self.onmessage = (e: MessageEvent<Card[]>) => {
     const cards = e.data;
-
-    // Pre-process each card: extract keywords from title, content, and tags
-    const cardData = cards.map(c => ({
-        id: c.id,
-        title: c.title.toLowerCase(),
-        titleKeywords: extractKeywords(c.title),
-        contentKeywords: extractKeywords(c.content + ' ' + c.details),
-        tagKeywords: c.tags.map(t => t.toLowerCase())
-    }));
-
-    const links: Link[] = [];
     const linkSet = new Set<string>(); // Fast duplicate check
+    const links: Link[] = [];
 
-    // O(N^2) but offloaded to worker
-    for (let i = 0; i < cardData.length; i++) {
-        for (let j = i + 1; j < cardData.length; j++) {
-            const cardA = cardData[i];
-            const cardB = cardData[j];
+    // ===========================================
+    // O(N) INVERTED INDEX APPROACH
+    // ===========================================
 
-            let isLinked = false;
+    // STEP 1: Build inverted index from TITLE keywords
+    // keyword -> [cardIds that have this keyword in their title]
+    const titleIndex = new Map<string, string[]>();
 
-            // Link if:
-            // 1. Exact title of A appears in content of B (original logic)
-            // 2. Exact title of B appears in content of A
-            // 3. A keyword from title of A appears in content of B
-            // 4. A keyword from title of B appears in content of A
-            // 5. Shared tags
+    // Helper Map: ID -> Number of keywords in title
+    const titleTokenCounts = new Map<string, number>();
 
-            // Check 1 & 2: Exact title inclusion
-            if (cardB.contentKeywords.join(' ').includes(cardA.title) ||
-                cardA.contentKeywords.join(' ').includes(cardB.title)) {
-                isLinked = true;
+    cards.forEach(card => {
+        const titleKeywords = extractKeywords(card.title);
+        titleTokenCounts.set(card.id, titleKeywords.length); // Store count
+
+        titleKeywords.forEach(kw => {
+            if (!titleIndex.has(kw)) {
+                titleIndex.set(kw, []);
             }
+            titleIndex.get(kw)!.push(card.id);
+        });
+    });
 
-            // Check 3 & 4: Keyword overlap (title keywords in other's content)
-            if (!isLinked) {
-                for (const kw of cardA.titleKeywords) {
-                    if (kw.length >= 4 && cardB.contentKeywords.some(ckw => ckw.includes(kw))) {
-                        isLinked = true;
-                        break;
-                    }
+    // STEP 2: Build inverted index from TAGS
+    // tag -> [cardIds that have this tag]
+    const tagIndex = new Map<string, string[]>();
+
+    cards.forEach(card => {
+        card.tags.forEach(tag => {
+            const tagLower = tag.toLowerCase();
+            if (tagLower.length >= 4) {
+                if (!tagIndex.has(tagLower)) {
+                    tagIndex.set(tagLower, []);
                 }
+                tagIndex.get(tagLower)!.push(card.id);
             }
-            if (!isLinked) {
-                for (const kw of cardB.titleKeywords) {
-                    if (kw.length >= 4 && cardA.contentKeywords.some(ckw => ckw.includes(kw))) {
-                        isLinked = true;
-                        break;
-                    }
-                }
-            }
+        });
+    });
 
-            // Check 5: Tag-to-Title matching (SEMANTIC LINKS)
-            // If a tag from Card A appears in the TITLE of Card B (or vice versa)
-            // Example: Card A tag="diabète" links to Card B title="Diabète Type 1"
-            if (!isLinked) {
-                for (const tagA of cardA.tagKeywords) {
-                    if (tagA.length >= 4 && cardB.titleKeywords.some(tkw => tkw.includes(tagA) || tagA.includes(tkw))) {
-                        isLinked = true;
-                        break;
-                    }
-                }
-            }
-            if (!isLinked) {
-                for (const tagB of cardB.tagKeywords) {
-                    if (tagB.length >= 4 && cardA.titleKeywords.some(tkw => tkw.includes(tagB) || tagB.includes(tkw))) {
-                        isLinked = true;
-                        break;
-                    }
-                }
-            }
-
-            if (isLinked) {
-
-
-                const linkKey = [cardA.id, cardB.id].sort().join('-');
-                if (!linkSet.has(linkKey)) {
-                    linkSet.add(linkKey);
-                    links.push({ source: cardA.id, target: cardB.id });
-                }
-            }
+    // Helper to add a link (avoiding duplicates)
+    const addLink = (sourceId: string, targetId: string) => {
+        if (sourceId === targetId) return;
+        const linkKey = [sourceId, targetId].sort().join('-');
+        if (!linkSet.has(linkKey)) {
+            linkSet.add(linkKey);
+            links.push({ source: sourceId, target: targetId });
         }
-    }
+    };
 
+    // STEP 3: Single pass - for each card, find links via inverted index
+    // Complexity: O(N * K) where K = avg keywords per card content (~50)
+    cards.forEach(card => {
+        const contentKeywords = extractKeywords(card.content + ' ' + card.details);
+
+        // Track match counts for potential target candidates
+        // targetId -> number of matching keywords found
+        const potentialMatches = new Map<string, number>();
+
+        // Check each content keyword against the title index
+        contentKeywords.forEach(kw => {
+            const matchingCardIds = titleIndex.get(kw);
+            if (matchingCardIds) {
+                matchingCardIds.forEach(targetId => {
+                    if (targetId === card.id) return; // Ignore self-reference
+                    const currentCount = potentialMatches.get(targetId) || 0;
+                    potentialMatches.set(targetId, currentCount + 1);
+                });
+            }
+        });
+
+        // Verify matches: Only link if we matched ALL keywords of the target title
+        // This prevents "Heart" linking to "Heart Attack" unless "Attack" is also present
+        potentialMatches.forEach((matchCount, targetId) => {
+            // We need the TOTAL keyword count of the target title.
+            // Using || 1 to avoid division by zero or overly aggressive matching for empty titles (though unlikely)
+            const targetTitleKeywords = titleTokenCounts.get(targetId) || 1;
+
+            // Strictness: Require ALL keywords
+            if (matchCount >= targetTitleKeywords) {
+                addLink(card.id, targetId);
+            }
+        });
+
+        // Tag-to-Title matching: check card's tags against title index
+        card.tags.forEach(tag => {
+            const tagLower = tag.toLowerCase();
+            if (tagLower.length >= 4) {
+                // Check for partial matches in title index
+                titleIndex.forEach((cardIds, titleKw) => {
+                    // Stricter tag logic could be added here, but keeping basic inclusion for now
+                    if (titleKw.includes(tagLower) || tagLower.includes(titleKw)) {
+                        cardIds.forEach(targetId => {
+                            addLink(card.id, targetId);
+                        });
+                    }
+                });
+            }
+        });
+
+        // Title-to-Tag matching: check card's title keywords against tag index
+        const titleKeywords = extractKeywords(card.title);
+        titleKeywords.forEach(kw => {
+            tagIndex.forEach((cardIds, tagTerm) => {
+                if (tagTerm.includes(kw) || kw.includes(tagTerm)) {
+                    cardIds.forEach(targetId => {
+                        addLink(card.id, targetId);
+                    });
+                }
+            });
+        });
+    });
+
+    // Build nodes
     const nodes: Node[] = cards.map(c => ({
         id: c.id,
         name: c.title,
@@ -113,4 +145,3 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
 
     self.postMessage({ nodes, links });
 };
-

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Card, CardType } from './types';
+import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
+import { rebuildIndex, searchCards } from './searchIndex';
 import { CardItem } from './components/CardItem';
 import { Omnibox } from './components/Omnibox';
 import { DetailModal } from './components/DetailModal';
@@ -30,7 +31,7 @@ function App() {
   const [cards, setCards] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilters, setActiveFilters] = useState<CardType[]>([]);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showForm, setShowForm] = useState(false);
@@ -63,62 +64,39 @@ function App() {
     }
   }, [cards, isLoading]);
 
+  // Rebuild FlexSearch index when cards change
+  useEffect(() => {
+    if (cards.length > 0) {
+      rebuildIndex(cards);
+    }
+  }, [cards]);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const filteredCards = useMemo(() => {
-    return cards.filter(card => {
-      // 1. Filter by Type
-      if (activeFilters.length > 0 && !activeFilters.includes(card.type)) {
-        return false;
-      }
+    // 1. Type filter
+    let result = cards;
+    if (activeFilters.length > 0) {
+      result = result.filter(card => activeFilters.includes(card.type));
+    }
 
-      // 2. Filter by Search (Weighted Scoring)
-      if (!debouncedSearchQuery) return true;
+    // 2. Search filter using FlexSearch
+    if (debouncedSearchQuery) {
+      const matchingIds = searchCards(debouncedSearchQuery);
+      const idSet = new Set(matchingIds);
 
-      // Split query into words for "smart" matching
-      const queryWords = debouncedSearchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      // Filter to only matching IDs and maintain FlexSearch order (relevance)
+      const idToCard = new Map(result.map(c => [c.id, c]));
+      result = matchingIds
+        .filter(id => idSet.has(id) && idToCard.has(id))
+        .map(id => idToCard.get(id)!)
+        .filter(c => activeFilters.length === 0 || activeFilters.includes(c.type));
+    }
 
-      // Fallback for short queries or single words
-      if (queryWords.length === 0) {
-        const simpleMatch = card.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-        (card as any).searchScore = simpleMatch ? 1 : 0;
-        return simpleMatch;
-      }
-
-      let score = 0;
-      const titleLower = card.title.toLowerCase();
-      const subtitleLower = card.subtitle.toLowerCase();
-      const contentLower = (card.content + ' ' + card.details).toLowerCase();
-      const tagsLower = card.tags.map(t => t.toLowerCase());
-
-      // Exact phrase match (High Priority)
-      if (titleLower.includes(debouncedSearchQuery.toLowerCase())) score += 100;
-      if (contentLower.includes(debouncedSearchQuery.toLowerCase())) score += 20;
-
-      // Word matches
-      queryWords.forEach(word => {
-        if (titleLower.includes(word)) score += 50; // High matches title
-        if (subtitleLower.includes(word)) score += 30; // Medium matches subtitle
-        tagsLower.forEach(tag => {
-          if (tag.includes(word)) score += 40; // High match tags
-        });
-        if (contentLower.includes(word)) score += 10; // Low match content
-      });
-
-      (card as any).searchScore = score; // Store score for sorting
-      return score > 0;
-    }).sort((a, b) => {
-      // Sort by search score descending
-      const scoreA = (a as any).searchScore || 0;
-      const scoreB = (b as any).searchScore || 0;
-      if (scoreA !== scoreB) return scoreB - scoreA;
-
-      // Fallback to title
-      return a.title.localeCompare(b.title);
-    });
+    return result;
   }, [cards, debouncedSearchQuery, activeFilters]);
 
-  const handleFilterToggle = (type: CardType) => {
+  const handleFilterToggle = (type: string) => {
     setActiveFilters(prev =>
       prev.includes(type)
         ? prev.filter(t => t !== type)
@@ -237,6 +215,12 @@ function App() {
     </>
   );
 
+  // Compute available types from current cards
+  const availableTypes = useMemo(() => {
+    const types = new Set(cards.map(c => c.type));
+    return Array.from(types).sort();
+  }, [cards]);
+
   // Show home page
   if (showHome) {
     return (
@@ -297,6 +281,7 @@ function App() {
             onSearchChange={setSearchQuery}
             activeFilters={activeFilters}
             onFilterToggle={handleFilterToggle}
+            availableTypes={availableTypes}
           />
         </div>
       </header>

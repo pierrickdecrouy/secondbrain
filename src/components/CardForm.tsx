@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Upload } from 'lucide-react';
 import type { Card, CardType } from '../types';
 import { generateId } from '../storage';
 
@@ -78,15 +78,26 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
 
                     <div className="form-group">
                         <label htmlFor="type">Type *</label>
-                        <select
-                            id="type"
-                            value={type}
-                            onChange={(e) => setType(e.target.value as CardType)}
-                        >
-                            {types.map(t => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
-                        </select>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                list="types-list"
+                                id="type"
+                                value={type}
+                                onChange={(e) => setType(e.target.value)}
+                                placeholder="Sélectionner ou saisir un type..."
+                                style={{
+                                    width: '100%',
+                                    padding: '0.5rem',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '0.375rem'
+                                }}
+                            />
+                            <datalist id="types-list">
+                                {types.map(t => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                ))}
+                            </datalist>
+                        </div>
                     </div>
 
                     <div className="form-group">
@@ -124,14 +135,50 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="imageUrl">Image (URL ou chemin local)</label>
-                        <input
-                            id="imageUrl"
-                            type="text"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                            placeholder="https://example.com/image.jpg ou /chemin/local/image.png"
-                        />
+                        <label htmlFor="imageUrl">Image</label>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <input
+                                id="imageUrl"
+                                type="text"
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                                placeholder="https://... ou safe-file://..."
+                                style={{ flex: 1 }}
+                            />
+                            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <Upload size={16} />
+                                Upload
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file && window.electronAPI) {
+                                            try {
+                                                const buffer = await file.arrayBuffer();
+                                                const savedPath = await window.electronAPI.saveImage({
+                                                    buffer,
+                                                    name: file.name,
+                                                    type: file.type
+                                                });
+                                                setImageUrl(savedPath);
+                                            } catch (err) {
+                                                console.error('Upload failed', err);
+                                                alert('Échec de l\'upload de l\'image');
+                                            }
+                                        } else if (file) {
+                                            alert('L\'upload nécessite l\'application Electron');
+                                        }
+                                    }}
+                                />
+                            </label>
+                        </div>
+                        {imageUrl && (
+                            <div style={{ marginTop: '0.5rem', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                <img src={imageUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }} />
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-actions">

@@ -1,13 +1,20 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
+const crypto = require('crypto');
 
 let mainWindow;
 
-// Determine the user data path for storing the database
+// Determine the user data path
 const userDataPath = app.getPath('userData');
 const dbPath = path.join(userDataPath, 'pharma-brain-db.json');
+const imagesPath = path.join(userDataPath, 'images');
+
+// Ensure images directory exists
+if (!fs.existsSync(imagesPath)) {
+    fs.mkdirSync(imagesPath, { recursive: true });
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -42,14 +49,19 @@ function createWindow() {
 
     // Handle save request before window closes
     mainWindow.on('close', (e) => {
-        // Send save request to renderer before closing
         if (mainWindow) {
             mainWindow.webContents.send('request-save');
         }
     });
+
+    // Open external links in browser
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        require('electron').shell.openExternal(url);
+        return { action: 'deny' };
+    });
 }
 
-// IPC Handlers for file operations
+// IPC Handlers
 ipcMain.handle('load-cards', async () => {
     try {
         if (fs.existsSync(dbPath)) {
@@ -63,8 +75,31 @@ ipcMain.handle('load-cards', async () => {
     }
 });
 
+// Save Handler with Backup Rotation
 ipcMain.handle('save-cards', async (event, cards) => {
     try {
+        const MAX_BACKUPS = 3;
+        // Rotate backups
+        for (let i = MAX_BACKUPS - 1; i >= 1; i--) {
+            const older = `${dbPath}.bak${i + 1}`;
+            const newer = i === 1 ? dbPath : `${dbPath}.bak${i}`;
+            if (fs.existsSync(newer)) {
+                try {
+                    fs.copyFileSync(newer, older);
+                } catch (e) {
+                    // Ignore missing files
+                }
+            }
+        }
+        // Backup current
+        if (fs.existsSync(dbPath)) {
+            try {
+                fs.copyFileSync(dbPath, `${dbPath}.bak1`);
+            } catch (e) {
+                // Ignore
+            }
+        }
+
         fs.writeFileSync(dbPath, JSON.stringify(cards, null, 2), 'utf-8');
         return { success: true };
     } catch (error) {
@@ -73,12 +108,53 @@ ipcMain.handle('save-cards', async (event, cards) => {
     }
 });
 
+// Asset Handler
+ipcMain.handle('save-image', async (event, { buffer, name }) => {
+    try {
+        const ext = path.extname(name) || '.png';
+        // Create hash from buffer content
+        const hash = crypto.createHash('md5').update(Buffer.from(buffer)).digest('hex');
+        const filename = `${hash}${ext}`;
+        const filePath = path.join(imagesPath, filename);
+
+        // Write file
+        fs.writeFileSync(filePath, Buffer.from(buffer));
+        console.log(`Saved image to ${filePath}`);
+
+        // Return the protocol URL
+        return `safe-file://${filename}`;
+    } catch (error) {
+        console.error('Error saving image:', error);
+        throw error;
+    }
+});
+
 ipcMain.handle('get-db-path', async () => {
     return dbPath;
 });
 
-// App lifecycle
-app.whenReady().then(createWindow);
+// App Lifecycle
+app.whenReady().then(() => {
+    // Register custom protocol
+    protocol.registerFileProtocol('safe-file', (request, callback) => {
+        const url = request.url.replace('safe-file://', '');
+        const decodedUrl = decodeURI(url);
+        try {
+            // Prevent directory traversal
+            const safePath = path.normalize(path.join(imagesPath, decodedUrl));
+            if (!safePath.startsWith(imagesPath)) {
+                console.error('Blocked safe-file access outside of images directory');
+                return callback({ error: -2 }); // ACCESS_DENIED
+            }
+            callback({ path: safePath });
+        } catch (error) {
+            console.error('Failed to register protocol', error);
+            callback({ error: -2 });
+        }
+    });
+
+    createWindow();
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
