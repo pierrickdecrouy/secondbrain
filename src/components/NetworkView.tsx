@@ -36,11 +36,31 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
 
     // Web Worker for graph computation
     useEffect(() => {
+        if (cards.length === 0) {
+            setGraphData({ nodes: [], links: [] });
+            setIsCalculating(false);
+            return;
+        }
+
         setIsCalculating(true);
         const worker = new Worker(new URL('../workers/graph.worker.ts', import.meta.url), { type: 'module' });
 
+        // Timeout failsafe - hide loading after 5 seconds max
+        const timeout = setTimeout(() => {
+            setIsCalculating(false);
+            console.warn('Graph worker timeout - forcing UI update');
+        }, 5000);
+
         worker.onmessage = (e) => {
+            clearTimeout(timeout);
             setGraphData(e.data);
+            setIsCalculating(false);
+            worker.terminate();
+        };
+
+        worker.onerror = (err) => {
+            clearTimeout(timeout);
+            console.error('Graph worker error:', err);
             setIsCalculating(false);
             worker.terminate();
         };
@@ -48,6 +68,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         worker.postMessage(cards);
 
         return () => {
+            clearTimeout(timeout);
             worker.terminate();
         };
     }, [cards]);

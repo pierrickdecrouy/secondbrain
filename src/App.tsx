@@ -373,7 +373,7 @@ function App() {
           )
         ) : (
           <NetworkView
-            cards={filteredCards} // Or strict cards if you want full graph. filteredCards = focused graph
+            cards={cards} // Full graph context - highlighted nodes from searchQuery
             onNodeClick={(id) => setSelectedCardId(id)}
             searchQuery={searchQuery} // Highlighting handled by NetworkView
           />
