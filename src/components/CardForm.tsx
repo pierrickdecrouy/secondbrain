@@ -35,6 +35,33 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
         onSave(newCard);
     };
 
+    // Handle paste event: intercept clipboard images and save to disk
+    const handlePaste = async (e: React.ClipboardEvent) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (file && window.electronAPI) {
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        const savedPath = await window.electronAPI.saveImage({
+                            buffer,
+                            name: `paste-${Date.now()}.png`,
+                            type: file.type
+                        });
+                        setImageUrl(savedPath);
+                    } catch (err) {
+                        console.error('Paste image failed', err);
+                    }
+                }
+                break; // Only handle first image
+            }
+        }
+    };
+
     const types: { value: CardType; label: string }[] = [
         { value: 'drug', label: 'Médicament' },
         { value: 'patho', label: 'Pathologie' },
@@ -52,7 +79,7 @@ export const CardForm: React.FC<CardFormProps> = ({ card, onSave, onCancel }) =>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="card-form">
+                <form onSubmit={handleSubmit} onPaste={handlePaste} className="card-form">
                     <div className="form-group">
                         <label htmlFor="title">Titre *</label>
                         <input

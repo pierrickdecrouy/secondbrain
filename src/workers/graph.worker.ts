@@ -11,12 +11,25 @@ interface Link {
     target: string;
 }
 
-// Extract significant keywords (>=4 chars) from a string
+// Stopwords: common medical/structural terms that don't add meaning for linking
+const STOPWORDS = new Set([
+    'syndrome', 'maladie', 'type', 'forme', 'stade', 'phase', 'niveau',
+    'avec', 'sans', 'dans', 'pour', 'chez', 'depuis', 'sous', 'vers',
+    'traitement', 'patient', 'diagnostic', 'symptomes', 'signes',
+    'aigu', 'aigue', 'chronique', 'primaire', 'secondaire'
+]);
+
+// Extract significant keywords (>=4 chars, excluding stopwords) from a string
 function extractKeywords(text: string): string[] {
     return text.toLowerCase()
         .replace(/[^a-zàâäéèêëïîôùûüç0-9\s]/gi, '') // Keep accented chars
         .split(/\s+/)
         .filter(w => w.length >= 4); // Only >=4 chars to avoid noise
+}
+
+// Extract significant keywords (excluding stopwords) for threshold calculation
+function extractSignificantKeywords(text: string): string[] {
+    return extractKeywords(text).filter(w => !STOPWORDS.has(w));
 }
 
 self.onmessage = (e: MessageEvent<Card[]>) => {
@@ -37,7 +50,9 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
 
     cards.forEach(card => {
         const titleKeywords = extractKeywords(card.title);
-        titleTokenCounts.set(card.id, titleKeywords.length); // Store count
+        const significantKeywords = extractSignificantKeywords(card.title);
+        // Store count of SIGNIFICANT keywords (excluding stopwords)
+        titleTokenCounts.set(card.id, significantKeywords.length || 1);
 
         titleKeywords.forEach(kw => {
             if (!titleIndex.has(kw)) {
@@ -94,15 +109,15 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
             }
         });
 
-        // Verify matches: Only link if we matched ALL keywords of the target title
-        // This prevents "Heart" linking to "Heart Attack" unless "Attack" is also present
+        // Verify matches: Link if we matched at least 67% of significant keywords
+        // This allows "insuffisance rénale sévère" to link to "insuffisance rénale chronique"
         potentialMatches.forEach((matchCount, targetId) => {
-            // We need the TOTAL keyword count of the target title.
-            // Using || 1 to avoid division by zero or overly aggressive matching for empty titles (though unlikely)
-            const targetTitleKeywords = titleTokenCounts.get(targetId) || 1;
+            const significantCount = titleTokenCounts.get(targetId) || 1;
 
-            // Strictness: Require ALL keywords
-            if (matchCount >= targetTitleKeywords) {
+            // Calculate threshold: at least 67% of significant keywords, minimum 1
+            const threshold = Math.max(1, Math.ceil(significantCount * 0.67));
+
+            if (matchCount >= threshold) {
                 addLink(card.id, targetId);
             }
         });
