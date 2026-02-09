@@ -333,6 +333,7 @@ function App() {
             cards={cards} // Pass all cards to preserve graph structure
             onNodeClick={(id) => setSelectedCardId(id)}
             searchQuery={searchQuery}
+            highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
             activeFilters={activeFilters} // Pass filters for visualization dimming
           />
         )}

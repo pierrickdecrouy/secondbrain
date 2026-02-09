@@ -18,7 +18,10 @@ import {
 import type { Card } from '../types';
 import './BrowsePage.css';
 import SearchSynthesis from './SearchSynthesis';
-const iconSvg = '/icon.svg'; // Fixed static import
+import { getTypeColor } from '../theme';
+import { stripMarkdown } from '../utils';
+
+const iconSvg = '/icon.svg';
 
 // Type for ViewMode
 type ViewMode = 'grid' | 'list' | 'network';
@@ -43,8 +46,7 @@ interface BrowsePageProps {
     onEditCard: (card: Card) => void;
     onDeleteCard: (card: Card) => void;
 
-    // View Mode State (controlled by App or internal? Let's control internally for UI, or prop if shared)
-    // The prompt implies this page handles the "Browsing" experience.
+    // View Mode State
     viewMode: ViewMode;
     onViewModeChange: (mode: ViewMode) => void;
 
@@ -206,7 +208,18 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                     style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s` }}
                                 >
                                     <div className="browse-card-header">
-                                        <span className={`browse-tag ${card.type}`}>
+                                        <span
+                                            className="browse-tag"
+                                            style={{
+                                                backgroundColor: getTypeColor(card.type),
+                                                color: '#fff',
+                                                border: 'none',
+                                                textTransform: 'uppercase',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 700,
+                                                letterSpacing: '0.05em'
+                                            }}
+                                        >
                                             {getTypeIcon(card.type)} {card.type}
                                         </span>
                                         <div className="browse-card-actions" onClick={(e) => e.stopPropagation()}>
@@ -217,7 +230,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                     <div>
                                         <h3 className="browse-card-title">{card.title}</h3>
                                         <div className="browse-card-subtitle">{card.subtitle}</div>
-                                        <p className="browse-card-desc">{card.content}</p>
+                                        <p className="browse-card-desc" title={card.content}>
+                                            {stripMarkdown(card.content)}
+                                        </p>
                                     </div>
                                 </div>
                             ))
@@ -242,14 +257,22 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                     {cards.map(card => (
                                         <tr key={card.id} onClick={() => onCardClick(card.id)}>
                                             <td>
-                                                <span className={`browse-tag ${card.type}`} style={{ fontSize: '0.7rem' }}>
+                                                <span
+                                                    className="browse-tag"
+                                                    style={{
+                                                        fontSize: '0.7rem',
+                                                        backgroundColor: getTypeColor(card.type),
+                                                        color: '#fff',
+                                                        border: 'none'
+                                                    }}
+                                                >
                                                     {card.type}
                                                 </span>
                                             </td>
                                             <td style={{ fontWeight: 600 }}>{card.title}</td>
                                             <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#868e96' }}>{card.subtitle}</td>
                                             <td style={{ color: '#495057', fontSize: '0.9rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {card.content}
+                                                {stripMarkdown(card.content)}
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>

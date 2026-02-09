@@ -161,8 +161,9 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
     if (cardsToProcess.length === 0) return;
 
     // Prepare text for each card: title + content + tags
+    // Prefix with "passage:" for E5 model compatibility and better clustering
     const texts = cardsToProcess.map(card =>
-        `${card.title}. ${card.subtitle || ''} ${card.content} ${card.tags.join(' ')}`
+        `passage: Title: ${card.title}. Content: ${card.subtitle || ''} ${card.content} Tags: ${card.tags.join(', ')}`
     );
     const cardIds = cardsToProcess.map(c => c.id);
 
@@ -210,6 +211,61 @@ export async function semanticSearch(query: string, topK: number = 20): Promise<
         console.error('Semantic search error:', error);
         return [];
     }
+}
+
+/**
+ * Compute cosine similarity between two vectors
+ */
+function cosineSimilarity(a: number[], b: number[]): number {
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        normA += a[i] * a[i];
+        normB += b[i] * b[i];
+    }
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/**
+ * Compute semantic links between all cards
+ */
+export async function computeSemanticGraph(cards: Card[], threshold: number = 0.7): Promise<{ source: string; target: string; value: number }[]> {
+    const links: { source: string; target: string; value: number }[] = [];
+    const processedPairs = new Set<string>();
+
+    // Process each card
+    for (const card of cards) {
+        const embedding = vectorStore.getEmbedding(card.id);
+        if (!embedding) continue;
+
+        // Search for nearest neighbors
+        const results = vectorStore.search(embedding, 10);
+
+        for (const result of results) {
+            if (result.id === card.id) continue;
+
+            // Calculate similarity manually because Voy wrapper might not return score
+            let similarity = result.similarity;
+            if (!similarity || similarity === 0) {
+                const targetEmbedding = vectorStore.getEmbedding(result.id);
+                if (targetEmbedding) {
+                    similarity = cosineSimilarity(embedding, targetEmbedding);
+                }
+            }
+
+            if (similarity >= threshold) {
+                const pairId = [card.id, result.id].sort().join('-');
+                if (!processedPairs.has(pairId)) {
+                    processedPairs.add(pairId);
+                    links.push({ source: card.id, target: result.id, value: similarity });
+                }
+            }
+        }
+    }
+
+    return links;
 }
 
 /**
