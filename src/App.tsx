@@ -347,9 +347,10 @@ function App() {
         onViewModeChange={setViewMode}
         renderNetworkView={() => (
           <NetworkView
-            cards={cards}
+            cards={cards} // Pass all cards to preserve graph structure
             onNodeClick={(id) => setSelectedCardId(id)}
             searchQuery={searchQuery}
+            activeFilters={activeFilters} // Pass filters for visualization dimming
           />
         )}
       />

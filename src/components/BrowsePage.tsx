@@ -12,7 +12,8 @@ import {
     Zap,
     BarChart2,
     Edit2,
-    Trash2
+    Trash2,
+    X
 } from 'lucide-react';
 import type { Card } from '../types';
 import './BrowsePage.css';
@@ -102,10 +103,20 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         <Search className="browse-search-icon" />
                         <input
                             type="text"
-                            placeholder="Rechercher une fiche, un médicament..."
+                            placeholder="Rechercher ..."
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
+                            style={{ paddingRight: searchQuery ? '60px' : '40px' }}
                         />
+                        {searchQuery && (
+                            <button
+                                className="browse-search-clear"
+                                onClick={() => onSearchChange('')}
+                                title="Effacer"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                         <span className="browse-shortcut-hint">⌘K</span>
                     </div>
                 </div>

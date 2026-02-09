@@ -8,6 +8,7 @@ interface NetworkViewProps {
     cards: Card[];
     onNodeClick: (cardId: string) => void;
     searchQuery?: string;
+    activeFilters?: string[];
 }
 
 interface Node {
@@ -27,7 +28,7 @@ interface Link {
     target: string | Node;
 }
 
-export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, searchQuery }) => {
+export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, searchQuery, activeFilters = [] }) => {
     const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -206,52 +207,64 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     }, [onNodeClick, focusedNodeId, depthFilter]);
 
     const nodeCanvasObject = useCallback((node: Node, ctx: CanvasRenderingContext2D, globalScale: number) => {
-        const isHighlighted = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
-        const label = node.name;
-        const hasSearch = highlightedNodeIds.size > 0;
+        // 1. Filter Logic (Dim unconnected/unfiltered nodes)
+        const isTypeSelected = activeFilters.length === 0 || activeFilters.includes(node.type);
+        const isSearchMatch = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
 
-        // Circle styling - differentiate matched vs dimmed
+        // A node is "dimmed" if it fails EITHER filter check (if active) OR search check (if active)
+        // Actually, logic: Match = (Type Match) AND (Search Match)
+        // If search is empty, Search Match is true for all.
+        // If filter is empty, Type Match is true for all.
+        const isMatched = isTypeSelected && isSearchMatch;
+
+        // Label handling
+        const label = node.name;
+
+        // Circle styling
         const baseR = 6;
-        const r = (hasSearch && isHighlighted) ? 8 : baseR; // Larger if matched
+        const r = isMatched && highlightedNodeIds.size > 0 ? 8 : baseR; // Larger if strictly search matched
 
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
 
         // Fill color based on type
-        ctx.fillStyle = isHighlighted ? getTypeColor(node.type) : '#cbd5e1';
-        // Much lower alpha for non-matches to make matches pop
-        ctx.globalAlpha = hasSearch && !isHighlighted ? 0.1 : 1;
+        ctx.fillStyle = isMatched ? getTypeColor(node.type) : '#cbd5e1';
+
+        // Opacity: High if matched, Low if not
+        // Exception: If NO search and NO filter, all are 1
+        const hasActiveFilterOrSearch = activeFilters.length > 0 || highlightedNodeIds.size > 0;
+        ctx.globalAlpha = hasActiveFilterOrSearch && !isMatched ? 0.1 : 1;
+
         ctx.fill();
 
-        // White border - thicker for matches
-        ctx.lineWidth = (hasSearch && isHighlighted) ? 2.5 : 1.5;
+        // White border - thicker for search matches
+        ctx.lineWidth = (isMatched && highlightedNodeIds.size > 0) ? 2.5 : 1.5;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
         // Reset alpha
         ctx.globalAlpha = 1;
 
-        // Label - always show if highlighted, otherwise rely on zoom
-        // globalScale < 0.8 means user has zoomed out
-        const shouldShowLabel = (hasSearch && isHighlighted) || globalScale > 0.8;
+        // Label - always show if highlighted/matched, otherwise rely on zoom
+        // If dimmed, don't show label unless zoomed in extremely close
+        const shouldShowLabel = isMatched && (highlightedNodeIds.size > 0 || globalScale > 0.8);
 
         if (shouldShowLabel) {
             const labelY = node.y! + r + 4;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.font = `${(hasSearch && isHighlighted) ? 'bold ' : ''}${Math.max(10, 12 / globalScale)}px Inter, system-ui, sans-serif`;
+            ctx.font = `${(isMatched && highlightedNodeIds.size > 0) ? 'bold ' : ''}${Math.max(10, 12 / globalScale)}px Inter, system-ui, sans-serif`;
 
             // Text shadow for readability
             ctx.fillStyle = '#ffffff';
-            // Increase stroke width for better shadow on matches
             ctx.lineWidth = 3;
             ctx.strokeText(label, node.x!, labelY);
 
             // Main text
-            ctx.fillStyle = isHighlighted ? '#1e293b' : 'rgba(100, 116, 139, 0.2)'; // Faint text for non-matches
+            ctx.fillStyle = isMatched ? '#1e293b' : 'rgba(100, 116, 139, 0.2)';
             ctx.fillText(label, node.x!, labelY);
         }
-    }, [highlightedNodeIds]);
+    }, [highlightedNodeIds, activeFilters]);
 
     // Apply custom forces for Obsidian-like layout
     useEffect(() => {
@@ -304,7 +317,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                     ctx.fill();
                 }}
                 linkWidth={1.5}
-                linkColor={() => 'rgba(148, 163, 184, 0.6)'} // Semi-transparent slate
+                // Link color: dim if either end is dimmed (simple approximation)
+                linkColor={() => 'rgba(148, 163, 184, 0.6)'}
                 backgroundColor="#f8fafc"
                 onNodeClick={handleNodeClick as any}
                 cooldownTicks={200} // More ticks for better layout

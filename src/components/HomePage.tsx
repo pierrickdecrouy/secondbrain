@@ -73,16 +73,20 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 onClick={() => setSearchValue('')}
                                 className="home-search-clear"
                                 style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
                                     background: 'none',
                                     border: 'none',
                                     cursor: 'pointer',
                                     color: '#94a3b8',
-                                    padding: 8,
-                                    marginRight: 4,
+                                    padding: 4,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    zIndex: 10
+                                    zIndex: 10,
+                                    borderRadius: '50%',
                                 }}
                             >
                                 <X size={20} />

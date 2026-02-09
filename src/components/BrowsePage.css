@@ -153,6 +153,29 @@
     border: 1px solid #dee2e6;
     font-size: 0.7rem;
     color: var(--text-grey);
+    pointer-events: none;
+}
+
+.browse-search-clear {
+    position: absolute;
+    right: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-grey);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.browse-search-clear:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--text-dark);
 }
 
 .browse-header-actions {

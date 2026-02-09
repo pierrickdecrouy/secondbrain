@@ -56,6 +56,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
+                    style={{ paddingRight: searchQuery ? '60px' : '40px' }} // Make room for clear button + Kbd
                 />
                 {searchQuery && (
                     <button
@@ -65,16 +66,21 @@ export const Omnibox: React.FC<OmniboxProps> = ({
                         }}
                         className="search-clear-btn"
                         style={{
+                            position: 'absolute',
+                            right: '36px', // Left of Kbd
+                            top: '50%',
+                            transform: 'translateY(-50%)',
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
                             color: '#94a3b8',
                             padding: 4,
-                            marginRight: 4,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            borderRadius: '50%',
                         }}
+                        title="Effacer"
                     >
                         <X size={16} />
                     </button>
