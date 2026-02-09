@@ -5,6 +5,10 @@
   "version": "1.0.0",
   "description": "Base de connaissances pour l'Internat de Pharmacie",
   "author": "PharmaBrain Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pierrickdcc/secondbrain.git"
+  },
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
