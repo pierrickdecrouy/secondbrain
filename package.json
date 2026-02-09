@@ -73,6 +73,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "pierrickdcc",
+        "repo": "secondbrain"
+      }
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*.cjs"

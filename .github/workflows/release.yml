@@ -33,13 +33,6 @@ jobs:
         run: npm run build
 
       - name: Build/Release Electron App
-        uses: samuelmeuli/action-electron-builder@v1
-        with:
-          # GitHub token, automatically provided to the action
-          # (No need to define this secret in the repo settings)
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          args: "--publish always"
-
-          # If the commit is tagged with a version (e.g. "v1.0.0"),
-          # release the app after building
-
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --publish always
