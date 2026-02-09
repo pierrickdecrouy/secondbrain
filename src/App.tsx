@@ -5,8 +5,7 @@ import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
 import { DetailModal } from './components/DetailModal';
 import { NetworkView } from './components/NetworkView';
-import { CardForm } from './components/CardForm';
-import { BatchImportModal } from './components/BatchImportModal';
+import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import SettingsPage from './components/SettingsPage';
@@ -36,15 +35,12 @@ function App() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [showForm, setShowForm] = useState(false);
-  const [showImport, setShowImport] = useState(false);
+  const [addDataMode, setAddDataMode] = useState<'none' | 'create' | 'edit' | 'import'>('none');
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [showHome, setShowHome] = useState(true); // Start on home page
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [semanticReady, setSemanticReady] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-
-
 
   // Manual Backup Feature
   const handleExportBackup = () => {
@@ -68,7 +64,7 @@ function App() {
       }
       return [...prev, card];
     });
-    setShowForm(false);
+    setAddDataMode('none');
     setEditingCard(null);
   }, []);
 
@@ -88,7 +84,7 @@ function App() {
 
   const handleEditCard = useCallback((card: Card) => {
     setEditingCard(card);
-    setShowForm(true);
+    setAddDataMode('edit');
     setSelectedCardId(null);
   }, []);
 
@@ -133,18 +129,16 @@ function App() {
         />
       )}
 
-      {showForm && (
-        <CardForm
+      {addDataMode !== 'none' && (
+        <AddDataModal
+          mode={addDataMode === 'create' || addDataMode === 'import' ? addDataMode : 'edit'}
           card={editingCard}
           onSave={handleSaveCard}
-          onCancel={() => { setShowForm(false); setEditingCard(null); }}
-        />
-      )}
-
-      {showImport && (
-        <BatchImportModal
           onImport={handleBatchImport}
-          onClose={() => setShowImport(false)}
+          onClose={() => {
+            setAddDataMode('none');
+            setEditingCard(null);
+          }}
         />
       )}
 
@@ -157,8 +151,6 @@ function App() {
       )}
     </>
   );
-
-
 
   // Initialize semantic search (loads model in background)
   useEffect(() => {
@@ -272,14 +264,6 @@ function App() {
     );
   };
 
-
-
-
-
-
-
-
-
   // Show settings page
   if (showSettings) {
     return (
@@ -304,12 +288,11 @@ function App() {
           }}
           onStartBrowsing={() => setShowHome(false)}
           onAddCard={() => {
-            setShowHome(false);
-            setShowForm(true);
+            // Stay on home page background
+            setAddDataMode('create');
           }}
           onBatchImport={() => {
-            setShowHome(false);
-            setShowImport(true);
+            setAddDataMode('import');
           }}
           onBackgroundExport={handleExportBackup}
           onSettings={() => {
@@ -339,7 +322,7 @@ function App() {
         onHome={() => setShowHome(true)}
         onSettings={() => setShowSettings(true)}
         onExport={handleExportBackup}
-        onAddCard={() => setShowForm(true)}
+        onAddCard={() => setAddDataMode('create')}
         onCardClick={(id) => setSelectedCardId(id)}
         onEditCard={handleEditCard}
         onDeleteCard={handleDeleteCard}

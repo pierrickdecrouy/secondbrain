@@ -2,6 +2,8 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import rehypeRaw from 'rehype-raw';
+
 interface MarkdownRendererProps {
     content: string;
     className?: string;
@@ -12,6 +14,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         <div className={`prose prose-sm max-w-none text-slate-700 ${className}`}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                     // Customize link rendering if needed
                     a: ({ node, ...props }) => (

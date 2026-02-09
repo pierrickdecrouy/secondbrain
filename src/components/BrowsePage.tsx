@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Card } from '../types';
 import './BrowsePage.css';
+import SearchSynthesis from './SearchSynthesis';
 const iconSvg = '/icon.svg'; // Fixed static import
 
 // Type for ViewMode
@@ -179,6 +180,15 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
             {/* Main Content Area */}
             < main className="browse-content-area" >
+
+                {/* Search Synthesis */}
+                {searchQuery && (
+                    <SearchSynthesis
+                        query={searchQuery}
+                        matchedCards={cards}
+                        onCardClick={onCardClick}
+                    />
+                )}
 
                 {viewMode === 'grid' && (
                     <div className="browse-card-grid">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, Upload, AlertCircle, CheckCircle2, FileText, FileJson } from 'lucide-react';
 import type { Card, CardType } from '../types';
 
@@ -9,16 +9,15 @@ interface BatchImportModalProps {
 
 type ImportMode = 'json' | 'text';
 
-export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, onClose }) => {
+export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, onClose }) => {
     const [importMode, setImportMode] = useState<ImportMode>('text');
     const [input, setInput] = useState('');
     const [cardType, setCardType] = useState<CardType>('drug');
     const [error, setError] = useState<string | null>(null);
     const [previewCount, setPreviewCount] = useState<number | null>(null);
+    const [showHelp, setShowHelp] = useState(false);
 
-    // Parse text format: cards separated by #
-    // Enhanced parsing: first line = title, second = subtitle, rest = content
-    // Tags can be added with [tag1, tag2] on any line
+    // Parse text format
     const parseTextFormat = (text: string): Card[] => {
         const sections = text.split('#').filter(s => s.trim());
         const cards: Card[] = [];
@@ -30,7 +29,6 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
             const title = lines[0].trim();
             if (!title) return;
 
-            // Check for tags in square brackets [tag1, tag2]
             const extractedTags: string[] = [];
             const processedLines: string[] = [];
 
@@ -44,20 +42,10 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                 }
             });
 
-            // First non-empty line after title = subtitle
             const subtitle = processedLines[0] || '';
-
-            // Rest = content and details
             const contentLines = processedLines.slice(1);
-            const content = subtitle; // Short summary for grid view
-
-            // Build rich details in Markdown format
-            let details = '';
-            if (contentLines.length > 0) {
-                details = contentLines.join('\n\n');
-            } else {
-                details = subtitle;
-            }
+            const content = subtitle;
+            const details = contentLines.length > 0 ? contentLines.join('\n\n') : subtitle;
 
             cards.push({
                 id: title.toLowerCase().replace(/[^a-z0-9à-ÿ]+/gi, '-').replace(/-+$/, ''),
@@ -109,9 +97,8 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                 }
 
                 const validCards = parsed.filter((c: any) => {
-                    // Flexible title check
                     const title = c.title || c.Title || c.name || c.Name;
-                    return !!title; // Type is optional now, falls back to selected
+                    return !!title;
                 });
 
                 if (validCards.length === 0) {
@@ -124,7 +111,7 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                         ...c,
                         id: c.id || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                         title: title,
-                        type: c.type || cardType, // Use selected type as fallback
+                        type: c.type || cardType,
                         tags: c.tags || [],
                         subtitle: c.subtitle || '',
                         content: c.content || '',
@@ -133,7 +120,7 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                 });
 
                 onImport(processedCards);
-                onClose();
+                if (onClose) onClose();
             } catch (err: any) {
                 setError(err.message || "Erreur de parsing JSON");
             }
@@ -144,7 +131,7 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                 return;
             }
             onImport(cards);
-            onClose();
+            if (onClose) onClose();
         }
     };
 
@@ -156,112 +143,162 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
     ];
 
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-content form-modal">
+        <div className="batch-import-content">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                    onClick={() => setShowHelp(!showHelp)}
+                >
+                    {showHelp ? 'Masquer l\'aide' : 'Guide & Exemples'}
+                </button>
+            </div>
+
+            {showHelp && (
+                <div style={{ marginBottom: '20px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                        <div>
+                            <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.1rem' }}>Guide d'importation</h3>
+                            <p style={{ margin: 0, color: '#64748b' }}>
+                                Importez des fiches enrichies avec <strong>Markdown</strong>, <strong>Tableaux HTML</strong> et <strong>Icônes SVG</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div>
+                            <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <FileText size={16} /> Format Texte (#)
+                            </h4>
+                            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                                <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
+                                    <li>Séparez les fiches avec <code># Titre de la fiche</code></li>
+                                    <li>Ligne suivante : Sous-titre</li>
+                                    <li>Tags entre crochets : <code>[Tag1, Tag2]</code></li>
+                                    <li>Le reste est le contenu (Markdown + HTML supporté)</li>
+                                </ul>
+                                <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
+                                    {`# Aspirine
+Anti-inflammatoire non stéroïdien
+[Douleur, Fièvre, AINS]
+
+## Posologie
+Adulte : 500mg à 1g toutes les 4h.
+
+## Mécanisme
+<div class="info-box">Inhibe irréversiblement les COX-1 et 2.</div>`}
+                                </pre>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <FileJson size={16} /> Format JSON
+                            </h4>
+                            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                                <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
+                                    <li>Un tableau d'objets : <code>[{`{ ... }`}, {`{ ... }`}]</code></li>
+                                    <li>Champs requis : <code>title</code></li>
+                                    <li>Champs optionnels : <code>subtitle</code>, <code>content</code> (HTML/MD), <code>tags</code> (array), <code>type</code></li>
+                                </ul>
+                                <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
+                                    {`[
+  {
+    "title": "Paracétamol",
+    "subtitle": "Antalgique antipyrétique",
+    "type": "drug",
+    "tags": ["Douleur", "Fièvre"],
+    "content": "## Indications\\nDouleurs faibles à modérées.\\n\\n<table class='w-full'><tr><td>Dose max</td><td>4g/j</td></tr></table>"
+  }
+]`}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="import-mode-tabs">
+                <button
+                    className={`import-tab ${importMode === 'text' ? 'active' : ''}`}
+                    onClick={() => { setImportMode('text'); setInput(''); setError(null); setPreviewCount(null); }}
+                >
+                    <FileText size={16} />
+                    Texte simple
+                </button>
+                <button
+                    className={`import-tab ${importMode === 'json' ? 'active' : ''}`}
+                    onClick={() => { setImportMode('json'); setInput(''); setError(null); setPreviewCount(null); }}
+                >
+                    <FileJson size={16} />
+                    JSON
+                </button>
+            </div>
+
+            <div className="form-group">
+                <label>Type par défaut</label>
+                <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
+                    {types.map(t => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                </select>
+            </div>
+
+            <div className="form-group">
+                <label>
+                    {importMode === 'text' ? 'Fiches séparées par #' : 'JSON Array'}
+                </label>
+                <textarea
+                    className={importMode === 'json' ? 'font-mono text-xs' : ''}
+                    rows={12}
+                    value={input}
+                    onChange={handleInputChange}
+                    placeholder={importMode === 'text' ? '...' : '[...]'}
+                />
+            </div>
+
+            {error && (
+                <div className="import-message error">
+                    <AlertCircle size={16} />
+                    {error}
+                </div>
+            )}
+
+            {previewCount !== null && !error && (
+                <div className="import-message success">
+                    <CheckCircle2 size={16} />
+                    {previewCount} fiches détectées
+                </div>
+            )}
+
+            <div className="form-actions">
+                <button className="btn-secondary" onClick={onClose}>
+                    Annuler
+                </button>
+                <button
+                    className="btn-primary"
+                    onClick={handleImport}
+                    disabled={!input.trim() || !!error}
+                >
+                    <Upload size={18} />
+                    Importer
+                </button>
+            </div>
+        </div>
+    );
+};
+
+export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
+    return (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
+            <div className="modal-content form-modal" style={{ maxWidth: '800px' }}>
                 <div className="modal-header">
                     <h2 className="modal-title">Import en masse</h2>
-                    <button className="modal-close" onClick={onClose}>
+                    <button className="modal-close" onClick={props.onClose}>
                         <X size={20} />
                     </button>
                 </div>
-
-                <div className="modal-body">
-                    <div className="import-mode-tabs">
-                        <button
-                            className={`import-tab ${importMode === 'text' ? 'active' : ''}`}
-                            onClick={() => { setImportMode('text'); setInput(''); setError(null); setPreviewCount(null); }}
-                        >
-                            <FileText size={16} />
-                            Texte simple
-                        </button>
-                        <button
-                            className={`import-tab ${importMode === 'json' ? 'active' : ''}`}
-                            onClick={() => { setImportMode('json'); setInput(''); setError(null); setPreviewCount(null); }}
-                        >
-                            <FileJson size={16} />
-                            JSON
-                        </button>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Type par défaut (si non spécifié dans le JSON)</label>
-                        <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
-                            {types.map(t => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label>
-                            {importMode === 'text'
-                                ? 'Fiches séparées par #'
-                                : 'JSON Array'
-                            }
-                        </label>
-                        <textarea
-                            className={importMode === 'json' ? 'font-mono text-xs' : ''}
-                            rows={12}
-                            value={input}
-                            onChange={handleInputChange}
-                            placeholder={importMode === 'text'
-                                ? `# Aspirine
-Acide acétylsalicylique
-Antalgique et anti-inflammatoire.
-Inhibe les COX-1 et COX-2.
-[Douleur, Fièvre, AINS]
-
-# Paracétamol
-Analgésique central
-Antalgique de palier 1.
-Mécanisme d'action central mal connu.
-[Douleur, Fièvre]
-
-# Ibuprofène
-AINS
-Anti-inflammatoire non stéroïdien.
-Dérivé de l'acide propionique.
-[Inflammation, Douleur]`
-                                : `[
-  {
-    "title": "Aspirine",
-    "type": "drug",
-    "content": "Anti-inflammatoire non stéroïdien...",
-    "tags": ["Douleur", "Fièvre"]
-  }
-]`
-                            }
-                        />
-                    </div>
-
-                    {error && (
-                        <div className="import-message error">
-                            <AlertCircle size={16} />
-                            {error}
-                        </div>
-                    )}
-
-                    {previewCount !== null && !error && (
-                        <div className="import-message success">
-                            <CheckCircle2 size={16} />
-                            {previewCount} fiches détectées
-                        </div>
-                    )}
-
-                    <div className="form-actions">
-                        <button className="btn-secondary" onClick={onClose}>
-                            Annuler
-                        </button>
-                        <button
-                            className="btn-primary"
-                            onClick={handleImport}
-                            disabled={!input.trim() || !!error}
-                        >
-                            <Upload size={18} />
-                            Importer
-                        </button>
-                    </div>
-                </div>
+                <BatchImportContent {...props} />
             </div>
         </div>
     );

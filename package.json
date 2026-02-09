@@ -32,6 +32,7 @@
     "react-dom": "^19.2.0",
     "react-force-graph-2d": "^1.29.1",
     "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
     "voy-search": "^0.6.3"

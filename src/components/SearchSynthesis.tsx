@@ -12,10 +12,16 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 interface SearchSynthesisProps {
     query: string;
     matchedCards: Card[];
+    onCardClick: (id: string) => void;
 }
 
-export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matchedCards }) => {
-    const [extraction, setExtraction] = useState<{ title: string; points: string[]; sources: string[]; keywords: string[] } | null>(null);
+export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matchedCards, onCardClick }) => {
+    const [extraction, setExtraction] = useState<{
+        title: string;
+        points: { text: string; source: { id: string; title: string } }[];
+        sources: string[];
+        keywords: string[]
+    } | null>(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
@@ -99,8 +105,24 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
                 <div style={{ marginTop: 14, paddingLeft: 4 }}>
                     <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.6, color: '#334155' }}>
                         {extraction.points.slice(0, 5).map((point, i) => (
-                            <li key={i} style={{ marginBottom: 6 }}>
-                                <MarkdownRenderer content={point} className="inline" />
+                            <li key={i} style={{ marginBottom: 8 }}>
+                                <span
+                                    onClick={() => onCardClick(point.source.id)}
+                                    style={{
+                                        fontWeight: 600,
+                                        color: '#0369a1',
+                                        cursor: 'pointer',
+                                        marginRight: 6,
+                                        textDecoration: 'underline',
+                                        textUnderlineOffset: 2,
+                                        textDecorationColor: 'rgba(3, 105, 161, 0.2)'
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.textDecorationColor = '#0369a1'}
+                                    onMouseOut={(e) => e.currentTarget.style.textDecorationColor = 'rgba(3, 105, 161, 0.2)'}
+                                >
+                                    {point.source.title} :
+                                </span>
+                                <MarkdownRenderer content={point.text} className="inline" />
                             </li>
                         ))}
                     </ul>
