@@ -83,14 +83,14 @@
         "zip"
       ],
       "category": "public.app-category.education",
-      "icon": "build/icon.icns"
+      "icon": "public/icon.icns"
     },
     "win": {
       "target": [
         "nsis",
         "portable"
       ],
-      "icon": "build/icon.ico"
+      "icon": "public/icon.ico"
     },
     "linux": {
       "target": [
@@ -107,11 +107,11 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "PharmaBrain",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeader": "build/installer-header.bmp",
-      "installerSidebar": "build/installer-sidebar.bmp",
-      "installerHeaderIcon": "build/icon.ico",
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeader": "public/installer-header.bmp",
+      "installerSidebar": "public/installer-sidebar.bmp",
+      "installerHeaderIcon": "public/icon.ico",
       "uninstallDisplayName": "PharmaBrain",
       "menuCategory": "PharmaBrain",
       "runAfterFinish": true,
@@ -119,7 +119,7 @@
     },
     "dmg": {
       "title": "PharmaBrain",
-      "icon": "build/icon.icns",
+      "icon": "public/icon.icns",
       "contents": [
         {
           "x": 130,
