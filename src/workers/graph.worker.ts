@@ -140,9 +140,10 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
             const tagLower = tag.toLowerCase();
             if (tagLower.length >= 4) {
                 // Check for partial matches in title index
+                // Check for EXACT matches in title keywords
+                // This prevents "rein" matching "frein" or "serein"
                 titleIndex.forEach((cardIds, titleKw) => {
-                    // Stricter tag logic could be added here, but keeping basic inclusion for now
-                    if (titleKw.includes(tagLower) || tagLower.includes(titleKw)) {
+                    if (titleKw === tagLower) {
                         cardIds.forEach(targetId => {
                             addLink(card.id, targetId);
                         });
@@ -155,7 +156,7 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
         const titleKeywords = extractKeywords(card.title);
         titleKeywords.forEach(kw => {
             tagIndex.forEach((cardIds, tagTerm) => {
-                if (tagTerm.includes(kw) || kw.includes(tagTerm)) {
+                if (tagTerm === kw) {
                     cardIds.forEach(targetId => {
                         addLink(card.id, targetId);
                     });

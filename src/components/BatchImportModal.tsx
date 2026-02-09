@@ -108,20 +108,29 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                     throw new Error("Le format doit être un tableau JSON [ ... ]");
                 }
 
-                const validCards = parsed.filter((c: any) => c.title && c.type);
+                const validCards = parsed.filter((c: any) => {
+                    // Flexible title check
+                    const title = c.title || c.Title || c.name || c.Name;
+                    return !!title; // Type is optional now, falls back to selected
+                });
 
                 if (validCards.length === 0) {
-                    throw new Error("Aucune fiche valide trouvée. Vérifiez que 'title' et 'type' sont présents.");
+                    throw new Error("Aucune fiche valide trouvée. Vérifiez que 'title' (ou 'name') est présent.");
                 }
 
-                const processedCards: Card[] = validCards.map((c: any) => ({
-                    ...c,
-                    id: c.id || c.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                    tags: c.tags || [],
-                    subtitle: c.subtitle || '',
-                    content: c.content || '',
-                    details: c.details || c.content || '',
-                }));
+                const processedCards: Card[] = validCards.map((c: any) => {
+                    const title = c.title || c.Title || c.name || c.Name;
+                    return {
+                        ...c,
+                        id: c.id || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                        title: title,
+                        type: c.type || cardType, // Use selected type as fallback
+                        tags: c.tags || [],
+                        subtitle: c.subtitle || '',
+                        content: c.content || '',
+                        details: c.details || c.content || '',
+                    };
+                });
 
                 onImport(processedCards);
                 onClose();
@@ -174,16 +183,14 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({ onImport, on
                         </button>
                     </div>
 
-                    {importMode === 'text' && (
-                        <div className="form-group">
-                            <label>Type des fiches</label>
-                            <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
-                                {types.map(t => (
-                                    <option key={t.value} value={t.value}>{t.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+                    <div className="form-group">
+                        <label>Type par défaut (si non spécifié dans le JSON)</label>
+                        <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
+                            {types.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <div className="form-group">
                         <label>
