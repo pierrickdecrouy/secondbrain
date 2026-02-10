@@ -1,8 +1,13 @@
-const { app, BrowserWindow, ipcMain, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
 const crypto = require('crypto');
+
+// GLOBAL ERROR HANDLER
+process.on('uncaughtException', (error) => {
+    dialog.showErrorBox('Main Process Error', `Uncaught exception:\n${error.message}\n${error.stack}`);
+});
 
 let mainWindow;
 
@@ -32,19 +37,43 @@ function createWindow() {
     });
 
     // Load the app
-    const startUrl = isDev
-        ? 'http://localhost:5174'
-        : `file://${path.join(__dirname, '../dist/index.html')}`;
+    // IMPORTANT: use !app.isPackaged to reliably detect dev mode
+    if (!app.isPackaged) {
+        console.log('[Main] Loading development URL');
+        mainWindow.loadURL('http://localhost:5174').catch(err => {
+            dialog.showErrorBox('Dev URL Load Failed', err.message);
+        });
+    } else {
+        console.log('[Main] Loading production file');
 
-    console.log('[Main] Loading URL:', startUrl);
+        try {
+            // PATH RESOLUTION LOGIC
+            const strategies = [
+                { name: 'appPath', path: path.join(app.getAppPath(), 'dist/index.html') },
+                { name: 'dirname', path: path.join(__dirname, '../dist/index.html') },
+                { name: 'resources', path: path.join(process.resourcesPath, 'app/dist/index.html') }
+            ];
 
-    mainWindow.loadURL(startUrl).catch(err => {
-        console.error('[Main] Failed to load URL:', err);
-    });
+            // Use standard loadFile with the primary strategy's confirmed path (or default)
+            const bestPath = strategies.find(s => fs.existsSync(s.path))?.path || strategies[0].path;
+
+            console.log(`[Main] Loading: ${bestPath}`);
+
+            mainWindow.loadFile(bestPath).catch(err => {
+                console.error('[Main] Failed to load file:', err);
+                dialog.showErrorBox('Failed to load application',
+                    `Error loading: ${bestPath}\n\nDetails: ${err.message}\n\nStack: ${err.stack}`
+                );
+            });
+        } catch (e) {
+            dialog.showErrorBox('Main Process Crash', `Error in path resolution logic:\n${e.message}\n${e.stack}`);
+        }
+    }
 
     // Show window when ready
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        mainWindow.webContents.openDevTools();
     });
 
     mainWindow.on('closed', () => {
@@ -227,16 +256,16 @@ app.whenReady().then(() => {
     });
 
     // Enforce COOP/COEP for SharedArrayBuffer (Wllama multi-threading)
-    const { session } = require('electron');
-    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        callback({
-            responseHeaders: {
-                ...details.responseHeaders,
-                'Cross-Origin-Opener-Policy': 'same-origin',
-                'Cross-Origin-Embedder-Policy': 'require-corp',
-            },
-        });
-    });
+    // const { session } = require('electron');
+    // session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    //     callback({
+    //         responseHeaders: {
+    //             ...details.responseHeaders,
+    //             'Cross-Origin-Opener-Policy': 'same-origin',
+    //             'Cross-Origin-Embedder-Policy': 'require-corp',
+    //         },
+    //     });
+    // });
 
     createWindow();
 });

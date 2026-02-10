@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
-console.log('App mounting...');
+console.log('App mounted');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

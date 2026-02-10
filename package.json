@@ -17,7 +17,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5174 && electron .\"",
-    "electron:build": "npm run build && electron-builder build --publish never"
+    "electron:build": "npm run build && cross-env DEBUG=electron-builder electron-builder build --publish never"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",

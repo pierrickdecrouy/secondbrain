@@ -9,20 +9,44 @@ interface MarkdownRendererProps {
     className?: string;
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
-    // Cognitive Friction: Cloze Deletion (||text||)
-    // We use a regex to replace ||text|| with a span that mimics the "spoiler" effect
-    const processedContent = React.useMemo(() => {
-        if (!content) return '';
-        return content.replace(/\|\|(.*?)\|\|/g, '<span class="cloze-spoiler">$1</span>');
-    }, [content]);
+// Helper to process children for Cloze Deletion (||text||)
+const renderWithCloze = (children: React.ReactNode): React.ReactNode => {
+    return React.Children.map(children, child => {
+        if (typeof child === 'string') {
+            const parts = child.split(/\|\|(.*?)\|\|/g);
+            if (parts.length === 1) return child; // No matches
 
+            return parts.map((part, index) => {
+                // Even indices are normal text, odd are cloze
+                if (index % 2 === 1) {
+                    return <span key={index} className="cloze-spoiler">{part}</span>;
+                }
+                return part;
+            });
+        }
+        // Recursion for nested elements (e.g. bold/italic inside)
+        // Be careful with recursion depth, but typically markdown structure is shallow
+        // Also simple recursion on React Nodes can be tricky if they are not simple elements.
+        // For safety, let's only process strings at the top level of P and LI for now to avoid breaking complex structures.
+        return child;
+    });
+};
+
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
     return (
         <div className={`prose prose-sm max-w-none text-slate-700 ${className}`}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw]}
                 components={{
+                    // Cloze Deletion Support
+                    p: ({ node, children, ...props }) => (
+                        <p {...props} className="mb-4">{renderWithCloze(children)}</p>
+                    ),
+                    li: ({ node, children, ...props }) => (
+                        <li {...props} className="mb-2">{renderWithCloze(children)}</li>
+                    ),
+
                     // Customize link rendering if needed
                     a: ({ node, ...props }) => (
                         <a {...props} className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer" />
@@ -47,13 +71,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                     blockquote: ({ node, ...props }) => (
                         <blockquote {...props} className="border-l-4 border-slate-300 pl-4 italic text-slate-600 my-4" />
                     ),
-                    // Handle spans (for cloze) to ensure they have correct class if passed through
-                    span: ({ node, ...props }) => {
-                        return <span {...props} />
-                    }
                 }}
             >
-                {processedContent}
+                {content}
             </ReactMarkdown>
         </div>
     );

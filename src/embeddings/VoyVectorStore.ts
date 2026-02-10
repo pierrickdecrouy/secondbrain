@@ -48,7 +48,16 @@ export class VoyVectorStore {
             // Sanitize input: Ensure it's a plain JSON-serializable array
             // This fixes "invalid type: map" if the input array had weird properties or was a Proxy
             const cleanItems = JSON.parse(JSON.stringify(formattedItems));
-            this.index.add(cleanItems);
+
+            // Check if cleanItems is actually an array
+            if (!Array.isArray(cleanItems)) {
+                console.error("Voy add error: Items is not an array", cleanItems);
+                return;
+            }
+
+            if (cleanItems.length > 0) {
+                this.index.add(cleanItems);
+            }
         } catch (e) {
             console.error("Voy index add error:", e);
         }
