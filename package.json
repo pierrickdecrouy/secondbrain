@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
+    "@mlc-ai/web-llm": "^0.2.80",
     "@wllama/wllama": "^2.3.7",
     "clsx": "^2.1.1",
     "d3-force": "^3.0.0",

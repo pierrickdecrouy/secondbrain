@@ -133,6 +133,7 @@ function App() {
         <AddDataModal
           mode={addDataMode === 'create' || addDataMode === 'import' ? addDataMode : 'edit'}
           card={editingCard}
+          existingCards={cards}
           onSave={handleSaveCard}
           onImport={handleBatchImport}
           onClose={() => {

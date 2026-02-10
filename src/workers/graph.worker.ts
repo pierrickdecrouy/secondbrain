@@ -4,6 +4,8 @@ interface Node {
     id: string;
     name: string;
     type: string;
+    manualConnections?: string[];
+    suppressedConnections?: string[];
 }
 
 interface Link {
@@ -11,9 +13,9 @@ interface Link {
     target: string;
 }
 
-// Stopwords: common terms that don't add meaning for linking
+// Static Stopwords: common terms that don't add meaning for linking
 // Includes French articles, generic medical terms, and pharmaceutical forms
-const STOPWORDS = new Set([
+const STATIC_STOPWORDS = new Set([
     // French articles and common words (2-3 chars)
     'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'en', 'au', 'aux',
     'ce', 'ces', 'son', 'ses', 'sur', 'par', 'qui', 'que', 'est', 'pas', 'plus',
@@ -22,76 +24,111 @@ const STOPWORDS = new Set([
     'avec', 'sans', 'dans', 'pour', 'chez', 'depuis', 'sous', 'vers',
     'traitement', 'patient', 'diagnostic', 'symptomes', 'signes',
     'aigu', 'aigue', 'chronique', 'primaire', 'secondaire',
-    // Pharmaceutical dosages and units (prevent "500mg" linking all drugs)
+    // Pharmaceutical dosages and units
     'mg', 'ml', 'g', 'kg', 'mcg', 'ui', 'mmol', 'mol',
     'jour', 'fois', 'heure', 'heures', 'semaine', 'mois',
-    // Drug forms (prevent "gélule" linking all capsule drugs)
+    // Drug forms
     'gelule', 'gelules', 'comprime', 'comprimes', 'sachet', 'sachets',
     'solution', 'suspension', 'injectable', 'oral', 'orale',
     'sirop', 'pommade', 'creme', 'gel', 'patch', 'spray',
     'ampoule', 'ampoules', 'flacon', 'flacons', 'boite', 'boites'
 ]);
 
-// Extract keywords (>=3 chars) from a string - captures medical acronyms like AVC, ORL, IVG
-function extractKeywords(text: string): string[] {
+// Extract all potential keywords (tokens) from text
+function tokenize(text: string): string[] {
     return text.toLowerCase()
         .replace(/[^a-zàâäéèêëïîôùûüç0-9\s]/gi, '') // Keep accented chars
         .split(/\s+/)
-        .filter(w => w.length >= 3 && !STOPWORDS.has(w)); // >=3 chars, exclude stopwords
-}
-
-// Extract significant keywords (excluding stopwords) for threshold calculation
-function extractSignificantKeywords(text: string): string[] {
-    return extractKeywords(text).filter(w => !STOPWORDS.has(w));
+        .filter(w => w.length >= 3 && !STATIC_STOPWORDS.has(w)); // >=3 chars, exclude static stopwords
 }
 
 self.onmessage = (e: MessageEvent<Card[]>) => {
     const cards = e.data;
-    const linkSet = new Set<string>(); // Fast duplicate check
+    const linkSet = new Set<string>();
     const links: Link[] = [];
 
     // ===========================================
-    // O(N) INVERTED INDEX APPROACH
+    // PHASE 1: TF-IDF ANALYSIS & DYNAMIC STOPWORDS
     // ===========================================
 
-    // STEP 1: Build inverted index from TITLE keywords
-    // keyword -> [cardIds that have this keyword in their title]
-    const titleIndex = new Map<string, string[]>();
+    // Map: Word -> Document Frequency (count of cards containing this word)
+    const docFrequencies = new Map<string, number>();
+    const totalDocs = cards.length;
 
-    // Helper Map: ID -> Number of keywords in title
-    const titleTokenCounts = new Map<string, number>();
-
+    // 1. Count Frequencies
     cards.forEach(card => {
-        const titleKeywords = extractKeywords(card.title);
-        const significantKeywords = extractSignificantKeywords(card.title);
-        // Store count of SIGNIFICANT keywords (excluding stopwords)
-        titleTokenCounts.set(card.id, significantKeywords.length || 1);
+        // Use a Set to count each word only once per card (Document Frequency)
+        const uniqueWords = new Set([
+            ...tokenize(card.title),
+            ...tokenize(card.content),
+            ...tokenize(card.tags.join(' '))
+        ]);
 
-        titleKeywords.forEach(kw => {
-            if (!titleIndex.has(kw)) {
-                titleIndex.set(kw, []);
-            }
-            titleIndex.get(kw)!.push(card.id);
+        uniqueWords.forEach(word => {
+            docFrequencies.set(word, (docFrequencies.get(word) || 0) + 1);
         });
     });
 
-    // STEP 2: Build inverted index from TAGS
-    // tag -> [cardIds that have this tag]
+    // 2. Identify Dynamic Stopwords (Words appearing in > 10% of cards)
+    // and Calculate IDFs
+    const wordIDF = new Map<string, number>();
+    const DYNAMIC_STOPWORDS = new Set<string>();
+
+    docFrequencies.forEach((count, word) => {
+        const frequency = count / totalDocs;
+
+        // Relaxed Stopword cutoff: > 15% (was 10%)
+        if (frequency > 0.15) {
+            // Appearing in > 15% of docs -> Treat as stopword (IDF = 0)
+            DYNAMIC_STOPWORDS.add(word);
+            wordIDF.set(word, 0);
+        } else {
+            // IDF = log(Total / DF)
+            // Rare words get high score, common words get low score
+            wordIDF.set(word, Math.log(totalDocs / (count || 1)));
+        }
+    });
+
+    // Helper: Get keyword weight (IDF)
+    const getWeight = (word: string) => wordIDF.get(word) || 0;
+
+    // ===========================================
+    // PHASE 2: INVERTED INDEX WITH WEIGHTS
+    // ===========================================
+
+    // Index: Keyword -> List of Card IDs
+    const titleIndex = new Map<string, string[]>();
     const tagIndex = new Map<string, string[]>();
 
+    // Helper: Map ID -> Total Information Content (Sum of IDFs) of Title
+    // Used to normalize scores (e.g. match must replace X% of title's info)
+    const titleInfoContent = new Map<string, number>();
+
     cards.forEach(card => {
+        // Index Title
+        const titleTokens = tokenize(card.title).filter(w => !DYNAMIC_STOPWORDS.has(w));
+        let infoSum = 0;
+
+        titleTokens.forEach(token => {
+            if (!titleIndex.has(token)) titleIndex.set(token, []);
+            titleIndex.get(token)!.push(card.id);
+            infoSum += getWeight(token);
+        });
+
+        // Min info content = 1.0 to avoid division by zero/low thresholds
+        titleInfoContent.set(card.id, Math.max(1.0, infoSum));
+
+        // Index Tags
         card.tags.forEach(tag => {
             const tagLower = tag.toLowerCase();
             if (tagLower.length >= 4) {
-                if (!tagIndex.has(tagLower)) {
-                    tagIndex.set(tagLower, []);
-                }
+                if (!tagIndex.has(tagLower)) tagIndex.set(tagLower, []);
                 tagIndex.get(tagLower)!.push(card.id);
             }
         });
     });
 
-    // Helper to add a link (avoiding duplicates)
+    // Helper to add a link
     const addLink = (sourceId: string, targetId: string) => {
         if (sourceId === targetId) return;
         const linkKey = [sourceId, targetId].sort().join('-');
@@ -101,65 +138,72 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
         }
     };
 
-    // STEP 3: Single pass - for each card, find links via inverted index
-    // Complexity: O(N * K) where K = avg keywords per card content (~50)
-    cards.forEach(card => {
-        const contentKeywords = extractKeywords(card.content + ' ' + card.details);
+    // ===========================================
+    // PHASE 3: LINKING LOGIC
+    // ===========================================
 
-        // Track match counts for potential target candidates
-        // targetId -> number of matching keywords found
+    cards.forEach(card => {
+        const contentTokens = tokenize(card.content + ' ' + card.details)
+            .filter(w => !DYNAMIC_STOPWORDS.has(w));
+
+        // Track "Information Score" match for potential targets
+        // targetId -> Sum of IDFs of matching keywords
         const potentialMatches = new Map<string, number>();
 
-        // Check each content keyword against the title index
-        contentKeywords.forEach(kw => {
-            const matchingCardIds = titleIndex.get(kw);
+        // Check content keywords against title index
+        contentTokens.forEach(token => {
+            const matchingCardIds = titleIndex.get(token);
             if (matchingCardIds) {
+                const weight = getWeight(token);
                 matchingCardIds.forEach(targetId => {
-                    if (targetId === card.id) return; // Ignore self-reference
-                    const currentCount = potentialMatches.get(targetId) || 0;
-                    potentialMatches.set(targetId, currentCount + 1);
+                    if (targetId === card.id) return;
+                    const currentScore = potentialMatches.get(targetId) || 0;
+                    potentialMatches.set(targetId, currentScore + weight);
                 });
             }
         });
 
-        // Verify matches: Link if we matched at least 67% of significant keywords
-        // This allows "insuffisance rénale sévère" to link to "insuffisance rénale chronique"
-        potentialMatches.forEach((matchCount, targetId) => {
-            const significantCount = titleTokenCounts.get(targetId) || 1;
+        // Validation: Link if Match Score > Threshold
+        potentialMatches.forEach((score, targetId) => {
+            // Hybrid Guarantee: If score is high enough (>= 1.5) because of rare words, ALWAYS link
+            // This ensures "ostéocalcine" links even if target description is long
+            if (score >= 1.5) {
+                addLink(card.id, targetId);
+                return;
+            }
 
-            // Calculate threshold: at least 67% of significant keywords, minimum 1
-            const threshold = Math.max(1, Math.ceil(significantCount * 0.67));
+            const targetInfo = titleInfoContent.get(targetId) || 1.0;
 
-            if (matchCount >= threshold) {
+            // Relaxed threshold: match 30% of target's info, absolute min 1.2
+            // Threshold = 1.2 (approx 1 good medical term) OR 30% of the target title's total info content
+            const threshold = Math.max(1.2, targetInfo * 0.3);
+
+            if (score >= threshold) {
                 addLink(card.id, targetId);
             }
         });
 
-        // Tag-to-Title matching: check card's tags against title index
+        // Tag matching (Keep explicit tag logic, it's usually high quality)
+        // Tag -> Title
         card.tags.forEach(tag => {
             const tagLower = tag.toLowerCase();
+            // Exact match check on title index using first token if single word tag?
+            // Or reuse existing logic. Sticking to simple fuzzy:
             if (tagLower.length >= 4) {
-                // Check for partial matches in title index
-                // Check for EXACT matches in title keywords
-                // This prevents "rein" matching "frein" or "serein"
                 titleIndex.forEach((cardIds, titleKw) => {
                     if (titleKw === tagLower) {
-                        cardIds.forEach(targetId => {
-                            addLink(card.id, targetId);
-                        });
+                        cardIds.forEach(targetId => addLink(card.id, targetId));
                     }
                 });
             }
         });
 
-        // Title-to-Tag matching: check card's title keywords against tag index
-        const titleKeywords = extractKeywords(card.title);
-        titleKeywords.forEach(kw => {
+        // Title -> Tag
+        const titleTokens = tokenize(card.title);
+        titleTokens.forEach(kw => {
             tagIndex.forEach((cardIds, tagTerm) => {
                 if (tagTerm === kw) {
-                    cardIds.forEach(targetId => {
-                        addLink(card.id, targetId);
-                    });
+                    cardIds.forEach(targetId => addLink(card.id, targetId));
                 }
             });
         });
@@ -169,7 +213,9 @@ self.onmessage = (e: MessageEvent<Card[]>) => {
     const nodes: Node[] = cards.map(c => ({
         id: c.id,
         name: c.title,
-        type: c.type
+        type: c.type,
+        manualConnections: c.manualConnections,
+        suppressedConnections: c.suppressedConnections
     }));
 
     self.postMessage({ nodes, links });

@@ -45,7 +45,10 @@ export class VoyVectorStore {
         });
 
         try {
-            this.index.add(formattedItems);
+            // Sanitize input: Ensure it's a plain JSON-serializable array
+            // This fixes "invalid type: map" if the input array had weird properties or was a Proxy
+            const cleanItems = JSON.parse(JSON.stringify(formattedItems));
+            this.index.add(cleanItems);
         } catch (e) {
             console.error("Voy index add error:", e);
         }
@@ -75,8 +78,19 @@ export class VoyVectorStore {
      * Serialize index and cache to Uint8Array for storage
      */
     serialize(): Uint8Array {
-        const indexData = this.index.serialize();
-        const cacheData = new TextEncoder().encode(JSON.stringify(Array.from(this.embeddingCache.entries())));
+        // Serialize index
+        let indexData: Uint8Array;
+        try {
+            indexData = this.index.serialize();
+        } catch (e) {
+            console.error("Voy serialize error:", e);
+            // Return empty if failed to avoid crashing
+            return new Uint8Array(0);
+        }
+
+        // Serialize cache
+        const cacheEntries = Array.from(this.embeddingCache.entries());
+        const cacheData = new TextEncoder().encode(JSON.stringify(cacheEntries));
 
         const header = new TextEncoder().encode("VOY+CACHE"); // 9 bytes
         const lengthBuffer = new ArrayBuffer(4);

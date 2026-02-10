@@ -7,12 +7,13 @@ import type { Card } from '../types';
 interface AddDataModalProps {
     mode: 'create' | 'edit' | 'import';
     card?: Card | null;
+    existingCards?: Card[];
     onSave: (card: Card) => void;
     onImport: (cards: Card[]) => void;
     onClose: () => void;
 }
 
-export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', card, onSave, onImport, onClose }) => {
+export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', card, existingCards = [], onSave, onImport, onClose }) => {
     const isEditMode = mode === 'edit' && !!card;
     const [activeTab, setActiveTab] = useState<'single' | 'batch'>(mode === 'import' ? 'batch' : 'single');
 
@@ -71,6 +72,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                     {activeTab === 'single' ? (
                         <CardFormContent
                             card={card}
+                            existingCards={existingCards}
                             onSave={async (c) => {
                                 await onSave(c);
                                 onClose();

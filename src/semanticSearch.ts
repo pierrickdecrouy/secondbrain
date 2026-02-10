@@ -178,8 +178,12 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
                 };
             });
 
-            vectorStore.add(entries);
-            vectorStore.save(); // Persist changes
+            try {
+                vectorStore.add(entries);
+                vectorStore.save(); // Persist changes
+            } catch (err) {
+                console.error("Failed to add/save embeddings:", err);
+            }
             resolve();
         };
         batchReject = reject;
@@ -231,36 +235,104 @@ function cosineSimilarity(a: number[], b: number[]): number {
 /**
  * Compute semantic links between all cards
  */
-export async function computeSemanticGraph(cards: Card[], threshold: number = 0.7): Promise<{ source: string; target: string; value: number }[]> {
-    const links: { source: string; target: string; value: number }[] = [];
+/**
+ * Compute precision links between cards using hybrid scoring
+ * 1. Explicit Reference (Title in Content) -> 1.0
+ * 2. High Semantic (Cosine > 0.85) -> Value
+ * 3. Hybrid (Cosine > 0.75 + Shared Tags) -> Value * 1.1
+ */
+export async function computePrecisionGraph(cards: Card[]): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[]> {
+    const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[] = [];
     const processedPairs = new Set<string>();
 
-    // Process each card
-    for (const card of cards) {
-        const embedding = vectorStore.getEmbedding(card.id);
-        if (!embedding) continue;
+    const normalize = (str: string) => str.toLowerCase().trim();
 
-        // Search for nearest neighbors
-        const results = vectorStore.search(embedding, 10);
+    // Helper: Jaccard Index for tags
+    const getTagOverlap = (tagsA: string[], tagsB: string[]) => {
+        if (!tagsA.length || !tagsB.length) return 0;
+        const setA = new Set(tagsA.map(normalize));
+        const setB = new Set(tagsB.map(normalize));
+        const intersection = new Set([...setA].filter(x => setB.has(x)));
+        const union = new Set([...setA, ...setB]);
+        return intersection.size / union.size;
+    };
+
+    // Helper: Check for title reference
+    const hasReference = (content: string, title: string) => {
+        if (title.length < 4) return false; // Ignore short titles to avoid noise
+        const regex = new RegExp(`\\b${escapeRegExp(title)}\\b`, 'i');
+        return regex.test(content);
+    };
+
+    const escapeRegExp = (string: string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    // Process each card
+    for (let i = 0; i < cards.length; i++) {
+        const cardA = cards[i];
+        const embeddingA = vectorStore.getEmbedding(cardA.id);
+
+        // We can optimize this by only looking at candidates from vector search first,
+        // BUT for "Explicit Reference" we might need to check even if vector score is low?
+        // Actually, if vector score is low, usually text is different.
+        // Let's stick to vector search candidates for performance, but maybe increase K.
+        // OR, for small datasets (<500 cards), we can do N*N for explicit references?
+        // Let's do N*N for Explicit References if N < 200, otherwise rely on vector search?
+        // The user wants "Precision". Let's stick to the high-quality candidates found by Voy.
+
+        if (!embeddingA) continue;
+
+        // Search candidates (Top 20 to cast a wide net, then filter severely)
+        const results = vectorStore.search(embeddingA, 20);
 
         for (const result of results) {
-            if (result.id === card.id) continue;
+            if (result.id === cardA.id) continue;
 
-            // Calculate similarity manually because Voy wrapper might not return score
-            let similarity = result.similarity;
-            if (!similarity || similarity === 0) {
-                const targetEmbedding = vectorStore.getEmbedding(result.id);
-                if (targetEmbedding) {
-                    similarity = cosineSimilarity(embedding, targetEmbedding);
+            const cardB = cards.find(c => c.id === result.id);
+            if (!cardB) continue;
+
+            const pairId = [cardA.id, cardB.id].sort().join('-');
+            if (processedPairs.has(pairId)) continue;
+
+            let score = 0;
+            let type: 'explicit' | 'semantic' | 'hybrid' | null = null;
+
+            // 1. Explicit Reference
+            const refAtoB = hasReference(cardA.content, cardB.title);
+            const refBtoA = hasReference(cardB.content, cardA.title);
+
+            if (refAtoB || refBtoA) {
+                score = 1.0;
+                type = 'explicit';
+            }
+            else {
+                // Calculate precise similarity
+                const embeddingB = vectorStore.getEmbedding(cardB.id);
+                let cosSim = result.similarity;
+                if ((!cosSim || cosSim === 0) && embeddingB) {
+                    cosSim = cosineSimilarity(embeddingA, embeddingB);
+                }
+
+                // 2. High Confidence Semantic
+                if (cosSim > 0.85) {
+                    score = cosSim;
+                    type = 'semantic';
+                }
+                // 3. Hybrid Boost (Medium match + Shared Context)
+                else if (cosSim > 0.75) {
+                    const tagScore = getTagOverlap(cardA.tags, cardB.tags);
+                    if (tagScore > 0) {
+                        score = Math.min(cosSim * 1.1, 0.95);
+                        type = 'hybrid';
+                    }
+                    // Maybe check for shared substring in title?
                 }
             }
 
-            if (similarity >= threshold) {
-                const pairId = [card.id, result.id].sort().join('-');
-                if (!processedPairs.has(pairId)) {
-                    processedPairs.add(pairId);
-                    links.push({ source: card.id, target: result.id, value: similarity });
-                }
+            if (score > 0 && type) {
+                processedPairs.add(pairId);
+                links.push({ source: cardA.id, target: cardB.id, value: score, type });
             }
         }
     }
@@ -276,4 +348,21 @@ export function terminateSemanticSearch(): void {
     embeddingWorker = null;
     isModelReady = false;
     modelLoadProgress = 0;
+}
+
+/**
+ * Find similar cards for a specific card ID
+ * @param cardId The source card ID
+ * @param limit Number of results
+ * @returns Array of { id, similarity }
+ */
+export function findSimilarCards(cardId: string, limit: number = 5): { id: string; similarity: number }[] {
+    const embedding = vectorStore.getEmbedding(cardId);
+    if (!embedding) return [];
+
+    // Search
+    const results = vectorStore.search(embedding, limit + 1); // +1 because it will find itself
+
+    // Filter out self
+    return results.filter(r => r.id !== cardId).slice(0, limit);
 }

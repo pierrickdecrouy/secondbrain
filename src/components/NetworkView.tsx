@@ -3,7 +3,7 @@ import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
 import { forceCollide, forceRadial } from 'd3-force';
 import type { Card } from '../types';
 import { getTypeColor } from '../theme';
-import { computeSemanticGraph } from '../semanticSearch';
+import { computePrecisionGraph } from '../semanticSearch';
 import { detectCommunities } from '../algorithms/communityDetection';
 
 interface NetworkViewProps {
@@ -29,7 +29,7 @@ interface Node {
 interface Link {
     source: string | Node;
     target: string | Node;
-    type?: string; // 'semantic' or undefined (structural)
+    type?: string; // 'semantic', 'explicit', 'hybrid' or undefined (structural)
     value?: number;
 }
 
@@ -44,11 +44,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     const [depthFilter, setDepthFilter] = useState<number>(0); // 0 = all, 1/2/3 = depth
 
-    // Semantic Links State
-    const [semanticLinks, setSemanticLinks] = useState<Link[]>([]);
-    const [showSemantic] = useState(true); // Enabled by default
-    const [semanticThreshold] = useState(0.70);
-    const [isComputingSemantic, setIsComputingSemantic] = useState(false);
+    // Precision Links State
+    const [smartLinks, setSmartLinks] = useState<Link[]>([]);
+
+    // Spotlight State
+    const [hoverNode, setHoverNode] = useState<Node | null>(null);
+    const [activeNodeIds, setActiveNodeIds] = useState<Set<string>>(new Set());
 
     // Position cache to prevent graph "jumping" on updates
     const positionCache = useRef<Map<string, { x: number, y: number }>>(new Map());
@@ -102,23 +103,21 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         };
     }, [cards]);
 
-    // Semantic Graph Effect
+    // Precision Graph Effect
     useEffect(() => {
-        if (showSemantic && cards.length > 0) {
-            setIsComputingSemantic(true);
-            computeSemanticGraph(cards, semanticThreshold).then(links => {
-                setSemanticLinks(links.map(l => ({
+        if (cards.length > 0) {
+            computePrecisionGraph(cards).then(links => {
+                setSmartLinks(links.map(l => ({
                     source: l.source,
                     target: l.target,
-                    type: 'semantic',
+                    type: l.type, // 'explicit', 'semantic', 'hybrid'
                     value: l.value
                 })));
-                setIsComputingSemantic(false);
             });
         } else {
-            setSemanticLinks([]);
+            setSmartLinks([]);
         }
-    }, [cards, showSemantic, semanticThreshold]);
+    }, [cards]);
 
     // ... (savePositions and resize effects unchanged)
     useEffect(() => {
@@ -153,10 +152,77 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         return () => window.removeEventListener('resize', updateDimensions);
     }, []);
 
-    // Combine links
+    // Combine links (Structural + Semantic + Manual)
     const allLinks = useMemo(() => {
-        return [...graphData.links, ...semanticLinks];
-    }, [graphData.links, semanticLinks]);
+        const manualLinks: Link[] = [];
+        const nodeMap = new Map(graphData.nodes.map(n => [n.id, n as any]));
+
+        graphData.nodes.forEach(node => {
+            const cardNode = node as any;
+            if (cardNode.manualConnections) {
+                cardNode.manualConnections.forEach((targetId: string) => {
+                    manualLinks.push({
+                        source: node.id,
+                        target: targetId,
+                        type: 'manual',
+                        value: 1.0
+                    });
+                });
+            }
+        });
+
+        // Combine Structural + Precision Links
+        const combinedLinks = [...graphData.links, ...smartLinks];
+
+        // Filter based on suppression
+        const aiLinks = combinedLinks.filter(link => {
+            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
+            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+
+            const sourceNode = nodeMap.get(sourceId);
+            const targetNode = nodeMap.get(targetId);
+
+            // Check if Source suppresses Target
+            if (sourceNode?.suppressedConnections?.includes(targetId)) return false;
+
+            // Check if Target suppresses Source
+            if (targetNode?.suppressedConnections?.includes(sourceId)) return false;
+
+            return true;
+        });
+
+        // Deduplication: Manual > AI (Prioritized)
+        const uniqueLinks = new Map<string, Link>();
+
+        // 1. Manual (Highest Priority)
+        manualLinks.forEach(link => {
+            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
+            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+            const key = [sourceId, targetId].sort().join('-');
+            uniqueLinks.set(key, link);
+        });
+
+        // 2. AI (Prioritize Explict > Hybrid > Structural > Semantic)
+        const sortedAiLinks = aiLinks.sort((a, b) => {
+            const getScore = (l: Link) => {
+                if (l.type === 'explicit') return 5;
+                if (l.type === 'hybrid') return 4;
+                if (!l.type) return 3; // Structural
+                if (l.type === 'semantic') return 1;
+                return 0;
+            };
+            return getScore(b) - getScore(a);
+        });
+
+        sortedAiLinks.forEach(link => {
+            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
+            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+            const key = [sourceId, targetId].sort().join('-');
+            if (!uniqueLinks.has(key)) uniqueLinks.set(key, link);
+        });
+
+        return Array.from(uniqueLinks.values());
+    }, [graphData.nodes, graphData.links, smartLinks]);
 
     // AI Community Detection
     const communityMap = useMemo(() => {
@@ -253,81 +319,200 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         fgRef.current?.zoom(3, 1000);
     }, [onNodeClick, focusedNodeId, depthFilter]);
 
-    // Canvas Object with Community Colors
+    // Canvas Object: Nodes (Spotlight + Community)
     const nodeCanvasObject = useCallback((node: Node, ctx: CanvasRenderingContext2D, globalScale: number) => {
-        const isTypeSelected = activeFilters.length === 0 || activeFilters.includes(node.type);
+        const isHovered = hoverNode !== null;
+        const isActive = activeNodeIds.has(node.id);
         const isSearchMatch = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
-        const isMatched = isTypeSelected && isSearchMatch;
+        const isTypeSelected = activeFilters.length === 0 || activeFilters.includes(node.type);
+
+        // Spotlight Dimming Logic
+        let opacity = 1;
+        if (isHovered) {
+            opacity = isActive ? 1 : 0.1;
+        } else if (highlightedNodeIds.size > 0) {
+            opacity = (isSearchMatch && isTypeSelected) ? 1 : 0.1;
+        } else if (!isTypeSelected) {
+            opacity = 0.1;
+        }
+
+        ctx.globalAlpha = opacity;
+
         const label = node.name;
-        const baseR = 6;
-        const r = isMatched && highlightedNodeIds.size > 0 ? 8 : baseR;
+        const baseR = 8;
+        const isMatched = (isSearchMatch && isTypeSelected);
+        const r = isMatched && highlightedNodeIds.size > 0 ? 12 : baseR;
 
         // Visual Coherence: Use community color for fill
         const community = communityMap.get(node.id);
         const communityColor = community ? communityColorMap.get(community) : undefined;
-        // Fallback to type color if no community or for matching logic
         const finalColor = communityColor || getTypeColor(node.type);
+
+        // Glow for active/hovered nodes
+        if (isActive && isHovered) {
+            ctx.beginPath();
+            ctx.arc(node.x!, node.y!, r + 6, 0, 2 * Math.PI, false);
+            ctx.fillStyle = finalColor;
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = opacity; // Restore
+        }
 
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
-
-        ctx.fillStyle = isMatched ? finalColor : '#cbd5e1'; // Grey if filtered out
-
-        const hasActiveFilterOrSearch = activeFilters.length > 0 || highlightedNodeIds.size > 0;
-        ctx.globalAlpha = hasActiveFilterOrSearch && !isMatched ? 0.1 : 1;
+        ctx.fillStyle = finalColor;
         ctx.fill();
 
-        // Stroke (maybe use type color for stroke to keep type info visible?)
+        // Stroke
         ctx.lineWidth = (isMatched && highlightedNodeIds.size > 0) ? 2.5 : 1.5;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
         ctx.globalAlpha = 1;
 
-        const shouldShowLabel = isMatched && (highlightedNodeIds.size > 0 || globalScale > 0.8);
-        if (shouldShowLabel) {
-            const labelY = node.y! + r + 4;
+        // Text
+        const fontSize = Math.max(4, 12 / globalScale);
+        // Show if: Matched, Active (Hover), or No Hover and proper zoom
+        const shouldShowLabel = isActive || (isMatched && highlightedNodeIds.size > 0) || (!isHovered && globalScale > 0.6);
+
+        if (shouldShowLabel && opacity > 0.2) {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.font = `${(isMatched && highlightedNodeIds.size > 0) ? 'bold ' : ''}${Math.max(10, 12 / globalScale)}px Inter, system-ui, sans-serif`;
-            // Label color - maybe match node color for harmony?
-            ctx.fillStyle = '#ffffff';
+            ctx.font = `${(isMatched || isActive) ? '600' : '500'} ${fontSize}px Inter, system-ui, sans-serif`;
+
+            // Halo
+            ctx.lineJoin = 'round';
             ctx.lineWidth = 3;
-            ctx.strokeText(label, node.x!, labelY);
-            ctx.fillStyle = isMatched ? '#1e293b' : 'rgba(100, 116, 139, 0.2)';
-            ctx.fillText(label, node.x!, labelY);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.strokeText(label, node.x!, node.y! + r + 3);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText(label, node.x!, node.y! + r + 3);
         }
-    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap]);
+        ctx.globalAlpha = 1;
+    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds]);
+
+    // Canvas Object: Links (Gradient + Spotlight)
+    const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+        const isSemantic = link.type === 'semantic';
+        const isManual = link.type === 'manual';
+        const isExplicit = link.type === 'explicit';
+        const isHybrid = link.type === 'hybrid';
+
+        let opacity = 0.6;
+
+        if (hoverNode) {
+            const isConnected = link.source.id === hoverNode.id || link.target.id === hoverNode.id;
+            opacity = isConnected ? 1 : 0.05;
+        } else if (highlightedNodeIds.size > 0) {
+            opacity = 0.1;
+        }
+
+        if (opacity < 0.1) return;
+
+        const src = link.source;
+        const tgt = link.target;
+
+        // Safety check for initial render where positions might be NaN
+        if (!Number.isFinite(src.x) || !Number.isFinite(src.y) || !Number.isFinite(tgt.x) || !Number.isFinite(tgt.y)) return;
+
+        const gradient = ctx.createLinearGradient(src.x, src.y, tgt.x, tgt.y);
+
+        let srcColor = communityColorMap.get(src.id) || getTypeColor(src.type);
+        let tgtColor = communityColorMap.get(tgt.id) || getTypeColor(tgt.type);
+
+        if (isManual) {
+            srcColor = '#F59E0B'; // Amber-500
+            tgtColor = '#F59E0B';
+        } else if (isExplicit) {
+            srcColor = '#6366f1'; // Indigo-500
+            tgtColor = '#6366f1';
+        } else if (isHybrid) {
+            srcColor = '#06b6d4'; // Cyan-500
+            tgtColor = '#06b6d4';
+        }
+
+        gradient.addColorStop(0, srcColor);
+        gradient.addColorStop(1, tgtColor);
+
+        ctx.strokeStyle = gradient;
+
+        // Visual Logic & Widths
+        const val = link.value || 0;
+        let lineWidth = 2;
+
+        if (isManual) lineWidth = 4.0;
+        else if (isExplicit) lineWidth = 3.0; // Strong
+        else if (isHybrid) lineWidth = 2.5; // Medium
+        else if (isSemantic) lineWidth = val > 0.85 ? 2.0 : 1.0; // Thin for pure semantic
+
+        ctx.lineWidth = Math.max(lineWidth, 1 / globalScale); // Min 1px on screen
+        ctx.globalAlpha = opacity;
+
+        ctx.beginPath();
+
+        // DASHED lines for Semantic/Hybrid to distinguish from Structural/Manual matching user's "precision" desire
+        if (isSemantic) ctx.setLineDash([2, 4]);
+        else if (isHybrid) ctx.setLineDash([4, 2]);
+        else ctx.setLineDash([]); // Solid for Manual, Explicit, Structural
+
+        ctx.moveTo(src.x, src.y);
+        ctx.lineTo(tgt.x, tgt.y);
+        ctx.stroke();
+
+        // Reset dash
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+    }, [hoverNode, communityColorMap, highlightedNodeIds]);
 
     // Apply custom forces for Obsidian-like layout
     useEffect(() => {
         if (fgRef.current) {
-            // Charge: moderate repulsion to spread nodes
-            fgRef.current.d3Force('charge')?.strength(-250);
+            // Charge: Strong repulsion for clean separation
+            fgRef.current.d3Force('charge')?.strength(-1000);
 
-            // Link force: variable based on type
+            // Link force: Manual (Tight) > Structure (Medium)
             fgRef.current.d3Force('link')
-                ?.distance((link: any) => link.type === 'semantic' ? 120 : 60) // Semantic links are "looser"
-                ?.strength((link: any) => link.type === 'semantic' ? (link.value || 0.5) * 0.2 : 1); // Semantic links are "softer"
+                ?.distance((link: any) => link.type === 'manual' ? 30 : 60)
+                ?.strength((link: any) => link.type === 'manual' ? 1.5 : 0.8);
 
-            // COLLISION FORCE: Prevent overlapping nodes AND labels
-            fgRef.current.d3Force('collide', forceCollide(45));
+            // COLLISION FORCE: Prevent overlap (Large radius for labels)
+            fgRef.current.d3Force('collide', forceCollide(60));
 
-            // Center force: pull isolated nodes toward center
-            fgRef.current.d3Force('center')?.strength(1.5);
+            // Center force: Moderate gravity to keep it centered but not crushed
+            fgRef.current.d3Force('center')?.strength(0.8);
 
-            // RADIAL FORCE: Keep all nodes within a bounded radius
-            fgRef.current.d3Force('radial', forceRadial(150, 0, 0).strength(0.3));
+            // Radial Force: Very weak, just to keep it from flying away
+            fgRef.current.d3Force('radial', forceRadial(1000, dimensions.width / 2, dimensions.height / 2).strength(0.02));
         }
     }, [graphData]); // Re-apply when graph changes
 
     // ... (auto-zoom effect unchanged)
+    // Aggressive Auto-Zoom on Data Load
     useEffect(() => {
         if (fgRef.current && graphData.nodes.length > 0) {
+            // Initial quick zoom
             setTimeout(() => {
-                fgRef.current?.zoomToFit(400, 80);
-            }, 1500);
+                fgRef.current?.zoomToFit(400, 50);
+            }, 500);
         }
     }, [graphData]);
+
+    const handleNodeHover = useCallback((node: Node | null) => {
+        setHoverNode(node);
+        if (node) {
+            const ids = new Set<string>();
+            ids.add(node.id);
+            // Use d3 links to find neighbors
+            const links = fgRef.current?.d3Force('link')?.links() || [];
+            links.forEach((link: any) => {
+                if (link.source.id === node.id) ids.add(link.target.id);
+                if (link.target.id === node.id) ids.add(link.source.id);
+            });
+            setActiveNodeIds(ids);
+        } else {
+            setActiveNodeIds(new Set());
+        }
+    }, []);
 
     return (
         <div
@@ -348,37 +533,22 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                     ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI, false);
                     ctx.fill();
                 }}
-                linkWidth={link => (link as Link).type === 'semantic' ? 1 : 1.5}
-                linkLineDash={link => (link as Link).type === 'semantic' ? [4, 3] : null}
-                linkColor={link => {
-                    const l = link as Link;
-                    const isSemantic = l.type === 'semantic';
+                // Custom Links
+                linkCanvasObject={linkCanvasObject as any}
+                linkCanvasObjectMode={() => 'replace'}
 
-                    // Structural links: Default grey
-                    if (!isSemantic) return 'rgba(148, 163, 184, 0.6)';
-
-                    // Semantic links: Check coherence
-                    const sourceId = typeof l.source === 'object' ? (l.source as Node).id : l.source as string;
-                    const targetId = typeof l.target === 'object' ? (l.target as Node).id : l.target as string;
-                    const c1 = communityMap.get(sourceId);
-                    const c2 = communityMap.get(targetId);
-                    const val = l.value || 0;
-
-                    // Cross-community semantic links are "incoherent" unless very strong
-                    if (c1 && c2 && c1 !== c2) {
-                        // STRONG BRIDGE: Keep visible if very similar (> 0.85)
-                        if (val > 0.85) return 'rgba(124, 58, 237, 0.4)';
-                        return 'rgba(124, 58, 237, 0.05)'; // Faint noise
-                    }
-                    // Intra-community semantic links -> Strong coherence
-                    return 'rgba(124, 58, 237, 0.5)';
-                }}
+                // Interaction
+                onNodeHover={handleNodeHover as any}
                 backgroundColor="#f8fafc"
                 onNodeClick={handleNodeClick as any}
                 cooldownTicks={200}
                 d3AlphaDecay={0.01}
-                d3VelocityDecay={0.2}
+                d3VelocityDecay={0.1} // More fluid drift
                 warmupTicks={100}
+                onEngineStop={() => {
+                    // Final precision fit when stable
+                    fgRef.current?.zoomToFit(400, 50);
+                }}
             />
             {isCalculating && (
                 <div style={{
@@ -454,24 +624,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                     ))}
                 </div>
 
-                {/* AI Indicator (Subtle) - Removed Slider */}
-                {isComputingSemantic && (
-                    <div style={{
-                        background: 'white',
-                        padding: '6px 12px',
-                        borderRadius: 8,
-                        border: '1px solid #e2e8f0',
-                        fontSize: 11,
-                        color: '#7c3aed',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6
-                    }}>
-                        <div className="animate-pulse w-2 h-2 rounded-full bg-violet-500"></div>
-                        Fusion IA en cours...
-                    </div>
-                )}
 
                 {focusedNodeId && (
                     <div style={{

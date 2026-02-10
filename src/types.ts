@@ -9,6 +9,8 @@ export interface Card {
     details: string; // Markdown content (supports rich text)
     tags: string[];
     imageUrl?: string; // Optional image URL or local path
+    manualConnections?: string[]; // IDs of manually connected cards
+    suppressedConnections?: string[]; // IDs of excluded/blacklisted connections
 }
 
 // Export a value to ensure this file is treated as a module at runtime
