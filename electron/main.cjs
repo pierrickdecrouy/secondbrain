@@ -36,7 +36,11 @@ function createWindow() {
         ? 'http://localhost:5174'
         : `file://${path.join(__dirname, '../dist/index.html')}`;
 
-    mainWindow.loadURL(startUrl);
+    console.log('[Main] Loading URL:', startUrl);
+
+    mainWindow.loadURL(startUrl).catch(err => {
+        console.error('[Main] Failed to load URL:', err);
+    });
 
     // Show window when ready
     mainWindow.once('ready-to-show', () => {

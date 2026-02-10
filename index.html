@@ -11,6 +11,41 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '0';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100%';
+      errorDiv.style.backgroundColor = '#fee2e2';
+      errorDiv.style.color = '#b91c1c';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.zIndex = '999999';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.style.whiteSpace = 'pre-wrap';
+      errorDiv.innerHTML = `<strong>Error:</strong> ${message}<br>
+                            <small>${source}:${lineno}:${colno}</small><br>
+                            <pre>${error ? error.stack : ''}</pre>`;
+      document.body.appendChild(errorDiv);
+    };
+
+    window.addEventListener('unhandledrejection', function (event) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '50%';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100%';
+      errorDiv.style.backgroundColor = '#fef3c7';
+      errorDiv.style.color = '#b45309';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.zIndex = '999999';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.style.whiteSpace = 'pre-wrap';
+      errorDiv.innerHTML = `<strong>Unhandled Promise Rejection:</strong> ${event.reason}`;
+      document.body.appendChild(errorDiv);
+    });
+  </script>
 </head>
 
 <body>
