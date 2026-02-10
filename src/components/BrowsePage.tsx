@@ -96,7 +96,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     return (
         <div className="browse-container">
             {/* Header Sticky */}
-            <header className="browse-header">
+            <header className="browse-header app-drag-region">
                 <div className="browse-header-left">
                     <button className="browse-logo-container" onClick={onHome}>
                         <img src={iconSvg} alt="PharmaBrain" className="browse-logo-img" />

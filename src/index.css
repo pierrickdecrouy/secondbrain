@@ -61,6 +61,35 @@ body {
    Layout
    =========================== */
 
+/* Electron Window Dragging */
+.app-drag-region {
+  -webkit-app-region: drag;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Cognitive Friction: Cloze Deletion (Spoiler) */
+.cloze-spoiler {
+  background-color: #334155;
+  /* Slate-700 to match text for hiding */
+  color: transparent;
+  border-radius: 4px;
+  padding: 0 4px;
+  cursor: help;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.cloze-spoiler:hover,
+.cloze-spoiler:active {
+  background-color: rgba(13, 148, 136, 0.15);
+  /* Teal tint */
+  color: var(--color-text);
+  user-select: text;
+}
+
 html,
 body,
 #root {
@@ -1614,6 +1643,90 @@ body {
 }
 
 /* Custom Scrollbar for the list */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  /* Force light mode base for clarity */
+  color: #334155;
+  background-color: #f3f4f6;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Variables PharmaBrain */
+  --pharma-primary: #61b3a4;
+  --pharma-primary-light: rgba(97, 179, 164, 0.1);
+  --pharma-bg-modal: #ffffff;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Styles spécifiques à la Modale PharmaBrain */
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.3);
+  /* Fond sombre semi-transparent */
+  backdrop-filter: blur(8px);
+  /* Flou d'arrière-plan (Glassmorphism) */
+  animation: fadeIn 0.3s ease-out;
+  z-index: 50;
+}
+
+.modal-container {
+  background: var(--pharma-bg-modal);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalEntry {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Scrollbar personnalisée pour la liste */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }

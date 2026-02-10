@@ -47,7 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="home-page">
             <div className="home-content">
                 {/* Logo + Title grouped together */}
-                <div className="home-branding">
+                <div className="home-branding app-drag-region">
                     <div className="logo-gradient-hero" />
                     <p className="home-subtitle">
                         Navigateur de connaissances pharmaceutiques

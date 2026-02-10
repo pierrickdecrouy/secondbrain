@@ -320,13 +320,19 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
                     type = 'semantic';
                 }
                 // 3. Hybrid Boost (Medium match + Shared Context)
-                else if (cosSim > 0.75) {
+                else {
                     const tagScore = getTagOverlap(cardA.tags, cardB.tags);
-                    if (tagScore > 0) {
+
+                    // Strong Context (Many shared tags) -> Low vector threshold
+                    if (tagScore >= 0.5 && cosSim > 0.60) {
+                        score = Math.min(cosSim * 1.2, 0.95);
+                        type = 'hybrid';
+                    }
+                    // Weak Context (At least one shared tag) -> Medium vector threshold
+                    else if (tagScore > 0 && cosSim > 0.65) {
                         score = Math.min(cosSim * 1.1, 0.95);
                         type = 'hybrid';
                     }
-                    // Maybe check for shared substring in title?
                 }
             }
 

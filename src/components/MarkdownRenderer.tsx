@@ -10,6 +10,13 @@ interface MarkdownRendererProps {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
+    // Cognitive Friction: Cloze Deletion (||text||)
+    // We use a regex to replace ||text|| with a span that mimics the "spoiler" effect
+    const processedContent = React.useMemo(() => {
+        if (!content) return '';
+        return content.replace(/\|\|(.*?)\|\|/g, '<span class="cloze-spoiler">$1</span>');
+    }, [content]);
+
     return (
         <div className={`prose prose-sm max-w-none text-slate-700 ${className}`}>
             <ReactMarkdown
@@ -40,9 +47,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                     blockquote: ({ node, ...props }) => (
                         <blockquote {...props} className="border-l-4 border-slate-300 pl-4 italic text-slate-600 my-4" />
                     ),
+                    // Handle spans (for cloze) to ensure they have correct class if passed through
+                    span: ({ node, ...props }) => {
+                        return <span {...props} />
+                    }
                 }}
             >
-                {content}
+                {processedContent}
             </ReactMarkdown>
         </div>
     );
