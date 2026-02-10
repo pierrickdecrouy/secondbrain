@@ -155,30 +155,39 @@ function App() {
 
   // Initialize semantic search (loads model in background)
   useEffect(() => {
+    console.log('Initializing semantic search...');
     initSemanticSearch(
-      undefined, // No progress callback needed
-      () => setSemanticReady(true)
+      (progress) => console.log(`Semantic model progress: ${progress}%`), // Progress callback
+      () => {
+        console.log('Semantic search ready!');
+        setSemanticReady(true);
+      }
     );
   }, []);
 
   // Load cards and learned abbreviations on mount
   useEffect(() => {
     const loadData = async () => {
+      console.log('Starting data load...');
       setIsLoading(true);
       try {
         // Load learned abbreviations first (if in Electron)
         if (window.electronAPI?.loadAbbreviations) {
+          console.log('Loading abbreviations...');
           const savedAbbrevs = await window.electronAPI.loadAbbreviations();
           const { loadLearnedAbbreviations } = await import('./learnedAbbreviations');
           loadLearnedAbbreviations(savedAbbrevs);
         }
 
+        console.log('Loading cards...');
         const loadedCards = await loadCardsAsync();
+        console.log(`Loaded ${loadedCards.length} cards.`);
         setCards(loadedCards);
       } catch (e) {
         console.error('Error loading cards:', e);
       } finally {
         setIsLoading(false);
+        console.log('Data load complete.');
       }
     };
     loadData();
