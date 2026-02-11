@@ -21,7 +21,7 @@ import SearchSynthesis from './SearchSynthesis';
 import { getTypeColor } from '../theme';
 import { stripMarkdown } from '../utils';
 
-const iconSvg = '/icon.svg';
+import iconSvg from '../../public/icon.svg';
 
 // Type for ViewMode
 type ViewMode = 'grid' | 'list' | 'network';
@@ -132,7 +132,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         <Download size={20} />
                     </button>
                     <button className="browse-btn-primary" onClick={onAddCard}>
-                        <Plus size={18} /> Nouvelle fiche
+                        <Plus size={18} /> <span className="browse-btn-text">Nouvelle fiche</span>
                     </button>
                 </div>
             </header >

@@ -468,21 +468,22 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     useEffect(() => {
         if (fgRef.current) {
             // Charge: Strong repulsion for clean separation
-            fgRef.current.d3Force('charge')?.strength(-1000);
+            fgRef.current.d3Force('charge')?.strength(-2000); // Increased repulsion (from -1000)
 
             // Link force: Manual (Tight) > Structure (Medium)
             fgRef.current.d3Force('link')
-                ?.distance((link: any) => link.type === 'manual' ? 30 : 60)
-                ?.strength((link: any) => link.type === 'manual' ? 1.5 : 0.8);
+                ?.distance((link: any) => link.type === 'manual' ? 50 : 100) // Increased distances (from 30/60)
+                ?.strength((link: any) => link.type === 'manual' ? 1.0 : 0.5); // Slightly reduced strength for flexibility
 
             // COLLISION FORCE: Prevent overlap (Large radius for labels)
-            fgRef.current.d3Force('collide', forceCollide(60));
+            // Increased radius (from 60) and iterations for stability
+            fgRef.current.d3Force('collide', forceCollide(80).iterations(3));
 
             // Center force: Moderate gravity to keep it centered but not crushed
-            fgRef.current.d3Force('center')?.strength(0.8);
+            fgRef.current.d3Force('center')?.strength(0.6); // Reduced (from 0.8) to allow more spread
 
             // Radial Force: Very weak, just to keep it from flying away
-            fgRef.current.d3Force('radial', forceRadial(1000, dimensions.width / 2, dimensions.height / 2).strength(0.02));
+            fgRef.current.d3Force('radial', forceRadial(1000, dimensions.width / 2, dimensions.height / 2).strength(0.05)); // Slight increase (from 0.02)
         }
     }, [graphData]); // Re-apply when graph changes
 

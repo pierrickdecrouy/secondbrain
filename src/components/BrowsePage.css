@@ -514,3 +514,95 @@
     background-color: #f8f9fa;
     cursor: pointer;
 }
+
+/* --- Responsive Design --- */
+@media (max-width: 900px) {
+    .browse-header {
+        padding: 0 16px 0 88px;
+        /* Maintain left padding for traffic lights */
+    }
+
+    .browse-header-left {
+        gap: 20px;
+    }
+
+    .browse-search-container {
+        width: 100%;
+        max-width: 250px;
+        min-width: 150px;
+    }
+
+    .browse-shortcut-hint {
+        display: none;
+    }
+}
+
+@media (max-width: 650px) {
+    .browse-header {
+        padding: 0 16px 0 16px;
+        /* Reset padding if traffic lights are handled differently or just accept overlap */
+        /* Actually keep 80px if frameless window, but usually mobile view implies smaller window where we might want space. 
+           Let's assume standard electron drag region needs space. */
+        padding-left: 80px;
+    }
+
+    .browse-header-left {
+        gap: 12px;
+    }
+
+    .browse-logo-img {
+        height: 32px;
+    }
+
+    /* Hide text on mobile */
+    .browse-btn-text {
+        display: none;
+    }
+
+    .browse-btn-primary {
+        padding: 10px;
+        /* Icon only square-ish */
+    }
+
+    .browse-search-container {
+        max-width: 180px;
+    }
+
+    .browse-search-container input {
+        padding-right: 30px;
+        /* Less space for clear button */
+    }
+
+    .browse-search-clear {
+        right: 8px;
+    }
+
+    .browse-btn-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .browse-header-actions {
+        gap: 8px;
+    }
+
+    .browse-toolbar {
+        padding: 16px;
+        overflow-x: auto;
+        /* Hide scrollbar */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .browse-toolbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .browse-filter-pill {
+        white-space: nowrap;
+    }
+
+    .browse-content-area {
+        padding: 0 16px 16px 16px;
+    }
+}

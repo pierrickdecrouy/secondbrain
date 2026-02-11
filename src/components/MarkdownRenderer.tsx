@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 
 interface MarkdownRendererProps {
@@ -36,8 +37,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     return (
         <div className={`prose prose-sm max-w-none text-slate-700 ${className}`}>
             <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeRaw, rehypeKatex]}
                 components={{
                     // Cloze Deletion Support
                     p: ({ node, children, ...props }) => (
