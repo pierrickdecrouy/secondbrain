@@ -19,7 +19,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
 
     return (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-content form-modal" style={{ maxWidth: '900px' }}>
+            <div className="modal-content form-modal" style={{ maxWidth: '1200px', width: '95vw', height: '90vh', display: 'flex', flexDirection: 'column' }}>
                 <div className="modal-header">
                     <h2 className="modal-title">
                         {isEditMode ? 'Modifier la fiche' : 'Ajouter des données'}
@@ -68,7 +68,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                     </div>
                 )}
 
-                <div className="modal-body" style={{ marginTop: 0 }}>
+                <div className="modal-body" style={{ marginTop: 0, flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
                     {activeTab === 'single' ? (
                         <CardFormContent
                             card={card}

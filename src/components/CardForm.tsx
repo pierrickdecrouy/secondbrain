@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     X,
     Save,
     Plus,
     Search,
-    Link as LinkIcon,
     EyeOff,
     Upload,
     Info
@@ -15,8 +15,8 @@ import { useTheme } from '../context/ThemeContext';
 import './CardForm.css';
 
 interface CardFormProps {
-    card?: Card | null; // Allow null for consistency with types
-    existingCards: Card[]; // Renamed for consistency
+    card?: Card | null;
+    existingCards: Card[];
     onSave: (card: Card) => void;
     onCancel: () => void;
 }
@@ -24,30 +24,47 @@ interface CardFormProps {
 export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, onSave, onCancel }) => {
     const { getCategoryColor } = useTheme();
 
+    // Form State
     const [formData, setFormData] = useState<Partial<Card>>({
         type: 'drug',
         title: '',
         subtitle: '',
-        content: '',
+        content: '', // Summary
         tags: [],
-        details: '', // Fixed: string instead of object
+        details: '', // Markdown Content
         manualConnections: [],
         suppressedConnections: [],
         imageUrl: ''
     });
 
+    // Local UI State
     const [tagInput, setTagInput] = useState('');
     const [connectionSearch, setConnectionSearch] = useState('');
     const [suppressSearch, setSuppressSearch] = useState('');
-    const [showAdvanced, setShowAdvanced] = useState(false);
     const [showMarkdownInfo, setShowMarkdownInfo] = useState(false);
+
+    // Category Management
+    const [customTypeInput, setCustomTypeInput] = useState('');
+    const [isCustomTypeActive, setIsCustomTypeActive] = useState(false);
+
+    // Tag Management
+    const uniqueTags = useMemo(() => {
+        const tags = new Set<string>();
+        existingCards.forEach(c => c.tags?.forEach(t => tags.add(t)));
+        return Array.from(tags).sort();
+    }, [existingCards]);
 
     useEffect(() => {
         if (card) {
             setFormData({ ...card });
+            if (!CARD_TYPES.includes(card.type as any)) {
+                setIsCustomTypeActive(true);
+                setCustomTypeInput(card.type);
+            }
         }
     }, [card]);
 
+    // Derived Lists
     const connectionCandidates = useMemo(() => {
         if (!connectionSearch) return [];
         const lower = connectionSearch.toLowerCase();
@@ -66,6 +83,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             .slice(0, 5);
     }, [existingCards, card, formData.suppressedConnections, suppressSearch]);
 
+    // Handlers
     const handleSave = () => {
         if (!formData.title || !formData.type) return;
 
@@ -85,10 +103,20 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         onSave(newCard);
     };
 
-    const addTag = () => {
-        if (tagInput && !formData.tags?.includes(tagInput)) {
-            setFormData(prev => ({ ...prev, tags: [...(prev.tags || []), tagInput] }));
+    const addTag = (tagToAdd: string) => {
+        if (tagToAdd && !formData.tags?.includes(tagToAdd)) {
+            setFormData(prev => ({ ...prev, tags: [...(prev.tags || []), tagToAdd] }));
             setTagInput('');
+        }
+    };
+
+    const handleTagSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        if (val === '__new__') {
+            // Focus plain input
+            // Handled by UI state mostly
+        } else if (val) {
+            addTag(val);
         }
     };
 
@@ -142,319 +170,329 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         }
     };
 
+    const handleCustomTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setCustomTypeInput(val);
+        setFormData({ ...formData, type: val });
+    };
+
     return (
-        <div className="card-form-body-content">
-            <div className="card-form-body">
-                {/* Column 1: Metadata (Left) */}
-                <div className="form-column" style={{ maxWidth: '320px', background: '#f8fafc' }}>
-                    <div className="form-group">
-                        <label>Type de fiche</label>
-                        <div className="type-selector">
-                            {/* Merge defaults with existing custom types AND current selection */}
-                            {Array.from(new Set([...CARD_TYPES, ...existingCards.map(c => c.type), formData.type]))
-                                .filter(Boolean)
-                                .sort()
-                                .map((typeValue) => (
-                                    <button
-                                        key={typeValue}
-                                        className={`type-btn ${formData.type === typeValue ? 'active' : ''}`}
-                                        onClick={() => setFormData({ ...formData, type: typeValue })}
-                                        style={formData.type === typeValue ? { backgroundColor: getCategoryColor(typeValue!), borderColor: getCategoryColor(typeValue!), color: 'white' } : {}}
-                                    >
-                                        {typeValue}
-                                    </button>
-                                ))}
+        <div className="card-form-container">
+            <div className="card-form-scroll-area vertical-stack">
 
-                            {/* "Other" type creator */}
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                                <input
-                                    type="text"
-                                    placeholder="Autre..."
-                                    className="type-btn"
-                                    style={{ width: '100px', cursor: 'text', padding: '0.4rem 0.8rem', background: 'white' }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            const val = e.currentTarget.value.trim();
-                                            if (val) {
-                                                setFormData({ ...formData, type: val });
-                                                e.currentTarget.value = '';
-                                            }
-                                        }
-                                    }}
-                                    onBlur={(e) => {
-                                        const val = e.target.value.trim();
-                                        if (val) {
+                {/* 1. Identity Box */}
+                <div className="form-box app-style">
+                    <div className="box-header app-header-style">
+                        <h3>Identité & Catégorie</h3>
+                    </div>
+                    <div className="box-content app-content-style">
+                        <div className="input-group">
+                            <label className="field-label">Titre</label>
+                            <input
+                                type="text"
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="Titre de la fiche..."
+                                className="app-input title-input"
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <label className="field-label">Catégorie</label>
+
+                            <div className="category-wrapper">
+                                <select
+                                    className="app-select full-width"
+                                    value={isCustomTypeActive ? '__custom__' : formData.type}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === '__custom__') {
+                                            setIsCustomTypeActive(true);
+                                            setFormData({ ...formData, type: customTypeInput || '' });
+                                        } else {
+                                            setIsCustomTypeActive(false);
                                             setFormData({ ...formData, type: val });
-                                            e.target.value = '';
                                         }
                                     }}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                                >
+                                    {CARD_TYPES.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                    <option value="__custom__">Autre / Nouveau...</option>
+                                </select>
 
-                    <div className="form-group">
-                        <label>Titre</label>
-                        <input
-                            type="text"
-                            value={formData.title}
-                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                            placeholder="Nom du médicament, pathologie..."
-                            className="form-input title-input"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Sous-titre / DCI</label>
-                        <input
-                            type="text"
-                            value={formData.subtitle}
-                            onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
-                            placeholder="Ex: Paracétamol"
-                            className="form-input"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Tags</label>
-                        <div className="tags-input-container">
-                            {formData.tags?.map(tag => (
-                                <span key={tag} className="tag-pill">
-                                    {tag}
-                                    <button onClick={() => removeTag(tag)}><X size={12} /></button>
-                                </span>
-                            ))}
-                            <input
-                                type="text"
-                                value={tagInput}
-                                onChange={e => setTagInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addTag()}
-                                placeholder="Ajouter un tag..."
-                                className="tag-input-field"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Résumé (Markdown)</label>
-                        <textarea
-                            value={formData.content}
-                            onChange={e => setFormData({ ...formData, content: e.target.value })}
-                            placeholder="Bref résumé affiché dans la liste..."
-                            className="form-textarea"
-                            rows={6}
-                        />
-                    </div>
-                </div>
-
-                {/* Column 2: Main Content (Center) */}
-                <div className="form-column main-content-column" style={{ padding: '0', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-
-                    {/* Toolbar */}
-                    <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '5px', alignItems: 'center', background: '#fff' }}>
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '**Gras**' }))} title="Gras"><b>B</b></button>
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '*Italique*' }))} title="Italique"><i>I</i></button>
-                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 5px' }} />
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n# Titre 1\n' }))} title="Titre 1">H1</button>
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n## Titre 2\n' }))} title="Titre 2">H2</button>
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n- Liste\n' }))} title="Liste à puces">• List</button>
-                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 5px' }} />
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '[[Lien]]' }))} title="Lien interne"><LinkIcon size={14} /></button>
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '$$x=y$$' }))} title="Équation (Math)">∑</button>
-                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '||Cloze||' }))} title="Trou (Cloze)">[ ]</button>
-
-                        <div style={{ flex: 1 }} />
-
-                        <div className="markdown-info-wrapper" style={{ position: 'relative' }}>
-                            <button
-                                className="toolbar-btn"
-                                onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
-                                title="Guide Markdown"
-                                style={{ background: showMarkdownInfo ? '#e2e8f0' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                                <Info size={18} color="#64748b" />
-                            </button>
-
-                            {showMarkdownInfo && (
-                                <div className="markdown-guide-popover" style={{
-                                    position: 'absolute',
-                                    bottom: '100%',
-                                    right: 0,
-                                    width: '300px',
-                                    background: 'white',
-                                    border: '1px solid #cbd5e1',
-                                    borderRadius: '8px',
-                                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                                    padding: '1rem',
-                                    zIndex: 50,
-                                    marginBottom: '0.5rem',
-                                    textAlign: 'left'
-                                }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>Raccourcis Markdown</h4>
-                                    <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: '1.6' }}>
-                                        <li><b>**Gras**</b> : Texte en gras</li>
-                                        <li><i>*Italique*</i> : Texte en italique</li>
-                                        <li># Titre 1 : Grand titre</li>
-                                        <li>## Titre 2 : Sous-titre</li>
-                                        <li>- Item : Liste à puces</li>
-                                        <li>1. Item : Liste numérotée</li>
-                                        <li>[[Titre Fiche]] : Lien interne</li>
-                                        <li>$$x=y$$ : Équation Math (LaTeX)</li>
-                                        <li>||Texte|| : Trou (masqué au début)</li>
-                                        <li>&gt; Citation : Bloc de citation</li>
-                                        <li>--- : Séparateur horizontal</li>
-                                    </ul>
-                                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', cursor: 'pointer' }} onClick={() => setShowMarkdownInfo(false)}>
-                                        Fermer
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <textarea
-                        value={formData.details}
-                        onChange={e => setFormData({ ...formData, details: e.target.value })}
-                        placeholder="Contenu détaillé de la fiche (Markdown complet, équations, liens...)"
-                        className="form-textarea"
-                        style={{ flex: 1, resize: 'none', borderRadius: 0, border: 'none', padding: '1.5rem', fontSize: '1rem', lineHeight: '1.6' }}
-                    />
-                </div>
-
-                {/* Column 3: Connections (Right) */}
-                <div className="form-column secondary-column" style={{ width: '300px', flex: 'none' }}>
-                    <div className="form-section">
-                        <h3><LinkIcon size={16} /> Connexions Manuelles</h3>
-                        <p className="section-desc">Forcez des liens vers d'autres fiches.</p>
-
-                        <div className="connection-search">
-                            <Search size={14} className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Rechercher..."
-                                value={connectionSearch}
-                                onChange={e => setConnectionSearch(e.target.value)}
-                            />
-                        </div>
-
-                        {connectionCandidates.length > 0 && (
-                            <div className="candidates-list">
-                                {connectionCandidates.map(c => (
-                                    <div key={c.id} className="candidate-item" onClick={() => toggleConnection(c.id)}>
-                                        <span className="candidate-type" style={{ color: getCategoryColor(c.type) }}>●</span>
-                                        {c.title}
-                                        <Plus size={14} style={{ marginLeft: 'auto' }} />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="connected-list">
-                            {formData.manualConnections?.map(id => {
-                                const linkedCard = existingCards.find(c => c.id === id);
-                                if (!linkedCard) return null;
-                                return (
-                                    <div key={id} className="connected-item">
-                                        <LinkIcon size={12} style={{ color: getCategoryColor(linkedCard.type) }} />
-                                        <span>{linkedCard.title}</span>
-                                        <button onClick={() => toggleConnection(id)} className="remove-link-btn">
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                            {(!formData.manualConnections || formData.manualConnections.length === 0) && (
-                                <div className="empty-state">Aucune connexion</div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="form-section">
-                        <h3><EyeOff size={16} /> Exclusions</h3>
-                        <div className="connection-search">
-                            <Search size={14} className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Rechercher à exclure..."
-                                value={suppressSearch}
-                                onChange={e => setSuppressSearch(e.target.value)}
-                            />
-                        </div>
-
-                        {suppressionCandidates.length > 0 && (
-                            <div className="candidates-list">
-                                {suppressionCandidates.map(c => (
-                                    <div key={c.id} className="candidate-item warning" onClick={() => toggleSuppression(c.id)}>
-                                        <EyeOff size={14} />
-                                        {c.title}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="connected-list">
-                            {formData.suppressedConnections?.map(id => {
-                                const linkedCard = existingCards.find(c => c.id === id);
-                                if (!linkedCard) return null;
-                                return (
-                                    <div key={id} className="connected-item suppressed">
-                                        <EyeOff size={12} />
-                                        <span>{linkedCard.title}</span>
-                                        <button onClick={() => toggleSuppression(id)} className="remove-link-btn">
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    <div className="form-section">
-                        <h3 onClick={() => setShowAdvanced(!showAdvanced)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Avancé</span>
-                            <span>{showAdvanced ? '-' : '+'}</span>
-                        </h3>
-
-                        {showAdvanced && (
-                            <div className="form-group" style={{ marginTop: '10px' }}>
-                                <label>URL Image</label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
+                                {isCustomTypeActive && (
                                     <input
                                         type="text"
-                                        value={formData.imageUrl || ''}
-                                        onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                                        placeholder="https://..."
-                                        className="form-input"
-                                        style={{ flex: 1 }}
+                                        className="app-input mt-2"
+                                        value={customTypeInput}
+                                        onChange={handleCustomTypeChange}
+                                        placeholder="Nom de la catégorie..."
+                                        autoFocus
                                     />
-                                    <label className="browse-action-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                                        <Upload size={16} />
-                                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                                    </label>
-                                </div>
+                                )}
                             </div>
-                        )}
+                        </div>
+
+                        <div className="input-group">
+                            <label className="field-label">Sous-titre / DCI</label>
+                            <input
+                                type="text"
+                                value={formData.subtitle}
+                                onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                                placeholder="Optionnel..."
+                                className="app-input"
+                            />
+                        </div>
                     </div>
                 </div>
+
+                {/* 2. Content Box */}
+                <div className="form-box app-style">
+                    <div className="box-header app-header-style flex-between">
+                        <h3>Contenu</h3>
+                        <div className="header-actions">
+                            <button
+                                className={`icon-btn ${showMarkdownInfo ? 'active' : ''}`}
+                                onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
+                                title="Aide Markdown"
+                            >
+                                <Info size={16} />
+                            </button>
+                            {showMarkdownInfo && (
+                                <div className="markdown-tooltip-popover app-popover">
+                                    <h4>Guide Markdown</h4>
+                                    <div className="md-guide-grid">
+                                        <div className="md-col">
+                                            <h5>Style</h5>
+                                            <ul>
+                                                <li><b>**Gras**</b></li>
+                                                <li><i>*Italique*</i></li>
+                                                <li>~Barré~</li>
+                                                <li>{'`Code`'}</li>
+                                            </ul>
+                                        </div>
+                                        <div className="md-col">
+                                            <h5>Structure</h5>
+                                            <ul>
+                                                <li># H1 Heading</li>
+                                                <li>## H2 Heading</li>
+                                                <li>- Liste</li>
+                                                <li>1. Liste num.</li>
+                                            </ul>
+                                        </div>
+                                        <div className="md-col">
+                                            <h5>Avancé</h5>
+                                            <ul>
+                                                <li>[[Lien]]</li>
+                                                <li>||Caché||</li>
+                                                <li>$$Math$$</li>
+                                                <li>![Alt](url)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="box-content no-padding">
+                        <textarea
+                            value={formData.details}
+                            onChange={e => setFormData({ ...formData, details: e.target.value })}
+                            placeholder="Rédigez le contenu..."
+                            className="boxed-textarea app-textarea"
+                            rows={15}
+                        />
+                    </div>
+                </div>
+
+                {/* 3. Tags Box */}
+                <div className="form-box app-style">
+                    <div className="box-header app-header-style">
+                        <h3>Mots-clés / Tags</h3>
+                    </div>
+                    <div className="box-content app-content-style">
+                        <div className="tags-wrapper">
+                            {formData.tags?.map(tag => (
+                                <span key={tag} className="tag-chip app-chip">
+                                    #{tag}
+                                    <X size={12} onClick={() => removeTag(tag)} className="tag-remove-btn" />
+                                </span>
+                            ))}
+
+                            <div className="tag-selector-group">
+                                <select
+                                    className="app-select"
+                                    onChange={handleTagSelect}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>Ajouter un tag...</option>
+                                    {uniqueTags.map(t => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                    <option value="__new__">Créer nouveau...</option>
+                                </select>
+
+                                {/* Always show input if user wants to type or if 'Create new' selected (logic simplified: always allow typing if preferred) */}
+                                <div className="tag-input-box app-input-box">
+                                    <Plus size={14} className="tag-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="Nouveau..."
+                                        value={tagInput}
+                                        onChange={e => setTagInput(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && addTag(tagInput)}
+                                        className="tag-input-clean"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Connections Box */}
+                <div className="form-box app-style">
+                    <div className="box-header app-header-style">
+                        <h3>Connexions</h3>
+                    </div>
+                    <div className="box-content app-content-style vertical-connections">
+                        {/* Manual Links */}
+                        <div className="connection-block">
+                            <label className="field-label">Lier à d'autres fiches</label>
+                            <div className="search-row app-input-row">
+                                <Search size={14} className="search-icon-input" />
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher une fiche..."
+                                    value={connectionSearch}
+                                    onChange={e => setConnectionSearch(e.target.value)}
+                                    className="search-input"
+                                />
+                            </div>
+
+                            {connectionCandidates.length > 0 && (
+                                <div className="candidates-dropdown app-dropdown">
+                                    {connectionCandidates.map(c => (
+                                        <div key={c.id} className="candidate-row" onClick={() => toggleConnection(c.id)}>
+                                            <div className="dot" style={{ background: getCategoryColor(c.type) }} />
+                                            <span>{c.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="linked-list">
+                                {formData.manualConnections?.map(id => {
+                                    const linked = existingCards.find(c => c.id === id);
+                                    return linked ? (
+                                        <div key={id} className="linked-chip app-chip">
+                                            <span>{linked.title}</span>
+                                            <X size={12} onClick={() => toggleConnection(id)} className="remove-link" />
+                                        </div>
+                                    ) : null;
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Exclusions */}
+                        <div className="connection-block mt-4">
+                            <label className="field-label warning">Exclusions (Masquer liens)</label>
+                            <div className="search-row app-input-row warning">
+                                <EyeOff size={14} className="search-icon-input warning-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher fiche à exclure..."
+                                    value={suppressSearch}
+                                    onChange={e => setSuppressSearch(e.target.value)}
+                                    className="search-input"
+                                />
+                            </div>
+
+                            {suppressionCandidates.length > 0 && (
+                                <div className="candidates-dropdown app-dropdown">
+                                    {suppressionCandidates.map(c => (
+                                        <div key={c.id} className="candidate-row warning" onClick={() => toggleSuppression(c.id)}>
+                                            <EyeOff size={14} /> <span>{c.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="linked-list">
+                                {formData.suppressedConnections?.map(id => {
+                                    const linked = existingCards.find(c => c.id === id);
+                                    return linked ? (
+                                        <div key={id} className="linked-chip warning app-chip">
+                                            <span>{linked.title}</span>
+                                            <X size={12} onClick={() => toggleSuppression(id)} className="remove-link" />
+                                        </div>
+                                    ) : null;
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. Media Box */}
+                <div className="form-box app-style">
+                    <div className="box-header app-header-style">
+                        <h3>Média & Résumé</h3>
+                    </div>
+                    <div className="box-content app-content-style">
+                        <div className="input-group">
+                            <label className="field-label">Image Principale</label>
+                            <div className="input-with-action app-input-row">
+                                <input
+                                    type="text"
+                                    value={formData.imageUrl || ''}
+                                    onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                                    className="app-input flex-1 border-0"
+                                    placeholder="URL ou Upload..."
+                                />
+                                <label className="action-btn-secondary">
+                                    <Upload size={14} />
+                                    <input type="file" hidden onChange={handleImageUpload} />
+                                </label>
+                            </div>
+                            {formData.imageUrl && (
+                                <div className="image-preview app-preview">
+                                    <img src={formData.imageUrl} alt="Preview" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="input-group mt-4">
+                            <label className="field-label">Résumé Court</label>
+                            <textarea
+                                rows={2}
+                                value={formData.content}
+                                onChange={e => setFormData({ ...formData, content: e.target.value })}
+                                className="app-textarea-small"
+                                placeholder="Bref résumé pour la liste..."
+                            />
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div className="card-form-footer">
-                <button className="btn-cancel" onClick={onCancel}>Annuler</button>
-                <button className="btn-save" onClick={handleSave} disabled={!formData.title}>
-                    <Save size={18} /> Enregistrer
+            <div className="card-form-footer-fixed app-footer">
+                <button className="btn-cancel app-btn-secondary" onClick={onCancel}>Annuler</button>
+                <button className="btn-save app-btn-primary" onClick={handleSave} disabled={!formData.title}>
+                    <Save size={16} /> Enregistrer
                 </button>
             </div>
         </div>
     );
 };
 
-// Wrapper for standalone modal usage
 export const CardForm: React.FC<CardFormProps> = (props) => {
     return (
         <div className="card-form-overlay">
-            <div className="card-form">
-                <div className="card-form-header">
-                    <h2>{props.card ? 'Modifier la fiche' : 'Nouvelle fiche'}</h2>
-                    <button className="close-btn" onClick={props.onCancel}><X size={24} /></button>
+            <div className="card-form app-card-form">
+                <div className="card-form-header app-header">
+                    <h2>{props.card ? 'Modifier Fiche' : 'Nouvelle Fiche'}</h2>
+                    <button className="close-btn app-close-btn" onClick={props.onCancel}><X size={20} /></button>
                 </div>
                 <CardFormContent {...props} />
             </div>
