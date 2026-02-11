@@ -39,6 +39,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     const [connectionSearch, setConnectionSearch] = useState('');
     const [suppressSearch, setSuppressSearch] = useState('');
     const [showAdvanced, setShowAdvanced] = useState(false);
+    const [showMarkdownInfo, setShowMarkdownInfo] = useState(false);
 
     useEffect(() => {
         if (card) {
@@ -143,21 +144,51 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     return (
         <div className="card-form-body-content">
             <div className="card-form-body">
-                {/* Colonne Gauche: Infos principales */}
-                <div className="form-column">
+                {/* Column 1: Metadata (Left) */}
+                <div className="form-column" style={{ maxWidth: '320px', background: '#f8fafc' }}>
                     <div className="form-group">
                         <label>Type de fiche</label>
                         <div className="type-selector">
-                            {Object.entries(CARD_TYPES).map(([key, label]) => (
-                                <button
-                                    key={key}
-                                    className={`type-btn ${formData.type === key ? 'active' : ''}`}
-                                    onClick={() => setFormData({ ...formData, type: key as CardType })}
-                                    style={formData.type === key ? { backgroundColor: getCategoryColor(key), borderColor: getCategoryColor(key), color: 'white' } : {}}
-                                >
-                                    {label}
-                                </button>
-                            ))}
+                            {/* Merge defaults with existing custom types AND current selection */}
+                            {Array.from(new Set([...CARD_TYPES, ...existingCards.map(c => c.type), formData.type]))
+                                .filter(Boolean)
+                                .sort()
+                                .map((typeValue) => (
+                                    <button
+                                        key={typeValue}
+                                        className={`type-btn ${formData.type === typeValue ? 'active' : ''}`}
+                                        onClick={() => setFormData({ ...formData, type: typeValue })}
+                                        style={formData.type === typeValue ? { backgroundColor: getCategoryColor(typeValue!), borderColor: getCategoryColor(typeValue!), color: 'white' } : {}}
+                                    >
+                                        {typeValue}
+                                    </button>
+                                ))}
+
+                            {/* "Other" type creator */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Autre..."
+                                    className="type-btn"
+                                    style={{ width: '100px', cursor: 'text', padding: '0.4rem 0.8rem', background: 'white' }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const val = e.currentTarget.value.trim();
+                                            if (val) {
+                                                setFormData({ ...formData, type: val });
+                                                e.currentTarget.value = '';
+                                            }
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        const val = e.target.value.trim();
+                                        if (val) {
+                                            setFormData({ ...formData, type: val });
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -184,20 +215,6 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     </div>
 
                     <div className="form-group">
-                        <label>Contenu (Markdown supporté)</label>
-                        <textarea
-                            value={formData.content}
-                            onChange={e => setFormData({ ...formData, content: e.target.value })}
-                            placeholder="Description détaillée, posologie, mécanisme..."
-                            className="form-textarea"
-                            rows={12}
-                        />
-                        <div className="markdown-hint">
-                            **Gras**, *Italique*, - Liste, # Titre, [[LienInterne]]
-                        </div>
-                    </div>
-
-                    <div className="form-group">
                         <label>Tags</label>
                         <div className="tags-input-container">
                             {formData.tags?.map(tag => (
@@ -216,10 +233,95 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                             />
                         </div>
                     </div>
+
+                    <div className="form-group">
+                        <label>Résumé (Markdown)</label>
+                        <textarea
+                            value={formData.content}
+                            onChange={e => setFormData({ ...formData, content: e.target.value })}
+                            placeholder="Bref résumé affiché dans la liste..."
+                            className="form-textarea"
+                            rows={6}
+                        />
+                    </div>
                 </div>
 
-                {/* Colonne Droite: Méta & Connexions */}
-                <div className="form-column secondary-column">
+                {/* Column 2: Main Content (Center) */}
+                <div className="form-column main-content-column" style={{ padding: '0', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+
+                    {/* Toolbar */}
+                    <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '5px', alignItems: 'center', background: '#fff' }}>
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '**Gras**' }))} title="Gras"><b>B</b></button>
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '*Italique*' }))} title="Italique"><i>I</i></button>
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 5px' }} />
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n# Titre 1\n' }))} title="Titre 1">H1</button>
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n## Titre 2\n' }))} title="Titre 2">H2</button>
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n- Liste\n' }))} title="Liste à puces">• List</button>
+                        <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 5px' }} />
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '[[Lien]]' }))} title="Lien interne"><LinkIcon size={14} /></button>
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '$$x=y$$' }))} title="Équation (Math)">∑</button>
+                        <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '||Cloze||' }))} title="Trou (Cloze)">[ ]</button>
+
+                        <div style={{ flex: 1 }} />
+
+                        <div className="markdown-info-wrapper" style={{ position: 'relative' }}>
+                            <button
+                                className="toolbar-btn"
+                                onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
+                                title="Guide Markdown"
+                                style={{ background: showMarkdownInfo ? '#e2e8f0' : 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                            >
+                                ℹ️
+                            </button>
+
+                            {showMarkdownInfo && (
+                                <div className="markdown-guide-popover" style={{
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    right: 0,
+                                    width: '300px',
+                                    background: 'white',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                                    padding: '1rem',
+                                    zIndex: 50,
+                                    marginBottom: '0.5rem',
+                                    textAlign: 'left'
+                                }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>Raccourcis Markdown</h4>
+                                    <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: '1.6' }}>
+                                        <li><b>**Gras**</b> : Texte en gras</li>
+                                        <li><i>*Italique*</i> : Texte en italique</li>
+                                        <li># Titre 1 : Grand titre</li>
+                                        <li>## Titre 2 : Sous-titre</li>
+                                        <li>- Item : Liste à puces</li>
+                                        <li>1. Item : Liste numérotée</li>
+                                        <li>[[Titre Fiche]] : Lien interne</li>
+                                        <li>$$x=y$$ : Équation Math (LaTeX)</li>
+                                        <li>||Texte|| : Trou (masqué au début)</li>
+                                        <li>&gt; Citation : Bloc de citation</li>
+                                        <li>--- : Séparateur horizontal</li>
+                                    </ul>
+                                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', cursor: 'pointer' }} onClick={() => setShowMarkdownInfo(false)}>
+                                        Fermer
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <textarea
+                        value={formData.details}
+                        onChange={e => setFormData({ ...formData, details: e.target.value })}
+                        placeholder="Contenu détaillé de la fiche (Markdown complet, équations, liens...)"
+                        className="form-textarea"
+                        style={{ flex: 1, resize: 'none', borderRadius: 0, border: 'none', padding: '1.5rem', fontSize: '1rem', lineHeight: '1.6' }}
+                    />
+                </div>
+
+                {/* Column 3: Connections (Right) */}
+                <div className="form-column secondary-column" style={{ width: '300px', flex: 'none' }}>
                     <div className="form-section">
                         <h3><LinkIcon size={16} /> Connexions Manuelles</h3>
                         <p className="section-desc">Forcez des liens vers d'autres fiches.</p>
@@ -228,7 +330,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                             <Search size={14} className="search-icon" />
                             <input
                                 type="text"
-                                placeholder="Rechercher une fiche à lier..."
+                                placeholder="Rechercher..."
                                 value={connectionSearch}
                                 onChange={e => setConnectionSearch(e.target.value)}
                             />
@@ -261,15 +363,13 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                 );
                             })}
                             {(!formData.manualConnections || formData.manualConnections.length === 0) && (
-                                <div className="empty-state">Aucune connexion manuelle</div>
+                                <div className="empty-state">Aucune connexion</div>
                             )}
                         </div>
                     </div>
 
                     <div className="form-section">
-                        <h3><EyeOff size={16} /> Connexions Supprimées</h3>
-                        <p className="section-desc">Empêchez l'IA de lier ces fiches.</p>
-
+                        <h3><EyeOff size={16} /> Exclusions</h3>
                         <div className="connection-search">
                             <Search size={14} className="search-icon" />
                             <input
@@ -307,7 +407,6 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                             })}
                         </div>
                     </div>
-
                     <div className="form-section">
                         <h3 onClick={() => setShowAdvanced(!showAdvanced)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
                             <span>Avancé</span>

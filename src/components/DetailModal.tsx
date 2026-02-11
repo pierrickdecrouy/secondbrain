@@ -61,6 +61,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                         <Badge type={card.type} />
                         <h2 className="modal-title">{card.title}</h2>
                         <p className="modal-subtitle">{card.subtitle}</p>
+
+                        {/* Summary / Abstract rendered with Markdown */}
+                        <div className="modal-summary" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', borderLeft: '4px solid #cbd5e1' }}>
+                            <MarkdownRenderer content={card.content} className="text-sm text-slate-600" />
+                        </div>
                     </div>
                     <div className="modal-header-actions">
                         {actions}
