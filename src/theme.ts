@@ -6,6 +6,13 @@ export const CARD_COLORS: Record<string, string> = {
     data: '#d97706',   // amber-600
 };
 
+export const DEFAULT_CARD_ICONS: Record<string, string> = {
+    drug: 'Pill',
+    patho: 'Biohazard',
+    physio: 'Activity',
+    data: 'Database'
+};
+
 // Deterministic color generation for dynamic types
 export function getTypeColor(type: string): string {
     // Return known color if exists

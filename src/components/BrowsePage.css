@@ -236,16 +236,37 @@
 
 /* --- Toolbar (Filtres & View) --- */
 .browse-toolbar {
-    padding: 24px 32px;
+    padding: 16px 32px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    gap: 24px;
+    background: #ffffff;
+    /* Lighter background */
+    border-bottom: 1px solid var(--border-light);
+}
+
+.browse-filter-scroll-area {
+    flex: 1;
+    overflow-x: auto;
+    /* Hide scrollbar */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, black 95%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 95%, transparent 100%);
+}
+
+.browse-filter-scroll-area::-webkit-scrollbar {
+    display: none;
 }
 
 .browse-filter-group {
     display: flex;
     gap: 8px;
+    flex-wrap: nowrap;
+    padding-right: 20px;
+    /* Space for mask fade */
 }
 
 .browse-filter-pill {
@@ -311,7 +332,7 @@
 /* --- Content Area --- */
 .browse-content-area {
     flex: 1;
-    padding: 0 32px 32px 32px;
+    padding: 24px 32px 32px 32px;
     overflow-y: auto;
     /* Custom scrollbar for content area */
 }

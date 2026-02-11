@@ -1,473 +1,360 @@
-import React, { useState, useMemo } from 'react';
-
-import { Save, X, Upload, Link as LinkIcon, Search, ShieldBan } from 'lucide-react';
-import { generateId } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    X,
+    Save,
+    Plus,
+    Search,
+    Link as LinkIcon,
+    EyeOff,
+    Upload
+} from 'lucide-react';
 import type { Card, CardType } from '../types';
+import { CARD_TYPES } from '../types';
+import { useTheme } from '../context/ThemeContext';
+import './CardForm.css';
 
 interface CardFormProps {
-    card?: Card | null;
-    existingCards?: Card[]; // For manual connections
+    card?: Card | null; // Allow null for consistency with types
+    existingCards: Card[]; // Renamed for consistency
     onSave: (card: Card) => void;
     onCancel: () => void;
 }
 
-export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards = [], onSave, onCancel }) => {
-    const [title, setTitle] = useState(card?.title || '');
-    const [subtitle, setSubtitle] = useState(card?.subtitle || '');
-    const [type, setType] = useState<CardType>(card?.type || 'drug');
-    const [content, setContent] = useState(card?.content || '');
-    const [details, setDetails] = useState(card?.details || '');
-    const [tagsInput, setTagsInput] = useState(card?.tags.join(', ') || '');
-    const [imageUrl, setImageUrl] = useState(card?.imageUrl || '');
+export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, onSave, onCancel }) => {
+    const { getCategoryColor } = useTheme();
 
-    // Manual Connections State
-    const [manualConnections, setManualConnections] = useState<string[]>(card?.manualConnections || []);
+    const [formData, setFormData] = useState<Partial<Card>>({
+        type: 'drug',
+        title: '',
+        subtitle: '',
+        content: '',
+        tags: [],
+        details: '', // Fixed: string instead of object
+        manualConnections: [],
+        suppressedConnections: [],
+        imageUrl: ''
+    });
+
+    const [tagInput, setTagInput] = useState('');
     const [connectionSearch, setConnectionSearch] = useState('');
+    const [suppressSearch, setSuppressSearch] = useState('');
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
-    const [suppressedConnections, setSuppressedConnections] = useState<string[]>(card?.suppressedConnections || []);
-    const [suppressionSearch, setSuppressionSearch] = useState('');
+    useEffect(() => {
+        if (card) {
+            setFormData({ ...card });
+        }
+    }, [card]);
 
-    const filteredCards = useMemo(() => {
-        if (!existingCards || !connectionSearch.trim()) return [];
-        const query = connectionSearch.toLowerCase();
+    const connectionCandidates = useMemo(() => {
+        if (!connectionSearch) return [];
+        const lower = connectionSearch.toLowerCase();
         return existingCards
-            .filter(c => c.id !== card?.id && !manualConnections.includes(c.id))
-            .filter(c => c.title.toLowerCase().includes(query))
+            .filter(c => c.id !== card?.id && !formData.manualConnections?.includes(c.id))
+            .filter(c => c.title.toLowerCase().includes(lower) || c.type.toLowerCase().includes(lower))
             .slice(0, 5);
-    }, [existingCards, connectionSearch, card, manualConnections]);
+    }, [existingCards, card, formData.manualConnections, connectionSearch]);
 
-    const handleAddConnection = (targetId: string) => {
-        setManualConnections(prev => [...prev, targetId]);
-        setConnectionSearch('');
-    };
-
-    const handleRemoveConnection = (targetId: string) => {
-        setManualConnections(prev => prev.filter(id => id !== targetId));
-    };
-
-    const filteredSuppressionCards = useMemo(() => {
-        if (!existingCards || !suppressionSearch.trim()) return [];
-        const query = suppressionSearch.toLowerCase();
+    const suppressionCandidates = useMemo(() => {
+        if (!suppressSearch) return [];
+        const lower = suppressSearch.toLowerCase();
         return existingCards
-            .filter(c => c.id !== card?.id && !suppressedConnections.includes(c.id))
-            .filter(c => c.title.toLowerCase().includes(query))
+            .filter(c => c.id !== card?.id && !formData.suppressedConnections?.includes(c.id))
+            .filter(c => c.title.toLowerCase().includes(lower))
             .slice(0, 5);
-    }, [existingCards, suppressionSearch, card, suppressedConnections]);
+    }, [existingCards, card, formData.suppressedConnections, suppressSearch]);
 
-    const handleAddSuppression = (targetId: string) => {
-        setSuppressedConnections(prev => [...prev, targetId]);
-        setSuppressionSearch('');
-    };
-
-    const handleRemoveSuppression = (targetId: string) => {
-        setSuppressedConnections(prev => prev.filter(id => id !== targetId));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSave = () => {
+        if (!formData.title || !formData.type) return;
 
         const newCard: Card = {
-            id: card?.id || generateId(title),
-            type,
-            title,
-            subtitle,
-            content,
-            details: details || content, // Use content as fallback
-            tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
-            ...(imageUrl && { imageUrl }),
-            manualConnections,
-            suppressedConnections,
+            id: card?.id || Date.now().toString(),
+            type: formData.type as CardType,
+            title: formData.title,
+            subtitle: formData.subtitle || '',
+            content: formData.content || '',
+            tags: formData.tags || [],
+            details: formData.details || '',
+            manualConnections: formData.manualConnections || [],
+            suppressedConnections: formData.suppressedConnections || [],
+            imageUrl: formData.imageUrl
         };
 
         onSave(newCard);
     };
 
-    const handlePaste = async (e: React.ClipboardEvent) => {
-        const items = e.clipboardData?.items;
-        if (!items) return;
-
-        for (const item of items) {
-            if (item.type.startsWith('image/')) {
-                e.preventDefault();
-                const file = item.getAsFile();
-                if (file && window.electronAPI) {
-                    try {
-                        const buffer = await file.arrayBuffer();
-                        const savedPath = await window.electronAPI.saveImage({
-                            buffer,
-                            name: `paste-${Date.now()}.png`,
-                            type: file.type
-                        });
-                        setImageUrl(savedPath);
-                    } catch (err) {
-                        console.error('Paste image failed', err);
-                    }
-                }
-                break;
-            }
+    const addTag = () => {
+        if (tagInput && !formData.tags?.includes(tagInput)) {
+            setFormData(prev => ({ ...prev, tags: [...(prev.tags || []), tagInput] }));
+            setTagInput('');
         }
     };
 
-    const types: { value: CardType; label: string }[] = [
-        { value: 'drug', label: 'Médicament' },
-        { value: 'patho', label: 'Pathologie' },
-        { value: 'physio', label: 'Physiologie' },
-        { value: 'data', label: 'Donnée' },
-    ];
+    const removeTag = (tag: string) => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags?.filter(t => t !== tag)
+        }));
+    };
+
+    const toggleConnection = (targetId: string) => {
+        setFormData(prev => {
+            const current = prev.manualConnections || [];
+            if (current.includes(targetId)) {
+                return { ...prev, manualConnections: current.filter(id => id !== targetId) };
+            } else {
+                return { ...prev, manualConnections: [...current, targetId] };
+            }
+        });
+        setConnectionSearch('');
+    };
+
+    const toggleSuppression = (targetId: string) => {
+        setFormData(prev => {
+            const current = prev.suppressedConnections || [];
+            if (current.includes(targetId)) {
+                return { ...prev, suppressedConnections: current.filter(id => id !== targetId) };
+            } else {
+                return { ...prev, suppressedConnections: [...current, targetId] };
+            }
+        });
+        setSuppressSearch('');
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && window.electronAPI) {
+            try {
+                const buffer = await file.arrayBuffer();
+                const savedPath = await window.electronAPI.saveImage({
+                    buffer,
+                    name: file.name,
+                    type: file.type
+                });
+                setFormData(prev => ({ ...prev, imageUrl: savedPath }));
+            } catch (err) {
+                console.error('Upload failed', err);
+            }
+        } else if (file) {
+            alert('L\'upload nécessite l\'application Electron');
+        }
+    };
 
     return (
-        <form onSubmit={handleSubmit} onPaste={handlePaste} className="card-form">
-            <div className="form-group">
-                <label htmlFor="title">Titre *</label>
-                <input
-                    id="title"
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: Insuline"
-                    required
-                />
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="subtitle">Sous-titre</label>
-                <input
-                    id="subtitle"
-                    type="text"
-                    value={subtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                    placeholder="Ex: Hormone hypoglycémiante"
-                />
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="type">Type *</label>
-                <div style={{ position: 'relative' }}>
-                    <input
-                        list="types-list"
-                        id="type"
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                        placeholder="Sélectionner ou saisir un type..."
-                        style={{
-                            width: '100%',
-                            padding: '0.5rem',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '0.375rem'
-                        }}
-                    />
-                    <datalist id="types-list">
-                        {types.map(t => (
-                            <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                    </datalist>
-                </div>
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="content">Résumé *</label>
-                <textarea
-                    id="content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Description courte pour la vue grille..."
-                    rows={2}
-                    required
-                />
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="details">Contenu détaillé (Markdown supporté)</label>
-                <textarea
-                    id="details"
-                    value={details}
-                    onChange={(e) => setDetails(e.target.value)}
-                    placeholder="# Titre&#10;&#10;- Liste item&#10;- **Gras** et *italique*&#10;&#10;> Citation"
-                    rows={6}
-                />
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="tags">Tags (séparés par des virgules)</label>
-                <input
-                    id="tags"
-                    type="text"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    placeholder="Ex: Diabète, Pancréas, Endocrino"
-                />
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="imageUrl">Image</label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <input
-                        id="imageUrl"
-                        type="text"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        placeholder="https://... ou safe-file://..."
-                        style={{ flex: 1 }}
-                    />
-                    <label className="btn-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Upload size={16} />
-                        Upload
-                        <input
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file && window.electronAPI) {
-                                    try {
-                                        const buffer = await file.arrayBuffer();
-                                        const savedPath = await window.electronAPI.saveImage({
-                                            buffer,
-                                            name: file.name,
-                                            type: file.type
-                                        });
-                                        setImageUrl(savedPath);
-                                    } catch (err) {
-                                        console.error('Upload failed', err);
-                                    }
-                                } else if (file) {
-                                    alert('L\'upload nécessite l\'application Electron');
-                                }
-                            }}
-                        />
-                    </label>
-                </div>
-                {imageUrl && (
-                    <div style={{ marginTop: '0.5rem', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                        <img src={imageUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }} />
+        <div className="card-form-body-content">
+            <div className="card-form-body">
+                {/* Colonne Gauche: Infos principales */}
+                <div className="form-column">
+                    <div className="form-group">
+                        <label>Type de fiche</label>
+                        <div className="type-selector">
+                            {Object.entries(CARD_TYPES).map(([key, label]) => (
+                                <button
+                                    key={key}
+                                    className={`type-btn ${formData.type === key ? 'active' : ''}`}
+                                    onClick={() => setFormData({ ...formData, type: key as CardType })}
+                                    style={formData.type === key ? { backgroundColor: getCategoryColor(key), borderColor: getCategoryColor(key), color: 'white' } : {}}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                )}
-            </div>
 
-            {/* Manual Connections Section */}
-            <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <LinkIcon size={16} />
-                    Connexions Manuelles (God Mode)
-                </label>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '8px' }}>
-                    Forcez des liens directs vers d'autres fiches. Ces liens seront toujours visibles et prioritaires.
-                </p>
+                    <div className="form-group">
+                        <label>Titre</label>
+                        <input
+                            type="text"
+                            value={formData.title}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                            placeholder="Nom du médicament, pathologie..."
+                            className="form-input title-input"
+                        />
+                    </div>
 
-                {/* Search Input */}
-                <div style={{ position: 'relative', marginBottom: '10px' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    <input
-                        type="text"
-                        placeholder="Rechercher une fiche à lier..."
-                        value={connectionSearch}
-                        onChange={(e) => setConnectionSearch(e.target.value)}
-                        style={{ paddingLeft: '32px' }}
-                    />
-                    {/* Autocomplete Dropdown */}
-                    {filteredCards.length > 0 && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            background: 'white',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '0 0 8px 8px',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            zIndex: 10,
-                            maxHeight: '200px',
-                            overflowY: 'auto'
-                        }}>
-                            {filteredCards.map(c => (
-                                <div
-                                    key={c.id}
-                                    onClick={() => handleAddConnection(c.id)}
-                                    style={{
-                                        padding: '8px 12px',
-                                        cursor: 'pointer',
-                                        borderBottom: '1px solid #f1f5f9',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
-                                    }}
-                                    className="hover:bg-slate-50"
-                                >
-                                    <span style={{ fontWeight: 500 }}>{c.title}</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
-                                        {c.type}
-                                    </span>
-                                </div>
-                            ))}
+                    <div className="form-group">
+                        <label>Sous-titre / DCI</label>
+                        <input
+                            type="text"
+                            value={formData.subtitle}
+                            onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                            placeholder="Ex: Paracétamol"
+                            className="form-input"
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Contenu (Markdown supporté)</label>
+                        <textarea
+                            value={formData.content}
+                            onChange={e => setFormData({ ...formData, content: e.target.value })}
+                            placeholder="Description détaillée, posologie, mécanisme..."
+                            className="form-textarea"
+                            rows={12}
+                        />
+                        <div className="markdown-hint">
+                            **Gras**, *Italique*, - Liste, # Titre, [[LienInterne]]
                         </div>
-                    )}
-                </div>
+                    </div>
 
-                {/* Selected Connections Chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {manualConnections.map(targetId => {
-                        const targetCard = existingCards?.find(c => c.id === targetId);
-                        if (!targetCard) return null;
-                        return (
-                            <div key={targetId} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: '#FFF7ED', // Orange-50
-                                border: '1px solid #FDBA74', // Orange-300
-                                color: '#C2410C', // Orange-700
-                                padding: '4px 8px',
-                                borderRadius: '16px',
-                                fontSize: '0.85rem',
-                                fontWeight: 500
-                            }}>
-                                <LinkIcon size={12} />
-                                {targetCard.title}
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveConnection(targetId)}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        color: '#C2410C'
-                                    }}
-                                >
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Suppressed Connections Section */}
-            <div className="form-group" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '16px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626' }}>
-                    <ShieldBan size={16} />
-                    Connexions Bloquées (Blacklist)
-                </label>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '8px' }}>
-                    Empêchez l'IA de créer des liens vers ces fiches.
-                </p>
-
-                {/* Search Input for Suppression */}
-                <div style={{ position: 'relative', marginBottom: '10px' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    <input
-                        type="text"
-                        placeholder="Rechercher une fiche à bloquer..."
-                        value={suppressionSearch}
-                        onChange={(e) => setSuppressionSearch(e.target.value)}
-                        style={{ paddingLeft: '32px' }}
-                    />
-                    {/* Autocomplete Dropdown */}
-                    {filteredSuppressionCards.length > 0 && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            background: 'white',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '0 0 8px 8px',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            zIndex: 10,
-                            maxHeight: '200px',
-                            overflowY: 'auto'
-                        }}>
-                            {filteredSuppressionCards.map(c => (
-                                <div
-                                    key={c.id}
-                                    onClick={() => handleAddSuppression(c.id)}
-                                    style={{
-                                        padding: '8px 12px',
-                                        cursor: 'pointer',
-                                        borderBottom: '1px solid #f1f5f9',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
-                                    }}
-                                    className="hover:bg-slate-50"
-                                >
-                                    <span style={{ fontWeight: 500 }}>{c.title}</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
-                                        {c.type}
-                                    </span>
-                                </div>
+                    <div className="form-group">
+                        <label>Tags</label>
+                        <div className="tags-input-container">
+                            {formData.tags?.map(tag => (
+                                <span key={tag} className="tag-pill">
+                                    {tag}
+                                    <button onClick={() => removeTag(tag)}><X size={12} /></button>
+                                </span>
                             ))}
+                            <input
+                                type="text"
+                                value={tagInput}
+                                onChange={e => setTagInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addTag()}
+                                placeholder="Ajouter un tag..."
+                                className="tag-input-field"
+                            />
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Selected Suppression Chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {suppressedConnections.map(targetId => {
-                        const targetCard = existingCards?.find(c => c.id === targetId);
-                        if (!targetCard) return null;
-                        return (
-                            <div key={targetId} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: '#FEF2F2', // Red-50
-                                border: '1px solid #FCA5A5', // Red-300
-                                color: '#B91C1C', // Red-700
-                                padding: '4px 8px',
-                                borderRadius: '16px',
-                                fontSize: '0.85rem',
-                                fontWeight: 500
-                            }}>
-                                <ShieldBan size={12} />
-                                {targetCard.title}
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveSuppression(targetId)}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        color: '#B91C1C'
-                                    }}
-                                >
-                                    <X size={14} />
-                                </button>
+                {/* Colonne Droite: Méta & Connexions */}
+                <div className="form-column secondary-column">
+                    <div className="form-section">
+                        <h3><LinkIcon size={16} /> Connexions Manuelles</h3>
+                        <p className="section-desc">Forcez des liens vers d'autres fiches.</p>
+
+                        <div className="connection-search">
+                            <Search size={14} className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher une fiche à lier..."
+                                value={connectionSearch}
+                                onChange={e => setConnectionSearch(e.target.value)}
+                            />
+                        </div>
+
+                        {connectionCandidates.length > 0 && (
+                            <div className="candidates-list">
+                                {connectionCandidates.map(c => (
+                                    <div key={c.id} className="candidate-item" onClick={() => toggleConnection(c.id)}>
+                                        <span className="candidate-type" style={{ color: getCategoryColor(c.type) }}>●</span>
+                                        {c.title}
+                                        <Plus size={14} style={{ marginLeft: 'auto' }} />
+                                    </div>
+                                ))}
                             </div>
-                        );
-                    })}
+                        )}
+
+                        <div className="connected-list">
+                            {formData.manualConnections?.map(id => {
+                                const linkedCard = existingCards.find(c => c.id === id);
+                                if (!linkedCard) return null;
+                                return (
+                                    <div key={id} className="connected-item">
+                                        <LinkIcon size={12} style={{ color: getCategoryColor(linkedCard.type) }} />
+                                        <span>{linkedCard.title}</span>
+                                        <button onClick={() => toggleConnection(id)} className="remove-link-btn">
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                            {(!formData.manualConnections || formData.manualConnections.length === 0) && (
+                                <div className="empty-state">Aucune connexion manuelle</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="form-section">
+                        <h3><EyeOff size={16} /> Connexions Supprimées</h3>
+                        <p className="section-desc">Empêchez l'IA de lier ces fiches.</p>
+
+                        <div className="connection-search">
+                            <Search size={14} className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher à exclure..."
+                                value={suppressSearch}
+                                onChange={e => setSuppressSearch(e.target.value)}
+                            />
+                        </div>
+
+                        {suppressionCandidates.length > 0 && (
+                            <div className="candidates-list">
+                                {suppressionCandidates.map(c => (
+                                    <div key={c.id} className="candidate-item warning" onClick={() => toggleSuppression(c.id)}>
+                                        <EyeOff size={14} />
+                                        {c.title}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="connected-list">
+                            {formData.suppressedConnections?.map(id => {
+                                const linkedCard = existingCards.find(c => c.id === id);
+                                if (!linkedCard) return null;
+                                return (
+                                    <div key={id} className="connected-item suppressed">
+                                        <EyeOff size={12} />
+                                        <span>{linkedCard.title}</span>
+                                        <button onClick={() => toggleSuppression(id)} className="remove-link-btn">
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="form-section">
+                        <h3 onClick={() => setShowAdvanced(!showAdvanced)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Avancé</span>
+                            <span>{showAdvanced ? '-' : '+'}</span>
+                        </h3>
+
+                        {showAdvanced && (
+                            <div className="form-group" style={{ marginTop: '10px' }}>
+                                <label>URL Image</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input
+                                        type="text"
+                                        value={formData.imageUrl || ''}
+                                        onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                                        placeholder="https://..."
+                                        className="form-input"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <label className="browse-action-btn" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                                        <Upload size={16} />
+                                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
-
-
-            <div className="form-actions">
-                <button type="button" className="btn-secondary" onClick={onCancel}>
-                    Annuler
-                </button>
-                <button type="submit" className="btn-primary">
-                    <Save size={16} />
-                    Enregistrer
+            <div className="card-form-footer">
+                <button className="btn-cancel" onClick={onCancel}>Annuler</button>
+                <button className="btn-save" onClick={handleSave} disabled={!formData.title}>
+                    <Save size={18} /> Enregistrer
                 </button>
             </div>
-        </form>
+        </div>
     );
 };
 
+// Wrapper for standalone modal usage
 export const CardForm: React.FC<CardFormProps> = (props) => {
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && props.onCancel()}>
-            <div className="modal-content form-modal">
-                <div className="modal-header">
-                    <h2 className="modal-title">{props.card ? 'Modifier la fiche' : 'Nouvelle fiche'}</h2>
-                    <button className="modal-close" onClick={props.onCancel}>
-                        <X size={20} />
-                    </button>
+        <div className="card-form-overlay">
+            <div className="card-form">
+                <div className="card-form-header">
+                    <h2>{props.card ? 'Modifier la fiche' : 'Nouvelle fiche'}</h2>
+                    <button className="close-btn" onClick={props.onCancel}><X size={24} /></button>
                 </div>
                 <CardFormContent {...props} />
             </div>

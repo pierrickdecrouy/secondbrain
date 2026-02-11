@@ -1,16 +1,19 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
 import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
 import { DetailModal } from './components/DetailModal';
-import { NetworkView } from './components/NetworkView';
 import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import SettingsPage from './components/SettingsPage';
-import { BrowsePage } from './components/BrowsePage';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, Loader2 } from 'lucide-react';
+import { ThemeProvider } from './context/ThemeContext';
+
+// Lazy load heavy components
+const NetworkView = lazy(() => import('./components/NetworkView').then(module => ({ default: module.NetworkView })));
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const BrowsePage = lazy(() => import('./components/BrowsePage').then(module => ({ default: module.BrowsePage })));
 
 type ViewMode = 'grid' | 'list' | 'network';
 
@@ -28,7 +31,18 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-function App() {
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-full w-full min-h-[50vh]">
+      <div className="flex flex-col items-center gap-4 text-slate-400">
+        <Loader2 className="animate-spin" size={48} />
+        <p className="text-sm font-medium">Chargement...</p>
+      </div>
+    </div>
+  );
+}
+
+function AppContent() {
   const [cards, setCards] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,12 +291,15 @@ function App() {
   // Show settings page
   if (showSettings) {
     return (
-      <SettingsPage
-        onClose={() => {
-          setShowSettings(false);
-          setShowHome(true);
-        }}
-      />
+      <Suspense fallback={<LoadingFallback />}>
+        <SettingsPage
+          onClose={() => {
+            setShowSettings(false);
+            setShowHome(true);
+          }}
+          availableCategories={Array.from(new Set(cards.map(c => c.type))).sort()}
+        />
+      </Suspense>
     );
 
   }
@@ -317,39 +334,51 @@ function App() {
 
   return (
     <>
-      <BrowsePage
-        cards={filteredCards}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        activeFilters={activeFilters}
-        onFilterToggle={(type) => {
-          if (type === 'all') {
-            if (activeFilters.length > 0) setActiveFilters([]);
-          } else {
-            handleFilterToggle(type);
-          }
-        }}
-        onHome={() => setShowHome(true)}
-        onSettings={() => setShowSettings(true)}
-        onExport={handleExportBackup}
-        onAddCard={() => setAddDataMode('create')}
-        onCardClick={(id) => setSelectedCardId(id)}
-        onEditCard={handleEditCard}
-        onDeleteCard={handleDeleteCard}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        renderNetworkView={() => (
-          <NetworkView
-            cards={cards} // Pass all cards to preserve graph structure
-            onNodeClick={(id) => setSelectedCardId(id)}
-            searchQuery={searchQuery}
-            highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
-            activeFilters={activeFilters} // Pass filters for visualization dimming
-          />
-        )}
-      />
+      <Suspense fallback={<LoadingFallback />}>
+        <BrowsePage
+          cards={filteredCards}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeFilters={activeFilters}
+          onFilterToggle={(type) => {
+            if (type === 'all') {
+              if (activeFilters.length > 0) setActiveFilters([]);
+            } else {
+              handleFilterToggle(type);
+            }
+          }}
+          onHome={() => setShowHome(true)}
+          onSettings={() => setShowSettings(true)}
+          onExport={handleExportBackup}
+          onAddCard={() => setAddDataMode('create')}
+          onCardClick={(id) => setSelectedCardId(id)}
+          onEditCard={handleEditCard}
+          onDeleteCard={handleDeleteCard}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          renderNetworkView={() => (
+            <Suspense fallback={<LoadingFallback />}>
+              <NetworkView
+                cards={cards} // Pass all cards to preserve graph structure
+                onNodeClick={(id) => setSelectedCardId(id)}
+                searchQuery={searchQuery}
+                highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
+                activeFilters={activeFilters} // Pass filters for visualization dimming
+              />
+            </Suspense>
+          )}
+        />
+      </Suspense>
       {modals}
     </>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

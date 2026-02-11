@@ -45,6 +45,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     return (
         <div className="home-page">
+            <div className="home-animated-bg" />
             <div className="home-content">
                 {/* Logo + Title grouped together */}
                 <div className="home-branding app-drag-region">

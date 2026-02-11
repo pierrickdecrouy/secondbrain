@@ -1,4 +1,5 @@
-import { Pill, Activity, Zap, BarChart3, Tag } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { DynamicIcon } from './DynamicIcon';
 import { getTypeColor } from '../theme';
 
 interface BadgeProps {
@@ -6,23 +7,20 @@ interface BadgeProps {
     className?: string;
 }
 
-const typeIcons: Record<string, React.ElementType> = {
-    drug: Pill,
-    patho: Activity,
-    physio: Zap,
-    data: BarChart3
-};
-
 export const Badge: React.FC<BadgeProps> = ({ type, className }) => {
-    const Icon = typeIcons[type] || Tag;
-    const color = getTypeColor(type);
+    const { getCategoryIcon, getCategoryColor } = useTheme();
+    const iconName = getCategoryIcon(type);
 
-    // Convert hex/hsl to background/text if needed, or use inline styles
-    // For now, let's use inline styles for the dynamic color
+    // Use context color if available, fallback to theme util
+    const color = getCategoryColor ? getCategoryColor(type) : getTypeColor(type);
+
     const style = {
         backgroundColor: color,
         color: 'white',
         fontWeight: 600,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px'
     };
 
     return (
@@ -31,7 +29,7 @@ export const Badge: React.FC<BadgeProps> = ({ type, className }) => {
             data-type={type}
             style={style}
         >
-            <Icon size={12} />
+            <DynamicIcon name={iconName} size={12} />
             {type.toUpperCase()}
         </span>
     );

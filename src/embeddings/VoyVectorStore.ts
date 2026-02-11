@@ -40,26 +40,33 @@ export class VoyVectorStore {
             return {
                 id: item.id,
                 title: item.title,
+                url: '', // Explicitly add empty URL as it might be required by Voy Resource type
                 embeddings: Array.isArray(item.embeddings) ? item.embeddings : Array.from(item.embeddings || [])
             };
         });
 
         try {
-            // Sanitize input: Ensure it's a plain JSON-serializable array
-            // This fixes "invalid type: map" if the input array had weird properties or was a Proxy
-            const cleanItems = JSON.parse(JSON.stringify(formattedItems));
+            // Sanitize in chunks to avoid overwhelming WASM memory or stack
+            const CHUNK_SIZE = 100;
+            for (let i = 0; i < formattedItems.length; i += CHUNK_SIZE) {
+                const chunk = formattedItems.slice(i, i + CHUNK_SIZE);
+                // Ensure plain objects
+                const cleanChunk = JSON.parse(JSON.stringify(chunk));
 
-            // Check if cleanItems is actually an array
-            if (!Array.isArray(cleanItems)) {
-                console.error("Voy add error: Items is not an array", cleanItems);
-                return;
-            }
-
-            if (cleanItems.length > 0) {
-                this.index.add(cleanItems);
+                if (cleanChunk.length > 0) {
+                    this.index.add(cleanChunk);
+                }
             }
         } catch (e) {
             console.error("Voy index add error:", e);
+            // If critical error (like recursive use), we might need to recreate the index to recover
+            if (e instanceof Error && (e.message.includes('recursive') || e.message.includes('unreachable'))) {
+                console.warn("Voy index corrupted, resetting...");
+                // Keep cache, reset index
+                this.index = new VoySearch();
+                // Re-add everything from cache? That might trigger it again if data is bad.
+                // For now, just reset to avoid app-wide freeze.
+            }
         }
     }
 

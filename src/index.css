@@ -1743,3 +1743,59 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* ===========================
+   Home Page Animation
+   =========================== */
+
+.home-page {
+  position: relative;
+  overflow: hidden;
+  background: white;
+  /* Fallback */
+}
+
+.home-animated-bg {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 50%,
+      rgba(16, 185, 129, 0.08) 0%,
+      /* Emerald */
+      rgba(14, 165, 233, 0.08) 25%,
+      /* Sky Blue */
+      rgba(20, 184, 166, 0.08) 50%,
+      /* Teal */
+      rgba(99, 102, 241, 0.08) 75%,
+      /* Indigo */
+      transparent 100%);
+  background-size: 100% 100%;
+  animation: gradientWave 20s ease infinite alternate;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.home-content {
+  position: relative;
+  z-index: 1;
+  /* Ensure content is above background */
+}
+
+@keyframes gradientWave {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.2);
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.6;
+  }
+}

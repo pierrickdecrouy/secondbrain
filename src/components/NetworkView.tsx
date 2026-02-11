@@ -2,7 +2,7 @@ import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
 import { forceCollide, forceRadial } from 'd3-force';
 import type { Card } from '../types';
-import { getTypeColor } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import { computePrecisionGraph } from '../semanticSearch';
 import { detectCommunities } from '../algorithms/communityDetection';
 
@@ -34,6 +34,7 @@ interface Link {
 }
 
 export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, searchQuery, activeFilters = [], highlightedIds }) => {
+    const { getCategoryColor } = useTheme();
     const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -346,7 +347,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         // Visual Coherence: Use community color for fill
         const community = communityMap.get(node.id);
         const communityColor = community ? communityColorMap.get(community) : undefined;
-        const finalColor = communityColor || getTypeColor(node.type);
+        const finalColor = communityColor || getCategoryColor(node.type);
 
         // Glow for active/hovered nodes
         if (isActive && isHovered) {
@@ -389,7 +390,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             ctx.fillText(label, node.x!, node.y! + r + 3);
         }
         ctx.globalAlpha = 1;
-    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds]);
+    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds, getCategoryColor]);
 
     // Canvas Object: Links (Gradient + Spotlight)
     const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -417,8 +418,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
 
         const gradient = ctx.createLinearGradient(src.x, src.y, tgt.x, tgt.y);
 
-        let srcColor = communityColorMap.get(src.id) || getTypeColor(src.type);
-        let tgtColor = communityColorMap.get(tgt.id) || getTypeColor(tgt.type);
+        let srcColor = communityColorMap.get(src.id) || getCategoryColor(src.type);
+        let tgtColor = communityColorMap.get(tgt.id) || getCategoryColor(tgt.type);
 
         if (isManual) {
             srcColor = '#F59E0B'; // Amber-500

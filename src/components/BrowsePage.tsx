@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Search,
     Settings,
@@ -7,24 +7,24 @@ import {
     LayoutGrid,
     List,
     Share2,
-    Pill,
-    Activity,
-    Zap,
-    BarChart2,
     Edit2,
     Trash2,
-    X
+    X,
+    ArrowUpDown
 } from 'lucide-react';
 import type { Card } from '../types';
 import './BrowsePage.css';
 import SearchSynthesis from './SearchSynthesis';
-import { getTypeColor } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import { stripMarkdown } from '../utils';
+import { DynamicIcon } from './DynamicIcon';
 
 import iconSvg from '../../public/icon.svg';
 
 // Type for ViewMode
 type ViewMode = 'grid' | 'list' | 'network';
+
+type SortOption = 'name-asc' | 'name-desc' | 'type';
 
 interface BrowsePageProps {
     cards: Card[];
@@ -71,17 +71,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     onViewModeChange,
     renderNetworkView
 }) => {
-
-    // Helper to get Icon for type
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'drug': return <Pill size={14} />;
-            case 'patho': return <Activity size={14} />;
-            case 'physio': return <Zap size={14} />;
-            case 'data': return <BarChart2 size={14} />;
-            default: return <Pill size={14} />;
-        }
-    };
+    const { getCategoryColor, getCategoryIcon } = useTheme();
+    const [sortOption, setSortOption] = useState<SortOption>('name-asc');
 
     const getFilterLabel = (type: string) => {
         switch (type) {
@@ -92,6 +83,20 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
             default: return type;
         }
     };
+
+    const sortedCards = useMemo(() => {
+        const sorted = [...cards];
+        switch (sortOption) {
+            case 'name-asc':
+                return sorted.sort((a, b) => a.title.localeCompare(b.title));
+            case 'name-desc':
+                return sorted.sort((a, b) => b.title.localeCompare(a.title));
+            case 'type':
+                return sorted.sort((a, b) => a.type.localeCompare(b.type) || a.title.localeCompare(b.title));
+            default:
+                return sorted;
+        }
+    }, [cards, sortOption]);
 
     return (
         <div className="browse-container">
@@ -138,45 +143,78 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
             </header >
 
             {/* Toolbar Filters */}
-            < div className="browse-toolbar" >
-                <div className="browse-filter-group">
-                    <div
-                        className={`browse-filter-pill ${activeFilters.length === 0 ? 'active' : ''}`}
-                        onClick={() => onFilterToggle('all')} // 'all' logic needs to be handled by parent or here. Assuming clearing filters.
-                    >
-                        Tous
-                    </div>
-                    {['data', 'drug', 'patho', 'physio'].map(type => (
+            <div className="browse-toolbar">
+                <div className="browse-filter-scroll-area">
+                    <div className="browse-filter-group">
                         <div
-                            key={type}
-                            className={`browse-filter-pill ${activeFilters.includes(type) ? 'active' : ''}`}
-                            onClick={() => onFilterToggle(type)}
+                            className={`browse-filter-pill ${activeFilters.length === 0 ? 'active' : ''}`}
+                            onClick={() => onFilterToggle('all')}
                         >
-                            {getFilterLabel(type)}
+                            Tous
                         </div>
-                    ))}
+                        {Array.from(new Set(cards.map(c => c.type))).sort().map(type => (
+                            <div
+                                key={type}
+                                className={`browse-filter-pill ${activeFilters.includes(type) ? 'active' : ''}`}
+                                onClick={() => onFilterToggle(type)}
+                                style={activeFilters.includes(type) ? { backgroundColor: getCategoryColor(type), borderColor: getCategoryColor(type), color: '#fff' } : {}}
+                            >
+                                {getFilterLabel(type)}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* View Toggle */}
-                <div className="browse-view-toggle">
-                    <button
-                        className={`browse-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                        onClick={() => onViewModeChange('grid')}
-                    >
-                        <LayoutGrid size={16} /> Grille
-                    </button>
-                    <button
-                        className={`browse-view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                        onClick={() => onViewModeChange('list')}
-                    >
-                        <List size={16} /> Liste
-                    </button>
-                    <button
-                        className={`browse-view-btn ${viewMode === 'network' ? 'active' : ''}`}
-                        onClick={() => onViewModeChange('network')}
-                    >
-                        <Share2 size={16} /> Réseau
-                    </button>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {/* Sort Dropdown */}
+                    {(viewMode === 'grid' || viewMode === 'list') && (
+                        <div className="browse-view-toggle" style={{ padding: '2px' }}>
+                            <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
+                                <ArrowUpDown size={14} style={{ position: 'absolute', left: '8px', pointerEvents: 'none', color: '#64748b' }} />
+                                <select
+                                    value={sortOption}
+                                    onChange={(e) => setSortOption(e.target.value as SortOption)}
+                                    style={{
+                                        appearance: 'none',
+                                        border: 'none',
+                                        background: 'transparent',
+                                        padding: '4px 8px 4px 28px',
+                                        fontSize: '0.85rem',
+                                        color: '#475569',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        outline: 'none'
+                                    }}
+                                >
+                                    <option value="name-asc">Nom (A-Z)</option>
+                                    <option value="name-desc">Nom (Z-A)</option>
+                                    <option value="type">Type</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* View Toggle */}
+                    <div className="browse-view-toggle">
+                        <button
+                            className={`browse-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                            onClick={() => onViewModeChange('grid')}
+                        >
+                            <LayoutGrid size={16} /> Grille
+                        </button>
+                        <button
+                            className={`browse-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => onViewModeChange('list')}
+                        >
+                            <List size={16} /> Liste
+                        </button>
+                        <button
+                            className={`browse-view-btn ${viewMode === 'network' ? 'active' : ''}`}
+                            onClick={() => onViewModeChange('network')}
+                        >
+                            <Share2 size={16} /> Réseau
+                        </button>
+                    </div>
                 </div>
             </div >
 
@@ -187,19 +225,19 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 {searchQuery && (
                     <SearchSynthesis
                         query={searchQuery}
-                        matchedCards={cards}
+                        matchedCards={sortedCards}
                         onCardClick={onCardClick}
                     />
                 )}
 
                 {viewMode === 'grid' && (
                     <div className="browse-card-grid">
-                        {cards.length === 0 ? (
+                        {sortedCards.length === 0 ? (
                             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', color: '#868e96' }}>
                                 Aucun résultat trouvé
                             </div>
                         ) : (
-                            cards.map((card, index) => ( // Index for animation delay if we want embedded styles, but CSS has it generic.
+                            sortedCards.map((card, index) => ( // Index for animation delay if we want embedded styles, but CSS has it generic.
                                 <div
                                     key={card.id}
                                     className="browse-card"
@@ -211,16 +249,19 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                         <span
                                             className="browse-tag"
                                             style={{
-                                                backgroundColor: getTypeColor(card.type),
+                                                backgroundColor: getCategoryColor(card.type),
                                                 color: '#fff',
                                                 border: 'none',
                                                 textTransform: 'uppercase',
                                                 fontSize: '0.7rem',
                                                 fontWeight: 700,
-                                                letterSpacing: '0.05em'
+                                                letterSpacing: '0.05em',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px'
                                             }}
                                         >
-                                            {getTypeIcon(card.type)} {card.type}
+                                            <DynamicIcon name={getCategoryIcon(card.type)} size={14} /> {card.type}
                                         </span>
                                         <div className="browse-card-actions" onClick={(e) => e.stopPropagation()}>
                                             <button className="browse-action-btn" onClick={() => onEditCard(card)}><Edit2 size={16} /></button>
@@ -254,19 +295,22 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {cards.map(card => (
+                                    {sortedCards.map(card => (
                                         <tr key={card.id} onClick={() => onCardClick(card.id)}>
                                             <td>
                                                 <span
                                                     className="browse-tag"
                                                     style={{
                                                         fontSize: '0.7rem',
-                                                        backgroundColor: getTypeColor(card.type),
+                                                        backgroundColor: getCategoryColor(card.type),
                                                         color: '#fff',
-                                                        border: 'none'
+                                                        border: 'none',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px'
                                                     }}
                                                 >
-                                                    {card.type}
+                                                    <DynamicIcon name={getCategoryIcon(card.type)} size={12} /> {card.type}
                                                 </span>
                                             </td>
                                             <td style={{ fontWeight: 600 }}>{card.title}</td>

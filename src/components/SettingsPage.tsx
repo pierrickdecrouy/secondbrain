@@ -1,26 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import {
     BookOpen,
-    Settings,
     Database,
     X,
     Plus,
     Search,
     Trash2,
-    Library
+    Library,
+    Palette,
+    RotateCcw
 } from 'lucide-react';
+import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
 import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults } from '../storage';
 import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbreviations';
 import './SettingsPage.css';
+import { useTheme } from '../context/ThemeContext';
 
 interface SettingsPageProps {
     onClose: () => void;
     onSave?: () => void;
+    availableCategories?: string[]; // Added property
 }
 
 type Tab = 'dictionary' | 'general' | 'data';
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onSave }) => {
+const SettingsPage: React.FC<SettingsPageProps> = (props) => {
+    const { onClose, onSave } = props;
+    const {
+        categoryColors,
+        categoryIcons,
+        setCategoryColor,
+        setCategoryIcon,
+        resetCategoryColors,
+        resetCategoryIcons,
+        getCategoryColor,
+        getCategoryIcon
+    } = useTheme();
     const [activeTab, setActiveTab] = useState<Tab>('dictionary');
     const [abbreviations, setAbbreviations] = useState<{ [key: string]: string }>({});
     const [newKey, setNewKey] = useState('');
@@ -79,6 +94,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onSave }) => {
         }
     };
 
+    const categoryLabels: Record<string, string> = {
+        drug: 'Médicaments',
+        patho: 'Pathologies',
+        physio: 'Physiologie',
+        data: 'Données'
+    };
+
+    const categoriesToDisplay = Array.from(new Set([
+        ...Object.keys(categoryColors),
+        ...(activeTab === 'general' ? (props.availableCategories || []) : [])
+    ])).sort();
+
     return (
         <div
             className="settings-modal-overlay"
@@ -101,7 +128,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onSave }) => {
                             className={`nav-item ${activeTab === 'general' ? 'active' : ''}`}
                             onClick={() => setActiveTab('general')}
                         >
-                            <Settings size={18} /> Général
+                            <Palette size={18} /> Apparence
                         </li>
                         <li
                             className={`nav-item ${activeTab === 'data' ? 'active' : ''}`}
@@ -190,12 +217,142 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onSave }) => {
                         </>
                     )}
 
-                    {/* General Tab */}
+                    {/* General Tab (Appearance) */}
                     {activeTab === 'general' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8c9b9f' }}>
-                            <Settings size={64} style={{ opacity: 0.1, marginBottom: 20 }} />
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#2c3e50', marginBottom: 10 }}>Paramètres généraux</h3>
-                            <p>Cette section sera bientôt disponible.</p>
+                        <div style={{ padding: '40px 60px', overflowY: 'auto', height: '100%' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px' }}>Thème & Couleurs</h2>
+                                    <p style={{ color: '#8c9b9f' }}>Personnalisez les couleurs des catégories.</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (confirm('Réinitialiser les couleurs et icônes par défaut ?')) {
+                                            resetCategoryColors();
+                                            resetCategoryIcons();
+                                        }
+                                    }}
+                                    className="btn-secondary"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                    <RotateCcw size={14} /> Restaurer
+                                </button>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                                {categoriesToDisplay.map(type => (
+                                    <div key={type} style={{
+                                        background: 'white',
+                                        padding: '20px',
+                                        borderRadius: '16px',
+                                        border: '1px solid #e9ecef',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '16px',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                                    }}>
+                                        {/* Header with Preview */}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    borderRadius: '10px',
+                                                    backgroundColor: getCategoryColor(type),
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: 'white',
+                                                    flexShrink: 0
+                                                }}>
+                                                    <DynamicIcon name={categoryIcons[type]} size={20} />
+                                                </div>
+                                                <span style={{ fontWeight: 600, color: '#2c3e50', fontSize: '1rem' }}>{categoryLabels[type] || type}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Color Picker */}
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#8c9b9f', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                Couleur
+                                            </label>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <div style={{ position: 'relative', width: '36px', height: '36px', flexShrink: 0 }}>
+                                                    <input
+                                                        type="color"
+                                                        value={getCategoryColor(type)}
+                                                        onChange={(e) => setCategoryColor(type, e.target.value)}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 0, left: 0,
+                                                            width: '100%', height: '100%',
+                                                            border: 'none',
+                                                            borderRadius: '8px',
+                                                            cursor: 'pointer',
+                                                            padding: 0,
+                                                            background: 'transparent',
+                                                            opacity: 0
+                                                        }}
+                                                    />
+                                                    <div style={{ width: '100%', height: '100%', borderRadius: '8px', backgroundColor: getCategoryColor(type), border: '2px solid #e9ecef' }} />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={getCategoryColor(type)}
+                                                    onChange={(e) => setCategoryColor(type, e.target.value)}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '8px 12px',
+                                                        border: '1px solid #e9ecef',
+                                                        borderRadius: '8px',
+                                                        fontSize: '0.9rem',
+                                                        color: '#495057',
+                                                        fontFamily: 'monospace',
+                                                        background: '#f8f9fa'
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Icon Picker */}
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#8c9b9f', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                Icône
+                                            </label>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                {AVAILABLE_ICONS.map(iconName => (
+                                                    <button
+                                                        key={iconName}
+                                                        onClick={() => setCategoryIcon(type, iconName)}
+                                                        title={iconName}
+                                                        style={{
+                                                            width: '36px',
+                                                            height: '36px',
+                                                            borderRadius: '8px',
+                                                            border: getCategoryIcon(type) === iconName
+                                                                ? `2px solid ${getCategoryColor(type)}`
+                                                                : '1px solid #e9ecef',
+                                                            background: getCategoryIcon(type) === iconName
+                                                                ? `${getCategoryColor(type)}15` // 15 = ~8% opacity hex
+                                                                : 'white',
+                                                            color: getCategoryIcon(type) === iconName
+                                                                ? getCategoryColor(type)
+                                                                : '#6c757d',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        <DynamicIcon name={iconName} size={18} />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
