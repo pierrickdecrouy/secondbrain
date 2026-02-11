@@ -6,7 +6,8 @@ import {
     Search,
     Link as LinkIcon,
     EyeOff,
-    Upload
+    Upload,
+    Info
 } from 'lucide-react';
 import type { Card, CardType } from '../types';
 import { CARD_TYPES } from '../types';
@@ -269,9 +270,9 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                 className="toolbar-btn"
                                 onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
                                 title="Guide Markdown"
-                                style={{ background: showMarkdownInfo ? '#e2e8f0' : 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                style={{ background: showMarkdownInfo ? '#e2e8f0' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                                ℹ️
+                                <Info size={18} color="#64748b" />
                             </button>
 
                             {showMarkdownInfo && (
