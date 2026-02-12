@@ -34,6 +34,14 @@ const renderWithCloze = (children: React.ReactNode): React.ReactNode => {
 };
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
+    // Pre-process content to handle custom line breaks using '\'
+    // We replace '\' that is NOT preceded by '\' (to avoid \\) and NOT followed by a non-whitespace (to protect \frac, etc.)
+    // with '  \n' which ensures a hard break in Markdown.
+    const processedContent = React.useMemo(() => {
+        if (!content) return '';
+        return content.replace(/(?<!\\)\\(?=\s|$)/g, '  \n');
+    }, [content]);
+
     return (
         <div className={`prose prose-sm max-w-none text-slate-700 ${className}`}>
             <ReactMarkdown
@@ -144,7 +152,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
 
                         // Default blockquote
                         return (
-                            <blockquote {...props} className="border-l-4 border-slate-300 pl-4 py-1 italic text-slate-600 my-4 bg-slate-50 rounded-r" />
+                            <blockquote {...props} className="border-l-4 border-slate-300 pl-4 py-1 italic text-slate-600 my-4 bg-slate-50 rounded-r">
+                                {children}
+                            </blockquote>
                         );
                     },
                     code: ({ node, className, children, ...props }) => {
@@ -165,7 +175,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                     ),
                 }}
             >
-                {content}
+                {processedContent}
             </ReactMarkdown>
         </div>
     );

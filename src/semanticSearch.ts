@@ -257,12 +257,7 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
         return intersection.size / union.size;
     };
 
-    // Helper: Check for title reference
-    const hasReference = (content: string, title: string) => {
-        if (title.length < 4) return false; // Ignore short titles to avoid noise
-        const regex = new RegExp(`\\b${escapeRegExp(title)}\\b`, 'i');
-        return regex.test(content);
-    };
+
 
     const escapeRegExp = (string: string) => {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -299,6 +294,13 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
             let type: 'explicit' | 'semantic' | 'hybrid' | null = null;
 
             // 1. Explicit Reference
+            // Increased min length to 5 to avoid common words triggering links (e.g. "Dose", "Test")
+            const hasReference = (content: string, title: string) => {
+                if (title.length < 5) return false;
+                const regex = new RegExp(`\\b${escapeRegExp(title)}\\b`, 'i');
+                return regex.test(content);
+            };
+
             const refAtoB = hasReference(cardA.content, cardB.title);
             const refBtoA = hasReference(cardB.content, cardA.title);
 
@@ -315,7 +317,8 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
                 }
 
                 // 2. High Confidence Semantic
-                if (cosSim > 0.85) {
+                // Increased from 0.85 to 0.88 for stricter matching
+                if (cosSim > 0.88) {
                     score = cosSim;
                     type = 'semantic';
                 }
@@ -323,13 +326,15 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
                 else {
                     const tagScore = getTagOverlap(cardA.tags, cardB.tags);
 
-                    // Strong Context (Many shared tags) -> Low vector threshold
-                    if (tagScore >= 0.5 && cosSim > 0.60) {
+                    // Strong Context (Many shared tags) -> Moderate vector threshold
+                    // Increased from 0.60 to 0.70
+                    if (tagScore >= 0.5 && cosSim > 0.70) {
                         score = Math.min(cosSim * 1.2, 0.95);
                         type = 'hybrid';
                     }
-                    // Weak Context (At least one shared tag) -> Medium vector threshold
-                    else if (tagScore > 0 && cosSim > 0.65) {
+                    // Weak Context (At least one shared tag) -> High vector threshold needed
+                    // Increased from 0.65 to 0.75
+                    else if (tagScore > 0 && cosSim > 0.75) {
                         score = Math.min(cosSim * 1.1, 0.95);
                         type = 'hybrid';
                     }

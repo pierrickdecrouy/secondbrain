@@ -143,42 +143,43 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     ];
 
     return (
-        <div className="batch-import-content">
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-                <button
-                    className="btn-secondary"
-                    style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                    onClick={() => setShowHelp(!showHelp)}
-                >
-                    {showHelp ? 'Masquer l\'aide' : 'Guide & Exemples'}
-                </button>
-            </div>
+        <div className="batch-import-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.5rem', overflow: 'hidden' }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                    <button
+                        className="btn-secondary"
+                        style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                        onClick={() => setShowHelp(!showHelp)}
+                    >
+                        {showHelp ? 'Masquer l\'aide' : 'Guide & Exemples'}
+                    </button>
+                </div>
 
-            {showHelp && (
-                <div style={{ marginBottom: '20px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-                        <div>
-                            <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.1rem' }}>Guide d'importation</h3>
-                            <p style={{ margin: 0, color: '#64748b' }}>
-                                Importez des fiches enrichies avec <strong>Markdown</strong>, <strong>Tableaux HTML</strong> et <strong>Icônes SVG</strong>.
-                            </p>
+                {showHelp && (
+                    <div style={{ marginBottom: '1rem', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                            <div>
+                                <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.1rem' }}>Guide d'importation</h3>
+                                <p style={{ margin: 0, color: '#64748b' }}>
+                                    Importez des fiches enrichies avec <strong>Markdown</strong>, <strong>Tableaux HTML</strong> et <strong>Icônes SVG</strong>.
+                                </p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        <div>
-                            <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <FileText size={16} /> Format Texte (#)
-                            </h4>
-                            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                                <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
-                                    <li>Séparez les fiches avec <code># Titre de la fiche</code></li>
-                                    <li>Ligne suivante : Sous-titre</li>
-                                    <li>Tags entre crochets : <code>[Tag1, Tag2]</code></li>
-                                    <li>Le reste est le contenu (Markdown + HTML supporté)</li>
-                                </ul>
-                                <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
-                                    {`# Aspirine
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <div>
+                                <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <FileText size={16} /> Format Texte (#)
+                                </h4>
+                                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                                    <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
+                                        <li>Séparez les fiches avec <code># Titre de la fiche</code></li>
+                                        <li>Ligne suivante : Sous-titre</li>
+                                        <li>Tags entre crochets : <code>[Tag1, Tag2]</code></li>
+                                        <li>Le reste est le contenu (Markdown + HTML supporté)</li>
+                                    </ul>
+                                    <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
+                                        {`# Aspirine
 Anti-inflammatoire non stéroïdien
 [Douleur, Fièvre, AINS]
 
@@ -187,22 +188,22 @@ Adulte : 500mg à 1g toutes les 4h.
 
 ## Mécanisme
 <div class="info-box">Inhibe irréversiblement les COX-1 et 2.</div>`}
-                                </pre>
+                                    </pre>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <FileJson size={16} /> Format JSON
-                            </h4>
-                            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                                <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
-                                    <li>Un tableau d'objets : <code>[{`{ ... }`}, {`{ ... }`}]</code></li>
-                                    <li>Champs requis : <code>title</code></li>
-                                    <li>Champs optionnels : <code>subtitle</code>, <code>content</code> (HTML/MD), <code>tags</code> (array), <code>type</code></li>
-                                </ul>
-                                <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
-                                    {`[
+                            <div>
+                                <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <FileJson size={16} /> Format JSON
+                                </h4>
+                                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                                    <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
+                                        <li>Un tableau d'objets : <code>[{`{ ... }`}, {`{ ... }`}]</code></li>
+                                        <li>Champs requis : <code>title</code></li>
+                                        <li>Champs optionnels : <code>subtitle</code>, <code>content</code> (HTML/MD), <code>tags</code> (array), <code>type</code></li>
+                                    </ul>
+                                    <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
+                                        {`[
   {
     "title": "Paracétamol",
     "subtitle": "Antalgique antipyrétique",
@@ -211,67 +212,68 @@ Adulte : 500mg à 1g toutes les 4h.
     "content": "## Indications\\nDouleurs faibles à modérées.\\n\\n<table class='w-full'><tr><td>Dose max</td><td>4g/j</td></tr></table>"
   }
 ]`}
-                                </pre>
+                                    </pre>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            <div className="import-mode-tabs">
-                <button
-                    className={`import-tab ${importMode === 'text' ? 'active' : ''}`}
-                    onClick={() => { setImportMode('text'); setInput(''); setError(null); setPreviewCount(null); }}
-                >
-                    <FileText size={16} />
-                    Texte simple
-                </button>
-                <button
-                    className={`import-tab ${importMode === 'json' ? 'active' : ''}`}
-                    onClick={() => { setImportMode('json'); setInput(''); setError(null); setPreviewCount(null); }}
-                >
-                    <FileJson size={16} />
-                    JSON
-                </button>
+                <div className="import-mode-tabs">
+                    <button
+                        className={`import-tab ${importMode === 'text' ? 'active' : ''}`}
+                        onClick={() => { setImportMode('text'); setInput(''); setError(null); setPreviewCount(null); }}
+                    >
+                        <FileText size={16} />
+                        Texte simple
+                    </button>
+                    <button
+                        className={`import-tab ${importMode === 'json' ? 'active' : ''}`}
+                        onClick={() => { setImportMode('json'); setInput(''); setError(null); setPreviewCount(null); }}
+                    >
+                        <FileJson size={16} />
+                        JSON
+                    </button>
+                </div>
+
+                <div className="form-group">
+                    <label>Type par défaut</label>
+                    <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
+                        {types.map(t => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="form-group" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label>
+                        {importMode === 'text' ? 'Fiches séparées par #' : 'JSON Array'}
+                    </label>
+                    <textarea
+                        className={importMode === 'json' ? 'font-mono text-xs' : ''}
+                        style={{ flex: 1, minHeight: '300px', resize: 'vertical' }}
+                        value={input}
+                        onChange={handleInputChange}
+                        placeholder={importMode === 'text' ? '...' : '[...]'}
+                    />
+                </div>
+
+                {error && (
+                    <div className="import-message error">
+                        <AlertCircle size={16} />
+                        {error}
+                    </div>
+                )}
+
+                {previewCount !== null && !error && (
+                    <div className="import-message success">
+                        <CheckCircle2 size={16} />
+                        {previewCount} fiches détectées
+                    </div>
+                )}
             </div>
 
-            <div className="form-group">
-                <label>Type par défaut</label>
-                <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
-                    {types.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                </select>
-            </div>
-
-            <div className="form-group">
-                <label>
-                    {importMode === 'text' ? 'Fiches séparées par #' : 'JSON Array'}
-                </label>
-                <textarea
-                    className={importMode === 'json' ? 'font-mono text-xs' : ''}
-                    rows={12}
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder={importMode === 'text' ? '...' : '[...]'}
-                />
-            </div>
-
-            {error && (
-                <div className="import-message error">
-                    <AlertCircle size={16} />
-                    {error}
-                </div>
-            )}
-
-            {previewCount !== null && !error && (
-                <div className="import-message success">
-                    <CheckCircle2 size={16} />
-                    {previewCount} fiches détectées
-                </div>
-            )}
-
-            <div className="form-actions">
+            <div className="form-actions" style={{ paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0', marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: '#fff' }}>
                 <button className="btn-secondary" onClick={onClose}>
                     Annuler
                 </button>

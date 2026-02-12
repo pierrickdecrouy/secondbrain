@@ -296,6 +296,21 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         </div>
                     </div>
                     <div className="box-content no-padding">
+                        <div className="markdown-toolbar">
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '**Gras**' }))} title="Gras"><b>B</b></button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '*Italique*' }))} title="Italique"><i>I</i></button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '~Barré~' }))} title="Barré"><s>S</s></button>
+                            <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 5px' }} />
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n# Titre 1\n' }))} title="Titre 1">H1</button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n## Titre 2\n' }))} title="Titre 2">H2</button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n- Liste\n' }))} title="Liste à puces">●</button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n1. Liste num.\n' }))} title="Liste numérotée">1.</button>
+                            <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 5px' }} />
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '[[Lien]]' }))} title="Lien interne">🔗</button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '||Cloze||' }))} title="Trou (Cloze)">[ ]</button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '$$x=y$$' }))} title="Équation (Math)">∑</button>
+                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n> Citation\n' }))} title="Citation">❝</button>
+                        </div>
                         <textarea
                             value={formData.details}
                             onChange={e => setFormData({ ...formData, details: e.target.value })}
