@@ -43,7 +43,8 @@ async function initModel() {
                 if (typeof progress?.progress === 'number') {
                     self.postMessage({ type: 'progress', progress: progress.progress } as WorkerResponse);
                 }
-            }
+            },
+            dtype: 'q8' // Explicitly use q8 quantization for WASM
         }) as FeatureExtractionPipeline;
 
         self.postMessage({ type: 'ready' } as WorkerResponse);

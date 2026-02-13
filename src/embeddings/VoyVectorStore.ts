@@ -54,7 +54,8 @@ export class VoyVectorStore {
                 const cleanChunk = JSON.parse(JSON.stringify(chunk));
 
                 if (cleanChunk.length > 0) {
-                    this.index.add(cleanChunk);
+                    // Voy expects a Resource object { embeddings: [...] }
+                    this.index.add({ embeddings: cleanChunk });
                 }
             }
         } catch (e) {
@@ -97,7 +98,8 @@ export class VoyVectorStore {
         // Serialize index
         let indexData: Uint8Array;
         try {
-            indexData = this.index.serialize();
+            const serialized = this.index.serialize();
+            indexData = new TextEncoder().encode(serialized);
         } catch (e) {
             console.error("Voy serialize error:", e);
             // Return empty if failed to avoid crashing
@@ -146,7 +148,8 @@ export class VoyVectorStore {
                 const indexData = data.subarray(header.length + 4, header.length + 4 + indexLength);
                 const cacheData = data.subarray(header.length + 4 + indexLength);
 
-                this.index = VoySearch.deserialize(indexData as any);
+                const indexString = new TextDecoder().decode(indexData);
+                this.index = VoySearch.deserialize(indexString);
 
                 const cacheJson = new TextDecoder().decode(cacheData);
                 const entries = JSON.parse(cacheJson);
@@ -160,9 +163,20 @@ export class VoyVectorStore {
                 // this.index = VoySearch.deserialize(data);
             }
         } else {
-            // Legacy format
-            this.index = VoySearch.deserialize(data as any);
-            console.log("[Voy] Deserialized legacy index (no cache)");
+            // Legacy format or corrupted
+            try {
+                const indexString = new TextDecoder().decode(data);
+                if (indexString && indexString.trim().length > 0) {
+                    this.index = VoySearch.deserialize(indexString);
+                    console.log("[Voy] Deserialized legacy index (no cache)");
+                } else {
+                    console.warn("[Voy] Legacy index empty, resetting");
+                    this.clear();
+                }
+            } catch (e) {
+                console.error("[Voy] Failed to deserialize legacy index:", e);
+                this.clear();
+            }
         }
     }
 

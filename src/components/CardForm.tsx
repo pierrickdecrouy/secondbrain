@@ -7,19 +7,7 @@ import {
     Search,
     EyeOff,
     Upload,
-    Info,
-    Bold,
-    Italic,
-    Strikethrough,
-    Heading1,
-    Heading2,
-    List,
-    ListOrdered,
-    Link as LinkIcon,
-    Image as ImageIcon,
-    Quote,
-    Sigma,
-    Square
+    Info
 } from 'lucide-react';
 import type { Card, CardType } from '../types';
 import { CARD_TYPES } from '../types';
@@ -308,22 +296,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         </div>
                     </div>
                     <div className="box-content no-padding">
-                        <div className="markdown-toolbar">
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '**Gras**' }))} title="Gras"><Bold size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '*Italique*' }))} title="Italique"><Italic size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '~Barré~' }))} title="Barré"><Strikethrough size={16} /></button>
-                            <div className="toolbar-separator" />
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n# Titre 1\n' }))} title="Titre 1"><Heading1 size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n## Titre 2\n' }))} title="Titre 2"><Heading2 size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n- Liste\n' }))} title="Liste à puces"><List size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n1. Liste num.\n' }))} title="Liste numérotée"><ListOrdered size={16} /></button>
-                            <div className="toolbar-separator" />
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '[[Lien]]' }))} title="Lien interne"><LinkIcon size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '![Alt](url)' }))} title="Image"><ImageIcon size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '||Cloze||' }))} title="Trou (Cloze)"><Square size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '$$x=y$$' }))} title="Équation (Math)"><Sigma size={16} /></button>
-                            <button className="toolbar-btn" onClick={() => setFormData(p => ({ ...p, details: (p.details || '') + '\n> Citation\n' }))} title="Citation"><Quote size={16} /></button>
-                        </div>
+
                         <textarea
                             value={formData.details}
                             onChange={e => setFormData({ ...formData, details: e.target.value })}

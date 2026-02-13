@@ -4,6 +4,11 @@ const fs = require('fs');
 const isDev = require('electron-is-dev');
 const crypto = require('crypto');
 
+// Suppress security warnings in dev mode (unsafe-eval is needed for Vite)
+if (isDev) {
+    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+}
+
 // GLOBAL ERROR HANDLER
 process.on('uncaughtException', (error) => {
     dialog.showErrorBox('Main Process Error', `Uncaught exception:\n${error.message}\n${error.stack}`);
