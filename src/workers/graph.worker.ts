@@ -81,7 +81,15 @@ const STATIC_STOPWORDS = new Set([
     'gelule', 'gelules', 'comprime', 'comprimes', 'sachet', 'sachets',
     'solution', 'suspension', 'injectable', 'oral', 'orale',
     'sirop', 'pommade', 'creme', 'gel', 'patch', 'spray',
-    'ampoule', 'ampoules', 'flacon', 'flacons', 'boite', 'boites'
+    'ampoule', 'ampoules', 'flacon', 'flacons', 'boite', 'boites',
+    // Pharma-specific stopwords (overly generic terms that link everything)
+    'effets', 'indesirables', 'contre', 'indication', 'indications',
+    'posologie', 'mecanisme', 'action', 'clinique', 'biologique',
+    'medicament', 'medicaments', 'therapeutique', 'therapeutiques',
+    'voie', 'administration', 'dose', 'doses', 'risque', 'risques',
+    'surveillance', 'prevention', 'prise', 'charge', 'evolution',
+    'examen', 'examens', 'bilan', 'resultats', 'normal', 'normaux',
+    'augmentation', 'diminution', 'reduction', 'elevation'
 ]);
 
 // Extract single-word tokens
@@ -342,9 +350,13 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
     const wordIDF = new Map<string, number>();
     const DYNAMIC_STOPWORDS = new Set<string>();
 
+    // Adaptive threshold: at least 15% of docs OR 3 docs (whichever is larger)
+    // This prevents instability with small corpora
+    const stopwordThreshold = Math.max(0.15, 3 / totalDocs);
+
     docFrequencies.forEach((count, word) => {
         const frequency = count / totalDocs;
-        if (frequency > 0.08) {
+        if (frequency > stopwordThreshold) {
             DYNAMIC_STOPWORDS.add(word);
             wordIDF.set(word, 0);
         } else {
@@ -434,8 +446,10 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         if (!sourceCard || !targetCard) return;
 
         // === CALIBRATED COMPOSITE SCORE ===
-        // Signal 1: Type compatibility (0.6 – 1.5)
-        const typeMultiplier = getTypeCompat(sourceCard.type, targetCard.type);
+        // Signal 1: Type compatibility (0.6 – 1.5) with EXPONENTIAL scaling
+        // Incompatible (0.6) → 0.46, Compatible (1.5) → 1.84
+        const typeRaw = getTypeCompat(sourceCard.type, targetCard.type);
+        const typeMultiplier = Math.pow(typeRaw, 1.5);
 
         // Signal 2: Feedback adjustment (-0.5 to +0.3)
         const sharedTags = getSharedTags(sourceCard, targetCard);
@@ -447,7 +461,7 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         // Signal 3: Domain bonus (+0.1 if same domain)
         const domainBonus = sharesDomain(sourceCard, targetCard) ? 0.1 : 0;
 
-        // Composite: base × type + feedback + domain
+        // Composite: base × type^1.5 + feedback + domain
         let calibratedScore = (rawValue * typeMultiplier) + feedbackAdj + domainBonus;
 
         // Clamp to [0.05, 1.0]
@@ -534,8 +548,9 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
             const targetTitle = targetCard ? targetCard.title : targetId;
             const normalizedScore = Math.min(score / 5.0, 1.0);
 
-            if (score >= 2.5) {
-                if (score < 3.5) {
+            // Raised threshold from 2.5 to 3.5 to reduce noise in small corpora
+            if (score >= 3.5) {
+                if (score < 5.0) {
                     if (targetCard && !sharesDomain(card, targetCard)) return;
                 }
                 const reason = `Mots clés: ${keywords.slice(0, 4).join(', ')} → ${targetTitle}`;
@@ -583,61 +598,10 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         });
     });
 
-    // ===========================================
-    // PHASE 4: TRANSITIVE LINKS (A→B + B→C = A→C)
-    // ===========================================
-    // Discover indirect connections through shared neighbors
-    const adjacency = new Map<string, Map<string, number>>(); // cardId -> { neighborId -> score }
-
-    for (const link of links) {
-        if (!adjacency.has(link.source)) adjacency.set(link.source, new Map());
-        if (!adjacency.has(link.target)) adjacency.set(link.target, new Map());
-        adjacency.get(link.source)!.set(link.target, link.value);
-        adjacency.get(link.target)!.set(link.source, link.value);
-    }
-
-    const transitiveLinks: Link[] = [];
-
-    adjacency.forEach((neighborsA, cardA) => {
-        neighborsA.forEach((scoreAB, cardB) => {
-            const neighborsB = adjacency.get(cardB);
-            if (!neighborsB) return;
-
-            neighborsB.forEach((scoreBC, cardC) => {
-                if (cardC === cardA) return; // No self-loops
-                if (neighborsA.has(cardC)) return; // Already directly connected
-
-                // Transitive score: attenuated product
-                const transitiveScore = scoreAB * scoreBC * 0.6;
-                if (transitiveScore < 0.3) return; // Minimum quality
-
-                const linkKey = [cardA, cardC].sort().join('-');
-                if (linkSet.has(linkKey)) return;
-
-                const middleCard = cardMap.get(cardB);
-                const targetCard = cardMap.get(cardC);
-
-                // Domain check on the transitive pair
-                const sourceCardObj = cardMap.get(cardA);
-                if (sourceCardObj && targetCard && !sharesDomain(sourceCardObj, targetCard)) return;
-
-                linkSet.add(linkKey);
-                transitiveLinks.push({
-                    source: cardA,
-                    target: cardC,
-                    value: Math.min(transitiveScore, 0.7), // Cap transitive links
-                    reason: `Via: ${middleCard?.title || cardB} → ${targetCard?.title || cardC}`
-                });
-            });
-        });
-    });
-
-    // Add transitive links (limit to top 50 to avoid graph explosion)
-    transitiveLinks.sort((a, b) => b.value - a.value);
-    const maxTransitive = Math.min(transitiveLinks.length, Math.max(10, Math.floor(cards.length * 0.5)));
-    for (let i = 0; i < maxTransitive; i++) {
-        links.push(transitiveLinks[i]);
-    }
+    // PHASE 4: TRANSITIVE LINKS — REMOVED
+    // Transitive links (A→B + B→C = A→C) were creating false associations
+    // in pharma context (e.g., Drug→Symptom + Disease→Symptom ≠ Drug→Disease).
+    // Users can visually deduce paths via intermediate nodes in the graph.
 
     // Build nodes
     const nodes: Node[] = cards.map(c => ({

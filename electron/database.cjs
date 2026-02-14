@@ -123,10 +123,27 @@ function deleteCard(id) {
     stmt.run(id);
 }
 
+function importCardsTransaction(cards) {
+    const insert = db.prepare(`
+        INSERT OR REPLACE INTO cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
+        VALUES (@id, @type, @title, @subtitle, @content, @tags, @metadata, @createdAt, @updatedAt)
+    `);
+
+    const transaction = db.transaction((cards) => {
+        for (const card of cards) {
+            insert.run(cardToParams(card));
+        }
+    });
+
+    transaction(cards);
+    console.log(`[DB] Imported ${cards.length} cards safely (Upsert only).`);
+}
+
 module.exports = {
     initDB,
     getAllCards,
     saveCardsTransaction,
+    importCardsTransaction,
     upsertCard,
     deleteCard
 };

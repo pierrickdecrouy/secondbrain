@@ -83,6 +83,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                         <BatchImportContent
                             onImport={onImport}
                             onClose={onClose}
+                            existingCards={existingCards}
                         />
                     )}
                 </div>

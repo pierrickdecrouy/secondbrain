@@ -23,6 +23,11 @@ let batchReject: ((error: Error) => void) | null = null;
 // Progress callback
 let onProgressCallback: ((progress: number) => void) | null = null;
 let onReadyCallback: (() => void) | null = null;
+let onIndexingProgressCallback: ((progress: number | null) => void) | null = null;
+
+export function setIndexingProgressCallback(callback: (progress: number | null) => void) {
+    onIndexingProgressCallback = callback;
+}
 
 /**
  * Initialize the embedding worker
@@ -35,6 +40,10 @@ export function initSemanticSearch(
 
     onProgressCallback = onProgress || null;
     onReadyCallback = onReady || null;
+
+    onProgressCallback = onProgress || null;
+    onReadyCallback = onReady || null;
+
 
     embeddingWorker = new Worker(
         new URL('./workers/embedding.worker.ts', import.meta.url),
@@ -160,36 +169,67 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
 
     if (cardsToProcess.length === 0) return;
 
-    // Prepare text for each card: title + content + tags
-    // MiniLM-L12-v2 is symmetric, no prefix needed
-    const texts = cardsToProcess.map(card =>
-        `Title: ${card.title}. Content: ${card.subtitle || ''} ${card.content} Tags: ${card.tags.join(', ')}`
-    );
-    const cardIds = cardsToProcess.map(c => c.id);
+    // Chunking to prevent OOM and allow progress updates
+    const CHUNK_SIZE = 50;
+    const chunks = [];
+    for (let i = 0; i < cardsToProcess.length; i += CHUNK_SIZE) {
+        chunks.push(cardsToProcess.slice(i, i + CHUNK_SIZE));
+    }
 
-    return new Promise((resolve, reject) => {
-        batchResolve = (embeddings) => {
-            const entries = embeddings.map(({ cardId, embedding }) => {
-                const card = cards.find(c => c.id === cardId);
-                return {
-                    id: cardId,
-                    title: card ? card.title : 'Unknown',
-                    embeddings: embedding
-                };
-            });
+    console.log(`[Semantic] Processing ${cardsToProcess.length} cards in ${chunks.length} chunks...`);
 
-            try {
-                vectorStore.add(entries);
-                vectorStore.save(); // Persist changes
-            } catch (err) {
-                console.error("Failed to add/save embeddings:", err);
-            }
-            resolve();
-        };
-        batchReject = reject;
+    for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
 
-        embeddingWorker!.postMessage({ type: 'embedBatch', texts, cardIds });
-    });
+        // MiniLM-L12-v2 is symmetric, no prefix needed
+        const texts = chunk.map(card =>
+            `Title: ${card.title}. Content: ${card.subtitle || ''} ${card.content} Tags: ${card.tags.join(', ')}`
+        );
+        const cardIds = chunk.map(c => c.id);
+
+        // Report progress
+        if (onIndexingProgressCallback) {
+            const progress = Math.round(((i) / chunks.length) * 100);
+            onIndexingProgressCallback(progress);
+        }
+
+        await new Promise<void>((resolve, reject) => {
+            batchResolve = (embeddings) => {
+                const entries = embeddings.map(({ cardId, embedding }) => {
+                    const card = cards.find(c => c.id === cardId);
+                    return {
+                        id: cardId,
+                        title: card ? card.title : 'Unknown',
+                        embeddings: embedding
+                    };
+                });
+
+                try {
+                    vectorStore.add(entries);
+                    // Save incrementally to avoid data loss if crash happens later
+                    vectorStore.save();
+                } catch (err) {
+                    console.error("Failed to add/save embeddings:", err);
+                }
+                resolve();
+            };
+            batchReject = reject;
+
+            embeddingWorker!.postMessage({ type: 'embedBatch', texts, cardIds });
+        });
+
+        // Update progress callback if available
+        // We can expose an onProgressCallback in the future or use a store
+        const progress = Math.round(((i + 1) / chunks.length) * 100);
+        console.log(`[Semantic] Chunk ${i + 1}/${chunks.length} processed (${progress}%)`);
+
+        // Yield to event loop
+        await new Promise(r => setTimeout(r, 50));
+    }
+
+    // Clear progress
+    if (onIndexingProgressCallback) onIndexingProgressCallback(null);
+    console.log('[Semantic] Batch indexing complete.');
 }
 
 /**
@@ -309,10 +349,25 @@ export async function computePrecisionGraph(
             let type: 'explicit' | 'semantic' | 'hybrid' | null = null;
 
             // 1. Explicit Reference (The Gold Standard)
-            // Increased min length to 5 to avoid common words
+            // Reduced min length to 2 to support acronyms (AVC, EP, HTA) but filter common words
+            const STOPWORDS = new Set([
+                'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'd\'',
+                'et', 'ou', 'ni', 'car', 'mais', 'donc', 'or',
+                'en', 'à', 'au', 'aux', 'par', 'pour', 'sur', 'vers', 'avec', 'sans', 'sous',
+                'ce', 'cet', 'ces', 'ça', 'qui', 'que', 'quoi', 'dont', 'où',
+                'mon', 'ton', 'son', 'ma', 'ta', 'sa', 'mes', 'tes', 'ses',
+                'nous', 'vous', 'ils', 'elles', 'je', 'tu', 'il', 'elle', 'on'
+            ]);
+
             const hasReference = (content: string, title: string) => {
-                if (title.length < 5) return false;
-                const regex = new RegExp(`\\b${escapeRegExp(title)}\\b`, 'i');
+                const cleanTitle = title.trim();
+                // Min length 2 for acronyms
+                if (cleanTitle.length < 2) return false;
+
+                // Filter stopwords (case insensitive)
+                if (STOPWORDS.has(cleanTitle.toLowerCase())) return false;
+
+                const regex = new RegExp(`\\b${escapeRegExp(cleanTitle)}\\b`, 'i');
                 return regex.test(content);
             };
 

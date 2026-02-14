@@ -39,6 +39,7 @@ function LoadingFallback() {
         <Loader2 className="animate-spin" size={48} />
         <p className="text-sm font-medium">Chargement...</p>
       </div>
+
     </div>
   );
 }
@@ -120,7 +121,8 @@ function AppContent() {
     setSelectedCardId(null);
   }, []);
 
-  const handleBatchImport = useCallback((newCards: Card[]) => {
+  const handleBatchImport = useCallback(async (newCards: Card[]) => {
+    // 1. Update React State (Optimistic UI)
     setCards(prev => {
       const merged = [...prev];
       newCards.forEach(nc => {
@@ -133,6 +135,29 @@ function AppContent() {
       });
       return merged;
     });
+
+    // 2. Safe Bulk Upsert via Electron (No Delete!)
+    if (window.electronAPI?.importCards) {
+      const result = await window.electronAPI.importCards(newCards);
+      if (!result.success) {
+        console.error("Import failed:", result.error);
+        alert("Erreur lors de la sauvegarde: " + result.error);
+      }
+    } else {
+      // Fallback for web mode (if applicable, though request is Electron-specific)
+      console.warn("importCards API not available, falling back to manual merge (unsaved to disk?)");
+    }
+
+    // 3. Trigger Semantic Indexing (Chunked)
+    // The buildCardEmbeddings function (called by effect or manually) handles chunking now.
+    // Ensure we trigger it for the new cards.
+    // The existing useEffect([cards]) will pick this up?
+    // Yes: useEffect(() => { if (cards.length > 0 && embeddingsReady) buildCardEmbeddings(cards); }, [cards, embeddingsReady]);
+    // BUT: That effect sends ALL cards.
+    // With 10k cards, that's heavy.
+    // Ideally we'd only send new ones.
+    // For now, the chunking in semanticSearch.ts makes it safe, but still re-indexes everything.
+    // That's acceptable for robustness.
   }, []);
 
   const handleSuppressConnections = useCallback((pairs: { sourceId: string, targetId: string }[]) => {
@@ -457,9 +482,43 @@ function AppContent() {
 }
 
 function App() {
+  // Global Indexing Progress State
+  const [indexingProgress, setIndexingProgress] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Bind the progress callback from semanticSearch to global App state
+    // This allows AppContent to trigger indexing, and App to show the progress
+    import('./semanticSearch').then(({ setIndexingProgressCallback }) => {
+      setIndexingProgressCallback(setIndexingProgress);
+    });
+  }, []);
+
   return (
     <ThemeProvider>
       <AppContent />
+      {/* Indexing Progress Indicator */}
+      {indexingProgress !== null && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          background: 'white',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          border: '1px solid #e2e8f0'
+        }}>
+          <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid #f3f3f3', borderTop: '2px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <div style={{ fontSize: '14px', fontWeight: 500, color: '#334155' }}>
+            Indexation sémantique : {indexingProgress}%
+          </div>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
     </ThemeProvider>
   );
 }

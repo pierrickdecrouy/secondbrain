@@ -3,6 +3,7 @@
 interface ElectronAPI {
     loadCards: () => Promise<import('./types').Card[]>;
     saveCards: (cards: import('./types').Card[]) => Promise<{ success: boolean; error?: string }>;
+    importCards: (cards: import('./types').Card[]) => Promise<{ success: boolean; error?: string }>;
     saveImage: (data: { buffer: ArrayBuffer; name: string; type: string }) => Promise<string>;
     getDbPath: () => Promise<string>;
     onRequestSave: (callback: () => void) => void;

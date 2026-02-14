@@ -136,6 +136,17 @@ ipcMain.handle('load-cards', async () => {
     }
 });
 
+// Import Handler (Safe Upsert)
+ipcMain.handle('import-cards', async (event, cards) => {
+    try {
+        db.importCardsTransaction(cards);
+        return { success: true };
+    } catch (error) {
+        console.error('Error importing cards to DB:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 // Save Handler (SQLite)
 ipcMain.handle('save-cards', async (event, cards) => {
     try {
@@ -393,3 +404,4 @@ app.on('activate', () => {
         createWindow();
     }
 });
+

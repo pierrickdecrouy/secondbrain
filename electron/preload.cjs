@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Save cards to disk
     saveCards: (cards) => ipcRenderer.invoke('save-cards', cards),
 
+    // Import cards (Safe Upsert)
+    importCards: (cards) => ipcRenderer.invoke('import-cards', cards),
+
     // Get database path (for debugging)
     getDbPath: () => ipcRenderer.invoke('get-db-path'),
 
