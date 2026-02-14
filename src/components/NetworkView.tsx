@@ -562,25 +562,31 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Apply custom forces for Obsidian-like layout
     useEffect(() => {
-        if (fgRef.current) {
-            // Charge: Strong repulsion for clean separation
-            fgRef.current.d3Force('charge')?.strength(-2000); // Increased repulsion (from -1000)
+        // Use useEffect to configure simulation after mount
+        setTimeout(() => {
+            if (!fgRef.current) return;
 
-            // Link force: Manual (Tight) > Structure (Medium)
+            // Custom forces for better layout
+            // Adjusted: Reduced repulsion (-600) and collision (40) to avoid "dilated" graph
+            fgRef.current.d3Force('charge')?.strength(-600);
+
+            // Link force: distance depends on link value
             fgRef.current.d3Force('link')
-                ?.distance((link: any) => link.type === 'manual' ? 50 : 100) // Increased distances (from 30/60)
-                ?.strength((link: any) => link.type === 'manual' ? 1.0 : 0.5); // Slightly reduced strength for flexibility
+                ?.distance((link: any) => {
+                    const val = typeof link.value === 'number' ? link.value : 1;
+                    return 100 / (val * val); // Short links for strong connections
+                })
+                ?.strength(0.5);
 
-            // COLLISION FORCE: Prevent overlap (Large radius for labels)
-            // Increased radius (from 60) and iterations for stability
-            fgRef.current.d3Force('collide', forceCollide(80).iterations(3));
+            // Collision to prevent overlap
+            fgRef.current.d3Force('collide', forceCollide(40).iterations(3));
 
-            // Center force: Moderate gravity to keep it centered but not crushed
-            fgRef.current.d3Force('center')?.strength(0.6); // Reduced (from 0.8) to allow more spread
+            // Center force to keep graph in view
+            fgRef.current.d3Force('center')?.strength(0.6);
 
             // Radial Force: Very weak, just to keep it from flying away
             fgRef.current.d3Force('radial', forceRadial(1000, dimensions.width / 2, dimensions.height / 2).strength(0.05)); // Slight increase (from 0.02)
-        }
+        }, 0); // Run immediately after render
     }, [graphData]); // Re-apply when graph changes
 
     // ... (auto-zoom effect unchanged)
