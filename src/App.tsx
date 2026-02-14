@@ -3,6 +3,7 @@ import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
 import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
+import { loadFeedback, recordNegativeFeedback, recordPositiveFeedback, getLinkFeedback } from './linkFeedback';
 import { DetailModal } from './components/DetailModal';
 import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
@@ -54,6 +55,7 @@ function AppContent() {
   const [showHome, setShowHome] = useState(true); // Start on home page
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [semanticReady, setSemanticReady] = useState(false);
+  const [embeddingsReady, setEmbeddingsReady] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   // Manual Backup Feature
@@ -73,6 +75,22 @@ function AppContent() {
   const handleSaveCard = useCallback((card: Card) => {
     setCards(prev => {
       const exists = prev.find(c => c.id === card.id);
+
+      // Record positive feedback for new manual connections
+      if (card.manualConnections && card.manualConnections.length > 0) {
+        const oldCard = exists;
+        const oldManual = new Set(oldCard?.manualConnections || []);
+        card.manualConnections.forEach(targetId => {
+          if (!oldManual.has(targetId)) {
+            // New manual link — positive signal
+            const targetCard = prev.find(c => c.id === targetId);
+            if (targetCard) {
+              recordPositiveFeedback(card, targetCard);
+            }
+          }
+        });
+      }
+
       if (exists) {
         return prev.map(c => c.id === card.id ? card : c);
       }
@@ -117,6 +135,36 @@ function AppContent() {
     });
   }, []);
 
+  const handleSuppressConnections = useCallback((pairs: { sourceId: string, targetId: string }[]) => {
+    setCards(prev => {
+      const cardMap = new Map(prev.map(c => [c.id, c]));
+      let hasChanges = false;
+
+      pairs.forEach(({ sourceId, targetId }) => {
+        const source = cardMap.get(sourceId);
+        const target = cardMap.get(targetId);
+        if (!source) return;
+
+        const currentSuppressed = source.suppressedConnections || [];
+        if (!currentSuppressed.includes(targetId)) {
+          cardMap.set(sourceId, {
+            ...source,
+            suppressedConnections: [...currentSuppressed, targetId],
+            updatedAt: Date.now()
+          });
+          hasChanges = true;
+
+          // Record negative feedback — the algo learns from this
+          if (target) {
+            recordNegativeFeedback(source, target);
+          }
+        }
+      });
+
+      return hasChanges ? Array.from(cardMap.values()) : prev;
+    });
+  }, []);
+
 
   const selectedCard = useMemo(() =>
     cards.find(c => c.id === selectedCardId),
@@ -140,6 +188,18 @@ function AppContent() {
               </button>
             </div>
           }
+          onNext={() => {
+            const idx = filteredCards.findIndex(c => c.id === selectedCardId);
+            if (idx >= 0 && idx < filteredCards.length - 1) {
+              setSelectedCardId(filteredCards[idx + 1].id);
+            }
+          }}
+          onPrev={() => {
+            const idx = filteredCards.findIndex(c => c.id === selectedCardId);
+            if (idx > 0) {
+              setSelectedCardId(filteredCards[idx - 1].id);
+            }
+          }}
         />
       )}
 
@@ -167,18 +227,25 @@ function AppContent() {
     </>
   );
 
+
   // Initialize semantic search (loads model in background)
   useEffect(() => {
     console.log('Initializing semantic search...');
+    let lastLog = 0;
     initSemanticSearch(
-      (progress) => console.log(`Semantic model progress: ${progress}%`), // Progress callback
+      (progress) => {
+        // Log only every 10% or if it's done (100)
+        if (progress >= 100 || progress - lastLog >= 10) {
+          console.log(`Semantic model progress: ${Math.round(progress)}%`);
+          lastLog = progress;
+        }
+      },
       () => {
         console.log('Semantic search ready!');
         setSemanticReady(true);
       }
     );
   }, []);
-
   // Load cards and learned abbreviations on mount
   useEffect(() => {
     const loadData = async () => {
@@ -192,6 +259,9 @@ function AppContent() {
           const { loadLearnedAbbreviations } = await import('./learnedAbbreviations');
           loadLearnedAbbreviations(savedAbbrevs);
         }
+
+        // Load link feedback (self-learning patterns)
+        loadFeedback();
 
         console.log('Loading cards...');
         const loadedCards = await loadCardsAsync();
@@ -222,10 +292,18 @@ function AppContent() {
 
       // Build semantic embeddings when ready
       if (semanticReady) {
-        buildCardEmbeddings(cards).catch(console.error);
+        setEmbeddingsReady(false);
+        buildCardEmbeddings(cards)
+          .then(() => {
+            console.log('Embeddings built, precision graph can now compute');
+            setEmbeddingsReady(true);
+          })
+          .catch(console.error);
       }
     }
   }, [cards, semanticReady]);
+
+
 
   // Save cards whenever they change (async for Electron support)
   useEffect(() => {
@@ -359,11 +437,15 @@ function AppContent() {
           renderNetworkView={() => (
             <Suspense fallback={<LoadingFallback />}>
               <NetworkView
-                cards={cards} // Pass all cards to preserve graph structure
+                cards={cards}
                 onNodeClick={(id) => setSelectedCardId(id)}
                 searchQuery={searchQuery}
                 highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
-                activeFilters={activeFilters} // Pass filters for visualization dimming
+                activeFilters={activeFilters}
+                onSuppressConnections={handleSuppressConnections}
+                semanticReady={embeddingsReady}
+                vetoPairs={getLinkFeedback().vetoPairs}
+                typeCompat={getLinkFeedback().typePairScores} // We pass scores, logic inside handles matrix
               />
             </Suspense>
           )}

@@ -18,13 +18,12 @@ import SearchSynthesis from './SearchSynthesis';
 import { useTheme } from '../context/ThemeContext';
 import { stripMarkdown } from '../utils';
 import { DynamicIcon } from './DynamicIcon';
-
 import iconSvg from '../../public/icon.svg';
 
 // Type for ViewMode
 type ViewMode = 'grid' | 'list' | 'network';
 
-type SortOption = 'name-asc' | 'name-desc' | 'type';
+type SortOption = 'name-asc' | 'name-desc' | 'type' | 'date-created-desc' | 'date-created-asc' | 'date-modified-desc';
 
 interface BrowsePageProps {
     cards: Card[];
@@ -93,6 +92,12 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 return sorted.sort((a, b) => b.title.localeCompare(a.title));
             case 'type':
                 return sorted.sort((a, b) => a.type.localeCompare(b.type) || a.title.localeCompare(b.title));
+            case 'date-created-desc':
+                return sorted.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            case 'date-created-asc':
+                return sorted.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            case 'date-modified-desc':
+                return sorted.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
             default:
                 return sorted;
         }
@@ -188,7 +193,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                 >
                                     <option value="name-asc">Nom (A-Z)</option>
                                     <option value="name-desc">Nom (Z-A)</option>
-                                    <option value="type">Type</option>
+                                    <option value="type">Catégorie</option>
+                                    <option value="date-created-desc">Plus récents (Création)</option>
+                                    <option value="date-created-asc">Plus anciens (Création)</option>
+                                    <option value="date-modified-desc">Dernière modif.</option>
                                 </select>
                             </div>
                         </div>
@@ -268,12 +276,22 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                             <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash2 size={16} /></button>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                                         <h3 className="browse-card-title">{card.title}</h3>
-                                        <div className="browse-card-subtitle">{card.subtitle}</div>
-                                        <p className="browse-card-desc" title={card.content}>
+                                        {card.subtitle && <div className="browse-card-subtitle">{card.subtitle}</div>}
+                                        <div style={{
+                                            fontSize: '0.85rem',
+                                            color: '#64748b',
+                                            marginTop: '8px',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 3,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            lineHeight: '1.5'
+                                        }}>
                                             {stripMarkdown(card.content)}
-                                        </p>
+                                        </div>
                                     </div>
                                 </div>
                             ))

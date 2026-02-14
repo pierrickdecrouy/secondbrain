@@ -80,6 +80,10 @@ export class VoyVectorStore {
         try {
             const results = this.index.search(queryEmbedding, k);
 
+            if (!results || !Array.isArray(results)) {
+                return [];
+            }
+
             // Map results. Note: Voy might not return score in all versions.
             return results.map((r: any) => ({
                 id: r.id,
@@ -110,7 +114,7 @@ export class VoyVectorStore {
         const cacheEntries = Array.from(this.embeddingCache.entries());
         const cacheData = new TextEncoder().encode(JSON.stringify(cacheEntries));
 
-        const header = new TextEncoder().encode("VOY+CACHE"); // 9 bytes
+        const header = new TextEncoder().encode("VOY+CACHE_V2"); // 12 bytes
         const lengthBuffer = new ArrayBuffer(4);
         new DataView(lengthBuffer).setUint32(0, indexData.length, true); // Little endian
 
@@ -127,26 +131,24 @@ export class VoyVectorStore {
      * Deserialize index and recover cache from Uint8Array
      */
     deserialize(data: Uint8Array): void {
-        const header = new TextEncoder().encode("VOY+CACHE");
+        const headerV2 = new TextEncoder().encode("VOY+CACHE_V2");
+        const headerV1 = new TextEncoder().encode("VOY+CACHE");
 
-        let hasHeader = false;
-        if (data.length > header.length + 4) {
-            hasHeader = true;
+        const hasHeader = (header: Uint8Array) => {
+            if (data.length < header.length + 4) return false;
             for (let i = 0; i < header.length; i++) {
-                if (data[i] !== header[i]) {
-                    hasHeader = false;
-                    break;
-                }
+                if (data[i] !== header[i]) return false;
             }
-        }
+            return true;
+        };
 
-        if (hasHeader) {
+        if (hasHeader(headerV2)) {
             try {
                 const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-                const indexLength = view.getUint32(header.length, true);
+                const indexLength = view.getUint32(headerV2.length, true);
 
-                const indexData = data.subarray(header.length + 4, header.length + 4 + indexLength);
-                const cacheData = data.subarray(header.length + 4 + indexLength);
+                const indexData = data.subarray(headerV2.length + 4, headerV2.length + 4 + indexLength);
+                const cacheData = data.subarray(headerV2.length + 4 + indexLength);
 
                 const indexString = new TextDecoder().decode(indexData);
                 this.index = VoySearch.deserialize(indexString);
@@ -157,20 +159,21 @@ export class VoyVectorStore {
 
                 console.log(`[Voy] Deserialized index and ${this.embeddingCache.size} cached embeddings`);
             } catch (e) {
-                console.error("[Voy] Failed to deserialize with cache, falling back to raw:", e);
-                // Fallback probably fails if it was indeed our format but corrupted
-                // But if it was just a header false positive (unlikely), we might try:
-                // this.index = VoySearch.deserialize(data);
+                console.error("[Voy] Failed to deserialize with cache, falling back to clean slate:", e);
+                this.clear();
             }
+        } else if (hasHeader(headerV1)) {
+            console.warn("[Voy] Found V1 index incompatible with new model. Resetting index.");
+            this.clear();
         } else {
             // Legacy format or corrupted
             try {
                 const indexString = new TextDecoder().decode(data);
-                if (indexString && indexString.trim().length > 0) {
+                if (indexString && indexString.trim().length > 0 && indexString.trim().startsWith('{')) {
                     this.index = VoySearch.deserialize(indexString);
                     console.log("[Voy] Deserialized legacy index (no cache)");
                 } else {
-                    console.warn("[Voy] Legacy index empty, resetting");
+                    console.warn("[Voy] Legacy index empty or invalid, resetting");
                     this.clear();
                 }
             } catch (e) {

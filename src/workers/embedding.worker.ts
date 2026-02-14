@@ -8,8 +8,8 @@ import { pipeline, FeatureExtractionPipeline } from '@huggingface/transformers';
 let extractor: FeatureExtractionPipeline | null = null;
 let isLoading = false;
 
-// Model: multilingual-e5-small supports French and is ~100MB
-const MODEL_ID = 'Xenova/multilingual-e5-small';
+// Model: paraphrase-multilingual-MiniLM-L12-v2 (Better for symmetric similarity & French)
+const MODEL_ID = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
 
 interface WorkerMessage {
     type: 'init' | 'embed' | 'embedBatch';
@@ -67,8 +67,8 @@ async function generateEmbedding(text: string, id?: string) {
     }
 
     try {
-        // E5 models require "query: " or "passage: " prefix
-        const prefixedText = `passage: ${text}`;
+        // MiniLM-L12-v2 is symmetric, no prefix needed
+        const prefixedText = text;
         const output = await extractor(prefixedText, { pooling: 'mean', normalize: true });
 
         // Convert to regular array
@@ -95,7 +95,7 @@ async function generateBatchEmbeddings(texts: string[], cardIds: string[]) {
 
     try {
         for (let i = 0; i < texts.length; i++) {
-            const prefixedText = `passage: ${texts[i]}`;
+            const prefixedText = texts[i];
             const output = await extractor(prefixedText, { pooling: 'mean', normalize: true });
 
             embeddings.push({

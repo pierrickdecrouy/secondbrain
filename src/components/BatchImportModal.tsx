@@ -69,13 +69,26 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
 
         if (!value.trim()) return;
 
-        if (importMode === 'json') {
+        // Auto-detect JSON
+        const trimmed = value.trim();
+        let currentMode = importMode;
+
+        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+            if (currentMode !== 'json') {
+                setImportMode('json');
+                currentMode = 'json';
+            }
+        }
+
+        if (currentMode === 'json') {
             try {
                 const parsed = JSON.parse(value);
                 if (Array.isArray(parsed)) {
                     setPreviewCount(parsed.length);
+                } else if (typeof parsed === 'object') {
+                    setPreviewCount(1); // Single object
                 } else {
-                    setError("Le JSON doit être un tableau d'objets (Array)");
+                    setError("Le JSON doit être un tableau d'objets ou un objet unique.");
                 }
             } catch {
                 // Don't show error while typing
@@ -92,14 +105,22 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
         if (importMode === 'json') {
             try {
                 const parsed = JSON.parse(input);
-                if (!Array.isArray(parsed)) {
-                    throw new Error("Le format doit être un tableau JSON [ ... ]");
-                }
+                let validCards: any[] = [];
 
-                const validCards = parsed.filter((c: any) => {
-                    const title = c.title || c.Title || c.name || c.Name;
-                    return !!title;
-                });
+                if (Array.isArray(parsed)) {
+                    validCards = parsed.filter((c: any) => {
+                        const title = c.title || c.Title || c.name || c.Name;
+                        return !!title;
+                    });
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    // Single object support
+                    const title = parsed.title || parsed.Title || parsed.name || parsed.Name;
+                    if (title) {
+                        validCards = [parsed];
+                    }
+                } else {
+                    throw new Error("Le format doit être un tableau JSON ou un objet unique.");
+                }
 
                 if (validCards.length === 0) {
                     throw new Error("Aucune fiche valide trouvée. Vérifiez que 'title' (ou 'name') est présent.");

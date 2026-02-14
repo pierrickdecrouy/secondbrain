@@ -8,13 +8,15 @@ import {
     Trash2,
     Library,
     Palette,
-    RotateCcw
+    RotateCcw,
+    Brain
 } from 'lucide-react';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
 import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults } from '../storage';
 import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbreviations';
 import './SettingsPage.css';
 import { useTheme } from '../context/ThemeContext';
+import { getDashboardStats, resetFeedback, type DashboardStats } from '../linkFeedback';
 
 interface SettingsPageProps {
     onClose: () => void;
@@ -22,7 +24,7 @@ interface SettingsPageProps {
     availableCategories?: string[]; // Added property
 }
 
-type Tab = 'dictionary' | 'general' | 'data';
+type Tab = 'dictionary' | 'general' | 'data' | 'intelligence';
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const { onClose, onSave } = props;
@@ -46,6 +48,14 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         const loaded = loadCustomAbbreviations();
         setAbbreviations(loaded);
     }, []);
+
+    // Dashboard stats (loaded when intelligence tab is active)
+    const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
+    useEffect(() => {
+        if (activeTab === 'intelligence') {
+            setDashStats(getDashboardStats());
+        }
+    }, [activeTab]);
 
     const handleAdd = () => {
         if (newKey && newValue) {
@@ -135,6 +145,12 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             onClick={() => setActiveTab('data')}
                         >
                             <Database size={18} /> Données
+                        </li>
+                        <li
+                            className={`nav-item ${activeTab === 'intelligence' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('intelligence')}
+                        >
+                            <Brain size={18} /> Intelligence
                         </li>
                     </ul>
                 </aside>
@@ -415,6 +431,191 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                             Réinitialiser le dictionnaire
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Intelligence Tab */}
+                    {activeTab === 'intelligence' && dashStats && (
+                        <div style={{ padding: '30px 40px', overflowY: 'auto', height: '100%' }}>
+                            <div style={{ marginBottom: '30px' }}>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px' }}>Intelligence des liens</h2>
+                                <p style={{ color: '#8c9b9f' }}>Tableau de bord de qualité de l'algorithme d'apprentissage automatique.</p>
+                            </div>
+
+                            {/* Learning Score Gauge */}
+                            <div style={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                borderRadius: '20px',
+                                padding: '30px',
+                                color: 'white',
+                                textAlign: 'center',
+                                marginBottom: '24px'
+                            }}>
+                                <div style={{ fontSize: '3rem', fontWeight: 800 }}>
+                                    {dashStats.learningScore}<span style={{ fontSize: '1.2rem', opacity: 0.8 }}>/100</span>
+                                </div>
+                                <div style={{ fontSize: '0.95rem', opacity: 0.9, marginTop: '4px' }}>Score d'apprentissage</div>
+                                <div style={{
+                                    marginTop: '16px',
+                                    height: '8px',
+                                    background: 'rgba(255,255,255,0.25)',
+                                    borderRadius: '4px',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${dashStats.learningScore}%`,
+                                        background: 'white',
+                                        borderRadius: '4px',
+                                        transition: 'width 0.5s ease'
+                                    }} />
+                                </div>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                                {[
+                                    { label: 'Liens générés', value: dashStats.totalLinksGenerated, color: '#3b82f6' },
+                                    { label: 'Supprimés', value: dashStats.totalSuppressed, color: '#ef4444' },
+                                    { label: 'Manuels', value: dashStats.totalManual, color: '#22c55e' },
+                                    { label: 'Taux acceptation', value: `${dashStats.acceptanceRate}%`, color: '#8b5cf6' }
+                                ].map(stat => (
+                                    <div key={stat.label} style={{
+                                        background: 'white',
+                                        border: '1px solid #e9ecef',
+                                        borderRadius: '14px',
+                                        padding: '16px',
+                                        textAlign: 'center',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                                    }}>
+                                        <div style={{ fontSize: '1.6rem', fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#8c9b9f', marginTop: '4px' }}>{stat.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Patterns & Vetoes */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                                <div style={{
+                                    background: 'white',
+                                    border: '1px solid #e9ecef',
+                                    borderRadius: '14px',
+                                    padding: '20px',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                                }}>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px' }}>🧠 Patterns appris</h3>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>Positifs (boosts)</span>
+                                        <span style={{ fontWeight: 600, color: '#22c55e' }}>{dashStats.positivePatternCount}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>Négatifs (pénalités)</span>
+                                        <span style={{ fontWeight: 600, color: '#ef4444' }}>{dashStats.negativePatternCount}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>Vetoes (hard)</span>
+                                        <span style={{ fontWeight: 600, color: '#f59e0b' }}>{dashStats.vetoCount}</span>
+                                    </div>
+                                </div>
+
+                                {/* Type Pair Scores */}
+                                <div style={{
+                                    background: 'white',
+                                    border: '1px solid #e9ecef',
+                                    borderRadius: '14px',
+                                    padding: '20px',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                                }}>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px' }}>⚡ Scores type-pair appris</h3>
+                                    {Object.entries(dashStats.typePairScores).length === 0 ? (
+                                        <div style={{ color: '#9ca3af', fontSize: '0.85rem', fontStyle: 'italic' }}>Pas encore de données</div>
+                                    ) : (
+                                        Object.entries(dashStats.typePairScores).map(([pair, score]) => (
+                                            <div key={pair} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>{pair.replace('|', ' ↔ ')}</span>
+                                                <span style={{
+                                                    fontWeight: 600,
+                                                    color: score > 0 ? '#22c55e' : score < 0 ? '#ef4444' : '#6b7280',
+                                                    fontSize: '0.85rem'
+                                                }}>
+                                                    {score > 0 ? '+' : ''}{(score * 100).toFixed(0)}%
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Toxic Keywords */}
+                            {dashStats.topToxicKeywords.length > 0 && (
+                                <div style={{
+                                    background: 'white',
+                                    border: '1px solid #e9ecef',
+                                    borderRadius: '14px',
+                                    padding: '20px',
+                                    marginBottom: '24px',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                                }}>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px' }}>🚫 Mots-clés toxiques</h3>
+                                    <p style={{ color: '#8c9b9f', fontSize: '0.8rem', marginBottom: '12px' }}>
+                                        Ces mots génèrent souvent des faux positifs. L'algo les pénalise automatiquement.
+                                    </p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {dashStats.topToxicKeywords.map(tw => (
+                                            <span key={tw.word} style={{
+                                                padding: '4px 12px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: 500,
+                                                background: tw.count >= 3 ? '#fef2f2' : '#fff7ed',
+                                                color: tw.count >= 3 ? '#dc2626' : '#d97706',
+                                                border: `1px solid ${tw.count >= 3 ? '#fecaca' : '#fed7aa'}`
+                                            }}>
+                                                {tw.word} <span style={{ opacity: 0.7 }}>×{tw.count}</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Reset Button */}
+                            <div style={{
+                                padding: '20px',
+                                border: '1px solid #fed7d7',
+                                borderRadius: '14px',
+                                background: '#fff5f5'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ padding: '10px', background: '#fed7d7', borderRadius: '10px', color: '#c53030' }}>
+                                        <Trash2 size={20} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600, color: '#2c3e50', marginBottom: '4px' }}>Réinitialiser l'intelligence</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Supprime tous les patterns appris, vetoes et mots toxiques.</div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Réinitialiser toute l\'intelligence apprise ? L\'algo repartira de zéro.')) {
+                                                resetFeedback();
+                                                setDashStats(getDashboardStats());
+                                            }
+                                        }}
+                                        style={{
+                                            padding: '8px 16px',
+                                            background: 'white',
+                                            border: '1px solid #feb2b2',
+                                            color: '#c53030',
+                                            fontWeight: 600,
+                                            borderRadius: '10px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.85rem',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        Réinitialiser
+                                    </button>
                                 </div>
                             </div>
                         </div>

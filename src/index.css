@@ -1799,3 +1799,77 @@ body {
     opacity: 0.6;
   }
 }
+
+/* ===========================
+   Modal Navigation
+   =========================== */
+
+.nav-arrow-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+  z-index: 110;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nav-arrow-btn:hover {
+  background: white;
+  color: var(--color-drug);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.nav-arrow-btn.prev {
+  left: 2rem;
+}
+
+.nav-arrow-btn.next {
+  right: 2rem;
+}
+
+/* ===========================
+   Card Grid Improvements
+   =========================== */
+
+/* Enforce fixed height for cards in grid view */
+.browse-card {
+  height: 180px;
+  /* Fixed height as requested */
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between;
+  /* Space out header and content */
+}
+
+/* Ensure title doesn't overflow or look bad */
+.browse-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  /* Limit title lines */
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.browse-card-subtitle {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

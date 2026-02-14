@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
 const crypto = require('crypto');
+const db = require('./database.cjs');
 
 // Suppress security warnings in dev mode (unsafe-eval is needed for Vite)
 if (isDev) {
@@ -18,8 +19,17 @@ let mainWindow;
 
 // Determine the user data path
 const userDataPath = app.getPath('userData');
-const dbPath = path.join(userDataPath, 'pharma-brain-db.json');
+const legacyDbPath = path.join(userDataPath, 'pharma-brain-db.json');
+const sqlitePath = path.join(userDataPath, 'pharma-brain.db');
 const imagesPath = path.join(userDataPath, 'images');
+
+// Initialize SQLite
+try {
+    db.initDB(sqlitePath);
+} catch (e) {
+    console.error("Failed to initialize SQLite Database:", e);
+    dialog.showErrorBox('Database Error', `Failed to initialize database:\n${e.message}`);
+}
 
 // Ensure images directory exists
 if (!fs.existsSync(imagesPath)) {
@@ -102,46 +112,37 @@ function createWindow() {
 // IPC Handlers
 ipcMain.handle('load-cards', async () => {
     try {
-        if (fs.existsSync(dbPath)) {
-            const data = fs.readFileSync(dbPath, 'utf-8');
-            return JSON.parse(data);
+        let cards = db.getAllCards();
+
+        // Migration: If SQLite is empty but Legacy JSON exists
+        if (cards.length === 0 && fs.existsSync(legacyDbPath)) {
+            console.log('[Migration] Found Legacy JSON DB, migrating to SQLite...');
+            try {
+                const jsonData = fs.readFileSync(legacyDbPath, 'utf-8');
+                const jsonCards = JSON.parse(jsonData);
+                if (Array.isArray(jsonCards) && jsonCards.length > 0) {
+                    db.saveCardsTransaction(jsonCards);
+                    cards = db.getAllCards(); // Reload from DB
+                    console.log(`[Migration] Successfully migrated ${cards.length} cards.`);
+                }
+            } catch (err) {
+                console.error('[Migration] Failed to migrate JSON:', err);
+            }
         }
-        return [];
+        return cards;
     } catch (error) {
-        console.error('Error loading cards:', error);
+        console.error('Error loading cards from DB:', error);
         return [];
     }
 });
 
-// Save Handler with Backup Rotation
+// Save Handler (SQLite)
 ipcMain.handle('save-cards', async (event, cards) => {
     try {
-        const MAX_BACKUPS = 3;
-        // Rotate backups
-        for (let i = MAX_BACKUPS - 1; i >= 1; i--) {
-            const older = `${dbPath}.bak${i + 1}`;
-            const newer = i === 1 ? dbPath : `${dbPath}.bak${i}`;
-            if (fs.existsSync(newer)) {
-                try {
-                    fs.copyFileSync(newer, older);
-                } catch (e) {
-                    // Ignore missing files
-                }
-            }
-        }
-        // Backup current
-        if (fs.existsSync(dbPath)) {
-            try {
-                fs.copyFileSync(dbPath, `${dbPath}.bak1`);
-            } catch (e) {
-                // Ignore
-            }
-        }
-
-        fs.writeFileSync(dbPath, JSON.stringify(cards, null, 2), 'utf-8');
+        db.saveCardsTransaction(cards);
         return { success: true };
     } catch (error) {
-        console.error('Error saving cards:', error);
+        console.error('Error saving cards to DB:', error);
         return { success: false, error: error.message };
     }
 });
@@ -168,7 +169,7 @@ ipcMain.handle('save-image', async (event, { buffer, name }) => {
 });
 
 ipcMain.handle('get-db-path', async () => {
-    return dbPath;
+    return sqlitePath;
 });
 
 // Learned abbreviations storage

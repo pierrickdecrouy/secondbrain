@@ -50,6 +50,8 @@ function cleanCards(cards: Card[]): Card[] {
         ...card,
         details: convertHtmlToText(card.details),
         content: convertHtmlToText(card.content),
+        createdAt: card.createdAt || 0, // Default to 0 (oldest) if missing
+        updatedAt: card.updatedAt || 0
     }));
 }
 

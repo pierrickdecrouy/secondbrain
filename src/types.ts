@@ -11,6 +11,8 @@ export interface Card {
     imageUrl?: string; // Optional image URL or local path
     manualConnections?: string[]; // IDs of manually connected cards
     suppressedConnections?: string[]; // IDs of excluded/blacklisted connections
+    createdAt?: number;
+    updatedAt?: number;
 }
 
 // Export a value to ensure this file is treated as a module at runtime

@@ -43,6 +43,8 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     const [suppressSearch, setSuppressSearch] = useState('');
     const [showMarkdownInfo, setShowMarkdownInfo] = useState(false);
 
+
+
     // Category Management
     const [customTypeInput, setCustomTypeInput] = useState('');
     const [isCustomTypeActive, setIsCustomTypeActive] = useState(false);
@@ -54,6 +56,8 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         return Array.from(tags).sort();
     }, [existingCards]);
 
+    // Only trigger when content settles. Title/Type changes don't trigger re-gen to avoid spam.
+
     useEffect(() => {
         if (card) {
             setFormData({ ...card });
@@ -63,6 +67,8 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             }
         }
     }, [card]);
+
+    // ... (rest of derived lists)
 
     // Derived Lists
     const connectionCandidates = useMemo(() => {
@@ -87,8 +93,9 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     const handleSave = () => {
         if (!formData.title || !formData.type) return;
 
+        const now = Date.now();
         const newCard: Card = {
-            id: card?.id || Date.now().toString(),
+            id: card?.id || now.toString(),
             type: formData.type as CardType,
             title: formData.title,
             subtitle: formData.subtitle || '',
@@ -97,7 +104,9 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             details: formData.details || '',
             manualConnections: formData.manualConnections || [],
             suppressedConnections: formData.suppressedConnections || [],
-            imageUrl: formData.imageUrl
+            imageUrl: formData.imageUrl,
+            createdAt: card?.createdAt || now,
+            updatedAt: now
         };
 
         onSave(newCard);
@@ -126,6 +135,8 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             tags: prev.tags?.filter(t => t !== tag)
         }));
     };
+
+
 
     const toggleConnection = (targetId: string) => {
         setFormData(prev => {
@@ -320,6 +331,8 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                     <X size={12} onClick={() => removeTag(tag)} className="tag-remove-btn" />
                                 </span>
                             ))}
+
+
 
                             <div className="tag-selector-group">
                                 <select

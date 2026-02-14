@@ -161,9 +161,9 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
     if (cardsToProcess.length === 0) return;
 
     // Prepare text for each card: title + content + tags
-    // Prefix with "passage:" for E5 model compatibility and better clustering
+    // MiniLM-L12-v2 is symmetric, no prefix needed
     const texts = cardsToProcess.map(card =>
-        `passage: Title: ${card.title}. Content: ${card.subtitle || ''} ${card.content} Tags: ${card.tags.join(', ')}`
+        `Title: ${card.title}. Content: ${card.subtitle || ''} ${card.content} Tags: ${card.tags.join(', ')}`
     );
     const cardIds = cardsToProcess.map(c => c.id);
 
@@ -204,8 +204,8 @@ export async function semanticSearch(query: string, topK: number = 20): Promise<
     }
 
     try {
-        // Generate query embedding with "query: " prefix (required by E5 model)
-        const queryEmbedding = await generateEmbedding(`query: ${query}`);
+        // Generate query embedding (No prefix for MiniLM)
+        const queryEmbedding = await generateEmbedding(query);
 
         // Find similar cards with higher threshold for precision
         const results = vectorStore.search(queryEmbedding, topK);
@@ -237,13 +237,22 @@ function cosineSimilarity(a: number[], b: number[]): number {
  */
 /**
  * Compute precision links between cards using hybrid scoring
- * 1. Explicit Reference (Title in Content) -> 1.0
- * 2. High Semantic (Cosine > 0.85) -> Value
- * 3. Hybrid (Cosine > 0.75 + Shared Tags) -> Value * 1.1
+ * 1. Explicit Reference (Title in Content) -> 1.0 (Always valid)
+ * 2. High Semantic (Cosine > Threshold) -> Value
+ *    - Strict threshold for cross-type (0.88+)
+ *    - Relaxed threshold for same-type/compatible (0.80+)
+ *    - Hybrid boost if shared tags
  */
-export async function computePrecisionGraph(cards: Card[]): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[]> {
+export async function computePrecisionGraph(
+    cards: Card[],
+    vetoPairs: string[] = [], // List of "idA|idB" strings (sorted)
+    typeCompat: Record<string, number> = {} // Type compatibility matrix
+): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[]> {
     const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[] = [];
     const processedPairs = new Set<string>();
+
+    // Fast lookup for vetoed pairs
+    const vetoSet = new Set(vetoPairs);
 
     const normalize = (str: string) => str.toLowerCase().trim();
 
@@ -257,24 +266,22 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
         return intersection.size / union.size;
     };
 
-
-
     const escapeRegExp = (string: string) => {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    // Helper: Get type compatibility multiplier (Base 1.0 + Feedback Delta)
+    const getTypeMultiplier = (typeA: string, typeB: string): number => {
+        if (!typeA || !typeB) return 1.0;
+        const key = [typeA, typeB].sort().join('|');
+        const delta = typeCompat[key] ?? 0;
+        return 1.0 + delta;
     };
 
     // Process each card
     for (let i = 0; i < cards.length; i++) {
         const cardA = cards[i];
         const embeddingA = vectorStore.getEmbedding(cardA.id);
-
-        // We can optimize this by only looking at candidates from vector search first,
-        // BUT for "Explicit Reference" we might need to check even if vector score is low?
-        // Actually, if vector score is low, usually text is different.
-        // Let's stick to vector search candidates for performance, but maybe increase K.
-        // OR, for small datasets (<500 cards), we can do N*N for explicit references?
-        // Let's do N*N for Explicit References if N < 200, otherwise rely on vector search?
-        // The user wants "Precision". Let's stick to the high-quality candidates found by Voy.
 
         if (!embeddingA) continue;
 
@@ -288,13 +295,21 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
             if (!cardB) continue;
 
             const pairId = [cardA.id, cardB.id].sort().join('-');
-            if (processedPairs.has(pairId)) continue;
+            if (processedPairs.has(pairId)) continue; // avoid duplicates
+
+            // 0. CHECK VETO (Hard Constraint)
+            // Format in linkFeedback is sorted idA|idB
+            const vetoKey = [cardA.id, cardB.id].sort().join('|');
+            if (vetoSet.has(vetoKey)) {
+                // console.log(`🚫 Vetoed semantic link blocked: ${cardA.title} ↔ ${cardB.title}`);
+                continue;
+            }
 
             let score = 0;
             let type: 'explicit' | 'semantic' | 'hybrid' | null = null;
 
-            // 1. Explicit Reference
-            // Increased min length to 5 to avoid common words triggering links (e.g. "Dose", "Test")
+            // 1. Explicit Reference (The Gold Standard)
+            // Increased min length to 5 to avoid common words
             const hasReference = (content: string, title: string) => {
                 if (title.length < 5) return false;
                 const regex = new RegExp(`\\b${escapeRegExp(title)}\\b`, 'i');
@@ -316,25 +331,42 @@ export async function computePrecisionGraph(cards: Card[]): Promise<{ source: st
                     cosSim = cosineSimilarity(embeddingA, embeddingB);
                 }
 
+                // DEBUG LOGGING (Temporary)
+                if (i === 0 && cosSim > 0.6) {
+                    // console.log(`[Semantic Debug] ${cardA.title} <-> ${cardB.title}: Cosine=${cosSim.toFixed(3)}`);
+                }
+
+                // === STRICT SEMANTIC LOGIC ===
+                // Check type compatibility
+                const typeMult = getTypeMultiplier(cardA.type, cardB.type);
+                const tagOverlap = getTagOverlap(cardA.tags, cardB.tags);
+
+                // Determining thresholds based on compatibility
+                // LOWERED DEFAULT to 0.80 to capture more links in sparse graphs
+                let semanticThreshold = 0.80;
+
+                if (typeMult < 0.8) {
+                    // Incompatible types -> require high similarity
+                    semanticThreshold = tagOverlap > 0 ? 0.85 : 0.88;
+                } else if (typeMult >= 1.2) {
+                    // Highly compatible -> Relax if context exists
+                    semanticThreshold = tagOverlap > 0 ? 0.75 : 0.80;
+                }
+
                 // 2. High Confidence Semantic
-                // Increased from 0.85 to 0.88 for stricter matching
-                if (cosSim > 0.88) {
+                if (cosSim > semanticThreshold) {
                     score = cosSim;
                     type = 'semantic';
                 }
                 // 3. Hybrid Boost (Medium match + Shared Context)
                 else {
-                    const tagScore = getTagOverlap(cardA.tags, cardB.tags);
-
-                    // Strong Context (Many shared tags) -> Moderate vector threshold
-                    // Increased from 0.60 to 0.70
-                    if (tagScore >= 0.5 && cosSim > 0.70) {
+                    // Strong Context -> Moderate vector threshold
+                    if (tagOverlap >= 0.3 && cosSim > (semanticThreshold - 0.1)) {
                         score = Math.min(cosSim * 1.2, 0.95);
                         type = 'hybrid';
                     }
-                    // Weak Context (At least one shared tag) -> High vector threshold needed
-                    // Increased from 0.65 to 0.75
-                    else if (tagScore > 0 && cosSim > 0.75) {
+                    // Weak Context -> High vector threshold needed
+                    else if (tagOverlap > 0 && cosSim > (semanticThreshold - 0.05)) {
                         score = Math.min(cosSim * 1.1, 0.95);
                         type = 'hybrid';
                     }

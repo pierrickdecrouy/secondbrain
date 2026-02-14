@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { X, Link2 } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { X, Link2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -11,9 +11,11 @@ interface DetailModalProps {
     onClose: () => void;
     onLinkClick: (cardId: string) => void;
     actions?: React.ReactNode;
+    onNext?: () => void;
+    onPrev?: () => void;
 }
 
-export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClose, onLinkClick, actions }) => {
+export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClose, onLinkClick, actions, onNext, onPrev }) => {
     // Find backlinks using FlexSearch (cards that contain this card's title)
     // This is faster and smarter (fuzzy, stemmed) than regex
     const backlinks = useMemo(() => {
@@ -53,8 +55,42 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
         }
     };
 
+    // Keyboard navigation
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight' && onNext) {
+                onNext();
+            } else if (e.key === 'ArrowLeft' && onPrev) {
+                onPrev();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onNext, onPrev]);
+
     return (
         <div className="modal-overlay" onClick={handleOverlayClick}>
+            {/* Navigation Buttons (Outside wrapper for better clickable area) */}
+            {onPrev && (
+                <button
+                    className="nav-arrow-btn prev"
+                    onClick={(e) => { e.stopPropagation(); onPrev(); }}
+                    title="Précédent (Flèche Gauche)"
+                >
+                    <ChevronLeft size={32} />
+                </button>
+            )}
+
+            {onNext && (
+                <button
+                    className="nav-arrow-btn next"
+                    onClick={(e) => { e.stopPropagation(); onNext(); }}
+                    title="Suivant (Flèche Droite)"
+                >
+                    <ChevronRight size={32} />
+                </button>
+            )}
+
             <div className="modal-content">
                 <div className="modal-header">
                     <div>

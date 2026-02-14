@@ -5,6 +5,8 @@ import type { Card } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { computePrecisionGraph } from '../semanticSearch';
 import { detectCommunities } from '../algorithms/communityDetection';
+import { getLearnedAbbreviations } from '../learnedAbbreviations';
+import { getLinkFeedback } from '../linkFeedback';
 
 interface NetworkViewProps {
     cards: Card[];
@@ -12,6 +14,10 @@ interface NetworkViewProps {
     searchQuery?: string;
     activeFilters?: string[];
     highlightedIds?: Set<string>;
+    onSuppressConnections?: (pairs: { sourceId: string, targetId: string }[]) => void;
+    semanticReady?: boolean;
+    vetoPairs?: string[]; // Hard constraints from user feedback
+    typeCompat?: Record<string, number>; // Type compatibility matrix
 }
 
 interface Node {
@@ -31,9 +37,20 @@ interface Link {
     target: string | Node;
     type?: string; // 'semantic', 'explicit', 'hybrid' or undefined (structural)
     value?: number;
+    reason?: string; // Human-readable explanation for hover tooltip
 }
 
-export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, searchQuery, activeFilters = [], highlightedIds }) => {
+export const NetworkView: React.FC<NetworkViewProps> = ({
+    cards,
+    onNodeClick,
+    searchQuery,
+    activeFilters = [],
+    highlightedIds,
+    onSuppressConnections: _onSuppressConnections,
+    semanticReady,
+    vetoPairs,
+    typeCompat
+}) => {
     const { getCategoryColor } = useTheme();
     const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -41,13 +58,14 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     const [graphData, setGraphData] = useState<{ nodes: Node[], links: Link[] }>({ nodes: [], links: [] });
     const [isCalculating, setIsCalculating] = useState(false);
 
+
+
     // Depth filter state: 0 = show all, 1-3 = show neighbors at depth N
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     const [depthFilter, setDepthFilter] = useState<number>(0); // 0 = all, 1/2/3 = depth
 
     // Precision Links State
     const [smartLinks, setSmartLinks] = useState<Link[]>([]);
-
     // Spotlight State
     const [hoverNode, setHoverNode] = useState<Node | null>(null);
     const [activeNodeIds, setActiveNodeIds] = useState<Set<string>>(new Set());
@@ -55,23 +73,62 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
     // Position cache to prevent graph "jumping" on updates
     const positionCache = useRef<Map<string, { x: number, y: number }>>(new Map());
 
-    // Web Worker for graph computation
+    // Incremental computation: track previous state
+    const previousCardsRef = useRef<Card[]>([]);
+    const cachedLinksRef = useRef<Link[]>([]);
+
+    // Link hover tooltip state
+    const [hoverLink, setHoverLink] = useState<Link | null>(null);
+
+    // Web Worker for graph computation (with incremental support)
     useEffect(() => {
-        // ... (unchanged)
         if (cards.length === 0) {
             setGraphData({ nodes: [], links: [] });
             setIsCalculating(false);
+            previousCardsRef.current = [];
+            cachedLinksRef.current = [];
             return;
         }
 
         setIsCalculating(true);
         const worker = new Worker(new URL('../workers/graph.worker.ts', import.meta.url), { type: 'module' });
 
-        // ... (worker setup logic unchanged)
         const timeout = setTimeout(() => {
             setIsCalculating(false);
             console.warn('Graph worker timeout - forcing UI update');
         }, 5000);
+
+        // Incremental diff: detect which cards changed
+        const prevMap = new Map(previousCardsRef.current.map(c => [c.id, c]));
+        const changedIds: string[] = [];
+
+        for (const card of cards) {
+            const prev = prevMap.get(card.id);
+            if (!prev ||
+                prev.title !== card.title ||
+                prev.content !== card.content ||
+                prev.details !== card.details ||
+                JSON.stringify(prev.tags) !== JSON.stringify(card.tags)) {
+                changedIds.push(card.id);
+            }
+        }
+        // Also detect deleted cards (their links must be removed)
+        for (const prev of previousCardsRef.current) {
+            if (!cards.find(c => c.id === prev.id)) {
+                changedIds.push(prev.id);
+            }
+        }
+
+        // Get abbreviations for the worker
+        const abbreviations = getLearnedAbbreviations();
+
+        // Build existing links (from cache, as simple source/target strings)
+        const existingLinks = cachedLinksRef.current.map(l => ({
+            source: typeof l.source === 'string' ? l.source : (l.source as any).id,
+            target: typeof l.target === 'string' ? l.target : (l.target as any).id,
+            value: l.value || 0,
+            reason: l.reason || ''
+        }));
 
         worker.onmessage = (e) => {
             clearTimeout(timeout);
@@ -83,6 +140,15 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                 }
                 return node;
             });
+
+            // Cache the structural links for incremental next time
+            cachedLinksRef.current = newData.links;
+            previousCardsRef.current = [...cards];
+
+            // Track stats for the intelligence dashboard
+            if (newData.links.length > 0) {
+                import('../linkFeedback').then(m => m.recordLinksGenerated(newData.links.length));
+            }
 
             setGraphData(newData);
             setIsCalculating(false);
@@ -96,7 +162,16 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             worker.terminate();
         };
 
-        worker.postMessage(cards);
+        // Send enhanced message format
+        const isFullRecompute = changedIds.length === cards.length || previousCardsRef.current.length === 0;
+        const feedbackData = getLinkFeedback();
+        worker.postMessage({
+            cards,
+            abbreviations,
+            feedback: feedbackData,
+            changedIds: isFullRecompute ? undefined : changedIds,
+            existingLinks: isFullRecompute ? undefined : existingLinks
+        });
 
         return () => {
             clearTimeout(timeout);
@@ -104,10 +179,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         };
     }, [cards]);
 
-    // Precision Graph Effect
+    // Precision Graph Effect - must wait for semantic search to build embeddings
     useEffect(() => {
-        if (cards.length > 0) {
-            computePrecisionGraph(cards).then(links => {
+        if (cards.length > 0 && semanticReady) {
+            console.log('Computing precision graph (semantic ready, cards:', cards.length, ')');
+            // Pass user feedback (veto list) and type logic to semantic engine
+            computePrecisionGraph(cards, vetoPairs, typeCompat).then(links => {
+                console.log('Precision graph computed:', links.length, 'links found');
                 setSmartLinks(links.map(l => ({
                     source: l.source,
                     target: l.target,
@@ -116,9 +194,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                 })));
             });
         } else {
+            if (!semanticReady) console.log('Waiting for semantic search to be ready before computing precision graph...');
             setSmartLinks([]);
         }
-    }, [cards]);
+    }, [cards, semanticReady]);
 
     // ... (savePositions and resize effects unchanged)
     useEffect(() => {
@@ -162,18 +241,29 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             const cardNode = node as any;
             if (cardNode.manualConnections) {
                 cardNode.manualConnections.forEach((targetId: string) => {
-                    manualLinks.push({
-                        source: node.id,
-                        target: targetId,
-                        type: 'manual',
-                        value: 1.0
-                    });
+                    // Safety: Ensure target exists
+                    if (nodeMap.has(targetId)) {
+                        manualLinks.push({
+                            source: node.id,
+                            target: targetId,
+                            type: 'manual',
+                            value: 1.0
+                        });
+                    }
                 });
             }
         });
 
-        // Combine Structural + Precision Links
-        const combinedLinks = [...graphData.links, ...smartLinks];
+        // Combine Structural + Precision Links & Filter invalid nodes
+        const combinedLinks = [...graphData.links, ...smartLinks].filter(link => {
+            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
+            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+
+            // User Request (Context): Re-enabled semantic links for precision
+            // if (link.type === 'semantic') return false; // Kept active
+
+            return nodeMap.has(sourceId) && nodeMap.has(targetId);
+        });
 
         // Filter based on suppression
         const aiLinks = combinedLinks.filter(link => {
@@ -222,7 +312,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             if (!uniqueLinks.has(key)) uniqueLinks.set(key, link);
         });
 
-        return Array.from(uniqueLinks.values());
+        const finalLinks = Array.from(uniqueLinks.values());
+        console.log(`[NetworkView] Links update: ${finalLinks.length} total (Manual: ${manualLinks.length}, AI: ${aiLinks.length}, Smart: ${smartLinks.length}, Structural: ${graphData.links.length})`);
+        return finalLinks;
     }, [graphData.nodes, graphData.links, smartLinks]);
 
     // AI Community Detection
@@ -392,23 +484,24 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         ctx.globalAlpha = 1;
     }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds, getCategoryColor]);
 
-    // Canvas Object: Links (Gradient + Spotlight)
+    // Canvas Object: Links (Gradient + Spotlight + Value-based thickness)
     const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const isSemantic = link.type === 'semantic';
         const isManual = link.type === 'manual';
         const isExplicit = link.type === 'explicit';
         const isHybrid = link.type === 'hybrid';
+        const linkValue = link.value || 0.5;
 
-        let opacity = 0.6;
+        let opacity = 0.3 + linkValue * 0.5; // Base opacity scales with confidence
 
         if (hoverNode) {
             const isConnected = link.source.id === hoverNode.id || link.target.id === hoverNode.id;
-            opacity = isConnected ? 1 : 0.05;
+            opacity = isConnected ? 1 : 0.03;
         } else if (highlightedNodeIds.size > 0) {
             opacity = 0.1;
         }
 
-        if (opacity < 0.1) return;
+        if (opacity < 0.05) return;
 
         const src = link.source;
         const tgt = link.target;
@@ -430,6 +523,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         } else if (isHybrid) {
             srcColor = '#06b6d4'; // Cyan-500
             tgtColor = '#06b6d4';
+        } else if (isSemantic) {
+            srcColor = '#a855f7'; // Purple-500 (Distinct for AI Semantic)
+            tgtColor = '#a855f7';
         }
 
         gradient.addColorStop(0, srcColor);
@@ -437,21 +533,20 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
 
         ctx.strokeStyle = gradient;
 
-        // Visual Logic & Widths
-        const val = link.value || 0;
-        let lineWidth = 2;
+        // Value-based width: higher confidence = thicker line
+        let lineWidth = 1 + linkValue * 2; // 1px to 3px based on value
 
         if (isManual) lineWidth = 4.0;
-        else if (isExplicit) lineWidth = 3.0; // Strong
-        else if (isHybrid) lineWidth = 2.5; // Medium
-        else if (isSemantic) lineWidth = val > 0.85 ? 2.0 : 1.0; // Thin for pure semantic
+        else if (isExplicit) lineWidth = 2.5 + linkValue;
+        else if (isHybrid) lineWidth = 1.5 + linkValue;
+        else if (isSemantic) lineWidth = 1.0 + linkValue * 0.5;
 
-        ctx.lineWidth = Math.max(lineWidth, 1 / globalScale); // Min 1px on screen
+        ctx.lineWidth = Math.max(lineWidth, 1 / globalScale);
         ctx.globalAlpha = opacity;
 
         ctx.beginPath();
 
-        // DASHED lines for Semantic/Hybrid to distinguish from Structural/Manual matching user's "precision" desire
+        // DASHED lines for Semantic/Hybrid
         if (isSemantic) ctx.setLineDash([2, 4]);
         else if (isHybrid) ctx.setLineDash([4, 2]);
         else ctx.setLineDash([]); // Solid for Manual, Explicit, Structural
@@ -463,7 +558,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         // Reset dash
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
-    }, [hoverNode, communityColorMap, highlightedNodeIds]);
+    }, [hoverNode, communityColorMap, highlightedNodeIds, getCategoryColor]);
 
     // Apply custom forces for Obsidian-like layout
     useEffect(() => {
@@ -499,12 +594,16 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
         }
     }, [graphData]);
 
+
+
+    // ...
+
     const handleNodeHover = useCallback((node: Node | null) => {
         setHoverNode(node);
+        setHoverLink(null); // Clear link tooltip when hovering a node
         if (node) {
             const ids = new Set<string>();
             ids.add(node.id);
-            // Use d3 links to find neighbors
             const links = fgRef.current?.d3Force('link')?.links() || [];
             links.forEach((link: any) => {
                 if (link.source.id === node.id) ids.add(link.target.id);
@@ -513,6 +612,15 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             setActiveNodeIds(ids);
         } else {
             setActiveNodeIds(new Set());
+        }
+    }, []);
+
+    // Link hover handler for tooltip
+    const handleLinkHover = useCallback((link: any) => {
+        if (link && link.reason) {
+            setHoverLink(link);
+        } else {
+            setHoverLink(null);
         }
     }, []);
 
@@ -541,14 +649,14 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
 
                 // Interaction
                 onNodeHover={handleNodeHover as any}
+                onLinkHover={handleLinkHover as any}
                 backgroundColor="#f8fafc"
                 onNodeClick={handleNodeClick as any}
                 cooldownTicks={200}
                 d3AlphaDecay={0.01}
-                d3VelocityDecay={0.1} // More fluid drift
+                d3VelocityDecay={0.1}
                 warmupTicks={100}
                 onEngineStop={() => {
-                    // Final precision fit when stable
                     fgRef.current?.zoomToFit(400, 50);
                 }}
             />
@@ -581,6 +689,39 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
             }}>
                 Molette: zoom • Glisser: déplacer • Clic: détails
             </div>
+
+            {/* Link tooltip */}
+            {hoverLink && hoverLink.reason && (
+                <div style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: 16,
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(15, 23, 42, 0.92)',
+                    color: 'white',
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    maxWidth: 400,
+                    textAlign: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    lineHeight: 1.4,
+                    backdropFilter: 'blur(8px)'
+                }}>
+                    <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 3 }}>
+                        {hoverLink.type === 'explicit' ? '🔗 Référence explicite' :
+                            hoverLink.type === 'hybrid' ? '🧬 Lien hybride' :
+                                hoverLink.type === 'semantic' ? '🧠 Similarité sémantique' :
+                                    hoverLink.type === 'manual' ? '✋ Lien manuel' :
+                                        '📊 Lien structurel'}
+                        {hoverLink.value ? ` • ${Math.round((hoverLink.value || 0) * 100)}%` : ''}
+                    </div>
+                    {hoverLink.reason}
+                </div>
+            )}
 
             {/* Controls (Depth + Semantic) */}
             <div style={{
@@ -639,6 +780,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({ cards, onNodeClick, se
                     </div>
                 )}
             </div>
+
+
         </div>
     );
 };
