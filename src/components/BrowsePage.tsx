@@ -276,13 +276,13 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                             <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash2 size={16} /></button>
                                         </div>
                                     </div>
-                                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <h3 className="browse-card-title">{card.title}</h3>
                                         {card.subtitle && <div className="browse-card-subtitle">{card.subtitle}</div>}
                                         <div style={{
                                             fontSize: '0.85rem',
                                             color: '#64748b',
-                                            marginTop: '8px',
+                                            marginTop: '4px',
                                             display: '-webkit-box',
                                             WebkitLineClamp: 3,
                                             WebkitBoxOrient: 'vertical',

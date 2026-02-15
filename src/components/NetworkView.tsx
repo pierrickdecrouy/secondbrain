@@ -1,5 +1,6 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
+import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check } from 'lucide-react';
 import { forceCollide, forceRadial } from 'd3-force';
 import type { Card } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -38,6 +39,7 @@ interface Link {
     type?: string; // 'semantic', 'explicit', 'hybrid' or undefined (structural)
     value?: number;
     reason?: string; // Human-readable explanation for hover tooltip
+    quality?: 'boost' | 'match' | 'weak';
 }
 
 export const NetworkView: React.FC<NetworkViewProps> = ({
@@ -717,15 +719,22 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     lineHeight: 1.4,
                     backdropFilter: 'blur(8px)'
                 }}>
-                    <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 3 }}>
-                        {hoverLink.type === 'explicit' ? '🔗 Référence explicite' :
-                            hoverLink.type === 'hybrid' ? '🧬 Lien hybride' :
-                                hoverLink.type === 'semantic' ? '🧠 Similarité sémantique' :
-                                    hoverLink.type === 'manual' ? '✋ Lien manuel' :
-                                        '📊 Lien structurel'}
-                        {hoverLink.value ? ` • ${Math.round((hoverLink.value || 0) * 100)}%` : ''}
+                    <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {hoverLink.type === 'explicit' ? <><LinkIcon size={12} className="text-indigo-400" /> <span>Référence explicite</span></> :
+                            hoverLink.type === 'hybrid' ? <><GitMerge size={12} className="text-cyan-400" /> <span>Lien hybride</span></> :
+                                hoverLink.type === 'semantic' ? <><Brain size={12} className="text-purple-400" /> <span>Similarité sémantique</span></> :
+                                    hoverLink.type === 'manual' ? <><Hand size={12} className="text-amber-400" /> <span>Lien manuel</span></> :
+                                        <><BarChart2 size={12} className="text-slate-400" /> <span>Lien structurel</span></>}
+
+                        {hoverLink.value ? <span style={{ opacity: 0.7 }}>• {Math.round((hoverLink.value || 0) * 100)}%</span> : ''}
+
+                        {/* Quality Indicator */}
+                        {hoverLink.quality === 'boost' && <Zap size={10} className="text-yellow-400" style={{ marginLeft: 'auto' }} />}
+                        {hoverLink.quality === 'match' && <Check size={10} className="text-green-400" style={{ marginLeft: 'auto' }} />}
                     </div>
-                    {hoverLink.reason}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {hoverLink.reason}
+                    </div>
                 </div>
             )}
 

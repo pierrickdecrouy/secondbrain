@@ -384,6 +384,8 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    height: fit-content;
+    /* Allow card to grow */
     animation: fadeInUp 0.5s ease-out backwards;
     cursor: pointer;
 }
@@ -466,21 +468,27 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-dark);
-    margin-bottom: 2px;
-    line-height: 1.3;
+    margin: 0;
+    line-height: 1.4;
+    padding-bottom: 2px;
 }
 
 .browse-card-subtitle {
     font-family: 'Courier New', monospace;
-    /* Monospace pour le sous-titre scientifique */
     font-size: 0.85rem;
     color: var(--text-grey);
-    margin-bottom: 8px;
+    line-height: 1.5;
+    margin: 0;
+    padding-top: 2px;
 }
 
 .browse-card-desc {
     font-size: 0.9rem;
-    line-height: 1.5;
+    line-height: 1.6;
+    padding-top: 4px;
+    padding-bottom: 2px;
+    /* Prevent bottom clipping */
+    /* Prevent top clipping */
     color: #495057;
     display: -webkit-box;
     -webkit-line-clamp: 3;

@@ -97,6 +97,12 @@ function AppContent() {
       }
       return [...prev, card];
     });
+
+    // Semantic Indexing: Force update for this specific card
+    import('./semanticSearch').then(({ buildCardEmbeddings }) => {
+      buildCardEmbeddings([card], true);
+    });
+
     setAddDataMode('none');
     setEditingCard(null);
   }, []);
@@ -148,16 +154,9 @@ function AppContent() {
       console.warn("importCards API not available, falling back to manual merge (unsaved to disk?)");
     }
 
-    // 3. Trigger Semantic Indexing (Chunked)
-    // The buildCardEmbeddings function (called by effect or manually) handles chunking now.
-    // Ensure we trigger it for the new cards.
-    // The existing useEffect([cards]) will pick this up?
-    // Yes: useEffect(() => { if (cards.length > 0 && embeddingsReady) buildCardEmbeddings(cards); }, [cards, embeddingsReady]);
-    // BUT: That effect sends ALL cards.
-    // With 10k cards, that's heavy.
-    // Ideally we'd only send new ones.
-    // For now, the chunking in semanticSearch.ts makes it safe, but still re-indexes everything.
-    // That's acceptable for robustness.
+    // 3. Trigger Semantic Indexing
+    // Force update for imported cards (covers new AND updated ones)
+    buildCardEmbeddings(newCards, true);
   }, []);
 
   const handleSuppressConnections = useCallback((pairs: { sourceId: string, targetId: string }[]) => {

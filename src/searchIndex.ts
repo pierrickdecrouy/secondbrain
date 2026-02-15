@@ -116,18 +116,20 @@ export async function hybridSearch(query: string, limit = 50): Promise<string[]>
 
     try {
         // Get semantic results for all query variants (async)
+        // Get semantic results for all query variants (async parallel)
+        const semanticPromises = queryVariants.map(variant => semanticSearch(variant, limit));
+        const resultsArrays = await Promise.all(semanticPromises);
+
         const semanticResultsAll: string[] = [];
         const seenSemantic = new Set<string>();
 
-        for (const variant of queryVariants) {
-            const results = await semanticSearch(variant, limit);
-            for (const id of results) {
-                if (!seenSemantic.has(id)) {
-                    semanticResultsAll.push(id);
-                    seenSemantic.add(id);
-                }
+        // Flatten results while maintaining unique set
+        resultsArrays.flat().forEach(id => {
+            if (!seenSemantic.has(id)) {
+                semanticResultsAll.push(id);
+                seenSemantic.add(id);
             }
-        }
+        });
 
         // Compute RRF scores
         const scores = new Map<string, number>();

@@ -22,5 +22,7 @@ export const stripMarkdown = (markdown: string): string => {
         .replace(/^[\s-]*[-+*]\s+/gm, '')
         // HTML tags (basic)
         .replace(/<[^>]*>/g, '')
+        // Cloze deletion (||text|| -> text)
+        .replace(/\|\|(.*?)\|\|/g, '$1')
         .trim();
 };

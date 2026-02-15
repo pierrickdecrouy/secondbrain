@@ -13,6 +13,7 @@ interface Link {
     target: string;
     value: number;       // Confidence score (0-1)
     reason: string;      // Human-readable explanation of WHY this link exists
+    quality?: 'boost' | 'match' | 'weak';
 }
 
 // Feedback data from user actions (suppressed/manual links)
@@ -468,15 +469,13 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         calibratedScore = Math.max(0.05, Math.min(1.0, calibratedScore));
 
         // Enrich reason with confidence + type label
-        const confidence = Math.round(calibratedScore * 100);
-        const typeLabel =
-            typeMultiplier >= 1.4 ? ' ⚡' :
-                typeMultiplier >= 1.1 ? ' ✓' :
-                    typeMultiplier <= 0.7 ? ' ⚬' : '';
-        const enrichedReason = `${reason}${typeLabel} [${confidence}%]`;
+        let quality: 'boost' | 'match' | 'weak' | undefined;
+        if (typeMultiplier >= 1.4) quality = 'boost';
+        else if (typeMultiplier >= 1.1) quality = 'match';
+        else if (typeMultiplier <= 0.7) quality = 'weak';
 
         linkSet.add(linkKey);
-        links.push({ source: sourceId, target: targetId, value: calibratedScore, reason: enrichedReason });
+        links.push({ source: sourceId, target: targetId, value: calibratedScore, reason, quality });
     };
 
     // ===========================================

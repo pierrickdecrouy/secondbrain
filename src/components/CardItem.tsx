@@ -2,6 +2,7 @@ import React from 'react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { Edit2, Trash2 } from 'lucide-react';
+import { stripMarkdown } from '../utils';
 
 interface CardItemProps {
     card: Card;
@@ -40,7 +41,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, onClick, onEdit, onDel
             <h3 className="card-title" dangerouslySetInnerHTML={{ __html: card.title }} />
             {card.subtitle && <p className="card-subtitle">{card.subtitle}</p>}
             <p className="card-content">
-                {card.content}
+                {stripMarkdown(card.content)}
             </p>
         </div>
     );

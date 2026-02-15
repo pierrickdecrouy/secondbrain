@@ -158,16 +158,41 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 /**
  * Build embeddings for all cards
  */
-export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
+
+
+// Queue to serialize indexing requests
+let indexingQueue = Promise.resolve();
+
+export function buildCardEmbeddings(cards: Card[], forceUpdate: boolean = false): Promise<void> {
+    // Chain execution to prevent concurrency issues with the single worker
+    indexingQueue = indexingQueue.then(async () => {
+        await processCardEmbeddings(cards, forceUpdate);
+    }).catch(err => {
+        console.error("Error in indexing queue:", err);
+    });
+
+    return indexingQueue;
+}
+
+async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promise<void> {
     if (!embeddingWorker) {
-        throw new Error('Semantic search not initialized');
+        // Init if needed or throw
+        console.warn('Semantic search not initialized, skipping embedding build');
+        return;
     }
 
-    // Only process cards - for now we re-process to ensure sync, or we can track IDs separately
-    // Ideally we'd check against an in-memory Set of IDs
-    const cardsToProcess = cards;
+    // Smart Filtering: Only process cards that don't have embeddings, unless forced
+    // Use the vectorStore sync check
+    const cardsToProcess = forceUpdate
+        ? cards
+        : cards.filter(c => !vectorStore.getEmbedding(c.id));
 
-    if (cardsToProcess.length === 0) return;
+    if (cardsToProcess.length === 0) {
+        // console.log('[Semantic] Nothing new to index.');
+        return;
+    }
+
+    console.log(`[Semantic] Indexing ${cardsToProcess.length} cards (Force=${forceUpdate})...`);
 
     // Chunking to prevent OOM and allow progress updates
     const CHUNK_SIZE = 50;
@@ -175,8 +200,6 @@ export async function buildCardEmbeddings(cards: Card[]): Promise<void> {
     for (let i = 0; i < cardsToProcess.length; i += CHUNK_SIZE) {
         chunks.push(cardsToProcess.slice(i, i + CHUNK_SIZE));
     }
-
-    console.log(`[Semantic] Processing ${cardsToProcess.length} cards in ${chunks.length} chunks...`);
 
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
