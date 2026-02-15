@@ -17,6 +17,6 @@ export default defineConfig({
   },
   base: './', // Important for Electron file:// protocol
   optimizeDeps: {
-    exclude: ['voy-search'],
+    exclude: ['voy-search', '@huggingface/transformers'],
   },
 })
