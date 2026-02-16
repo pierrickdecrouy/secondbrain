@@ -413,12 +413,27 @@ export async function computePrecisionGraph(
                 // Base similarity
                 let finalSim = vectorScore;
 
+                // --- CLINICAL BIAS (Restored) ---
+                // Boost score if types are compatible (e.g. Drug <-> Patho)
+                // typeCompat is passed as argument to computePrecisionGraph
+                if (typeCompat) {
+                    const key = [cardA.type, cardB.type].sort().join('|');
+                    const bonus = typeCompat[key] || 0;
+
+                    if (bonus !== 0) {
+                        // Apply bonus (e.g., +0.2 becomes * 1.2)
+                        finalSim = finalSim * (1 + bonus);
+                        // Cap at 0.99 to avoid perfect 1.0 collision with manual links
+                        finalSim = Math.min(finalSim, 0.99);
+                    }
+                }
+
                 // Boost by RRF if present in both or high in one
                 if (explicitMatch && vectorScore > 0.7) {
                     finalSim = Math.min(vectorScore * 1.25, 0.98); // Massive boost
                 }
 
-                // Apply simple thresholds
+                // Apply simple thresholds (Lowered slightly to allow boosted links)
                 if (finalSim > 0.82) {
                     score = finalSim;
                     type = 'semantic';

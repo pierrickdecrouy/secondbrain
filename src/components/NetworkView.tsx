@@ -742,7 +742,26 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 onNodeHover={handleNodeHover as any}
                 onLinkHover={handleLinkHover as any}
                 backgroundColor="#f8fafc"
-                onNodeClick={handleNodeClick as any}
+                onNodeClick={(node, event) => {
+                    // Shift+Click for Rapid Pathfinding
+                    if (event.shiftKey) {
+                        if (!pathStart) {
+                            setPathStart(node.id);
+                            setPathMode(true); // Auto-enable path mode (Corrected name)
+                            setPathEnd(null); // Reset end
+                        } else if (!pathEnd) {
+                            setPathEnd(node.id); // Set end and calc path automatically via effect
+                        } else {
+                            // If both set, restart with this as new start
+                            setPathStart(node.id);
+                            setPathEnd(null);
+                        }
+                        return;
+                    }
+
+                    // Normal Click
+                    handleNodeClick(node);
+                }}
                 cooldownTicks={100}
                 d3AlphaDecay={0.05} // Faster settling (less "explosion")
                 d3VelocityDecay={0.2} // More friction
