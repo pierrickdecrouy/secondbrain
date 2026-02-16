@@ -213,6 +213,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Precision Graph Effect - must wait for semantic search to build embeddings
     useEffect(() => {
+        setSmartLinks([]); // <--- AJOUTER CECI : Reset immédiat
 
         if (cards.length > 0 && semanticReady) {
             console.log('Computing precision graph (semantic ready, cards:', cards.length, ')');
@@ -274,6 +275,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     }, []);
 
     // Combine links (Structural + Semantic + Manual)
+    // Combine links (Structural + Semantic + Manual)
     const allLinks = useMemo(() => {
         const manualLinks: Link[] = [];
         const nodeMap = new Map(graphData.nodes.map(n => [n.id, n as any]));
@@ -282,7 +284,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             const cardNode = node as any;
             if (cardNode.manualConnections) {
                 cardNode.manualConnections.forEach((targetId: string) => {
-                    // Safety: Ensure target exists
                     if (nodeMap.has(targetId)) {
                         manualLinks.push({
                             source: node.id,
@@ -295,47 +296,46 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             }
         });
 
-        // Combine Structural + Precision Links & Filter invalid nodes
-        const combinedLinks = [...graphData.links, ...smartLinks].filter(link => {
-            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
-            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+        // Combine Structural + Precision Links
+        const rawLinks = [...graphData.links, ...smartLinks];
 
-            // User Request (Context): Re-enabled semantic links for precision
-            // if (link.type === 'semantic') return false; // Kept active
+        // 1. NETTOYAGE CRITIQUE : On force la réinitialisation des sources/targets en String
+        const cleanLinks = rawLinks.map(link => ({
+            ...link,
+            source: typeof link.source === 'object' ? (link.source as any).id : link.source,
+            target: typeof link.target === 'object' ? (link.target as any).id : link.target
+        }));
 
-            return nodeMap.has(sourceId) && nodeMap.has(targetId);
-        });
+        // 2. Filtrage (Noeuds existants + Suppression)
+        const aiLinks = cleanLinks.filter(link => {
+            const sourceId = link.source as string;
+            const targetId = link.target as string;
 
-        // Filter based on suppression
-        const aiLinks = combinedLinks.filter(link => {
-            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
-            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
+            // Vérifier que les deux bouts existent
+            if (!nodeMap.has(sourceId) || !nodeMap.has(targetId)) return false;
 
             const sourceNode = nodeMap.get(sourceId);
             const targetNode = nodeMap.get(targetId);
 
-            // Check if Source suppresses Target
+            // Vérifier les suppressions utilisateur
             if (sourceNode?.suppressedConnections?.includes(targetId)) return false;
-
-            // Check if Target suppresses Source
             if (targetNode?.suppressedConnections?.includes(sourceId)) return false;
 
             return true;
         });
 
-        // Deduplication: Manual > AI (Prioritized)
+        // 3. Déduplication (Priorité : Manuel > Explicite > Hybride > Sémantique)
         const uniqueLinks = new Map<string, Link>();
 
-        // 1. Manual (Highest Priority)
+        // Ajouter d'abord les manuels (prioritaires)
         manualLinks.forEach(link => {
-            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
-            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
-            const key = [sourceId, targetId].sort().join('-');
+            const key = [link.source, link.target].sort().join('-');
             uniqueLinks.set(key, link);
         });
 
-        // 2. AI (Prioritize Explict > Hybrid > Structural > Semantic)
-        const sortedAiLinks = aiLinks.sort((a, b) => {
+        // Ajouter ensuite les liens IA s'ils n'existent pas déjà
+        // On trie d'abord pour insérer les meilleurs liens IA en premier
+        aiLinks.sort((a, b) => {
             const getScore = (l: Link) => {
                 if (l.type === 'explicit') return 5;
                 if (l.type === 'hybrid') return 4;
@@ -346,26 +346,17 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             return getScore(b) - getScore(a);
         });
 
-        sortedAiLinks.forEach(link => {
-            const sourceId = typeof link.source === 'string' ? link.source : (link.source as any).id;
-            const targetId = typeof link.target === 'string' ? link.target : (link.target as any).id;
-            const key = [sourceId, targetId].sort().join('-');
-            if (!uniqueLinks.has(key)) uniqueLinks.set(key, link);
+        aiLinks.forEach(link => {
+            const s = link.source as string;
+            const t = link.target as string;
+            const key = [s, t].sort().join('-');
+
+            if (!uniqueLinks.has(key)) {
+                uniqueLinks.set(key, link);
+            }
         });
 
-        const finalLinks = Array.from(uniqueLinks.values()).map(link => {
-            // CRITICAL FIX: D3 mutates link objects (source/target become objects).
-            // When graphData updates, we MUST break the reference and pass string IDs again
-            // to force D3 to re-bind to the NEW node objects.
-            return {
-                ...link,
-                source: typeof link.source === 'string' ? link.source : (link.source as any).id,
-                target: typeof link.target === 'string' ? link.target : (link.target as any).id
-            };
-        });
-
-        console.log(`[NetworkView] Links update: ${finalLinks.length} total (Manual: ${manualLinks.length}, AI: ${aiLinks.length}, Smart: ${smartLinks.length}, Structural: ${graphData.links.length})`);
-        return finalLinks;
+        return Array.from(uniqueLinks.values());
     }, [graphData.nodes, graphData.links, smartLinks]);
 
     // AI Community Detection
