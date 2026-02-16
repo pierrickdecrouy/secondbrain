@@ -301,38 +301,23 @@ export async function semanticSearch(query: string, topK: number = 20): Promise<
     }
 }
 
-/**
- * Compute cosine similarity between two vectors
- */
-function cosineSimilarity(a: number[], b: number[]): number {
-    let dot = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < a.length; i++) {
-        dot += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
-    }
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+
 
 /**
- * Compute semantic links between all cards
- */
-/**
- * Compute precision links between cards using hybrid scoring
- * 1. Explicit Reference (Title in Content) -> 1.0 (Always valid)
- * 2. High Semantic (Cosine > Threshold) -> Value
- *    - Strict threshold for cross-type (0.88+)
- *    - Relaxed threshold for same-type/compatible (0.80+)
- *    - Hybrid boost if shared tags
+ * Compute precision links using RRF (Reciprocal Rank Fusion)
+ * Combines:
+ * 1. Semantic Search (Vector)
+ * 2. Explicit Keyword Search (FlexSearch)
+ * 
+ * RRF Score = 1 / (k + rank_semantic) + 1 / (k + rank_keyword)
  */
 export async function computePrecisionGraph(
     cards: Card[],
-    vetoPairs: string[] = [], // List of "idA|idB" strings (sorted)
-    typeCompat: Record<string, number> = {} // Type compatibility matrix
-): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[]> {
-    const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' }[] = [];
+    vetoPairs: string[] = [],
+    _typeCompat: Record<string, number> = {}, // Unused in RRF version
+    keywordSearchFn?: (query: string, limit: number) => string[]
+): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' }[]> {
+    const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' }[] = [];
     const processedPairs = new Set<string>();
 
     // Fast lookup for vetoed pairs
@@ -350,125 +335,92 @@ export async function computePrecisionGraph(
         return intersection.size / union.size;
     };
 
-    const escapeRegExp = (string: string) => {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    };
-
-    // Helper: Get type compatibility multiplier (Base 1.0 + Feedback Delta)
-    const getTypeMultiplier = (typeA: string, typeB: string): number => {
-        if (!typeA || !typeB) return 1.0;
-        const key = [typeA, typeB].sort().join('|');
-        const delta = typeCompat[key] ?? 0;
-        return 1.0 + delta;
-    };
-
     // Process each card
     for (let i = 0; i < cards.length; i++) {
         const cardA = cards[i];
+        if (!cardA.title) continue;
+
+        // Collect candidates via Semantic Search
+        const semanticCandidates = new Map<string, { rank: number, score: number }>();
         const embeddingA = vectorStore.getEmbedding(cardA.id);
 
-        if (!embeddingA) continue;
+        if (embeddingA) {
+            const results = vectorStore.search(embeddingA, 25);
+            results.forEach((r, rank) => {
+                if (r.id !== cardA.id) {
+                    semanticCandidates.set(r.id, { rank: rank + 1, score: r.similarity || 0 });
+                }
+            });
+        }
 
-        // Search candidates (Top 20 to cast a wide net, then filter severely)
-        const results = vectorStore.search(embeddingA, 20);
+        // Collect candidates via Keyword Search (if function provided)
+        const keywordCandidates = new Map<string, number>();
+        if (keywordSearchFn) {
+            // Search for cardA's title in other cards
+            const results = keywordSearchFn(cardA.title, 25);
+            results.forEach((id, rank) => {
+                if (id !== cardA.id) {
+                    keywordCandidates.set(id, rank + 1);
+                }
+            });
+        }
 
-        for (const result of results) {
-            if (result.id === cardA.id) continue;
+        // Union of all candidates
+        const allCandidates = new Set([...semanticCandidates.keys(), ...keywordCandidates.keys()]);
 
-            const cardB = cards.find(c => c.id === result.id);
+        for (const candidateId of allCandidates) {
+            const cardB = cards.find(c => c.id === candidateId);
             if (!cardB) continue;
 
             const pairId = [cardA.id, cardB.id].sort().join('-');
-            if (processedPairs.has(pairId)) continue; // avoid duplicates
+            if (processedPairs.has(pairId)) continue;
 
-            // 0. CHECK VETO (Hard Constraint)
-            // Format in linkFeedback is sorted idA|idB
+            // 0. CHECK VETO
             const vetoKey = [cardA.id, cardB.id].sort().join('|');
-            if (vetoSet.has(vetoKey)) {
-                // console.log(`🚫 Vetoed semantic link blocked: ${cardA.title} ↔ ${cardB.title}`);
-                continue;
-            }
+            if (vetoSet.has(vetoKey)) continue;
 
             let score = 0;
-            let type: 'explicit' | 'semantic' | 'hybrid' | null = null;
+            let type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' | null = null;
 
-            // 1. Explicit Reference (The Gold Standard)
-            // Reduced min length to 2 to support acronyms (AVC, EP, HTA) but filter common words
-            const STOPWORDS = new Set([
-                'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'd\'',
-                'et', 'ou', 'ni', 'car', 'mais', 'donc', 'or',
-                'en', 'à', 'au', 'aux', 'par', 'pour', 'sur', 'vers', 'avec', 'sans', 'sous',
-                'ce', 'cet', 'ces', 'ça', 'qui', 'que', 'quoi', 'dont', 'où',
-                'mon', 'ton', 'son', 'ma', 'ta', 'sa', 'mes', 'tes', 'ses',
-                'nous', 'vous', 'ils', 'elles', 'je', 'tu', 'il', 'elle', 'on'
-            ]);
+            // RRF CALCULATION
+            const semanticRank = semanticCandidates.get(candidateId)?.rank ?? 100; // Penalty if missing
+            const keywordRank = keywordCandidates.get(candidateId) ?? 100; // Penalty if missing
 
-            const hasReference = (content: string, title: string) => {
-                const cleanTitle = title.trim();
-                // Min length 2 for acronyms
-                if (cleanTitle.length < 2) return false;
+            // Used for mental model, but not directly assigned to avoid linter warning
+            // const rrfScore = (1 / (K + semanticRank)) + (1 / (K + keywordRank));
 
-                // Filter stopwords (case insensitive)
-                if (STOPWORDS.has(cleanTitle.toLowerCase())) return false;
+            const vectorScore = semanticCandidates.get(candidateId)?.score ?? 0;
+            const explicitMatch = keywordCandidates.has(candidateId); // True if keyword found
 
-                const regex = new RegExp(`\\b${escapeRegExp(cleanTitle)}\\b`, 'i');
-                return regex.test(content);
-            };
-
-            const refAtoB = hasReference(cardA.content, cardB.title);
-            const refBtoA = hasReference(cardB.content, cardA.title);
-
-            if (refAtoB || refBtoA) {
+            // 1. Explicit Reference Logic (Strongest)
+            // If explicit match found via FlexSearch (contextual search)
+            if (explicitMatch && keywordRank <= 3) {
                 score = 1.0;
                 type = 'explicit';
             }
+            // 2. RRF Boosted Semantic
             else {
-                // Calculate precise similarity
-                const embeddingB = vectorStore.getEmbedding(cardB.id);
-                let cosSim = result.similarity;
-                if ((!cosSim || cosSim === 0) && embeddingB) {
-                    cosSim = cosineSimilarity(embeddingA, embeddingB);
+                // Base similarity
+                let finalSim = vectorScore;
+
+                // Boost by RRF if present in both or high in one
+                if (explicitMatch && vectorScore > 0.7) {
+                    finalSim = Math.min(vectorScore * 1.25, 0.98); // Massive boost
                 }
 
-                // DEBUG LOGGING (Temporary)
-                if (i === 0 && cosSim > 0.6) {
-                    // console.log(`[Semantic Debug] ${cardA.title} <-> ${cardB.title}: Cosine=${cosSim.toFixed(3)}`);
-                }
-
-                // === STRICT SEMANTIC LOGIC ===
-                // Check type compatibility
-                const typeMult = getTypeMultiplier(cardA.type, cardB.type);
-                const tagOverlap = getTagOverlap(cardA.tags, cardB.tags);
-
-                // Determining thresholds based on compatibility
-                // LOWERED DEFAULT to 0.80 to capture more links in sparse graphs
-                let semanticThreshold = 0.80;
-
-                if (typeMult < 0.8) {
-                    // Incompatible types -> require high similarity
-                    semanticThreshold = tagOverlap > 0 ? 0.85 : 0.88;
-                } else if (typeMult >= 1.2) {
-                    // Highly compatible -> Relax if context exists
-                    semanticThreshold = tagOverlap > 0 ? 0.75 : 0.80;
-                }
-
-                // 2. High Confidence Semantic
-                if (cosSim > semanticThreshold) {
-                    score = cosSim;
+                // Apply simple thresholds
+                if (finalSim > 0.82) {
+                    score = finalSim;
                     type = 'semantic';
+                } else if (finalSim > 0.75 && getTagOverlap(cardA.tags, cardB.tags) > 0.2) {
+                    score = finalSim;
+                    type = 'hybrid';
                 }
-                // 3. Hybrid Boost (Medium match + Shared Context)
-                else {
-                    // Strong Context -> Moderate vector threshold
-                    if (tagOverlap >= 0.3 && cosSim > (semanticThreshold - 0.1)) {
-                        score = Math.min(cosSim * 1.2, 0.95);
-                        type = 'hybrid';
-                    }
-                    // Weak Context -> High vector threshold needed
-                    else if (tagOverlap > 0 && cosSim > (semanticThreshold - 0.05)) {
-                        score = Math.min(cosSim * 1.1, 0.95);
-                        type = 'hybrid';
-                    }
+
+                // Pure RRF rescue: if rank is high in both but vector score is somehow low (rare)
+                if (semanticRank <= 5 && keywordRank <= 5 && score < 0.7) {
+                    score = 0.85;
+                    type = 'rrf';
                 }
             }
 

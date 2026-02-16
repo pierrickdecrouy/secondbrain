@@ -1,11 +1,13 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
-import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check } from 'lucide-react';
+import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check, MapPin, Navigation } from 'lucide-react';
 import { forceCollide, forceRadial } from 'd3-force';
 import type { Card } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { computePrecisionGraph } from '../semanticSearch';
+import { searchCards } from '../searchIndex';
 import { detectCommunities } from '../algorithms/communityDetection';
+import { findStrongestPath } from '../algorithms/graphAlgorithms';
 import { getLearnedAbbreviations } from '../learnedAbbreviations';
 import { getLinkFeedback } from '../linkFeedback';
 
@@ -36,7 +38,7 @@ interface Node {
 interface Link {
     source: string | Node;
     target: string | Node;
-    type?: string; // 'semantic', 'explicit', 'hybrid' or undefined (structural)
+    type?: string; // 'semantic', 'explicit', 'hybrid', 'rrf' or undefined (structural)
     value?: number;
     reason?: string; // Human-readable explanation for hover tooltip
     quality?: 'boost' | 'match' | 'weak';
@@ -59,6 +61,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
     const [graphData, setGraphData] = useState<{ nodes: Node[], links: Link[] }>({ nodes: [], links: [] });
     const [isCalculating, setIsCalculating] = useState(false);
+
+    // Pathfinding Mode State
+    const [pathMode, setPathMode] = useState(false);
+    const [pathStart, setPathStart] = useState<string | null>(null);
+    const [pathEnd, setPathEnd] = useState<string | null>(null);
+    const [pathResult, setPathResult] = useState<string[] | null>(null);
 
 
 
@@ -186,12 +194,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         if (cards.length > 0 && semanticReady) {
             console.log('Computing precision graph (semantic ready, cards:', cards.length, ')');
             // Pass user feedback (veto list) and type logic to semantic engine
-            computePrecisionGraph(cards, vetoPairs, typeCompat).then(links => {
+            // Also pass searchCards for RRF (Keyword Search)
+            computePrecisionGraph(cards, vetoPairs, typeCompat, searchCards).then(links => {
                 console.log('Precision graph computed:', links.length, 'links found');
                 setSmartLinks(links.map(l => ({
                     source: l.source,
                     target: l.target,
-                    type: l.type, // 'explicit', 'semantic', 'hybrid'
+                    type: l.type, // 'explicit', 'semantic', 'hybrid', 'rrf'
                     value: l.value
                 })));
             });
@@ -404,6 +413,30 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // ... (handleNodeClick and nodeCanvasObject unchanged)
     const handleNodeClick = useCallback((node: Node) => {
+        if (pathMode) {
+            // Pathfinding Logic
+            if (!pathStart) {
+                setPathStart(node.id);
+                setPathResult(null);
+            } else if (!pathEnd) {
+                setPathEnd(node.id);
+                // Compute path
+                const path = findStrongestPath(
+                    filteredGraphData.nodes,
+                    filteredGraphData.links as any[], // Casting for simple graph struct
+                    pathStart,
+                    node.id
+                );
+                setPathResult(path);
+            } else {
+                // Reset if both set
+                setPathStart(node.id);
+                setPathEnd(null);
+                setPathResult(null);
+            }
+            return;
+        }
+
         if (focusedNodeId === node.id) {
             setFocusedNodeId(null);
         } else if (depthFilter > 0) {
@@ -412,18 +445,30 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         onNodeClick(node.id);
         fgRef.current?.centerAt(node.x!, node.y!, 1000);
         fgRef.current?.zoom(3, 1000);
-    }, [onNodeClick, focusedNodeId, depthFilter]);
+    }, [onNodeClick, focusedNodeId, depthFilter, pathMode, pathStart, pathEnd, filteredGraphData]);
 
-    // Canvas Object: Nodes (Spotlight + Community)
+    // Canvas Object: Nodes (Spotlight + Community + Path)
     const nodeCanvasObject = useCallback((node: Node, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const isHovered = hoverNode !== null;
         const isActive = activeNodeIds.has(node.id);
         const isSearchMatch = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
         const isTypeSelected = activeFilters.length === 0 || activeFilters.includes(node.type);
 
+        // Path highlighting
+        const isPathStart = pathStart === node.id;
+        const isPathEnd = pathEnd === node.id;
+        const isPathNode = pathResult?.includes(node.id);
+        const isPathRelated = isPathStart || isPathEnd || isPathNode;
+
         // Spotlight Dimming Logic
         let opacity = 1;
-        if (isHovered) {
+
+        if (pathMode) {
+            // In path mode, dim everything except path
+            if (pathStart || pathResult) {
+                opacity = isPathRelated ? 1 : 0.1;
+            }
+        } else if (isHovered) {
             opacity = isActive ? 1 : 0.1;
         } else if (highlightedNodeIds.size > 0) {
             opacity = (isSearchMatch && isTypeSelected) ? 1 : 0.1;
@@ -436,12 +481,18 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         const label = node.name;
         const baseR = 8;
         const isMatched = (isSearchMatch && isTypeSelected);
-        const r = isMatched && highlightedNodeIds.size > 0 ? 12 : baseR;
+        let r = isMatched && highlightedNodeIds.size > 0 ? 12 : baseR;
+        if (isPathStart || isPathEnd) r = 14;
 
         // Visual Coherence: Use community color for fill
         const community = communityMap.get(node.id);
-        const communityColor = community ? communityColorMap.get(community) : undefined;
-        const finalColor = communityColor || getCategoryColor(node.type);
+        let communityColor = community ? communityColorMap.get(community) : undefined;
+        let finalColor = communityColor || getCategoryColor(node.type);
+
+        // Path Colors
+        if (isPathStart) finalColor = '#22c55e'; // Green
+        else if (isPathEnd) finalColor = '#ef4444'; // Red
+        else if (isPathNode) finalColor = '#eab308'; // Yellow
 
         // Glow for active/hovered nodes
         if (isActive && isHovered) {
@@ -459,20 +510,28 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.fill();
 
         // Stroke
-        ctx.lineWidth = (isMatched && highlightedNodeIds.size > 0) ? 2.5 : 1.5;
+        ctx.lineWidth = (isMatched && highlightedNodeIds.size > 0) || isPathRelated ? 2.5 : 1.5;
         ctx.strokeStyle = '#ffffff';
+
+        // Dashed stroke for intermediate path nodes
+        if (isPathNode && !isPathStart && !isPathEnd) {
+            ctx.setLineDash([2, 2]);
+            ctx.strokeStyle = '#713f12';
+        }
+
         ctx.stroke();
+        ctx.setLineDash([]); // Reset
         ctx.globalAlpha = 1;
 
         // Text
         const fontSize = Math.max(4, 12 / globalScale);
-        // Show if: Matched, Active (Hover), or No Hover and proper zoom
-        const shouldShowLabel = isActive || (isMatched && highlightedNodeIds.size > 0) || (!isHovered && globalScale > 0.6);
+        // Show if: Matched, Active (Hover), or No Hover and proper zoom OR Path Node
+        const shouldShowLabel = isActive || (isMatched && highlightedNodeIds.size > 0) || (!isHovered && globalScale > 0.6) || isPathRelated;
 
         if (shouldShowLabel && opacity > 0.2) {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.font = `${(isMatched || isActive) ? '600' : '500'} ${fontSize}px Inter, system-ui, sans-serif`;
+            ctx.font = `${(isMatched || isActive || isPathRelated) ? '600' : '500'} ${fontSize}px Inter, system-ui, sans-serif`;
 
             // Halo
             ctx.lineJoin = 'round';
@@ -484,7 +543,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             ctx.fillText(label, node.x!, node.y! + r + 3);
         }
         ctx.globalAlpha = 1;
-    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds, getCategoryColor]);
+    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds, getCategoryColor, pathMode, pathStart, pathEnd, pathResult]);
 
     // Canvas Object: Links (Gradient + Spotlight + Value-based thickness)
     const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -494,9 +553,28 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         const isHybrid = link.type === 'hybrid';
         const linkValue = link.value || 0.5;
 
+        // Path highlighting logic
+        let isPathLink = false;
+        if (pathResult && pathResult.length > 1) {
+            const sid = link.source.id;
+            const tid = link.target.id;
+            // Check if this link connects two consecutive nodes in the path
+            for (let i = 0; i < pathResult.length - 1; i++) {
+                if ((pathResult[i] === sid && pathResult[i + 1] === tid) ||
+                    (pathResult[i] === tid && pathResult[i + 1] === sid)) {
+                    isPathLink = true;
+                    break;
+                }
+            }
+        }
+
         let opacity = 0.3 + linkValue * 0.5; // Base opacity scales with confidence
 
-        if (hoverNode) {
+        if (pathMode) {
+            if (pathResult) {
+                opacity = isPathLink ? 1 : 0.05;
+            }
+        } else if (hoverNode) {
             const isConnected = link.source.id === hoverNode.id || link.target.id === hoverNode.id;
             opacity = isConnected ? 1 : 0.03;
         } else if (highlightedNodeIds.size > 0) {
@@ -516,7 +594,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         let srcColor = communityColorMap.get(src.id) || getCategoryColor(src.type);
         let tgtColor = communityColorMap.get(tgt.id) || getCategoryColor(tgt.type);
 
-        if (isManual) {
+        if (isPathLink) {
+            srcColor = '#eab308';
+            tgtColor = '#eab308';
+        } else if (isManual) {
             srcColor = '#F59E0B'; // Amber-500
             tgtColor = '#F59E0B';
         } else if (isExplicit) {
@@ -538,7 +619,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         // Value-based width: higher confidence = thicker line
         let lineWidth = 1 + linkValue * 2; // 1px to 3px based on value
 
-        if (isManual) lineWidth = 4.0;
+        if (isPathLink) lineWidth = 4.0;
+        else if (isManual) lineWidth = 4.0;
         else if (isExplicit) lineWidth = 2.5 + linkValue;
         else if (isHybrid) lineWidth = 1.5 + linkValue;
         else if (isSemantic) lineWidth = 1.0 + linkValue * 0.5;
@@ -549,7 +631,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.beginPath();
 
         // DASHED lines for Semantic/Hybrid
-        if (isSemantic) ctx.setLineDash([2, 4]);
+        if (isPathLink) ctx.setLineDash([]); // Path is solid
+        else if (isSemantic) ctx.setLineDash([2, 4]);
         else if (isHybrid) ctx.setLineDash([4, 2]);
         else ctx.setLineDash([]); // Solid for Manual, Explicit, Structural
 
@@ -560,7 +643,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         // Reset dash
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
-    }, [hoverNode, communityColorMap, highlightedNodeIds, getCategoryColor]);
+    }, [hoverNode, communityColorMap, highlightedNodeIds, getCategoryColor, pathMode, pathResult]);
 
     // Apply custom forces for Obsidian-like layout
     useEffect(() => {
@@ -747,56 +830,133 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 flexDirection: 'column',
                 gap: 8
             }}>
-                {/* Depth Controls */}
+                {/* Controls (Depth + Semantic + Path) */}
                 <div style={{
-                    background: 'white',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                    position: 'absolute',
+                    top: 16,
+                    left: 16,
                     display: 'flex',
-                    gap: 8,
-                    alignItems: 'center'
+                    flexDirection: 'column',
+                    gap: 8
                 }}>
-                    <span style={{ fontSize: 12, color: '#64748b', marginRight: 4 }}>Profondeur:</span>
-                    {[0, 1, 2, 3].map(d => (
-                        <button
-                            key={d}
-                            onClick={() => {
-                                setDepthFilter(d);
-                                if (d === 0) setFocusedNodeId(null);
-                            }}
-                            style={{
-                                padding: '4px 10px',
-                                borderRadius: 4,
-                                border: depthFilter === d ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                                background: depthFilter === d ? '#eff6ff' : 'white',
-                                color: depthFilter === d ? '#3b82f6' : '#64748b',
-                                fontSize: 12,
-                                cursor: 'pointer',
-                                fontWeight: depthFilter === d ? 600 : 400
-                            }}
-                        >
-                            {d === 0 ? 'Tout' : `N+${d}`}
-                        </button>
-                    ))}
-                </div>
-
-
-                {focusedNodeId && (
+                    {/* Depth Controls */}
                     <div style={{
                         background: 'white',
                         padding: '8px 12px',
                         borderRadius: 8,
                         border: '1px solid #e2e8f0',
-                        fontSize: 11, color: '#94a3b8'
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        gap: 8,
+                        alignItems: 'center'
                     }}>
-                        Focus: {graphData.nodes.find(n => n.id === focusedNodeId)?.name?.slice(0, 15)}...
+                        <span style={{ fontSize: 12, color: '#64748b', marginRight: 4 }}>Profondeur:</span>
+                        {[0, 1, 2, 3].map(d => (
+                            <button
+                                key={d}
+                                onClick={() => {
+                                    setDepthFilter(d);
+                                    if (d === 0) setFocusedNodeId(null);
+                                }}
+                                style={{
+                                    padding: '4px 10px',
+                                    borderRadius: 4,
+                                    border: depthFilter === d ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                                    background: depthFilter === d ? '#eff6ff' : 'white',
+                                    color: depthFilter === d ? '#3b82f6' : '#64748b',
+                                    fontSize: 12,
+                                    cursor: 'pointer',
+                                    fontWeight: depthFilter === d ? 600 : 400
+                                }}
+                            >
+                                {d === 0 ? 'Tout' : `N+${d}`}
+                            </button>
+                        ))}
                     </div>
-                )}
+
+                    {/* Path Mode Toggle */}
+                    <div style={{
+                        background: 'white',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8
+                    }}>
+                        <button
+                            onClick={() => {
+                                setPathMode(!pathMode);
+                                // Reset state when toggling off
+                                if (pathMode) {
+                                    setPathStart(null);
+                                    setPathEnd(null);
+                                    setPathResult(null);
+                                }
+                            }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '6px 12px',
+                                background: pathMode ? '#fef3c7' : '#f1f5f9',
+                                color: pathMode ? '#d97706' : '#64748b',
+                                border: 'none',
+                                borderRadius: 6,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <MapPin size={14} />
+                            {pathMode ? 'Mode Chemin Actif' : 'Chercher un chemin'}
+                        </button>
+
+                        {pathMode && (
+                            <div style={{ fontSize: 11, color: '#64748b', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                {!pathStart && <span>1. Cliquez sur le point de départ</span>}
+                                {pathStart && !pathEnd && <span>2. Cliquez sur l'arrivée</span>}
+                                {pathStart && pathEnd && (
+                                    <button
+                                        onClick={() => {
+                                            setPathStart(null);
+                                            setPathEnd(null);
+                                            setPathResult(null);
+                                        }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#ef4444',
+                                            fontSize: 11,
+                                            cursor: 'pointer',
+                                            textDecoration: 'underline',
+                                            padding: 0
+                                        }}
+                                    >
+                                        Réinitialiser
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+
+                    {focusedNodeId && (
+                        <div style={{
+                            background: 'white',
+                            padding: '8px 12px',
+                            borderRadius: 8,
+                            border: '1px solid #e2e8f0',
+                            fontSize: 11, color: '#94a3b8'
+                        }}>
+                            Focus: {graphData.nodes.find(n => n.id === focusedNodeId)?.name?.slice(0, 15)}...
+                        </div>
+                    )}
+                </div>
+
+
             </div>
-
-
-        </div>
-    );
+            );
 };
