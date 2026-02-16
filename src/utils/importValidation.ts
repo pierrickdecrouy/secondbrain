@@ -1,88 +1,62 @@
 import { z } from 'zod';
 import type { Card } from '../types';
-import { CARD_TYPES } from '../types';
 
-/**
- * Zod Schema for Card Validation
- * Ensures data integrity for "Concours de l'internat" reliability.
- */
-
-// Tag Schema: Must be non-empty string, trimmed
-const TagSchema = z.string()
-    .min(1, "Tag cannot be empty")
-    .transform(t => t.trim())
-    .refine(t => t.length > 0, "Tag cannot be just whitespace");
-
-// Card Type Schema
-// forcing unknown cast to avoid readonly tuple issues with zod
-const CardTypeSchema = z.enum(CARD_TYPES as unknown as [string, ...string[]]);
-
-// Full Card Import Schema
-const CardImportSchema = z.object({
-    id: z.string().optional(), // Can be generated if missing
-    type: CardTypeSchema,
-    title: z.string().min(2, "Title must be at least 2 characters").max(200, "Title too long"),
-    subtitle: z.string().optional().default(''),
-    content: z.string().optional().default(''), // Summary
-    details: z.string().optional().default(''), // Rich text
-    tags: z.array(TagSchema).default([]),
+// Zod Schema for strict validation
+export const CardSchema = z.object({
+    id: z.string().min(1, "ID is required"),
+    title: z.string().min(1, "Title is required"),
+    type: z.enum(['drug', 'patho', 'physio', 'data'] as const).default('data'),
+    subtitle: z.string().optional(),
+    content: z.string().optional(),
+    details: z.string().optional(), // Full markdown content
+    tags: z.array(z.string()).default([]),
     imageUrl: z.string().url("Invalid image URL").optional().or(z.literal('')),
-    manualConnections: z.array(z.string()).optional().default([]),
-    suppressedConnections: z.array(z.string()).optional().default([]),
-    createdAt: z.number().optional(),
-    updatedAt: z.number().optional(),
+    manualConnections: z.array(z.string()).optional(),
 });
 
-// Batch Import Schema
-const BatchImportSchema = z.array(CardImportSchema);
+export const ImportBatchSchema = z.array(CardSchema);
+
+export type ValidationResult = {
+    success: boolean;
+    errors: string[];
+    validCards: Card[];
+};
 
 /**
- * Validate a single card or a batch of cards
+ * Validates a batch of imported data against the schema
+ * @param data Raw JSON or object data
  */
-export function validateImportData(data: unknown) {
-    // Determine if array or single object
-    const isArray = Array.isArray(data);
-    const schema = isArray ? BatchImportSchema : CardImportSchema;
+export function validateImportData(data: any): ValidationResult {
+    try {
+        // Ensure array
+        const arrayData = Array.isArray(data) ? data : [data];
 
-    const result = schema.safeParse(data);
+        // Parse with Zod
+        const parsed = ImportBatchSchema.parse(arrayData);
 
-    if (result.success) {
         return {
             success: true,
-            data: result.data as Card | Card[],
-            errors: []
+            errors: [],
+            validCards: parsed as Card[]
         };
-    } else {
-        // Format Zod errors into readable messages
-        const formattedErrors = (result.error as any).errors.map((err: any) => {
-            const path = err.path.join('.');
-            return `${path}: ${err.message}`;
-        });
+    } catch (e: any) {
+        if (e instanceof z.ZodError) {
+            // Force cast to any to avoid TS issues with ZodError<T>
+            const zodError = e as any;
+            const formattedErrors = zodError.errors.map((err: any) => {
+                const path = err.path.join('.');
+                return `Field '${path}': ${err.message}`;
+            });
+            return {
+                success: false,
+                errors: formattedErrors,
+                validCards: []
+            };
+        }
         return {
             success: false,
-            data: null,
-            errors: formattedErrors
+            errors: [(e as Error).message],
+            validCards: []
         };
     }
-}
-
-/**
- * Sanitize and fix minor issues in a card
- * (e.g., removing duplicate tags, trimming whitespace)
- */
-export function sanitizeCard(card: Partial<Card>): Card {
-    return {
-        id: card.id || crypto.randomUUID(),
-        type: card.type || 'data',
-        title: (card.title || 'Untitled').trim(),
-        subtitle: (card.subtitle || '').trim(),
-        content: (card.content || '').trim(),
-        details: (card.details || '').trim(),
-        tags: Array.from(new Set((card.tags || []).map(t => t.trim()).filter(t => t.length > 0))),
-        imageUrl: card.imageUrl || '',
-        manualConnections: card.manualConnections || [],
-        suppressedConnections: card.suppressedConnections || [],
-        createdAt: card.createdAt || Date.now(),
-        updatedAt: card.updatedAt || Date.now()
-    } as Card;
 }

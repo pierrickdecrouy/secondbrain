@@ -29,7 +29,13 @@ export function findStrongestPath(
         const s = getId(link.source);
         const t = getId(link.target);
         const val = link.value || 0.1; // Default low confidence if missing
-        const cost = 1 / Math.max(0.01, val); // Avoid div by zero
+
+        // Cost Function: Inverse Square
+        // Value 1.0 (Manual/Explicit) -> Cost 1
+        // Value 0.5 (Weak Semantic)   -> Cost 4
+        // Value 0.1                   -> Cost 100
+        // This strongly prefers stronger links even if it means more hops.
+        const cost = 1 / (Math.max(0.01, val) ** 2);
 
         if (!adjacency.has(s)) adjacency.set(s, []);
         if (!adjacency.has(t)) adjacency.set(t, []);

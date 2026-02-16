@@ -314,7 +314,7 @@ export async function semanticSearch(query: string, topK: number = 20): Promise<
 export async function computePrecisionGraph(
     cards: Card[],
     vetoPairs: string[] = [],
-    _typeCompat: Record<string, number> = {}, // Unused in RRF version
+    typeCompat: Record<string, number> = {}, // Re-enabled for clinical bias
     keywordSearchFn?: (query: string, limit: number) => string[]
 ): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' }[]> {
     const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' }[] = [];
@@ -333,6 +333,16 @@ export async function computePrecisionGraph(
         const intersection = new Set([...setA].filter(x => setB.has(x)));
         const union = new Set([...setA, ...setB]);
         return intersection.size / union.size;
+    };
+
+    // Helper: Get type compatibility multiplier (Base 1.0 + Feedback Delta)
+    const getTypeMultiplier = (typeA: string, typeB: string): number => {
+        if (!typeA || !typeB) return 1.0;
+        if (typeA === typeB) return 1.05; // Slight boost for same-type
+
+        const key = [typeA, typeB].sort().join('|');
+        // Default penalty for cross-type unless explicitly boosted
+        return typeCompat[key] ?? 0.85;
     };
 
     // Process each card
@@ -386,10 +396,10 @@ export async function computePrecisionGraph(
             const semanticRank = semanticCandidates.get(candidateId)?.rank ?? 100; // Penalty if missing
             const keywordRank = keywordCandidates.get(candidateId) ?? 100; // Penalty if missing
 
-            // Used for mental model, but not directly assigned to avoid linter warning
-            // const rrfScore = (1 / (K + semanticRank)) + (1 / (K + keywordRank));
-
-            const vectorScore = semanticCandidates.get(candidateId)?.score ?? 0;
+            const rawVectorScore = semanticCandidates.get(candidateId)?.score ?? 0;
+            // Apply Type Compatibility to Vector Score
+            const typeMult = getTypeMultiplier(cardA.type, cardB.type);
+            const vectorScore = Math.min(rawVectorScore * typeMult, 0.99);
             const explicitMatch = keywordCandidates.has(candidateId); // True if keyword found
 
             // 1. Explicit Reference Logic (Strongest)
@@ -427,6 +437,55 @@ export async function computePrecisionGraph(
             if (score > 0 && type) {
                 processedPairs.add(pairId);
                 links.push({ source: cardA.id, target: cardB.id, value: score, type });
+            }
+        }
+        // ... (End of RRF loop)
+    }
+
+    // --- NEW: Structural Group Linking ---
+    // Cards with the same `_group:NAME` tag are strongly linked (Clique)
+    const groupMap = new Map<string, string[]>();
+
+    for (const card of cards) {
+        if (!card.tags) continue;
+        for (const tag of card.tags) {
+            if (tag.startsWith('_group:')) {
+                const groupName = tag.substring(7).trim(); // Remove '_group:'
+                if (!groupName) continue;
+
+                if (!groupMap.has(groupName)) {
+                    groupMap.set(groupName, []);
+                }
+                groupMap.get(groupName)!.push(card.id);
+            }
+        }
+    }
+
+    // Generate Clique Links for each group
+    for (const [_, memberIds] of groupMap.entries()) {
+        if (memberIds.length < 2) continue;
+
+        // Create links between all pairs in the group
+        for (let i = 0; i < memberIds.length; i++) {
+            for (let j = i + 1; j < memberIds.length; j++) {
+                const idA = memberIds[i];
+                const idB = memberIds[j];
+                const pairId = [idA, idB].sort().join('-');
+
+                if (processedPairs.has(pairId)) continue;
+
+                // Check Veto
+                const vetoKey = [idA, idB].sort().join('|');
+                if (vetoSet.has(vetoKey)) continue;
+
+                // Create Strong Structural Link
+                links.push({
+                    source: idA,
+                    target: idB,
+                    value: 1.0, // Maximum strength
+                    type: 'explicit' // Show as explicit/reference link (Indigo)
+                });
+                processedPairs.add(pairId);
             }
         }
     }

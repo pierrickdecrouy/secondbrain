@@ -106,7 +106,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                             <Badge type={card.type} />
                             {/* Quality Indicator */}
                             <div
-                                title={`Score de qualité : ${quality.score}/100\nContenu: ${quality.details.contentScore}/40\nConnexions: ${quality.details.connectivityScore}/30\nMétadonnées: ${quality.details.metadataScore}/30`}
+                                title={`Score de qualité : ${quality.score}/100\nContenu: ${quality.details.contentScore}\nConnexions: ${quality.details.connectivityScore}\nMétadonnées: ${quality.details.metadataScore}`}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',

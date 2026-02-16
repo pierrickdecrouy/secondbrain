@@ -1,6 +1,6 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
-import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check, MapPin, Navigation } from 'lucide-react';
+import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check, MapPin, Trash2 } from 'lucide-react';
 import { forceCollide, forceRadial } from 'd3-force';
 import type { Card } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -50,7 +50,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     searchQuery,
     activeFilters = [],
     highlightedIds,
-    onSuppressConnections: _onSuppressConnections,
+    onSuppressConnections,
     semanticReady,
     vetoPairs,
     typeCompat
@@ -743,10 +743,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 onLinkHover={handleLinkHover as any}
                 backgroundColor="#f8fafc"
                 onNodeClick={handleNodeClick as any}
-                cooldownTicks={200}
-                d3AlphaDecay={0.01}
-                d3VelocityDecay={0.1}
-                warmupTicks={100}
+                cooldownTicks={100}
+                d3AlphaDecay={0.05} // Faster settling (less "explosion")
+                d3VelocityDecay={0.2} // More friction
+                warmupTicks={50}
                 onEngineStop={() => {
                     fgRef.current?.zoomToFit(400, 50);
                 }}
@@ -796,13 +796,16 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     fontWeight: 500,
                     maxWidth: 400,
                     textAlign: 'center',
-                    pointerEvents: 'none',
+                    pointerEvents: 'auto', // Enable interaction for button
                     zIndex: 10,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     lineHeight: 1.4,
-                    backdropFilter: 'blur(8px)'
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8
                 }}>
-                    <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                         {hoverLink.type === 'explicit' ? <><LinkIcon size={12} className="text-indigo-400" /> <span>Référence explicite</span></> :
                             hoverLink.type === 'hybrid' ? <><GitMerge size={12} className="text-cyan-400" /> <span>Lien hybride</span></> :
                                 hoverLink.type === 'semantic' ? <><Brain size={12} className="text-purple-400" /> <span>Similarité sémantique</span></> :
@@ -815,9 +818,43 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         {hoverLink.quality === 'boost' && <Zap size={10} className="text-yellow-400" style={{ marginLeft: 'auto' }} />}
                         {hoverLink.quality === 'match' && <Check size={10} className="text-green-400" style={{ marginLeft: 'auto' }} />}
                     </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {hoverLink.reason}
                     </div>
+
+                    {/* Delete Action (Feedback) */}
+                    {(hoverLink.type === 'semantic' || hoverLink.type === 'hybrid' || hoverLink.type === 'rrf') && onSuppressConnections && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const sId = typeof hoverLink.source === 'string' ? hoverLink.source : (hoverLink.source as any).id;
+                                const tId = typeof hoverLink.target === 'string' ? hoverLink.target : (hoverLink.target as any).id;
+                                onSuppressConnections([{ sourceId: sId, targetId: tId }]);
+                                setHoverLink(null); // Close tooltip
+                            }}
+                            className="hover:bg-red-500/20 hover:text-red-300"
+                            style={{
+                                marginTop: 4,
+                                paddingTop: 6,
+                                borderTop: '1px solid rgba(255,255,255,0.1)',
+                                background: 'transparent',
+                                color: '#f87171',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                                width: '100%',
+                                borderRadius: 4,
+                                paddingBottom: 2,
+                                transition: 'background 0.2s'
+                            }}
+                        >
+                            <Trash2 size={12} /> Supprimer ce lien incorrect (apprendre)
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -958,5 +995,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
 
             </div>
-            );
+        </div>
+    );
 };

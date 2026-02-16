@@ -1,80 +1,92 @@
 import type { Card } from '../types';
 
-/**
- * Knowledge Quality Scoring System
- * Evaluates the "richness" and "reliability" of a card.
- * 
- * Factors:
- * 1. Content Depth (40%): Word count, structure (headers, lists).
- * 2. Connectivity (30%): Number of manual and semantic connections.
- * 3. Metadata Completeness (20%): Tags, Subtitle, Type.
- * 4. Updates (10%): Has it been refined over time?
- */
-
-export interface QualityScore {
-    score: number; // 0-100
-    label: 'Stub' | 'Basic' | 'Good' | 'Excellent' | 'Masterpiece';
-    color: string;
-    details: {
-        contentScore: number;
-        connectivityScore: number;
-        metadataScore: number;
-    };
+export interface QualityMetrics {
+    contentScore: number;    // 0-40 points for content length/structure
+    connectivityScore: number; // 0-30 points for links
+    metadataScore: number;   // 0-30 points for tags/type/images
+    total: number;           // 0-100
 }
 
-export function calculateQualityScore(card: Card, semanticNeighborCount: number = 0): QualityScore {
-    // 1. Content Depth (Max 40 points)
-    const text = (card.content || '') + ' ' + (card.details || '');
-    const wordCount = text.split(/\s+/).length;
-    let contentScore = Math.min(20, wordCount / 5); // 100 words = 20 pts
+export interface QualityAssessment {
+    score: number;
+    label: 'Ébauche' | 'Incomplet' | 'Correct' | 'Robuste' | 'Excellence';
+    color: string;
+    details: QualityMetrics;
+}
 
-    // Bonus for structure (Markdown headers, lists)
-    if (text.includes('# ')) contentScore += 5;
-    if (text.includes('- ') || text.includes('* ')) contentScore += 5;
-    if (text.length > 500) contentScore += 10; // Extra length bonus
-
-    contentScore = Math.min(40, contentScore);
-
-    // 2. Connectivity (Max 30 points)
-    // Manual connections are worth more (intentional knowledge)
-    const manualCount = (card.manualConnections || []).length;
-    let connectivityScore = (manualCount * 5) + (semanticNeighborCount * 1);
-    connectivityScore = Math.min(30, connectivityScore);
-
-    // 3. Metadata Completeness (Max 30 points)
+/**
+ * Computes a quality score for a card to encourage better documentation
+ */
+export function calculateQualityScore(card: Card, connectivityCount: number = 0): QualityAssessment {
+    let contentScore = 0;
     let metadataScore = 0;
-    if (card.tags && card.tags.length > 0) metadataScore += 10;
-    if (card.tags && card.tags.length > 3) metadataScore += 5; // Good categorization
-    if (card.subtitle && card.subtitle.length > 5) metadataScore += 10;
-    if (card.type && card.type !== 'data') metadataScore += 5; // Specific types are better than generic 'data'
+    let connectivityScore = 0;
 
-    // Total Calculation
-    const totalScore = Math.round(contentScore + connectivityScore + metadataScore);
+    // 1. Content Analysis (Max 40)
+    const text = (card.details || card.content || '').trim();
+    const length = text.length;
+
+    // Length milestones
+    if (length > 50) contentScore += 5;
+    if (length > 200) contentScore += 10;
+    if (length > 500) contentScore += 10;
+    if (length > 1000) contentScore += 5; // Creating a plateau
+
+    // Structure bonuses
+    if (text.includes('# ')) contentScore += 3; // Headings
+    if (text.includes('- ') || text.includes('* ')) contentScore += 3; // Lists
+    if (text.includes('```') || text.includes('`')) contentScore += 2; // Code/Technical
+    if (text.includes('|') && text.includes('--')) contentScore += 2; // Tables
+
+    contentScore = Math.min(contentScore, 40);
+
+    // 2. Metadata & Enrichment (Max 30)
+    // Tags
+    if (card.tags?.length > 0) metadataScore += 5;
+    if (card.tags?.length > 2) metadataScore += 5;
+    if (card.tags?.length > 5) metadataScore += 5;
+
+    // Subtitle
+    if (card.subtitle && card.subtitle.length > 5) metadataScore += 5;
+
+    // Image
+    if (card.imageUrl) metadataScore += 10;
+
+    metadataScore = Math.min(metadataScore, 30);
+
+    // 3. Connectivity (Max 30)
+    // Basic presence
+    if (connectivityCount > 0) connectivityScore += 5;
+    if (connectivityCount > 2) connectivityScore += 10;
+    if (connectivityCount > 5) connectivityScore += 10;
+    if (connectivityCount > 10) connectivityScore += 5;
+
+    connectivityScore = Math.min(connectivityScore, 30);
+
+    const total = contentScore + metadataScore + connectivityScore;
+
+    // Determine Label & Color
+    let label: QualityAssessment['label'] = 'Ébauche';
+    let color = '#94a3b8'; // Slate 400
+
+    if (total >= 90) {
+        label = 'Excellence';
+        color = '#f59e0b'; // Amber 500 (Gold)
+    } else if (total >= 70) {
+        label = 'Robuste';
+        color = '#10b981'; // Emerald 500
+    } else if (total >= 50) {
+        label = 'Correct';
+        color = '#3b82f6'; // Blue 500
+    } else if (total >= 30) {
+        label = 'Incomplet';
+        color = '#f97316'; // Orange 500
+    }
 
     return {
-        score: totalScore,
-        label: getLabel(totalScore),
-        color: getColor(totalScore),
-        details: {
-            contentScore,
-            connectivityScore,
-            metadataScore
-        }
+        score: total,
+        label,
+        color,
+        details: { contentScore, connectivityScore, metadataScore, total }
     };
-}
-
-function getLabel(score: number): QualityScore['label'] {
-    if (score >= 90) return 'Masterpiece';
-    if (score >= 70) return 'Excellent';
-    if (score >= 50) return 'Good';
-    if (score >= 30) return 'Basic';
-    return 'Stub';
-}
-
-function getColor(score: number): string {
-    if (score >= 90) return '#10b981'; // Emerald 500
-    if (score >= 70) return '#34d399'; // Emerald 400
-    if (score >= 50) return '#60a5fa'; // Blue 400
-    if (score >= 30) return '#facc15'; // Yellow 400
-    return '#fbbf24'; // Amber 400
 }

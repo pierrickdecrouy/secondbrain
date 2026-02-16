@@ -15,6 +15,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     const [importMode, setImportMode] = useState<ImportMode>('text');
     const [input, setInput] = useState('');
     const [cardType, setCardType] = useState<CardType>('drug');
+    const [groupName, setGroupName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [previewCount, setPreviewCount] = useState<number | null>(null);
     const [showHelp, setShowHelp] = useState(false);
@@ -70,7 +71,10 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                 subtitle,
                 content: details, // Use full details as content
                 details,
-                tags: extractedTags,
+                tags: [
+                    ...extractedTags,
+                    ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
+                ],
             });
         });
 
@@ -148,7 +152,10 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                         id: c.id ? sanitizeText(c.id) : generateSafeId(title),
                         title: title,
                         type: c.type || cardType,
-                        tags: c.tags || [],
+                        tags: [
+                            ...(c.tags || []),
+                            ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
+                        ],
                         subtitle: sanitizeText(c.subtitle || ''),
                         content: sanitizeText(c.content || ''),
                         details: sanitizeText(c.details || c.content || ''),
@@ -162,8 +169,8 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                 }
             }
 
-            // VALIDATION STEP
-            // Before proceeding, validte each card against Zod schema
+            // VALIDATION STEP (Zod)
+            // Before proceeding, validate each card against Zod schema
             const validationResult = validateImportData(processedCards);
 
             if (!validationResult.success) {
@@ -172,6 +179,9 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                     (validationResult.errors.length > 3 ? `\n... (+${validationResult.errors.length - 3} others)` : '');
                 throw new Error(`Validation failed:\n${errorMsg}`);
             }
+
+            // Use the strictly valid cards
+            processedCards = validationResult.validCards;
 
             // check duplicates
             const duplicates = processedCards.filter(newCard =>
@@ -304,13 +314,25 @@ Adulte : 500mg à 1g toutes les 4h.
                     </button>
                 </div>
 
-                <div className="form-group">
-                    <label>Type par défaut</label>
-                    <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
-                        {types.map(t => (
-                            <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                    </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label>Type par défaut</label>
+                        <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
+                            {types.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label>Groupe (Cluster)</label>
+                        <input
+                            type="text"
+                            placeholder="Ex: Antibiotiques, Cours N°1..."
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                    </div>
                 </div>
 
                 <div className="form-group" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
