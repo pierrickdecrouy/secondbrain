@@ -14,7 +14,7 @@ import {
     ShieldAlert
 } from 'lucide-react';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
-import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults } from '../storage';
+import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults, saveCardsAsync } from '../storage';
 import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbreviations';
 import './SettingsPage.css';
 import { useTheme } from '../context/ThemeContext';
@@ -376,7 +376,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
                     {/* Data Tab */}
                     {activeTab === 'data' && (
-                        <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '40px' }}>
+                        <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '40px', overflowY: 'auto', height: '100%' }}>
                             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                                 <div style={{
                                     width: '64px', height: '64px', background: 'rgba(79, 178, 134, 0.1)',
@@ -431,6 +431,71 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                             }}
                                         >
                                             Réinitialiser le dictionnaire
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* DELETE ALL DATA (New Danger Zone) */}
+                            <div style={{
+                                padding: '24px',
+                                border: '1px solid #c53030',
+                                borderRadius: '16px',
+                                background: '#fff5f5',
+                                marginTop: '24px'
+                            }}>
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                    <div style={{
+                                        padding: '12px', background: '#c53030', borderRadius: '12px',
+                                        color: 'white', height: 'fit-content'
+                                    }}>
+                                        <ShieldAlert size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#742a2a', marginBottom: '8px' }}>ZONE MORTELLE</h3>
+                                        <p style={{ fontSize: '0.9rem', color: '#742a2a', lineHeight: '1.5', marginBottom: '20px' }}>
+                                            Supprimer TOUTES les données (Fiches, Liens, Dictionnaire, Intelligence).
+                                            L'application repartira de zéro comme au premier jour.
+                                        </p>
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm('ATTENTION : Voulez-vous vraiment TOUT SUPPRIMER ?')) {
+                                                    if (confirm('C\'est votre DERNIÈRE CHANCE. Cette action est IRRÉVERSIBLE. Êtes-vous sûr ?')) {
+                                                        // 1. Clear Cards
+                                                        await saveCardsAsync([]);
+                                                        // 2. Clear Dict
+                                                        resetToDefaults();
+                                                        // 3. Clear Intelligence
+                                                        resetFeedback();
+
+                                                        // 4. Force Reload
+                                                        window.location.reload();
+                                                    }
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '10px 20px',
+                                                background: '#c53030',
+                                                border: 'none',
+                                                color: 'white',
+                                                fontWeight: 700,
+                                                borderRadius: '10px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem',
+                                                transition: 'all 0.2s',
+                                                boxShadow: '0 4px 6px rgba(197, 48, 48, 0.2)'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.currentTarget.style.transform = 'scale(1.02)';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.style.transform = 'scale(1)';
+                                            }}
+                                        >
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <Trash2 size={16} />
+                                                TOUT SUPPRIMER
+                                            </span>
                                         </button>
                                     </div>
                                 </div>
@@ -623,8 +688,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                         </div>
                     )}
                 </main>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

@@ -6,6 +6,7 @@ interface Node {
     type: string;
     manualConnections?: string[];
     suppressedConnections?: string[];
+    val?: number; // Importance score for visualization sizing
 }
 
 interface Link {
@@ -603,13 +604,34 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
     // Users can visually deduce paths via intermediate nodes in the graph.
 
     // Build nodes
-    const nodes: Node[] = cards.map(c => ({
-        id: c.id,
-        name: c.title,
-        type: c.type,
-        manualConnections: c.manualConnections,
-        suppressedConnections: c.suppressedConnections
-    }));
+    // Calculate degree centrality (number of links per node)
+    const degreeMap = new Map<string, number>();
+    links.forEach(l => {
+        degreeMap.set(l.source, (degreeMap.get(l.source) || 0) + 1);
+        degreeMap.set(l.target, (degreeMap.get(l.target) || 0) + 1);
+    });
+
+    const nodes: Node[] = cards.map(c => {
+        // Importance Score (val)
+        // 1. Degree Centrality (connections)
+        const degree = degreeMap.get(c.id) || 0;
+
+        // 2. Info Density (from TF-IDF sum)
+        const infoDensity = titleInfoContent.get(c.id) || 1.0;
+
+        // Composite Score: Base + (Degree * 1.5) + (Info * 0.5)
+        // Logarithmic scaling to prevent massive nodes
+        const rawVal = 1 + Math.log2(1 + degree) * 1.5 + Math.log2(infoDensity) * 0.5;
+
+        return {
+            id: c.id,
+            name: c.title,
+            type: c.type,
+            val: Math.max(1, Math.min(20, rawVal)), // Clamp between 1 and 20
+            manualConnections: c.manualConnections,
+            suppressedConnections: c.suppressedConnections
+        };
+    });
 
     self.postMessage({ nodes, links });
 };

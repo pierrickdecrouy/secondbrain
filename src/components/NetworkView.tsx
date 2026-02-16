@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
 import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check, MapPin, Trash2 } from 'lucide-react';
 import { forceCollide, forceRadial } from 'd3-force';
@@ -33,6 +33,8 @@ interface Node {
     vx?: number;
     vy?: number;
     index?: number;
+    // Added for dynamic sizing
+    val?: number;
 }
 
 interface Link {
@@ -61,6 +63,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
     const [graphData, setGraphData] = useState<{ nodes: Node[], links: Link[] }>({ nodes: [], links: [] });
     const [isCalculating, setIsCalculating] = useState(false);
+    // Key to force-remount the graph component on updates (User Request: "Like switching tabs")
+    const [remountKey, setRemountKey] = useState(0);
 
     // Pathfinding Mode State
     const [pathMode, setPathMode] = useState(false);
@@ -143,13 +147,27 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         worker.onmessage = (e) => {
             clearTimeout(timeout);
             const newData = e.data;
+
+            // Only use cache if it's an incremental update and we have valid positions
+            const useCache = isFullRecompute === false && positionCache.current.size > 0;
+
             newData.nodes = newData.nodes.map((node: Node) => {
-                const cached = positionCache.current.get(node.id);
-                if (cached) {
-                    return { ...node, x: cached.x, y: cached.y, fx: undefined, fy: undefined };
+                if (useCache) {
+                    const cached = positionCache.current.get(node.id);
+                    if (cached && Number.isFinite(cached.x) && Number.isFinite(cached.y)) {
+                        return { ...node, x: cached.x, y: cached.y, fx: undefined, fy: undefined };
+                    }
                 }
                 return node;
             });
+
+            // Reheat simulation if we have new nodes or full recompute
+            if (fgRef.current) {
+                fgRef.current.d3ReheatSimulation();
+                if (isFullRecompute) {
+                    fgRef.current.zoomToFit(400, 50);
+                }
+            }
 
             // Cache the structural links for incremental next time
             cachedLinksRef.current = newData.links;
@@ -161,6 +179,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             }
 
             setGraphData(newData);
+            // Force remount only on full recomputes or significant updates
+            if (isFullRecompute || newData.nodes.length !== graphData.nodes.length) {
+                setRemountKey(prev => prev + 1);
+            }
             setIsCalculating(false);
             worker.terminate();
         };
@@ -191,6 +213,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Precision Graph Effect - must wait for semantic search to build embeddings
     useEffect(() => {
+
         if (cards.length > 0 && semanticReady) {
             console.log('Computing precision graph (semantic ready, cards:', cards.length, ')');
             // Pass user feedback (veto list) and type logic to semantic engine
@@ -204,11 +227,18 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     value: l.value
                 })));
             });
-        } else {
-            if (!semanticReady) console.log('Waiting for semantic search to be ready before computing precision graph...');
-            setSmartLinks([]);
         }
     }, [cards, semanticReady]);
+
+    // ... (savePositions and resize effects unchanged)
+
+    // ...
+
+    // Link force: distance depends on link value
+
+
+    // Collision to prevent overlap
+
 
     // ... (savePositions and resize effects unchanged)
     useEffect(() => {
@@ -323,7 +353,17 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             if (!uniqueLinks.has(key)) uniqueLinks.set(key, link);
         });
 
-        const finalLinks = Array.from(uniqueLinks.values());
+        const finalLinks = Array.from(uniqueLinks.values()).map(link => {
+            // CRITICAL FIX: D3 mutates link objects (source/target become objects).
+            // When graphData updates, we MUST break the reference and pass string IDs again
+            // to force D3 to re-bind to the NEW node objects.
+            return {
+                ...link,
+                source: typeof link.source === 'string' ? link.source : (link.source as any).id,
+                target: typeof link.target === 'string' ? link.target : (link.target as any).id
+            };
+        });
+
         console.log(`[NetworkView] Links update: ${finalLinks.length} total (Manual: ${manualLinks.length}, AI: ${aiLinks.length}, Smart: ${smartLinks.length}, Structural: ${graphData.links.length})`);
         return finalLinks;
     }, [graphData.nodes, graphData.links, smartLinks]);
@@ -479,10 +519,14 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.globalAlpha = opacity;
 
         const label = node.name;
-        const baseR = 8;
+        // Modified: use node.val for sizing
+        const importance = node.val || 1;
+        const baseR = 4 + (importance * 1.5);
+
         const isMatched = (isSearchMatch && isTypeSelected);
-        let r = isMatched && highlightedNodeIds.size > 0 ? 12 : baseR;
-        if (isPathStart || isPathEnd) r = 14;
+        let r = baseR;
+        if (isMatched && highlightedNodeIds.size > 0) r = baseR * 1.2;
+        if (isPathStart || isPathEnd) r = baseR * 1.5;
 
         // Visual Coherence: Use community color for fill
         const community = communityMap.get(node.id);
@@ -653,18 +697,20 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
             // Custom forces for better layout
             // Adjusted: Reduced repulsion (-600) and collision (40) to avoid "dilated" graph
-            fgRef.current.d3Force('charge')?.strength(-600);
+            fgRef.current.d3Force('charge')?.strength(-800); // Increased repulsion for aeration (-600 -> -800)
 
             // Link force: distance depends on link value
             fgRef.current.d3Force('link')
                 ?.distance((link: any) => {
-                    const val = typeof link.value === 'number' ? link.value : 1;
-                    return 100 / (val * val); // Short links for strong connections
+                    const val = typeof link.value === 'number' ? link.value : 0.5;
+                    // SAFEGUARD: Linear scaling instead of inverse square to prevent massive distances
+                    // Weak links (0.1) -> 200px, Strong links (1.0) -> 60px
+                    return 60 + (1 - val) * 140;
                 })
-                ?.strength(0.5);
+                ?.strength(0.5); // Restore strength to 0.5 (was 0.4) for better cohesion
 
             // Collision to prevent overlap
-            fgRef.current.d3Force('collide', forceCollide(40).iterations(3));
+            fgRef.current.d3Force('collide', forceCollide(50).iterations(3)); // Increased collision radius (40 -> 50)
 
             // Center force to keep graph in view
             fgRef.current.d3Force('center')?.strength(0.6);
@@ -722,6 +768,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
         >
             <ForceGraph2D
+                key={remountKey}
                 ref={fgRef}
                 width={dimensions.width}
                 height={dimensions.height}
