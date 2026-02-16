@@ -3,7 +3,11 @@
  * Runs in a Web Worker to avoid blocking the main thread
  */
 
-import { pipeline, FeatureExtractionPipeline } from '@huggingface/transformers';
+import { pipeline, FeatureExtractionPipeline, env } from '@huggingface/transformers';
+
+// Skip local model checks (fixes Electron worker fs issues)
+env.allowLocalModels = false;
+env.useBrowserCache = true;
 
 let extractor: FeatureExtractionPipeline | null = null;
 let isLoading = false;
@@ -33,23 +37,48 @@ async function initModel() {
     if (extractor || isLoading) return;
 
     isLoading = true;
-    try {
-        self.postMessage({ type: 'progress', progress: 0 } as WorkerResponse);
+    self.postMessage({ type: 'progress', progress: 0 } as WorkerResponse);
 
-        // @ts-ignore - Transformers.js has complex union types that exceed TS limits
+    try {
+        // Try WebGPU first (fastest)
+        // @ts-ignore
         extractor = await pipeline('feature-extraction', MODEL_ID, {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            device: 'webgpu',
+            // @ts-ignore
             progress_callback: (progress: any) => {
                 if (typeof progress?.progress === 'number') {
                     self.postMessage({ type: 'progress', progress: progress.progress } as WorkerResponse);
                 }
             },
-            dtype: 'q8' // Explicitly use q8 quantization for WASM
+            dtype: 'fp32' // WebGPU usually requires fp32 or fp16, not q8
         }) as FeatureExtractionPipeline;
 
+        console.log('[Embedding Worker] WebGPU initialized successfully');
         self.postMessage({ type: 'ready' } as WorkerResponse);
-    } catch (error) {
-        self.postMessage({ type: 'error', error: String(error) } as WorkerResponse);
+    } catch (webGpuError) {
+        console.warn('[Embedding Worker] WebGPU failed, falling back to WASM (CPU):', webGpuError);
+
+        try {
+            // Fallback to WASM (q8 quantization for efficiency)
+            // @ts-ignore
+            extractor = await pipeline('feature-extraction', MODEL_ID, {
+                device: 'wasm',
+                // quantized: true, // Removed as it's not a valid property, dtype handles it
+                // @ts-ignore
+                progress_callback: (progress: any) => {
+                    if (typeof progress?.progress === 'number') {
+                        self.postMessage({ type: 'progress', progress: progress.progress } as WorkerResponse);
+                    }
+                },
+                dtype: 'q8'
+            }) as FeatureExtractionPipeline;
+
+            console.log('[Embedding Worker] WASM (CPU) initialized successfully');
+            self.postMessage({ type: 'ready' } as WorkerResponse);
+        } catch (cpuError) {
+            console.error('[Embedding Worker] All backends failed:', cpuError);
+            self.postMessage({ type: 'error', error: String(cpuError) } as WorkerResponse);
+        }
     } finally {
         isLoading = false;
     }

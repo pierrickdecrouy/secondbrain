@@ -9,7 +9,9 @@ import {
     Library,
     Palette,
     RotateCcw,
-    Brain
+    Brain,
+    Zap,
+    ShieldAlert
 } from 'lucide-react';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
 import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults } from '../storage';
@@ -505,7 +507,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                     padding: '20px',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px' }}>🧠 Patterns appris</h3>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Brain className="text-purple-500" size={16} /> Patterns appris</h3>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                         <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>Positifs (boosts)</span>
                                         <span style={{ fontWeight: 600, color: '#22c55e' }}>{dashStats.positivePatternCount}</span>
@@ -528,7 +530,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                     padding: '20px',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px' }}>⚡ Scores type-pair appris</h3>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Zap className="text-amber-500" size={16} /> Scores type-pair appris</h3>
                                     {Object.entries(dashStats.typePairScores).length === 0 ? (
                                         <div style={{ color: '#9ca3af', fontSize: '0.85rem', fontStyle: 'italic' }}>Pas encore de données</div>
                                     ) : (
@@ -558,7 +560,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                     marginBottom: '24px',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px' }}>🚫 Mots-clés toxiques</h3>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><ShieldAlert className="text-red-500" size={16} /> Mots-clés toxiques</h3>
                                     <p style={{ color: '#8c9b9f', fontSize: '0.8rem', marginBottom: '12px' }}>
                                         Ces mots génèrent souvent des faux positifs. L'algo les pénalise automatiquement.
                                     </p>

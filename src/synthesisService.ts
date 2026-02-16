@@ -12,9 +12,22 @@ import { expandMedicalQuery } from './medicalAbbreviations';
  * Generate a synthesis from matched cards
  * Extract key information and present structured summary
  */
+/**
+ * Check if synthesis is available for query
+ */
+export function canGenerateSynthesis(matchedCards: Card[]): boolean {
+    return matchedCards.length >= 1;
+}
+
+/**
+ * Generate a synthesis from matched cards
+ * Extract key information and present structured summary
+ * IMPROVED: Respects RRF semantic ranking and reduces aggressive re-sorting
+ */
 export function generateSearchSynthesis(
     query: string,
-    matchedCards: Card[]
+    matchedCards: Card[],
+    allCards: Card[] = [] // Optional for backward compatibility, but needed for Graph-RAG
 ): { title: string; points: { text: string; source: { id: string; title: string } }[]; sources: string[]; keywords: string[] } | null {
     if (matchedCards.length === 0) return null;
 
@@ -27,27 +40,48 @@ export function generateSearchSynthesis(
 
     if (relevantCards.length === 0) return null;
 
-    // Prioritize cards with exact title match or very close match
-    const sortedCards = [...relevantCards].sort((a, b) => {
-        const aTitle = a.title.toLowerCase();
-        const bTitle = b.title.toLowerCase();
+    // STRATEGY: 
+    // 1. Identify the "Principal Subject" (Exact or strong title match) -> Pin to top
+    // 2. Keep the rest in their original RRF rank (Semantic/Hybrid score)
+    // This avoids burying highly relevant semantic results that don't match the title string
 
-        // Exact match gets highest priority
-        if (aTitle === normalizedQuery) return -1;
-        if (bTitle === normalizedQuery) return 1;
+    let sortedCards = [...relevantCards];
+    const exactMatchIndex = sortedCards.findIndex(c => c.title.toLowerCase() === normalizedQuery);
 
-        // Starts with match
-        if (aTitle.startsWith(normalizedQuery) && !bTitle.startsWith(normalizedQuery)) return -1;
-        if (bTitle.startsWith(normalizedQuery) && !aTitle.startsWith(normalizedQuery)) return 1;
+    if (exactMatchIndex !== -1) {
+        // Move exact match to front
+        const exact = sortedCards.splice(exactMatchIndex, 1)[0];
+        sortedCards.unshift(exact);
+    } else {
+        // Try precise startsWith match if no exact match
+        const startsWithIndex = sortedCards.findIndex(c => c.title.toLowerCase().startsWith(normalizedQuery));
+        if (startsWithIndex !== -1) {
+            const start = sortedCards.splice(startsWithIndex, 1)[0];
+            sortedCards.unshift(start);
+        }
+    }
 
-        // Contains match
-        if (aTitle.includes(normalizedQuery) && !bTitle.includes(normalizedQuery)) return -1;
-        if (bTitle.includes(normalizedQuery) && !aTitle.includes(normalizedQuery)) return 1;
+    // Graph-RAG Lite: 
+    // If the top card has manual connections, pull them in if they aren't already in the top results.
+    // This allows "Context Expansion" based on user-defined knowledge graph.
+    if (sortedCards.length > 0 && allCards.length > 0) {
+        const topCard = sortedCards[0];
+        if (topCard.manualConnections && topCard.manualConnections.length > 0) {
+            const connectedIds = new Set(topCard.manualConnections);
+            // Filter out cards already in sortedCards (to avoid dups, but allow re-ranking if we want)
+            // Actually, we want to inject them if they are missing.
+            const existingIds = new Set(sortedCards.map(c => c.id));
 
-        return 0;
-    });
+            const neighbors = allCards.filter(c => connectedIds.has(c.id) && !existingIds.has(c.id));
 
-    // Take top 6 most relevant cards
+            if (neighbors.length > 0) {
+                // Insert neighbors after the top card (high priority context)
+                sortedCards.splice(1, 0, ...neighbors);
+            }
+        }
+    }
+
+    // Take top 6 most relevant cards (now respecting RRF for non-pinned items)
     const topCards = sortedCards.slice(0, 6);
 
     // Extract key points from each card
@@ -73,41 +107,53 @@ export function generateSearchSynthesis(
                 .map((s: string) => s.trim())
                 .filter((s: string) => s.length > 20); // Filter out very short fragments
 
-            // Priority 1: Definition sentences containing ANY expanded query term
-            const defSentence = sentences.find((s: string) => {
+            // Scoring sentences based on query relevance and structure
+            // Rank 1: Definition style with query term
+            // Rank 2: Contains query term
+            // Rank 3: First sentence (Introduction) - Fallback
+
+            let bestScore = -1;
+
+            sentences.forEach(s => {
                 const lower = s.toLowerCase();
+                let score = 0;
+
+                // Keyword match boost
                 const hasTerm = expandedQueries.some(q => lower.includes(q));
-                return hasTerm &&
-                    (lower.includes('est un') || lower.includes('est une') || lower.includes(':') || lower.includes('se définit'));
+                if (hasTerm) score += 10;
+
+                // Definition structure boost
+                if (lower.includes('est un') || lower.includes('est une') || lower.includes('se définit')) {
+                    score += 5;
+                }
+
+                // Position penalty (prefer earlier sentences)
+                // But only slight penalty
+                score -= (content.indexOf(s) / content.length) * 2;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestSentence = s;
+                }
             });
 
-            if (defSentence) {
-                bestSentence = defSentence;
-            }
-            // Priority 2: Sentences containing ANY expanded query term
-            else {
-                const querySentence = sentences.find((s: string) =>
-                    expandedQueries.some(q => s.toLowerCase().includes(q))
-                );
-                if (querySentence) {
-                    bestSentence = querySentence;
-                }
-                // Priority 3: First sentence if no specific query match found (context/tag match)
-                else if (sentences.length > 0) {
-                    bestSentence = sentences[0];
-                }
+            // Fallback to first sentence if nothing scored well
+            if (bestScore <= 0 && sentences.length > 0) {
+                bestSentence = sentences[0];
             }
         }
 
         // Fallback: Use subtitle if no content or no good sentence found
-        if (!bestSentence && card.subtitle) {
+        if ((!bestSentence || bestSentence.length < 10) && card.subtitle) {
             bestSentence = card.subtitle;
         }
 
         if (bestSentence) {
             // Cleanup sentence
             let cleanPoint = bestSentence.replace(/^[-*•]+/, '').trim(); // Remove leading bullets
-            if (cleanPoint.length > 120) cleanPoint = cleanPoint.slice(0, 120) + '...';
+
+            // Limit length
+            if (cleanPoint.length > 150) cleanPoint = cleanPoint.slice(0, 150) + '...';
 
             const signature = cleanPoint.toLowerCase().replace(/[^a-z]/g, '');
 
@@ -132,9 +178,4 @@ export function generateSearchSynthesis(
 
 }
 
-/**
- * Check if synthesis is available for query
- */
-export function canGenerateSynthesis(matchedCards: Card[]): boolean {
-    return matchedCards.length >= 1;
-}
+

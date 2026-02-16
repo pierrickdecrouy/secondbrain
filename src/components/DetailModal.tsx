@@ -4,6 +4,7 @@ import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { searchCards } from '../searchIndex';
+import { calculateQualityScore } from '../algorithms/qualityScoring';
 
 interface DetailModalProps {
     card: Card;
@@ -48,6 +49,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
             return searchText.includes(titleLower);
         }).sort((a, b) => a.title.localeCompare(b.title));
     }, [card, allCards]);
+
+    // Calculate Quality Score
+    const quality = useMemo(() => {
+        // Find semantic neighbors count (heuristic: similar number to backlinks for now, or just pass it if available)
+        // For now, we use backlinks count as a proxy for "connectivity"
+        return calculateQualityScore(card, backlinks.length + forwardLinks.length);
+    }, [card, backlinks.length, forwardLinks.length]);
 
     const handleOverlayClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
@@ -94,7 +102,29 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
             <div className="modal-content">
                 <div className="modal-header">
                     <div>
-                        <Badge type={card.type} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                            <Badge type={card.type} />
+                            {/* Quality Indicator */}
+                            <div
+                                title={`Score de qualité : ${quality.score}/100\nContenu: ${quality.details.contentScore}/40\nConnexions: ${quality.details.connectivityScore}/30\nMétadonnées: ${quality.details.metadataScore}/30`}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    background: `${quality.color}20`, // 12% opacity
+                                    border: `1px solid ${quality.color}40`,
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: quality.color,
+                                    cursor: 'help'
+                                }}
+                            >
+                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: quality.color }} />
+                                {quality.label} ({quality.score}%)
+                            </div>
+                        </div>
                         <h2 className="modal-title">{card.title}</h2>
                         <p className="modal-subtitle">{card.subtitle}</p>
 

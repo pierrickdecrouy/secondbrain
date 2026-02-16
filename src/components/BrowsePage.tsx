@@ -234,6 +234,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     <SearchSynthesis
                         query={searchQuery}
                         matchedCards={sortedCards}
+                        allCards={cards}
                         onCardClick={onCardClick}
                     />
                 )}

@@ -163,6 +163,19 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 // Queue to serialize indexing requests
 let indexingQueue = Promise.resolve();
 
+// Debounce helper for persistence
+let saveTimeout: NodeJS.Timeout | null = null;
+const DEBOUNCE_DELAY_MS = 2000;
+
+function scheduleSave() {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        console.log('[Semantic] Persisting index to disk (Debounced)...');
+        vectorStore.save().catch(err => console.error("Failed to save vector store:", err));
+        saveTimeout = null;
+    }, DEBOUNCE_DELAY_MS);
+}
+
 export function buildCardEmbeddings(cards: Card[], forceUpdate: boolean = false): Promise<void> {
     // Chain execution to prevent concurrency issues with the single worker
     indexingQueue = indexingQueue.then(async () => {
@@ -229,10 +242,10 @@ async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promi
 
                 try {
                     vectorStore.add(entries);
-                    // Save incrementally to avoid data loss if crash happens later
-                    vectorStore.save();
+                    // Trigger debounced save instead of immediate save
+                    scheduleSave();
                 } catch (err) {
-                    console.error("Failed to add/save embeddings:", err);
+                    console.error("Failed to add embeddings:", err);
                 }
                 resolve();
             };
@@ -248,6 +261,14 @@ async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promi
 
         // Yield to event loop
         await new Promise(r => setTimeout(r, 50));
+    }
+
+    // Force a final save at the end of the batch
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        console.log('[Semantic] Batch completed. Persisting index immediately.');
+        vectorStore.save().catch(err => console.error("Final save failed:", err));
+        saveTimeout = null;
     }
 
     // Clear progress

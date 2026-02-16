@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, AlertCircle, CheckCircle2, FileText, FileJson } from 'lucide-react';
 import type { Card, CardType } from '../types';
+import { validateImportData } from '../utils/importValidation';
 
 interface BatchImportModalProps {
     onImport: (cards: Card[]) => void;
@@ -159,6 +160,17 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                     setError("Aucune fiche trouvée. Utilisez # pour séparer les fiches.");
                     return;
                 }
+            }
+
+            // VALIDATION STEP
+            // Before proceeding, validte each card against Zod schema
+            const validationResult = validateImportData(processedCards);
+
+            if (!validationResult.success) {
+                // Show first 3 errors to avoid spam
+                const errorMsg = validationResult.errors.slice(0, 3).join('\n') +
+                    (validationResult.errors.length > 3 ? `\n... (+${validationResult.errors.length - 3} others)` : '');
+                throw new Error(`Validation failed:\n${errorMsg}`);
             }
 
             // check duplicates

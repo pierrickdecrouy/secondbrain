@@ -12,10 +12,11 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 interface SearchSynthesisProps {
     query: string;
     matchedCards: Card[];
+    allCards: Card[]; // Added for Graph-RAG context expansion
     onCardClick: (id: string) => void;
 }
 
-export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matchedCards, onCardClick }) => {
+export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matchedCards, allCards, onCardClick }) => {
     const [extraction, setExtraction] = useState<{
         title: string;
         points: { text: string; source: { id: string; title: string } }[];
@@ -26,7 +27,7 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
 
     useEffect(() => {
         if (query && matchedCards.length > 0) {
-            setExtraction(generateExtraction(query, matchedCards));
+            setExtraction(generateExtraction(query, matchedCards, allCards));
         }
     }, [query, matchedCards]);
 

@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5174 && electron .\"",
-    "electron:build": "npm run build && cross-env DEBUG=electron-builder electron-builder build --publish never"
+    "electron:build": "npm run build && cross-env DEBUG=electron-builder electron-builder build --publish never",
+    "dist": "npm run build && electron-builder --mac --win"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
@@ -38,7 +39,8 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^3.4.0",
-    "voy-search": "^0.6.3"
+    "voy-search": "^0.6.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
