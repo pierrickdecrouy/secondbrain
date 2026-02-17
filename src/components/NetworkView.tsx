@@ -1,1057 +1,673 @@
-import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
-import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d';
-import { Link as LinkIcon, GitMerge, Brain, Hand, BarChart2, Zap, Check, MapPin, Trash2 } from 'lucide-react';
-import { forceCollide, forceRadial } from 'd3-force';
-import type { Card } from '../types';
-import { useTheme } from '../context/ThemeContext';
-import { computePrecisionGraph } from '../semanticSearch';
-import { searchCards } from '../searchIndex';
-import { detectCommunities } from '../algorithms/communityDetection';
-import { findStrongestPath } from '../algorithms/graphAlgorithms';
-import { getLearnedAbbreviations } from '../learnedAbbreviations';
-import { getLinkFeedback } from '../linkFeedback';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import ForceGraph2D from 'react-force-graph-2d';
+import { forceX, forceY } from 'd3-force';
+import { useGraphData } from '../hooks/useGraphData';
+import { getTypeColor } from '../theme';
+import type { Card, Node, Link } from '../types';
+import {
+    Loader2,
+    X,
+    Zap
+} from 'lucide-react';
+import { NetworkTooltip } from './NetworkTooltip';
 
 interface NetworkViewProps {
     cards: Card[];
-    onNodeClick: (cardId: string) => void;
+    onNodeClick?: (id: string) => void;
     searchQuery?: string;
-    activeFilters?: string[];
     highlightedIds?: Set<string>;
+    activeFilters?: string[];
     onSuppressConnections?: (pairs: { sourceId: string, targetId: string }[]) => void;
     semanticReady?: boolean;
-    vetoPairs?: string[]; // Hard constraints from user feedback
-    typeCompat?: Record<string, number>; // Type compatibility matrix
+    vetoPairs?: string[];
+    width?: number; // Optional, defaults to auto-fill
+    height?: number;
+    typeCompat?: any;
 }
 
-interface Node {
-    id: string;
-    name: string;
-    type: string;
-    // ForceGraph adds these
-    x?: number;
-    y?: number;
-    vx?: number;
-    vy?: number;
-    index?: number;
-    // Added for dynamic sizing
-    val?: number;
-}
-
-interface Link {
-    source: string | Node;
-    target: string | Node;
-    type?: string; // 'semantic', 'explicit', 'hybrid', 'rrf' or undefined (structural)
-    value?: number;
-    reason?: string; // Human-readable explanation for hover tooltip
-    quality?: 'boost' | 'match' | 'weak';
-}
 
 export const NetworkView: React.FC<NetworkViewProps> = ({
     cards,
     onNodeClick,
     searchQuery,
-    activeFilters = [],
     highlightedIds,
+    activeFilters,
     onSuppressConnections,
-    semanticReady,
     vetoPairs,
-    typeCompat
+    width,
+    height
 }) => {
-    const { getCategoryColor } = useTheme();
-    const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-    const [graphData, setGraphData] = useState<{ nodes: Node[], links: Link[] }>({ nodes: [], links: [] });
-    const [isCalculating, setIsCalculating] = useState(false);
-    // Key to force-remount the graph component on updates (User Request: "Like switching tabs")
-    const [remountKey, setRemountKey] = useState(0);
+    const { graphData, isLoading } = useGraphData({ cards, vetoPairs });
 
-    // Pathfinding Mode State
-    const [pathMode, setPathMode] = useState(false);
-    const [pathStart, setPathStart] = useState<string | null>(null);
-    const [pathEnd, setPathEnd] = useState<string | null>(null);
-    const [pathResult, setPathResult] = useState<string[] | null>(null);
-
-
-
-    // Depth filter state: 0 = show all, 1-3 = show neighbors at depth N
-    const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-    const [depthFilter, setDepthFilter] = useState<number>(0); // 0 = all, 1/2/3 = depth
-
-    // Precision Links State
-    const [smartLinks, setSmartLinks] = useState<Link[]>([]);
-    // Spotlight State
+    // Interaction state
     const [hoverNode, setHoverNode] = useState<Node | null>(null);
-    const [activeNodeIds, setActiveNodeIds] = useState<Set<string>>(new Set());
+    const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
+    const [pathLinks, setPathLinks] = useState<Set<string>>(new Set());
 
-    // Position cache to prevent graph "jumping" on updates
-    const positionCache = useRef<Map<string, { x: number, y: number }>>(new Map());
+    // Search Depth State (1 = direct match, 2 = neighbors, 3 = extended, 0/Infinity = All)
+    const [searchDepth, setSearchDepth] = useState<number>(1);
 
-    // Incremental computation: track previous state
-    const previousCardsRef = useRef<Card[]>([]);
-    const cachedLinksRef = useRef<Link[]>([]);
-
-    // Link hover tooltip state
+    // Link Hover State
     const [hoverLink, setHoverLink] = useState<Link | null>(null);
 
-    // Web Worker for graph computation (with incremental support)
-    useEffect(() => {
-        if (cards.length === 0) {
-            setGraphData({ nodes: [], links: [] });
-            setIsCalculating(false);
-            previousCardsRef.current = [];
-            cachedLinksRef.current = [];
+    // Refs for graph control
+    const fgRef = useRef<any>(null);
+
+    // Interaction Logic: Click Timer for Double Click (Moved here to avoid "Rendered fewer hooks" error)
+    const lastClickTimeRef = useRef<number>(0);
+    const lastClickNodeIdRef = useRef<string | null>(null);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+
+    // ===============================================
+    // PATHFINDING (Dataset Dijkstra)
+    // ===============================================
+    const findWeightedPath = useCallback((startNodeId: string, endNodeId: string, links: Link[]) => {
+        // Build adjacency map with costs
+        // Cost = 1 / (Value^2) -> Stronger links (high value) have much lower cost
+        const adjacency = new Map<string, { target: string, cost: number, linkId: string }[]>();
+
+        links.forEach(link => {
+            const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
+            const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+            const val = link.value || 0.1;
+            const cost = 1 / (val * val);
+
+            const linkKey = [src, tgt].sort().join('-');
+
+            if (!adjacency.has(src)) adjacency.set(src, []);
+            if (!adjacency.has(tgt)) adjacency.set(tgt, []);
+
+            adjacency.get(src)!.push({ target: tgt, cost, linkId: linkKey });
+            adjacency.get(tgt)!.push({ target: src, cost, linkId: linkKey });
+        });
+
+        // Dijkstra Priority Queue
+        const distances = new Map<string, number>();
+        const previous = new Map<string, string>();
+        const pq: { id: string, dist: number }[] = [];
+
+        distances.set(startNodeId, 0);
+        pq.push({ id: startNodeId, dist: 0 });
+
+        const visited = new Set<string>();
+
+        while (pq.length > 0) {
+            pq.sort((a, b) => a.dist - b.dist);
+            const { id: current, dist } = pq.shift()!;
+
+            if (visited.has(current)) continue;
+            visited.add(current);
+
+            if (current === endNodeId) break;
+
+            const neighbors = adjacency.get(current) || [];
+            for (const neighbor of neighbors) {
+                if (visited.has(neighbor.target)) continue;
+
+                const newDist = dist + neighbor.cost;
+                const existingDist = distances.get(neighbor.target);
+
+                if (existingDist === undefined || newDist < existingDist) {
+                    distances.set(neighbor.target, newDist);
+                    previous.set(neighbor.target, current);
+                    pq.push({ id: neighbor.target, dist: newDist });
+                }
+            }
+        }
+
+        if (!previous.has(endNodeId) && startNodeId !== endNodeId) return null;
+
+        const path: string[] = [];
+        let curr: string | undefined = endNodeId;
+        while (curr) {
+            path.unshift(curr);
+            curr = previous.get(curr);
+        }
+        return path;
+    }, []);
+
+    const handleNodeClick = useCallback((node: Node, event?: MouseEvent) => {
+        // Shift+Click or Alt+Click -> Add to Path Selection
+        // Normal Click -> Open Card Details (unless in path mode?)
+
+        // Actually, let's keep it simple: 
+        // If Shift is held, we manipulate the path selection.
+        // If not held, we open the card (and maybe clear path selection?).
+
+        const isModifier = event?.shiftKey || event?.ctrlKey || event?.metaKey || event?.altKey;
+
+        if (isModifier) {
+            setSelectedNodes(prev => {
+                const next = new Set(prev);
+                if (next.has(node.id)) {
+                    next.delete(node.id);
+                    setPathLinks(new Set());
+                } else {
+                    next.add(node.id);
+                    // Calculate path if exactly 2 nodes
+                    if (next.size === 2) {
+                        const [start, end] = Array.from(next);
+                        const path = findWeightedPath(start, end, graphData.links);
+                        if (path) {
+                            const newPathLinks = new Set<string>();
+                            for (let i = 0; i < path.length - 1; i++) {
+                                const a = path[i];
+                                const b = path[i + 1];
+                                const linkKey = [a, b].sort().join('-');
+                                newPathLinks.add(linkKey);
+                            }
+                            setPathLinks(newPathLinks);
+                        }
+                    } else if (next.size > 2) {
+                        // Reset if more than 2
+                        next.clear();
+                        next.add(node.id);
+                        setPathLinks(new Set());
+                    }
+                }
+                return next;
+            });
+            // Don't open/close card when modifying selection
             return;
         }
 
-        setIsCalculating(true);
-        const worker = new Worker(new URL('../workers/graph.worker.ts', import.meta.url), { type: 'module' });
+        // Normal Click: Only open details
+        onNodeClick?.(node.id);
 
-        const timeout = setTimeout(() => {
-            setIsCalculating(false);
-            console.warn('Graph worker timeout - forcing UI update');
-        }, 5000);
+        // Optional: Clear path selection on normal click? 
+        // User might want to keep the path visible while exploring. 
+        // Let's keep it.
 
-        // Incremental diff: detect which cards changed
-        const prevMap = new Map(previousCardsRef.current.map(c => [c.id, c]));
-        const changedIds: string[] = [];
+    }, [findWeightedPath, graphData.links, onNodeClick]);
 
-        for (const card of cards) {
-            const prev = prevMap.get(card.id);
-            if (!prev ||
-                prev.title !== card.title ||
-                prev.content !== card.content ||
-                prev.details !== card.details ||
-                JSON.stringify(prev.tags) !== JSON.stringify(card.tags)) {
-                changedIds.push(card.id);
-            }
-        }
-        // Also detect deleted cards (their links must be removed)
-        for (const prev of previousCardsRef.current) {
-            if (!cards.find(c => c.id === prev.id)) {
-                changedIds.push(prev.id);
-            }
-        }
+    // ===============================================
+    // DATA FILTERING vs HIGHLIGHTING
+    // ===============================================
 
-        // Get abbreviations for the worker
-        const abbreviations = getLearnedAbbreviations();
+    // 1. Structural Filter: Removes nodes entirely (e.g. by Category)
+    const structuralData = useMemo(() => {
+        let nodes = graphData.nodes;
+        let links = graphData.links;
 
-        // Build existing links (from cache, as simple source/target strings)
-        const existingLinks = cachedLinksRef.current.map(l => ({
-            source: typeof l.source === 'string' ? l.source : (l.source as any).id,
-            target: typeof l.target === 'string' ? l.target : (l.target as any).id,
-            value: l.value || 0,
-            reason: l.reason || ''
-        }));
-
-        worker.onmessage = (e) => {
-            clearTimeout(timeout);
-            const newData = e.data;
-
-            // Only use cache if it's an incremental update and we have valid positions
-            const useCache = isFullRecompute === false && positionCache.current.size > 0;
-
-            newData.nodes = newData.nodes.map((node: Node) => {
-                if (useCache) {
-                    const cached = positionCache.current.get(node.id);
-                    if (cached && Number.isFinite(cached.x) && Number.isFinite(cached.y)) {
-                        return { ...node, x: cached.x, y: cached.y, fx: undefined, fy: undefined };
-                    }
+        // Apply Category Filters (Strict)
+        if (activeFilters && activeFilters.length > 0) {
+            const allowedTypes = new Set(activeFilters);
+            const keepIds = new Set<string>();
+            nodes = nodes.filter(n => {
+                if (allowedTypes.has(n.type)) {
+                    keepIds.add(n.id);
+                    return true;
                 }
-                return node;
+                return false;
             });
-
-            // Reheat simulation if we have new nodes or full recompute
-            if (fgRef.current) {
-                fgRef.current.d3ReheatSimulation();
-                if (isFullRecompute) {
-                    fgRef.current.zoomToFit(400, 50);
-                }
-            }
-
-            // Cache the structural links for incremental next time
-            cachedLinksRef.current = newData.links;
-            previousCardsRef.current = [...cards];
-
-            // Track stats for the intelligence dashboard
-            if (newData.links.length > 0) {
-                import('../linkFeedback').then(m => m.recordLinksGenerated(newData.links.length));
-            }
-
-            setGraphData(newData);
-            // Force remount only on full recomputes or significant updates
-            if (isFullRecompute || newData.nodes.length !== graphData.nodes.length) {
-                setRemountKey(prev => prev + 1);
-            }
-            setIsCalculating(false);
-            worker.terminate();
-        };
-
-        worker.onerror = (err) => {
-            clearTimeout(timeout);
-            console.error('Graph worker error:', err);
-            setIsCalculating(false);
-            worker.terminate();
-        };
-
-        // Send enhanced message format
-        const isFullRecompute = changedIds.length === cards.length || previousCardsRef.current.length === 0;
-        const feedbackData = getLinkFeedback();
-        worker.postMessage({
-            cards,
-            abbreviations,
-            feedback: feedbackData,
-            changedIds: isFullRecompute ? undefined : changedIds,
-            existingLinks: isFullRecompute ? undefined : existingLinks
-        });
-
-        return () => {
-            clearTimeout(timeout);
-            worker.terminate();
-        };
-    }, [cards]);
-
-    // Precision Graph Effect - must wait for semantic search to build embeddings
-    useEffect(() => {
-        setSmartLinks([]); // <--- AJOUTER CECI : Reset immédiat
-
-        if (cards.length > 0 && semanticReady) {
-            console.log('Computing precision graph (semantic ready, cards:', cards.length, ')');
-            // Pass user feedback (veto list) and type logic to semantic engine
-            // Also pass searchCards for RRF (Keyword Search)
-            computePrecisionGraph(cards, vetoPairs, typeCompat, searchCards).then(links => {
-                console.log('Precision graph computed:', links.length, 'links found');
-                setSmartLinks(links.map(l => ({
-                    source: l.source,
-                    target: l.target,
-                    type: l.type, // 'explicit', 'semantic', 'hybrid', 'rrf'
-                    value: l.value
-                })));
+            links = links.filter(l => {
+                const src = typeof l.source === 'object' ? (l.source as any).id : l.source;
+                const tgt = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                return keepIds.has(src) && keepIds.has(tgt);
             });
         }
-    }, [cards, semanticReady]);
 
-    // ... (savePositions and resize effects unchanged)
-
-    // ...
-
-    // Link force: distance depends on link value
-
-
-    // Collision to prevent overlap
-
-
-    // ... (savePositions and resize effects unchanged)
-    useEffect(() => {
-        const savePositions = () => {
-            if (fgRef.current && graphData.nodes.length > 0) {
-                graphData.nodes.forEach((node: any) => {
-                    if (node.x !== undefined && node.y !== undefined) {
-                        positionCache.current.set(node.id, { x: node.x, y: node.y });
-                    }
-                });
-            }
-        };
-
-        const interval = setInterval(savePositions, 2000);
-        return () => clearInterval(interval);
-    }, [graphData]);
-
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (containerRef.current) {
-                setDimensions({
-                    width: containerRef.current.clientWidth,
-                    height: containerRef.current.clientHeight
-                });
-            }
-        };
-
-        window.addEventListener('resize', updateDimensions);
-        updateDimensions();
-        setTimeout(updateDimensions, 100);
-
-        return () => window.removeEventListener('resize', updateDimensions);
-    }, []);
-
-    // Combine links (Structural + Semantic + Manual)
-    // Combine links (Structural + Semantic + Manual)
-    const allLinks = useMemo(() => {
-        const manualLinks: Link[] = [];
-        const nodeMap = new Map(graphData.nodes.map(n => [n.id, n as any]));
-
-        graphData.nodes.forEach(node => {
-            const cardNode = node as any;
-            if (cardNode.manualConnections) {
-                cardNode.manualConnections.forEach((targetId: string) => {
-                    if (nodeMap.has(targetId)) {
-                        manualLinks.push({
-                            source: node.id,
-                            target: targetId,
-                            type: 'manual',
-                            value: 1.0
-                        });
-                    }
-                });
-            }
-        });
-
-        // Combine Structural + Precision Links
-        const rawLinks = [...graphData.links, ...smartLinks];
-
-        // 1. NETTOYAGE CRITIQUE : On force la réinitialisation des sources/targets en String
-        const cleanLinks = rawLinks.map(link => ({
-            ...link,
-            source: typeof link.source === 'object' ? (link.source as any).id : link.source,
-            target: typeof link.target === 'object' ? (link.target as any).id : link.target
-        }));
-
-        // 2. Filtrage (Noeuds existants + Suppression)
-        const aiLinks = cleanLinks.filter(link => {
-            const sourceId = link.source as string;
-            const targetId = link.target as string;
-
-            // Vérifier que les deux bouts existent
-            if (!nodeMap.has(sourceId) || !nodeMap.has(targetId)) return false;
-
-            const sourceNode = nodeMap.get(sourceId);
-            const targetNode = nodeMap.get(targetId);
-
-            // Vérifier les suppressions utilisateur
-            if (sourceNode?.suppressedConnections?.includes(targetId)) return false;
-            if (targetNode?.suppressedConnections?.includes(sourceId)) return false;
-
+        // Also apply local suppression filter if not caught by worker yet
+        // This makes the UI feel instant
+        links = links.filter(() => {
+            // We can check if `reason` explicitly says "Manual" or similar, 
+            // but `suppressedConnections` check requires Node object access which might not have it attached.
+            // Since we added it to worker, let's rely on worker + ensuring worker is triggered.
             return true;
         });
 
-        // 3. Déduplication (Priorité : Manuel > Explicite > Hybride > Sémantique)
-        const uniqueLinks = new Map<string, Link>();
+        return { nodes, links };
+    }, [graphData, activeFilters]);
 
-        // Ajouter d'abord les manuels (prioritaires)
-        manualLinks.forEach(link => {
-            const key = [link.source, link.target].sort().join('-');
-            uniqueLinks.set(key, link);
+    // 2. Visual Highlight: Determines what is "Dimmed" based on Search
+    const searchHighlightIds = useMemo(() => {
+        if (!searchQuery && (!highlightedIds || highlightedIds.size === 0)) return null; // No active search highlight
+
+        // Find matches
+        const matches = new Set<string>();
+        structuralData.nodes.forEach(n => {
+            if (searchQuery && n.name.toLowerCase().includes(searchQuery.toLowerCase())) matches.add(n.id);
+            if (highlightedIds && highlightedIds.has(n.id)) matches.add(n.id);
         });
 
-        // Ajouter ensuite les liens IA s'ils n'existent pas déjà
-        // On trie d'abord pour insérer les meilleurs liens IA en premier
-        aiLinks.sort((a, b) => {
-            const getScore = (l: Link) => {
-                if (l.type === 'explicit') return 5;
-                if (l.type === 'hybrid') return 4;
-                if (!l.type) return 3; // Structural
-                if (l.type === 'semantic') return 1;
-                return 0;
-            };
-            return getScore(b) - getScore(a);
-        });
+        if (matches.size === 0) return new Set<string>();
 
-        aiLinks.forEach(link => {
-            const s = link.source as string;
-            const t = link.target as string;
-            const key = [s, t].sort().join('-');
+        // Expand by Depth
+        let currentLayer = new Set(matches);
+        const accumulated = new Set(matches);
 
-            if (!uniqueLinks.has(key)) {
-                uniqueLinks.set(key, link);
-            }
-        });
+        for (let d = 0; d < searchDepth; d++) {
+            const nextLayer = new Set<string>();
+            structuralData.links.forEach(l => {
+                const src = typeof l.source === 'object' ? (l.source as any).id : l.source;
+                const tgt = typeof l.target === 'object' ? (l.target as any).id : l.target;
 
-        return Array.from(uniqueLinks.values());
-    }, [graphData.nodes, graphData.links, smartLinks]);
-
-    // AI Community Detection
-    const communityMap = useMemo(() => {
-        if (graphData.nodes.length === 0) return new Map<string, string>();
-        return detectCommunities(graphData.nodes, allLinks);
-    }, [graphData.nodes, allLinks]);
-
-    const communityColorMap = useMemo(() => {
-        const colors = new Map<string, string>();
-        const communities = new Set(communityMap.values());
-        // Extended Palette
-        const palette = [
-            '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', // Red, Orange, Amber, Lime, Green
-            '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#d946ef', // Cyan, Blue, Indigo, Purple, Fuchsia
-            '#f43f5e', '#be123c', '#be185d', '#a21caf', '#7c3aed', // Rose, others
-            '#4338ca', '#1d4ed8', '#0e7490', '#0f766e', '#15803d'  // Darker shades
-        ];
-        let i = 0;
-        communities.forEach(c => {
-            colors.set(c, palette[i % palette.length]);
-            i++;
-        });
-        return colors;
-    }, [communityMap]);
-
-    // Determine highlighted nodes based on search
-    const highlightedNodeIds = useMemo(() => {
-        if (highlightedIds) return highlightedIds;
-
-        if (!searchQuery) return new Set<string>();
-
-        // Fallback for standalone usage
-        const query = searchQuery.toLowerCase();
-        const matches = cards.filter(c =>
-            c.title.toLowerCase().includes(query) ||
-            c.content.toLowerCase().includes(query) ||
-            c.tags.some(t => t.toLowerCase().includes(query))
-        );
-        return new Set(matches.map(m => m.id));
-    }, [cards, searchQuery, highlightedIds]);
-
-    const getNeighborsAtDepth = useCallback((startId: string, maxDepth: number, links: Link[]) => {
-        const visited = new Set<string>([startId]);
-        const queue: [string, number][] = [[startId, 0]];
-        const adjacency = new Map<string, Set<string>>();
-        links.forEach(link => {
-            const sourceId = typeof link.source === 'string' ? link.source : (link.source as Node).id;
-            const targetId = typeof link.target === 'string' ? link.target : (link.target as Node).id;
-            if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
-            if (!adjacency.has(targetId)) adjacency.set(targetId, new Set());
-            adjacency.get(sourceId)!.add(targetId);
-            adjacency.get(targetId)!.add(sourceId);
-        });
-
-        while (queue.length > 0) {
-            const [currentId, depth] = queue.shift()!;
-            if (depth >= maxDepth) continue;
-            const neighbors = adjacency.get(currentId) || new Set();
-            neighbors.forEach(neighborId => {
-                if (!visited.has(neighborId)) {
-                    visited.add(neighborId);
-                    queue.push([neighborId, depth + 1]);
+                if (currentLayer.has(src) && !accumulated.has(tgt)) {
+                    nextLayer.add(tgt);
+                    accumulated.add(tgt);
+                }
+                if (currentLayer.has(tgt) && !accumulated.has(src)) {
+                    nextLayer.add(src);
+                    accumulated.add(src);
                 }
             });
-        }
-        return visited;
-    }, []);
-
-    // Filter graph data
-    const filteredGraphData = useMemo(() => {
-        if (depthFilter === 0 || !focusedNodeId) {
-            return { nodes: graphData.nodes, links: allLinks };
-        }
-        const visibleNodeIds = getNeighborsAtDepth(focusedNodeId, depthFilter, allLinks);
-        return {
-            nodes: graphData.nodes.filter(n => visibleNodeIds.has(n.id)),
-            links: allLinks.filter(link => {
-                const sourceId = typeof link.source === 'string' ? link.source : (link.source as Node).id;
-                const targetId = typeof link.target === 'string' ? link.target : (link.target as Node).id;
-                return visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
-            })
-        };
-    }, [graphData.nodes, allLinks, focusedNodeId, depthFilter, getNeighborsAtDepth]);
-
-    // ... (handleNodeClick and nodeCanvasObject unchanged)
-    const handleNodeClick = useCallback((node: Node) => {
-        if (pathMode) {
-            // Pathfinding Logic
-            if (!pathStart) {
-                setPathStart(node.id);
-                setPathResult(null);
-            } else if (!pathEnd) {
-                setPathEnd(node.id);
-                // Compute path
-                const path = findStrongestPath(
-                    filteredGraphData.nodes,
-                    filteredGraphData.links as any[], // Casting for simple graph struct
-                    pathStart,
-                    node.id
-                );
-                setPathResult(path);
-            } else {
-                // Reset if both set
-                setPathStart(node.id);
-                setPathEnd(null);
-                setPathResult(null);
-            }
-            return;
+            currentLayer = nextLayer;
+            if (currentLayer.size === 0) break;
         }
 
-        if (focusedNodeId === node.id) {
-            setFocusedNodeId(null);
-        } else if (depthFilter > 0) {
-            setFocusedNodeId(node.id);
-        }
-        onNodeClick(node.id);
-        fgRef.current?.centerAt(node.x!, node.y!, 1000);
-        fgRef.current?.zoom(3, 1000);
-    }, [onNodeClick, focusedNodeId, depthFilter, pathMode, pathStart, pathEnd, filteredGraphData]);
+        return accumulated;
+    }, [structuralData, searchQuery, highlightedIds, searchDepth]);
 
-    // Canvas Object: Nodes (Spotlight + Community + Path)
-    const nodeCanvasObject = useCallback((node: Node, ctx: CanvasRenderingContext2D, globalScale: number) => {
-        const isHovered = hoverNode !== null;
-        const isActive = activeNodeIds.has(node.id);
-        const isSearchMatch = highlightedNodeIds.size === 0 || highlightedNodeIds.has(node.id);
-        const isTypeSelected = activeFilters.length === 0 || activeFilters.includes(node.type);
+    // ===============================================
+    // RENDER HELPERS
+    // ===============================================
 
-        // Path highlighting
-        const isPathStart = pathStart === node.id;
-        const isPathEnd = pathEnd === node.id;
-        const isPathNode = pathResult?.includes(node.id);
-        const isPathRelated = isPathStart || isPathEnd || isPathNode;
-
-        // Spotlight Dimming Logic
-        let opacity = 1;
-
-        if (pathMode) {
-            // In path mode, dim everything except path
-            if (pathStart || pathResult) {
-                opacity = isPathRelated ? 1 : 0.1;
-            }
-        } else if (isHovered) {
-            opacity = isActive ? 1 : 0.1;
-        } else if (highlightedNodeIds.size > 0) {
-            opacity = (isSearchMatch && isTypeSelected) ? 1 : 0.1;
-        } else if (!isTypeSelected) {
-            opacity = 0.1;
-        }
-
-        ctx.globalAlpha = opacity;
-
-        const label = node.name;
-        // Modified: use node.val for sizing
-        const importance = node.val || 1;
-        const baseR = 4 + (importance * 1.5);
-
-        const isMatched = (isSearchMatch && isTypeSelected);
-        let r = baseR;
-        if (isMatched && highlightedNodeIds.size > 0) r = baseR * 1.2;
-        if (isPathStart || isPathEnd) r = baseR * 1.5;
-
-        // Visual Coherence: Use community color for fill
-        const community = communityMap.get(node.id);
-        let communityColor = community ? communityColorMap.get(community) : undefined;
-        let finalColor = communityColor || getCategoryColor(node.type);
-
-        // Path Colors
-        if (isPathStart) finalColor = '#22c55e'; // Green
-        else if (isPathEnd) finalColor = '#ef4444'; // Red
-        else if (isPathNode) finalColor = '#eab308'; // Yellow
-
-        // Glow for active/hovered nodes
-        if (isActive && isHovered) {
-            ctx.beginPath();
-            ctx.arc(node.x!, node.y!, r + 6, 0, 2 * Math.PI, false);
-            ctx.fillStyle = finalColor;
-            ctx.globalAlpha = 0.2;
-            ctx.fill();
-            ctx.globalAlpha = opacity; // Restore
-        }
-
-        ctx.beginPath();
-        ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
-        ctx.fillStyle = finalColor;
-        ctx.fill();
-
-        // Stroke
-        ctx.lineWidth = (isMatched && highlightedNodeIds.size > 0) || isPathRelated ? 2.5 : 1.5;
-        ctx.strokeStyle = '#ffffff';
-
-        // Dashed stroke for intermediate path nodes
-        if (isPathNode && !isPathStart && !isPathEnd) {
-            ctx.setLineDash([2, 2]);
-            ctx.strokeStyle = '#713f12';
-        }
-
-        ctx.stroke();
-        ctx.setLineDash([]); // Reset
-        ctx.globalAlpha = 1;
-
-        // Text
-        const fontSize = Math.max(4, 12 / globalScale);
-        // Show if: Matched, Active (Hover), or No Hover and proper zoom OR Path Node
-        const shouldShowLabel = isActive || (isMatched && highlightedNodeIds.size > 0) || (!isHovered && globalScale > 0.6) || isPathRelated;
-
-        if (shouldShowLabel && opacity > 0.2) {
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.font = `${(isMatched || isActive || isPathRelated) ? '600' : '500'} ${fontSize}px Inter, system-ui, sans-serif`;
-
-            // Halo
-            ctx.lineJoin = 'round';
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.strokeText(label, node.x!, node.y! + r + 3);
-
-            ctx.fillStyle = '#1e293b';
-            ctx.fillText(label, node.x!, node.y! + r + 3);
-        }
-        ctx.globalAlpha = 1;
-    }, [highlightedNodeIds, activeFilters, communityMap, communityColorMap, hoverNode, activeNodeIds, getCategoryColor, pathMode, pathStart, pathEnd, pathResult]);
-
-    // Canvas Object: Links (Gradient + Spotlight + Value-based thickness)
-    const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-        const isSemantic = link.type === 'semantic';
-        const isManual = link.type === 'manual';
-        const isExplicit = link.type === 'explicit';
-        const isHybrid = link.type === 'hybrid';
-        const linkValue = link.value || 0.5;
-
-        // Path highlighting logic
-        let isPathLink = false;
-        if (pathResult && pathResult.length > 1) {
-            const sid = link.source.id;
-            const tid = link.target.id;
-            // Check if this link connects two consecutive nodes in the path
-            for (let i = 0; i < pathResult.length - 1; i++) {
-                if ((pathResult[i] === sid && pathResult[i + 1] === tid) ||
-                    (pathResult[i] === tid && pathResult[i + 1] === sid)) {
-                    isPathLink = true;
-                    break;
-                }
-            }
-        }
-
-        let opacity = 0.3 + linkValue * 0.5; // Base opacity scales with confidence
-
-        if (pathMode) {
-            if (pathResult) {
-                opacity = isPathLink ? 1 : 0.05;
-            }
-        } else if (hoverNode) {
-            const isConnected = link.source.id === hoverNode.id || link.target.id === hoverNode.id;
-            opacity = isConnected ? 1 : 0.03;
-        } else if (highlightedNodeIds.size > 0) {
-            opacity = 0.1;
-        }
-
-        if (opacity < 0.05) return;
-
-        const src = link.source;
-        const tgt = link.target;
-
-        // Safety check for initial render where positions might be NaN
-        if (!Number.isFinite(src.x) || !Number.isFinite(src.y) || !Number.isFinite(tgt.x) || !Number.isFinite(tgt.y)) return;
-
-        const gradient = ctx.createLinearGradient(src.x, src.y, tgt.x, tgt.y);
-
-        let srcColor = communityColorMap.get(src.id) || getCategoryColor(src.type);
-        let tgtColor = communityColorMap.get(tgt.id) || getCategoryColor(tgt.type);
-
-        if (isPathLink) {
-            srcColor = '#eab308';
-            tgtColor = '#eab308';
-        } else if (isManual) {
-            srcColor = '#F59E0B'; // Amber-500
-            tgtColor = '#F59E0B';
-        } else if (isExplicit) {
-            srcColor = '#6366f1'; // Indigo-500
-            tgtColor = '#6366f1';
-        } else if (isHybrid) {
-            srcColor = '#06b6d4'; // Cyan-500
-            tgtColor = '#06b6d4';
-        } else if (isSemantic) {
-            srcColor = '#a855f7'; // Purple-500 (Distinct for AI Semantic)
-            tgtColor = '#a855f7';
-        }
-
-        gradient.addColorStop(0, srcColor);
-        gradient.addColorStop(1, tgtColor);
-
-        ctx.strokeStyle = gradient;
-
-        // Value-based width: higher confidence = thicker line
-        let lineWidth = 1 + linkValue * 2; // 1px to 3px based on value
-
-        if (isPathLink) lineWidth = 4.0;
-        else if (isManual) lineWidth = 4.0;
-        else if (isExplicit) lineWidth = 2.5 + linkValue;
-        else if (isHybrid) lineWidth = 1.5 + linkValue;
-        else if (isSemantic) lineWidth = 1.0 + linkValue * 0.5;
-
-        ctx.lineWidth = Math.max(lineWidth, 1 / globalScale);
-        ctx.globalAlpha = opacity;
-
-        ctx.beginPath();
-
-        // DASHED lines for Semantic/Hybrid
-        if (isPathLink) ctx.setLineDash([]); // Path is solid
-        else if (isSemantic) ctx.setLineDash([2, 4]);
-        else if (isHybrid) ctx.setLineDash([4, 2]);
-        else ctx.setLineDash([]); // Solid for Manual, Explicit, Structural
-
-        ctx.moveTo(src.x, src.y);
-        ctx.lineTo(tgt.x, tgt.y);
-        ctx.stroke();
-
-        // Reset dash
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-    }, [hoverNode, communityColorMap, highlightedNodeIds, getCategoryColor, pathMode, pathResult]);
-
-    // Apply custom forces for Obsidian-like layout
-    useEffect(() => {
-        // Use useEffect to configure simulation after mount
-        setTimeout(() => {
-            if (!fgRef.current) return;
-
-            // Custom forces for better layout
-            // Adjusted: Reduced repulsion (-600) and collision (40) to avoid "dilated" graph
-            fgRef.current.d3Force('charge')?.strength(-800); // Increased repulsion for aeration (-600 -> -800)
-
-            // Link force: distance depends on link value
-            fgRef.current.d3Force('link')
-                ?.distance((link: any) => {
-                    const val = typeof link.value === 'number' ? link.value : 0.5;
-                    // SAFEGUARD: Linear scaling instead of inverse square to prevent massive distances
-                    // Weak links (0.1) -> 200px, Strong links (1.0) -> 60px
-                    return 60 + (1 - val) * 140;
-                })
-                ?.strength(0.5); // Restore strength to 0.5 (was 0.4) for better cohesion
-
-            // Collision to prevent overlap
-            fgRef.current.d3Force('collide', forceCollide(50).iterations(3)); // Increased collision radius (40 -> 50)
-
-            // Center force to keep graph in view
-            fgRef.current.d3Force('center')?.strength(0.6);
-
-            // Radial Force: Very weak, just to keep it from flying away
-            fgRef.current.d3Force('radial', forceRadial(1000, dimensions.width / 2, dimensions.height / 2).strength(0.05)); // Slight increase (from 0.02)
-        }, 0); // Run immediately after render
-    }, [graphData]); // Re-apply when graph changes
-
-    // ... (auto-zoom effect unchanged)
-    // Aggressive Auto-Zoom on Data Load
-    useEffect(() => {
-        if (fgRef.current && graphData.nodes.length > 0) {
-            // Initial quick zoom
-            setTimeout(() => {
-                fgRef.current?.zoomToFit(400, 50);
-            }, 500);
-        }
-    }, [graphData]);
-
-
-
-    // ...
-
-    const handleNodeHover = useCallback((node: Node | null) => {
-        setHoverNode(node);
-        setHoverLink(null); // Clear link tooltip when hovering a node
-        if (node) {
-            const ids = new Set<string>();
-            ids.add(node.id);
-            const links = fgRef.current?.d3Force('link')?.links() || [];
-            links.forEach((link: any) => {
-                if (link.source.id === node.id) ids.add(link.target.id);
-                if (link.target.id === node.id) ids.add(link.source.id);
-            });
-            setActiveNodeIds(ids);
-        } else {
-            setActiveNodeIds(new Set());
-        }
-    }, []);
-
-    // Link hover handler for tooltip
-    const handleLinkHover = useCallback((link: any) => {
-        if (link && link.reason) {
+    // Link Hover Delay Logic
+    const handleLinkHover = useCallback((link: Link | null) => {
+        if (link) {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
             setHoverLink(link);
         } else {
-            setHoverLink(null);
+            // Delay clearing to allow moving to tooltip
+            hoverTimeoutRef.current = setTimeout(() => {
+                setHoverLink(null);
+            }, 300);
         }
     }, []);
 
+    const nodePaint = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+        if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
+
+        // Visual States
+        const isHover = node === hoverNode;
+        const isSelected = selectedNodes.has(node.id);
+
+        let isDimmed = false;
+
+        if (hoverNode) {
+            const isNeighbor = graphData.links.some(link => {
+                const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
+                const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+                return (src === hoverNode.id && tgt === node.id) || (tgt === hoverNode.id && src === node.id);
+            });
+            if (!isHover && !isNeighbor) isDimmed = true;
+        } else if (searchHighlightIds) {
+            if (!searchHighlightIds.has(node.id)) isDimmed = true;
+        }
+
+        ctx.save();
+
+        if (isDimmed) {
+            ctx.globalAlpha = 0.05; // Very faint for non-relevant nodes
+        }
+
+        const label = node.name;
+        const color = getTypeColor(node.type);
+        const radius = Math.max(2, Math.min(node.val || 2, 8));
+
+        // Selection Halo
+        if (isHover || isSelected) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, radius + 4, 0, 2 * Math.PI, false);
+            ctx.fillStyle = isSelected ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+            ctx.fill();
+            ctx.strokeStyle = isSelected ? '#3b82f6' : color;
+            ctx.lineWidth = 2 / globalScale;
+            ctx.stroke();
+        }
+
+        // Node Body
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Text Visibility Logic
+        // 1. Hover/Selected: ALWAYS show.
+        // 2. Search Active: Only show if Highlighted AND zoomed in closer than global view.
+        // 3. Normal: Show if zoomed in.
+        let showText = false;
+
+        if (isHover || isSelected) {
+            showText = true;
+        } else if (searchHighlightIds) {
+            // Search Mode: Only show matches, and only if not too far zoomed out
+            if (searchHighlightIds.has(node.id) && globalScale > 0.8) {
+                showText = true;
+            }
+        } else {
+            // Normal Mode
+            if (globalScale > 1.5 && !isDimmed) {
+                showText = true;
+            }
+        }
+
+        if (showText) {
+            const fontSize = 12 / globalScale;
+            ctx.font = `600 ${fontSize}px Inter, Sans-Serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Stroke for readability
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3 / globalScale;
+            ctx.strokeText(label, node.x, node.y + radius + 6);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText(label, node.x, node.y + radius + 6);
+        }
+
+        ctx.restore();
+    }, [hoverNode, selectedNodes, graphData.links, searchHighlightIds]);
+
+    const linkPaint = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+        const source = link.source;
+        const target = link.target;
+
+        if (!Number.isFinite(source.x) || !Number.isFinite(source.y) ||
+            !Number.isFinite(target.x) || !Number.isFinite(target.y)) return;
+
+        const isHover = (hoverNode && (source.id === hoverNode.id || target.id === hoverNode.id)) || (hoverLink === link);
+        const linkKey = [source.id, target.id].sort().join('-');
+        const isPath = pathLinks.has(linkKey);
+
+        let isDimmed = false;
+        if (hoverNode) {
+            if (!isHover) isDimmed = true;
+        } else if (searchHighlightIds) {
+            if (!searchHighlightIds.has(source.id) || !searchHighlightIds.has(target.id)) isDimmed = true;
+        }
+        if (isPath) isDimmed = false;
+
+        if (isDimmed) {
+            ctx.globalAlpha = 0.05;
+        } else if (isPath || isHover) {
+            ctx.globalAlpha = 1;
+        } else {
+            ctx.globalAlpha = 0.4;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+
+        const useGradient = globalScale > 0.8 || isHover; // isPath is handled above
+
+        if (useGradient) {
+            const gradient = ctx.createLinearGradient(source.x, source.y, target.x, target.y);
+            gradient.addColorStop(0, getTypeColor(source.type));
+            gradient.addColorStop(1, getTypeColor(target.type));
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = (isHover ? 2.5 : 1) / globalScale;
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
+        } else {
+            ctx.strokeStyle = getTypeColor(source.type);
+            ctx.lineWidth = 1 / globalScale;
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
+        }
+
+        const isManual = source.manualConnections?.includes(target.id) || target.manualConnections?.includes(source.id);
+
+        if (!isManual) { // isPath is handled above
+            ctx.setLineDash([3 / globalScale, 3 / globalScale]);
+        } else {
+            ctx.setLineDash([]);
+        }
+
+        ctx.stroke();
+
+        // Fix: Reset context        // Reset Context
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        ctx.setLineDash([]);
+
+    }, [hoverNode, pathLinks, searchHighlightIds, hoverLink]); // Removed globalScale
+
+
+    // Physics Engine Tuning
+    useEffect(() => {
+        if (fgRef.current) {
+            // Physics: Add gravity to pull isolated nodes/clusters to center
+            fgRef.current.d3Force('x', forceX(0).strength(0.08));
+            fgRef.current.d3Force('y', forceY(0).strength(0.08));
+
+            fgRef.current.d3Force('charge').strength(-80); // Less repulsion
+            fgRef.current.d3Force('center').strength(0.6); // Strong centering
+            fgRef.current.d3Force('link').distance(40); // Shorter links
+            fgRef.current.d3ReheatSimulation();
+        }
+    }, [fgRef, graphData]);
+
+    if (isLoading && graphData.nodes.length === 0) {
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                <div className="flex flex-col items-center gap-4 text-slate-400">
+                    <Loader2 className="animate-spin" size={32} />
+                    <p className="text-sm font-medium">Chargement du graphe...</p>
+                </div>
+            </div>
+        );
+    }
+
+
+
+    const handleGraphNodeClick = (node: any) => {
+        const now = Date.now();
+        const isDoubleClick = lastClickNodeIdRef.current === node.id && (now - lastClickTimeRef.current) < 300;
+
+        if (isDoubleClick) {
+            // Double Click -> Open Details
+            onNodeClick?.(node.id);
+            lastClickNodeIdRef.current = null; // Reset
+        } else {
+            // Single Click -> Toggle Selection
+            handleNodeClick(node);
+            lastClickTimeRef.current = now;
+            lastClickNodeIdRef.current = node.id;
+        }
+    };
+
     return (
-        <div
-            ref={containerRef}
-            className="network-container"
-            style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
-        >
+        <div className="relative w-full h-full bg-slate-50 overflow-hidden">
             <ForceGraph2D
-                key={remountKey}
                 ref={fgRef}
-                width={dimensions.width}
-                height={dimensions.height}
-                graphData={filteredGraphData}
+                width={width}
+                height={height}
+                graphData={structuralData}
                 nodeLabel="name"
-                nodeCanvasObject={nodeCanvasObject as any}
-                nodePointerAreaPaint={(node: any, color, ctx) => {
-                    ctx.fillStyle = color;
-                    ctx.beginPath();
-                    ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI, false);
-                    ctx.fill();
-                }}
-                // Custom Links
-                linkCanvasObject={linkCanvasObject as any}
-                linkCanvasObjectMode={() => 'replace'}
+                nodeCanvasObject={nodePaint}
+                linkCanvasObject={linkPaint}
 
-                // Interaction
-                onNodeHover={handleNodeHover as any}
-                onLinkHover={handleLinkHover as any}
-                backgroundColor="#f8fafc"
-                onNodeClick={(node, event) => {
-                    // Shift+Click for Rapid Pathfinding
-                    if (event.shiftKey) {
-                        if (!pathStart) {
-                            setPathStart(node.id);
-                            setPathMode(true); // Auto-enable path mode (Corrected name)
-                            setPathEnd(null); // Reset end
-                        } else if (!pathEnd) {
-                            setPathEnd(node.id); // Set end and calc path automatically via effect
-                        } else {
-                            // If both set, restart with this as new start
-                            setPathStart(node.id);
-                            setPathEnd(null);
-                        }
-                        return;
-                    }
-
-                    // Normal Click
-                    handleNodeClick(node);
-                }}
                 cooldownTicks={100}
-                d3AlphaDecay={0.05} // Faster settling (less "explosion")
-                d3VelocityDecay={0.2} // More friction
+                d3AlphaDecay={0.02}
+                d3VelocityDecay={0.3}
                 warmupTicks={50}
-                onEngineStop={() => {
-                    fgRef.current?.zoomToFit(400, 50);
+
+                onNodeHover={(node: any) => {
+                    setHoverNode(node || null);
+                    document.body.style.cursor = node ? 'pointer' : 'default';
                 }}
+                onLinkHover={handleLinkHover}
+
+                // Interaction Logic
+                onNodeClick={handleGraphNodeClick}
+
+                onBackgroundClick={() => {
+                    setSelectedNodes(new Set());
+                    setPathLinks(new Set());
+                }}
+                minZoom={0.1}
+                maxZoom={6}
             />
-            {isCalculating && (
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    padding: '1rem 1.5rem',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    pointerEvents: 'none'
-                }}>
-                    Calcul du réseau...
+
+            {/* Top-Centered Minimalist Link Tooltip (Sober Redesign) */}
+            {hoverLink && (
+                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto">
+                    <NetworkTooltip
+                        link={hoverLink}
+                        onReportIncorrect={
+                            (hoverLink.type === 'semantic' || hoverLink.type === 'hybrid' || hoverLink.type === 'rrf' || !hoverLink.type) && onSuppressConnections
+                                ? () => {
+                                    const sId = typeof hoverLink.source === 'string' ? hoverLink.source : (hoverLink.source as any).id;
+                                    const tId = typeof hoverLink.target === 'string' ? hoverLink.target : (hoverLink.target as any).id;
+                                    onSuppressConnections([{ sourceId: sId, targetId: tId }]);
+                                    setHoverLink(null);
+                                }
+                                : undefined
+                        }
+                    />
                 </div>
             )}
-            <div style={{
-                position: 'absolute',
-                bottom: 16,
-                right: 16,
-                background: 'white',
-                padding: '8px 12px',
-                borderRadius: 6,
-                border: '1px solid #e2e8f0',
-                fontSize: 11,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                color: '#64748b'
-            }}>
-                Molette: zoom • Glisser: déplacer • Clic: détails
+
+            {/* Selection Card with actions */}
+            {selectedNodes.size > 0 && (
+                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-40 pointer-events-auto">
+                    <div className="
+                        bg-white/95 backdrop-blur-md 
+                        border border-slate-200 shadow-xl
+                        rounded-xl p-3 flex items-center gap-4
+                        animate-in slide-in-from-bottom-4 zoom-in-95 duration-200
+                     ">
+                        <div className="flex -space-x-2">
+                            {Array.from(selectedNodes).slice(0, 3).map(id => {
+                                const node = graphData.nodes.find(n => n.id === id);
+                                return (
+                                    <div key={id}
+                                        className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+                                        style={{ backgroundColor: node ? getTypeColor(node.type) : '#ccc' }}
+                                        title={node?.name}
+                                    >
+                                        {node?.name.substring(0, 1)}
+                                    </div>
+                                );
+                            })}
+                            {selectedNodes.size > 3 && (
+                                <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shadow-sm">
+                                    +{selectedNodes.size - 3}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col">
+                            <div className="text-xs font-semibold text-slate-700">
+                                {selectedNodes.size} sélectionné(s)
+                            </div>
+                            {pathLinks.size > 0 && (
+                                <div className="text-[10px] text-indigo-500 font-medium flex items-center gap-1">
+                                    <Zap size={10} fill="currentColor" /> Chemin trouvé ({pathLinks.size} liens)
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="h-8 w-px bg-slate-200 mx-1" />
+
+                        <div className="flex items-center gap-2">
+                            {selectedNodes.size === 1 && (
+                                <button
+                                    onClick={() => onNodeClick?.(Array.from(selectedNodes)[0])}
+                                    className="px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors"
+                                >
+                                    Voir Détails
+                                </button>
+                            )}
+                            <button
+                                onClick={() => {
+                                    setSelectedNodes(new Set());
+                                    setPathLinks(new Set());
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {/* Top Right: Search Depth / Legend (unchanged mostly, just positioning check) */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 items-end pointer-events-none">
+                {searchQuery && (
+                    <div className="pointer-events-auto flex items-center gap-2 bg-white/90 p-1.5 rounded-lg border border-slate-200 shadow-sm backdrop-blur-sm">
+                        <span className="text-xs font-semibold text-slate-500 px-2">Profondeur:</span>
+                        <div className="flex bg-slate-100 rounded p-0.5">
+                            {[0, 1, 2, 3].map(d => (
+                                <button
+                                    key={d}
+                                    onClick={() => setSearchDepth(d)}
+                                    className={`
+                                        px-2 py-0.5 text-xs rounded transition-all
+                                        ${searchDepth === d
+                                            ? 'bg-white text-emerald-600 shadow-sm font-medium'
+                                            : 'text-slate-400 hover:text-slate-600'}
+                                    `}
+                                >
+                                    {d === 0 ? 'Match' : `+${d}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Link tooltip */}
-            {hoverLink && hoverLink.reason && (
-                <div style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: 16,
-                    transform: 'translateX(-50%)',
-                    background: 'rgba(15, 23, 42, 0.92)',
-                    color: 'white',
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    maxWidth: 400,
-                    textAlign: 'center',
-                    pointerEvents: 'auto', // Enable interaction for button
-                    zIndex: 10,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                    lineHeight: 1.4,
-                    backdropFilter: 'blur(8px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 8
-                }}>
-                    <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {hoverLink.type === 'explicit' ? <><LinkIcon size={12} className="text-indigo-400" /> <span>Référence explicite</span></> :
-                            hoverLink.type === 'hybrid' ? <><GitMerge size={12} className="text-cyan-400" /> <span>Lien hybride</span></> :
-                                hoverLink.type === 'semantic' ? <><Brain size={12} className="text-purple-400" /> <span>Similarité sémantique</span></> :
-                                    hoverLink.type === 'manual' ? <><Hand size={12} className="text-amber-400" /> <span>Lien manuel</span></> :
-                                        <><BarChart2 size={12} className="text-slate-400" /> <span>Lien structurel</span></>}
-
-                        {hoverLink.value ? <span style={{ opacity: 0.7 }}>• {Math.round((hoverLink.value || 0) * 100)}%</span> : ''}
-
-                        {/* Quality Indicator */}
-                        {hoverLink.quality === 'boost' && <Zap size={10} className="text-yellow-400" style={{ marginLeft: 'auto' }} />}
-                        {hoverLink.quality === 'match' && <Check size={10} className="text-green-400" style={{ marginLeft: 'auto' }} />}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {hoverLink.reason}
-                    </div>
-
-                    {/* Delete Action (Feedback) */}
-                    {(hoverLink.type === 'semantic' || hoverLink.type === 'hybrid' || hoverLink.type === 'rrf') && onSuppressConnections && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const sId = typeof hoverLink.source === 'string' ? hoverLink.source : (hoverLink.source as any).id;
-                                const tId = typeof hoverLink.target === 'string' ? hoverLink.target : (hoverLink.target as any).id;
-                                onSuppressConnections([{ sourceId: sId, targetId: tId }]);
-                                setHoverLink(null); // Close tooltip
-                            }}
-                            className="hover:bg-red-500/20 hover:text-red-300"
-                            style={{
-                                marginTop: 4,
-                                paddingTop: 6,
-                                borderTop: '1px solid rgba(255,255,255,0.1)',
-                                background: 'transparent',
-                                color: '#f87171',
-                                fontSize: 11,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 6,
-                                width: '100%',
-                                borderRadius: 4,
-                                paddingBottom: 2,
-                                transition: 'background 0.2s'
-                            }}
-                        >
-                            <Trash2 size={12} /> Supprimer ce lien incorrect (apprendre)
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* Controls (Depth + Semantic) */}
-            <div style={{
-                position: 'absolute',
-                top: 16,
-                left: 16,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8
-            }}>
-                {/* Controls (Depth + Semantic + Path) */}
-                <div style={{
-                    position: 'absolute',
-                    top: 16,
-                    left: 16,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 8
-                }}>
-                    {/* Depth Controls */}
-                    <div style={{
-                        background: 'white',
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                        display: 'flex',
-                        gap: 8,
-                        alignItems: 'center'
-                    }}>
-                        <span style={{ fontSize: 12, color: '#64748b', marginRight: 4 }}>Profondeur:</span>
-                        {[0, 1, 2, 3].map(d => (
+            {/* Bottom Left: Selection Info (Polished) */}
+            {selectedNodes.size > 0 && (
+                <div className="absolute bottom-6 left-6 z-40 pointer-events-auto">
+                    <div className="
+                        bg-white/95 backdrop-blur-md 
+                        border border-slate-200/60 
+                        shadow-[0_8px_30px_rgba(0,0,0,0.12)]
+                        rounded-xl p-4
+                        flex flex-col gap-3
+                        min-w-[240px]
+                        animate-in zoom-in-95 duration-200
+                    ">
+                        <div className="flex items-center justify-between">
+                            <span className="font-semibold text-slate-800 flex items-center gap-2">
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">
+                                    {selectedNodes.size}
+                                </span>
+                                éléments
+                            </span>
                             <button
-                                key={d}
+                                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
                                 onClick={() => {
-                                    setDepthFilter(d);
-                                    if (d === 0) setFocusedNodeId(null);
-                                }}
-                                style={{
-                                    padding: '4px 10px',
-                                    borderRadius: 4,
-                                    border: depthFilter === d ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                                    background: depthFilter === d ? '#eff6ff' : 'white',
-                                    color: depthFilter === d ? '#3b82f6' : '#64748b',
-                                    fontSize: 12,
-                                    cursor: 'pointer',
-                                    fontWeight: depthFilter === d ? 600 : 400
+                                    setSelectedNodes(new Set());
+                                    setPathLinks(new Set());
                                 }}
                             >
-                                {d === 0 ? 'Tout' : `N+${d}`}
+                                Tout effacer
                             </button>
-                        ))}
-                    </div>
+                        </div>
 
-                    {/* Path Mode Toggle */}
-                    <div style={{
-                        background: 'white',
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8
-                    }}>
-                        <button
-                            onClick={() => {
-                                setPathMode(!pathMode);
-                                // Reset state when toggling off
-                                if (pathMode) {
-                                    setPathStart(null);
-                                    setPathEnd(null);
-                                    setPathResult(null);
-                                }
-                            }}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '6px 12px',
-                                background: pathMode ? '#fef3c7' : '#f1f5f9',
-                                color: pathMode ? '#d97706' : '#64748b',
-                                border: 'none',
-                                borderRadius: 6,
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <MapPin size={14} />
-                            {pathMode ? 'Mode Chemin Actif' : 'Chercher un chemin'}
-                        </button>
-
-                        {pathMode && (
-                            <div style={{ fontSize: 11, color: '#64748b', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                {!pathStart && <span>1. Cliquez sur le point de départ</span>}
-                                {pathStart && !pathEnd && <span>2. Cliquez sur l'arrivée</span>}
-                                {pathStart && pathEnd && (
-                                    <button
-                                        onClick={() => {
-                                            setPathStart(null);
-                                            setPathEnd(null);
-                                            setPathResult(null);
-                                        }}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: '#ef4444',
-                                            fontSize: 11,
-                                            cursor: 'pointer',
-                                            textDecoration: 'underline',
-                                            padding: 0
-                                        }}
-                                    >
-                                        Réinitialiser
-                                    </button>
+                        {selectedNodes.size === 2 && (
+                            <div className={`
+                                text-xs px-3 py-2 rounded-lg border 
+                                ${pathLinks.size > 0
+                                    ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                    : 'bg-slate-50 border-slate-100 text-slate-500'}
+                                flex items-center gap-2
+                            `}>
+                                {pathLinks.size > 0 ? (
+                                    <>
+                                        <Zap size={12} className="text-indigo-500" />
+                                        <span>Chemin optimal (Dijkstra)</span>
+                                    </>
+                                ) : (
+                                    <span>Aucune connexion directe</span>
                                 )}
                             </div>
                         )}
-                    </div>
 
-
-                    {focusedNodeId && (
-                        <div style={{
-                            background: 'white',
-                            padding: '8px 12px',
-                            borderRadius: 8,
-                            border: '1px solid #e2e8f0',
-                            fontSize: 11, color: '#94a3b8'
-                        }}>
-                            Focus: {graphData.nodes.find(n => n.id === focusedNodeId)?.name?.slice(0, 15)}...
+                        <div className="flex gap-2 mt-1">
+                            {/* Future actions here */}
                         </div>
-                    )}
+                    </div>
                 </div>
-
-
-            </div>
+            )}
         </div>
     );
 };

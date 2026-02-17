@@ -447,6 +447,12 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         const targetCard = cardMap.get(targetId);
         if (!sourceCard || !targetCard) return;
 
+        // Check for specific suppressed connections on the cards themselves
+        if (sourceCard.suppressedConnections?.includes(targetId) ||
+            targetCard.suppressedConnections?.includes(sourceId)) {
+            return;
+        }
+
         // === CALIBRATED COMPOSITE SCORE ===
         // Signal 1: Type compatibility (0.6 – 1.5) with EXPONENTIAL scaling
         // Incompatible (0.6) → 0.46, Compatible (1.5) → 1.84

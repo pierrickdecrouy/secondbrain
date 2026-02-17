@@ -227,7 +227,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
             </div >
 
             {/* Main Content Area */}
-            < main className="browse-content-area" >
+            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''}`}>
 
                 {/* Search Synthesis */}
                 {searchQuery && (

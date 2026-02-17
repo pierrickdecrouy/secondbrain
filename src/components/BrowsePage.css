@@ -354,6 +354,15 @@
     background: #adb5bd;
 }
 
+/* Network Mode: Full Screen / No Padding */
+.browse-content-area.browse-content-area--network {
+    padding: 0;
+    overflow: hidden;
+    /* Prevent double scrollbars if network view handles its own */
+    display: flex;
+    flex-direction: column;
+}
+
 .browse-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -507,6 +516,14 @@
     border-radius: 12px;
     border: 1px solid var(--border-light);
     overflow: hidden;
+}
+
+/* Override for full screen mode */
+.browse-content-area.browse-content-area--network .browse-network-container {
+    border-radius: 0;
+    border: none;
+    background: var(--bg-body);
+    /* Match body bg or keep white? */
 }
 
 /* Custom Table for List View */

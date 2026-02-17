@@ -24,3 +24,21 @@ export const generateId = (text: string): string => {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 };
+
+export interface Node {
+    id: string;
+    name: string;
+    type: string;
+    val?: number;
+    color?: string;
+    // ... any other props from worker
+}
+
+export interface Link {
+    source: string | Node;
+    target: string | Node;
+    value?: number;
+    type?: string;
+    reason?: string;
+    quality?: 'boost' | 'match' | 'neutral';
+}
