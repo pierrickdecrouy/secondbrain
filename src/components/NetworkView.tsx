@@ -128,20 +128,25 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
         // Apply Category Filters (Strict)
         if (activeFilters && activeFilters.length > 0) {
-            const allowedTypes = new Set(activeFilters);
-            const keepIds = new Set<string>();
-            nodes = nodes.filter(n => {
-                if (allowedTypes.has(n.type)) {
-                    keepIds.add(n.id);
-                    return true;
-                }
-                return false;
-            });
-            links = links.filter(l => {
-                const src = typeof l.source === 'object' ? (l.source as any).id : l.source;
-                const tgt = typeof l.target === 'object' ? (l.target as any).id : l.target;
-                return keepIds.has(src) && keepIds.has(tgt);
-            });
+            // Filter out special UI-only filters like 'needs-review' or 'all'
+            const realTypeFilters = activeFilters.filter(f => f !== 'needs-review' && f !== 'all');
+
+            if (realTypeFilters.length > 0) {
+                const allowedTypes = new Set(realTypeFilters);
+                const keepIds = new Set<string>();
+                nodes = nodes.filter(n => {
+                    if (allowedTypes.has(n.type)) {
+                        keepIds.add(n.id);
+                        return true;
+                    }
+                    return false;
+                });
+                links = links.filter(l => {
+                    const src = typeof l.source === 'object' ? (l.source as any).id : l.source;
+                    const tgt = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                    return keepIds.has(src) && keepIds.has(tgt);
+                });
+            }
         }
 
         // Also apply local suppression filter if not caught by worker yet
@@ -258,6 +263,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
         ctx.fillStyle = color;
         ctx.fill();
+
+        // Quality Check & Badge - REMOVED per user request (Project: Clean Network)
+        // Nodes are filtered by App.tsx so context is already "Weak Cards Only"
+
 
         // Text Visibility Logic
         // 1. Hover/Selected: ALWAYS show.

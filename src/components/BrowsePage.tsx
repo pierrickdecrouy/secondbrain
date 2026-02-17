@@ -17,6 +17,7 @@ import './BrowsePage.css';
 import SearchSynthesis from './SearchSynthesis';
 import { useTheme } from '../context/ThemeContext';
 import { stripMarkdown } from '../utils';
+import { calculateQualityScore } from '../algorithms/qualityScoring';
 import { DynamicIcon } from './DynamicIcon';
 import iconSvg from '../../public/icon.svg';
 
@@ -83,8 +84,29 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
         }
     };
 
+    const filteredCards = useMemo(() => {
+        let result = cards;
+
+        // 1. Filter by Type / Quality
+        if (activeFilters.length > 0 && !activeFilters.includes('all')) {
+            if (activeFilters.includes('needs-review')) {
+                // Special case: Filter by quality < 50
+                result = result.filter(card => {
+                    const connectivity = card.manualConnections?.length || 0;
+                    const assessment = calculateQualityScore(card, connectivity);
+                    return assessment.score < 50;
+                });
+            } else {
+                // Standard Type Filter
+                result = result.filter(card => activeFilters.includes(card.type));
+            }
+        }
+
+        return result;
+    }, [cards, activeFilters]);
+
     const sortedCards = useMemo(() => {
-        const sorted = [...cards];
+        const sorted = [...filteredCards];
         switch (sortOption) {
             case 'name-asc':
                 return sorted.sort((a, b) => a.title.localeCompare(b.title));
@@ -152,7 +174,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 <div className="browse-filter-scroll-area">
                     <div className="browse-filter-group">
                         <div
-                            className={`browse-filter-pill ${activeFilters.length === 0 ? 'active' : ''}`}
+                            className={`browse-filter-pill ${activeFilters.length === 0 || activeFilters.includes('all') ? 'active' : ''}`}
                             onClick={() => onFilterToggle('all')}
                         >
                             Tous
@@ -167,6 +189,16 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                 {getFilterLabel(type)}
                             </div>
                         ))}
+                        {/* special filter for review mode */}
+                        {activeFilters.includes('needs-review') && (
+                            <div
+                                className="browse-filter-pill active"
+                                onClick={() => onFilterToggle('needs-review')}
+                                style={{ backgroundColor: '#f97316', borderColor: '#f97316', color: '#fff' }}
+                            >
+                                À réviser
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -272,6 +304,20 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                         >
                                             <DynamicIcon name={getCategoryIcon(card.type)} size={14} /> {card.type}
                                         </span>
+                                        {/* Visual Badge for Low Quality (Only in Review Mode) */}
+                                        {activeFilters.includes('needs-review') && calculateQualityScore(card, card.manualConnections?.length || 0).score < 50 && (
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                fontWeight: 700,
+                                                color: '#c2410c',
+                                                backgroundColor: '#fff7ed',
+                                                border: '1px solid #ffedd5',
+                                                padding: '2px 6px',
+                                                borderRadius: '12px',
+                                            }}>
+                                                À réviser
+                                            </span>
+                                        )}
                                         <div className="browse-card-actions" onClick={(e) => e.stopPropagation()}>
                                             <button className="browse-action-btn" onClick={() => onEditCard(card)}><Edit2 size={16} /></button>
                                             <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash2 size={16} /></button>
@@ -331,6 +377,21 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                                 >
                                                     <DynamicIcon name={getCategoryIcon(card.type)} size={12} /> {card.type}
                                                 </span>
+                                                {/* Visual Badge for Low Quality */}
+                                                {activeFilters.includes('needs-review') && calculateQualityScore(card, card.manualConnections?.length || 0).score < 50 && (
+                                                    <span style={{
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: 700,
+                                                        color: '#c2410c',
+                                                        backgroundColor: '#fff7ed',
+                                                        border: '1px solid #ffedd5',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '12px',
+                                                        marginLeft: '6px'
+                                                    }}>
+                                                        À réviser
+                                                    </span>
+                                                )}
                                             </td>
                                             <td style={{ fontWeight: 600 }}>{card.title}</td>
                                             <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#868e96' }}>{card.subtitle}</td>

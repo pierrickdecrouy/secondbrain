@@ -11,8 +11,10 @@ import {
     RotateCcw,
     Brain,
     Zap,
-    ShieldAlert
+    ShieldAlert,
+    Activity
 } from 'lucide-react';
+import { KnowledgeHealthWidget } from './KnowledgeHealthWidget';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
 import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults, saveCardsAsync } from '../storage';
 import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbreviations';
@@ -24,9 +26,11 @@ interface SettingsPageProps {
     onClose: () => void;
     onSave?: () => void;
     availableCategories?: string[]; // Added property
+    cards: import('../types').Card[];
+    onReviewLowQuality: () => void;
 }
 
-type Tab = 'dictionary' | 'general' | 'data' | 'intelligence';
+type Tab = 'dictionary' | 'stats' | 'general' | 'data' | 'intelligence';
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const { onClose, onSave } = props;
@@ -137,6 +141,12 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             <BookOpen size={18} /> Dictionnaire
                         </li>
                         <li
+                            className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('stats')}
+                        >
+                            <Activity size={18} /> Statistiques
+                        </li>
+                        <li
                             className={`nav-item ${activeTab === 'general' ? 'active' : ''}`}
                             onClick={() => setActiveTab('general')}
                         >
@@ -233,6 +243,24 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {/* Stats Tab */}
+                    {activeTab === 'stats' && (
+                        <div style={{ padding: '40px 60px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ width: '100%', maxWidth: '600px', marginBottom: '30px' }}>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px' }}>Tableau de bord</h2>
+                                <p style={{ color: '#8c9b9f' }}>Suivez la santé de votre base de connaissances.</p>
+                            </div>
+
+                            <KnowledgeHealthWidget
+                                cards={props.cards}
+                                onReviewLowQuality={() => {
+                                    onClose(); // Close settings first
+                                    props.onReviewLowQuality();
+                                }}
+                            />
+                        </div>
                     )}
 
                     {/* General Tab (Appearance) */}

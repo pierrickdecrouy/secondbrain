@@ -3,6 +3,7 @@ import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
 import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
+import { calculateQualityScore } from './algorithms/qualityScoring';
 import { loadFeedback, recordNegativeFeedback, recordPositiveFeedback, getLinkFeedback } from './linkFeedback';
 import { DetailModal } from './components/DetailModal';
 import { AddDataModal } from './components/AddDataModal';
@@ -361,10 +362,19 @@ function AppContent() {
   }, [debouncedSearchQuery]);
 
   const filteredCards = useMemo(() => {
-    // 1. Type filter
+    // 1. Type filter / Quality Filter
     let result = cards;
     if (activeFilters.length > 0) {
-      result = result.filter(card => activeFilters.includes(card.type));
+      if (activeFilters.includes('needs-review')) {
+        // Quality Filter
+        result = result.filter(card => {
+          const score = calculateQualityScore(card, card.manualConnections?.length || 0);
+          return score.score < 50;
+        });
+      } else {
+        // Standard Type Filter
+        result = result.filter(card => activeFilters.includes(card.type));
+      }
     }
 
     // 2. Search filter using hybrid (FlexSearch + semantic)
@@ -400,6 +410,12 @@ function AppContent() {
             setShowHome(true);
           }}
           availableCategories={Array.from(new Set(cards.map(c => c.type))).sort()}
+          cards={cards}
+          onReviewLowQuality={() => {
+            setShowSettings(false);
+            setActiveFilters(['needs-review']); // Trigger the special filter
+            setShowHome(false); // Go to BrowsePage
+          }}
         />
       </Suspense>
     );
@@ -461,7 +477,7 @@ function AppContent() {
           renderNetworkView={() => (
             <Suspense fallback={<LoadingFallback />}>
               <NetworkView
-                cards={cards}
+                cards={filteredCards}
                 onNodeClick={(id) => setSelectedCardId(id)}
                 searchQuery={searchQuery}
                 highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
