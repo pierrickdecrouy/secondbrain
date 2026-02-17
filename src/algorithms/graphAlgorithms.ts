@@ -31,16 +31,15 @@ export function findStrongestPath(
         // Value 0.5 (Weak Semantic)   -> Cost 4
         // Value 0.1                   -> Cost 100
 
-        let cost = 1 / (Math.max(0.01, val) ** 2);
-
         // TRUST PENALTY (Secure Pathfinding)
         // Semantic/RRF links are "fuzzy" and liable to drift. 
         // We penalize them (x2 cost) so the algorithm prefers 
         // a longer path of explicit/manual links over a shortcut of weak semantic guesses.
+
         const isSemantic = link.type === 'semantic' || link.type === 'rrf' || link.type === 'hybrid';
-        if (isSemantic) {
-            cost *= 2.0;
-        }
+        const trustPenalty = isSemantic ? 2.0 : 1.0;
+
+        const cost = (1 / (Math.max(0.01, val) ** 2)) * trustPenalty;
 
         if (!adjacency.has(s)) adjacency.set(s, []);
         if (!adjacency.has(t)) adjacency.set(t, []);

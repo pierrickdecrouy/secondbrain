@@ -3,7 +3,7 @@ import type { Card } from '../types';
 export interface QualityMetrics {
     contentScore: number;    // 0-40 points for content length/structure
     connectivityScore: number; // 0-30 points for links
-    metadataScore: number;   // 0-30 points for tags/type/images
+    metadataScore: number;   // 0-30 points for tags/type
     total: number;           // 0-100
 }
 
@@ -16,6 +16,7 @@ export interface QualityAssessment {
 
 /**
  * Computes a quality score for a card to encourage better documentation
+ * REVISION V2: Removed Image requirement (too complex), redistributed points to Tags and Subtitle.
  */
 export function calculateQualityScore(card: Card, connectivityCount: number = 0): QualityAssessment {
     let contentScore = 0;
@@ -40,17 +41,17 @@ export function calculateQualityScore(card: Card, connectivityCount: number = 0)
 
     contentScore = Math.min(contentScore, 40);
 
-    // 2. Metadata & Enrichment (Max 30)
-    // Tags
+    // 2. Metadata & Enrichment (Max 30) - REVISED
+    // Tags (Max 20 points now, previously 15)
     if (card.tags?.length > 0) metadataScore += 5;
     if (card.tags?.length > 2) metadataScore += 5;
-    if (card.tags?.length > 5) metadataScore += 5;
+    if (card.tags?.length > 4) metadataScore += 10; // Boosted for rich tagging (>4 tags)
 
-    // Subtitle
-    if (card.subtitle && card.subtitle.length > 5) metadataScore += 5;
+    // Subtitle (Max 10 points now, previously 5)
+    // Critical for "Type" identification (e.g. Drug Class, Medical Specialty)
+    if (card.subtitle && card.subtitle.length > 2) metadataScore += 10;
 
-    // Image
-    if (card.imageUrl) metadataScore += 10;
+    // Image requirement removed as requested ("c'est compliqué")
 
     metadataScore = Math.min(metadataScore, 30);
 
