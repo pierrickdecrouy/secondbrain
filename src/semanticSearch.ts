@@ -11,6 +11,15 @@ let embeddingWorker: Worker | null = null;
 let isModelReady = false;
 let modelLoadProgress = 0;
 
+// Promise to track worker model readiness
+let initPromise: Promise<void> | null = null;
+let resolveInit: (() => void) | null = null;
+
+// Initialize promise immediately
+initPromise = new Promise((resolve) => {
+    resolveInit = resolve;
+});
+
 // Pending promise resolvers for async operations
 const pendingQueries = new Map<string, {
     resolve: (embedding: number[]) => void;
@@ -39,10 +48,13 @@ export function initSemanticSearch(
     if (embeddingWorker) return;
 
     onProgressCallback = onProgress || null;
-    onReadyCallback = onReady || null;
 
-    onProgressCallback = onProgress || null;
-    onReadyCallback = onReady || null;
+    // Wrap onReady to resolve our internal promise
+    onReadyCallback = () => {
+        isModelReady = true;
+        resolveInit?.();
+        if (onReady) onReady();
+    };
 
 
     embeddingWorker = new Worker(
@@ -53,9 +65,7 @@ export function initSemanticSearch(
     // Try to load existing index
     vectorStore.load().then(loaded => {
         if (loaded) {
-            console.log('Semantic index loaded, ready for search even if model is lazy loading');
-            // Optionally trigger ready if we trust the index matches the model
-            // But we still need the model for new queries.
+            console.log('Semantic index loaded.');
         }
     });
 
@@ -64,7 +74,9 @@ export function initSemanticSearch(
 
         switch (type) {
             case 'ready':
-                isModelReady = true;
+                // Handled in onReadyCallback above if we just call it? 
+                // Wait, onReadyCallback is set above.
+                // We need to call it here.
                 onReadyCallback?.();
                 break;
 
@@ -188,9 +200,14 @@ export function buildCardEmbeddings(cards: Card[], forceUpdate: boolean = false)
 }
 
 async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promise<void> {
+    // Wait for validation of model readiness
+    if (!isModelReady) {
+        console.log('[Semantic] Waiting for model initialization before indexing...');
+        await initPromise;
+    }
+
     if (!embeddingWorker) {
-        // Init if needed or throw
-        console.warn('Semantic search not initialized, skipping embedding build');
+        console.warn('[Semantic] Worker failed to initialize.');
         return;
     }
 
@@ -316,8 +333,8 @@ export async function computePrecisionGraph(
     vetoPairs: string[] = [],
     typeCompat: Record<string, number> = {}, // Re-enabled for clinical bias
     keywordSearchFn?: (query: string, limit: number) => string[]
-): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' }[]> {
-    const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf' }[] = [];
+): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf'; reason?: string }[]> {
+    const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf'; reason?: string }[] = [];
     const processedPairs = new Set<string>();
 
     // Fast lookup for vetoed pairs
@@ -407,11 +424,13 @@ export async function computePrecisionGraph(
             if (explicitMatch && keywordRank <= 3) {
                 score = 1.0;
                 type = 'explicit';
+                // No reason needed for explicit, usually self-explanatory or "Reference"
             }
             // 2. RRF Boosted Semantic
             else {
                 // Base similarity
                 let finalSim = vectorScore;
+                let reasonText = '';
 
                 // --- CLINICAL BIAS (Restored) ---
                 // Boost score if types are compatible (e.g. Drug <-> Patho)
@@ -437,21 +456,42 @@ export async function computePrecisionGraph(
                 if (finalSim > 0.82) {
                     score = finalSim;
                     type = 'semantic';
+                    reasonText = `Concepts similaires (${(finalSim * 100).toFixed(0)}%)`;
                 } else if (finalSim > 0.75 && getTagOverlap(cardA.tags, cardB.tags) > 0.2) {
                     score = finalSim;
                     type = 'hybrid';
+                    reasonText = `Mention explicite + Similarité forte (${(finalSim * 100).toFixed(0)}%)`;
                 }
 
                 // Pure RRF rescue: if rank is high in both but vector score is somehow low (rare)
                 if (semanticRank <= 5 && keywordRank <= 5 && score < 0.7) {
                     score = 0.85;
                     type = 'rrf';
+                    reasonText = 'Convergence Sémantique + Mots-clés';
+                }
+
+                if (score > 0 && type) {
+                    processedPairs.add(pairId);
+                    links.push({
+                        source: cardA.id,
+                        target: cardB.id,
+                        value: score,
+                        type,
+                        reason: reasonText
+                    });
                 }
             }
 
-            if (score > 0 && type) {
+            // Handle explicit separation to avoid double push (refactored logic above pushed only for non-explicit)
+            if (score > 0 && type === 'explicit') {
                 processedPairs.add(pairId);
-                links.push({ source: cardA.id, target: cardB.id, value: score, type });
+                links.push({
+                    source: cardA.id,
+                    target: cardB.id,
+                    value: score,
+                    type,
+                    reason: 'Référence explicite'
+                });
             }
         }
         // ... (End of RRF loop)

@@ -3,11 +3,7 @@ interface GraphNode {
     id: string;
 }
 
-interface GraphLink {
-    source: string | GraphNode;
-    target: string | GraphNode;
-    value?: number; // 0-1 confidence
-}
+// GraphLink interface removed as it was unused
 
 /**
  * Dijkstra's Algorithm for "Strongest Path"
@@ -15,15 +11,15 @@ interface GraphLink {
  */
 export function findStrongestPath(
     nodes: GraphNode[],
-    links: GraphLink[],
+    links: Array<{ source: string | any, target: string | any, value?: number, type?: string }>,
     startId: string,
     endId: string
 ): string[] { // Returns array of Node IDs in order
     // Build adjacency list
     const adjacency = new Map<string, { target: string, cost: number }[]>();
 
-    // Helper to get string ID
-    const getId = (n: string | GraphNode) => typeof n === 'string' ? n : n.id;
+    // Helper to get string ID safe for ForceGraph2D
+    const getId = (n: string | any) => (typeof n === 'object' && n.id) ? n.id : n;
 
     links.forEach(link => {
         const s = getId(link.source);
@@ -34,8 +30,17 @@ export function findStrongestPath(
         // Value 1.0 (Manual/Explicit) -> Cost 1
         // Value 0.5 (Weak Semantic)   -> Cost 4
         // Value 0.1                   -> Cost 100
-        // This strongly prefers stronger links even if it means more hops.
-        const cost = 1 / (Math.max(0.01, val) ** 2);
+
+        let cost = 1 / (Math.max(0.01, val) ** 2);
+
+        // TRUST PENALTY (Secure Pathfinding)
+        // Semantic/RRF links are "fuzzy" and liable to drift. 
+        // We penalize them (x2 cost) so the algorithm prefers 
+        // a longer path of explicit/manual links over a shortcut of weak semantic guesses.
+        const isSemantic = link.type === 'semantic' || link.type === 'rrf' || link.type === 'hybrid';
+        if (isSemantic) {
+            cost *= 2.0;
+        }
 
         if (!adjacency.has(s)) adjacency.set(s, []);
         if (!adjacency.has(t)) adjacency.set(t, []);

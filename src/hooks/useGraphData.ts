@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Card, Node, Link } from '../types';
+import { computePrecisionGraph } from '../semanticSearch';
+
 // We need to import the worker constructor. 
 // Vite handles 'new Worker(new URL(...))' automatically.
 
@@ -14,12 +16,16 @@ export interface UseGraphDataProps {
     semanticReady?: boolean; // Signal if we should wait for semantic search or not (optional)
 }
 
-export function useGraphData({ cards, vetoPairs = [] }: UseGraphDataProps) {
+export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: UseGraphDataProps) {
     const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
     const [isLoading, setIsLoading] = useState(false);
 
     // Worker ref to keep the instance
     const workerRef = useRef<Worker | null>(null);
+
+    // State to hold latest results from both sources
+    const [lexicalResult, setLexicalResult] = useState<GraphData | null>(null);
+    const [semanticLinks, setSemanticLinks] = useState<Link[]>([]);
 
     useEffect(() => {
         // Initialize worker if not exists
@@ -30,11 +36,7 @@ export function useGraphData({ cards, vetoPairs = [] }: UseGraphDataProps) {
 
             workerRef.current.onmessage = (e: MessageEvent<GraphData>) => {
                 const { nodes, links } = e.data;
-                // We might want to filter links based on vetoPairs here as well, 
-                // although the worker already does it if we pass them.
-                // Doing it here covers "live" veto additions if we don't re-run worker immediately.
-                setGraphData({ nodes, links });
-                setIsLoading(false);
+                setLexicalResult({ nodes, links });
             };
 
             workerRef.current.onerror = (err) => {
@@ -63,7 +65,6 @@ export function useGraphData({ cards, vetoPairs = [] }: UseGraphDataProps) {
             cards,
             feedback: {
                 vetoPairs,
-                // These could be passed via props if we have them in state
                 typePairScores: {},
                 negativePatterns: [],
                 positivePatterns: [],
@@ -72,8 +73,71 @@ export function useGraphData({ cards, vetoPairs = [] }: UseGraphDataProps) {
         };
 
         workerRef.current.postMessage(payload);
-
     }, [cards, vetoPairs]);
+
+    // Compute Semantic Links when ready
+    useEffect(() => {
+        if (cards.length === 0 || !semanticReady) {
+            if (!semanticReady) setSemanticLinks([]); // Clear if not ready
+            return;
+        }
+
+        console.log('[Graph] Computing semantic links...');
+
+        computePrecisionGraph(cards, vetoPairs)
+            .then(links => {
+                // Map to Link type
+                const formattedLinks: Link[] = links.map(l => ({
+                    source: l.source,
+                    target: l.target,
+                    value: l.value,
+                    type: l.type,
+                    reason: l.reason,
+                    quality: 'match' // Default quality for semantic
+                }));
+                setSemanticLinks(formattedLinks);
+            })
+            .catch(err => console.error('[Graph] Semantic compute error:', err));
+
+    }, [cards, vetoPairs, semanticReady]);
+
+    // Merge Results
+    useEffect(() => {
+        if (!lexicalResult) return;
+
+        const { nodes, links: lexicalLinks } = lexicalResult;
+
+        // Merge links (lexical + semantic)
+        // Deduplicate: If link exists in both, prefer Semantic? Or Lexical?
+        // Semantic links are usually higher quality ("High Precision").
+        // Lexical are "Broad Recall".
+
+        const mergedLinks = [...lexicalLinks];
+        const existingKeys = new Set(lexicalLinks.map(l => {
+            const s = typeof l.source === 'object' ? (l.source as any).id : l.source;
+            const t = typeof l.target === 'object' ? (l.target as any).id : l.target;
+            return [s, t].sort().join('-');
+        }));
+
+        let addedCount = 0;
+        semanticLinks.forEach(l => {
+            const key = [l.source, l.target].sort().join('-');
+            if (!existingKeys.has(key)) {
+                mergedLinks.push(l);
+                existingKeys.add(key);
+                addedCount++;
+            }
+        });
+
+        console.log(`[Graph] Merged: ${lexicalLinks.length} lexical + ${addedCount} semantic = ${mergedLinks.length} total.`);
+
+        setGraphData({ nodes, links: mergedLinks });
+        setIsLoading(false);
+
+    }, [lexicalResult, semanticLinks]);
+
+    // We only expose loading state for the *initial* lexical build mostly
+    // Semantic can stream in late.
 
     return { graphData, isLoading };
 }

@@ -81,11 +81,42 @@ export function generateSearchSynthesis(
         }
     }
 
+    // Graph-RAG Advanced: Detect DIRECT links between top results (Intersection)
+    // If top 2 cards are directly connected, it's a critical relationship.
+    // We will extract this specifically later.
+    let directLinkReason: string | null = null;
+    let directLinkSource: { id: string, title: string } | null = null;
+
+    if (sortedCards.length >= 2) {
+        const c1 = sortedCards[0];
+        const c2 = sortedCards[1];
+
+        // Check if C1 points to C2 manually
+        if (c1.manualConnections?.includes(c2.id)) {
+            directLinkReason = `Lien direct identifié : ${c1.title} → ${c2.title}`;
+            directLinkSource = { id: c1.id, title: "Graph-RAG Relation" };
+        }
+        // Check if C2 points to C1 manually
+        else if (c2.manualConnections?.includes(c1.id)) {
+            directLinkReason = `Lien direct identifié : ${c2.title} → ${c1.title}`;
+            directLinkSource = { id: c2.id, title: "Graph-RAG Relation" };
+        }
+    }
+
     // Take top 6 most relevant cards (now respecting RRF for non-pinned items)
     const topCards = sortedCards.slice(0, 6);
 
     // Extract key points from each card
     let points: { text: string; source: { id: string; title: string } }[] = [];
+
+    // Inject Graph-RAG Direct Link Point FIRST if found
+    if (directLinkReason && directLinkSource) {
+        points.push({
+            text: directLinkReason,
+            source: directLinkSource
+        });
+    }
+
     const sources: string[] = [];
     const seenContent = new Set<string>();
 
@@ -98,14 +129,13 @@ export function generateSearchSynthesis(
         let bestSentence = '';
 
         if (content) {
-            // Split into sentences (handle ., !, ?, and newlines)
-            const sentences = content.split(/([.!?\n]+)/)
-                .reduce((acc: string[], part: string, i: number, arr: string[]) => {
-                    if (i % 2 === 0) acc.push(part + (arr[i + 1] || '')); // Reattach matching delimiter
-                    return acc;
-                }, [])
-                .map((s: string) => s.trim())
-                .filter((s: string) => s.length > 20); // Filter out very short fragments
+            // NLP: Use Intl.Segmenter for smart sentence splitting
+            const segmenter = new Intl.Segmenter('fr', { granularity: 'sentence' });
+            const segments = segmenter.segment(content);
+
+            const sentences = Array.from(segments)
+                .map(s => s.segment.trim())
+                .filter(s => s.length > 20); // Filter noise
 
             // Scoring sentences based on query relevance and structure
             // Rank 1: Definition style with query term

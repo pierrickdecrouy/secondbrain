@@ -10,6 +10,7 @@ import {
     Zap
 } from 'lucide-react';
 import { NetworkTooltip } from './NetworkTooltip';
+import { findStrongestPath } from '../algorithms/graphAlgorithms';
 
 interface NetworkViewProps {
     cards: Card[];
@@ -60,80 +61,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
 
     // ===============================================
-    // PATHFINDING (Dataset Dijkstra)
+    // PATHFINDING (Uses shared algorithm)
     // ===============================================
-    const findWeightedPath = useCallback((startNodeId: string, endNodeId: string, links: Link[]) => {
-        // Build adjacency map with costs
-        // Cost = 1 / (Value^2) -> Stronger links (high value) have much lower cost
-        const adjacency = new Map<string, { target: string, cost: number, linkId: string }[]>();
-
-        links.forEach(link => {
-            const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
-            const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
-            const val = link.value || 0.1;
-            const cost = 1 / (val * val);
-
-            const linkKey = [src, tgt].sort().join('-');
-
-            if (!adjacency.has(src)) adjacency.set(src, []);
-            if (!adjacency.has(tgt)) adjacency.set(tgt, []);
-
-            adjacency.get(src)!.push({ target: tgt, cost, linkId: linkKey });
-            adjacency.get(tgt)!.push({ target: src, cost, linkId: linkKey });
-        });
-
-        // Dijkstra Priority Queue
-        const distances = new Map<string, number>();
-        const previous = new Map<string, string>();
-        const pq: { id: string, dist: number }[] = [];
-
-        distances.set(startNodeId, 0);
-        pq.push({ id: startNodeId, dist: 0 });
-
-        const visited = new Set<string>();
-
-        while (pq.length > 0) {
-            pq.sort((a, b) => a.dist - b.dist);
-            const { id: current, dist } = pq.shift()!;
-
-            if (visited.has(current)) continue;
-            visited.add(current);
-
-            if (current === endNodeId) break;
-
-            const neighbors = adjacency.get(current) || [];
-            for (const neighbor of neighbors) {
-                if (visited.has(neighbor.target)) continue;
-
-                const newDist = dist + neighbor.cost;
-                const existingDist = distances.get(neighbor.target);
-
-                if (existingDist === undefined || newDist < existingDist) {
-                    distances.set(neighbor.target, newDist);
-                    previous.set(neighbor.target, current);
-                    pq.push({ id: neighbor.target, dist: newDist });
-                }
-            }
-        }
-
-        if (!previous.has(endNodeId) && startNodeId !== endNodeId) return null;
-
-        const path: string[] = [];
-        let curr: string | undefined = endNodeId;
-        while (curr) {
-            path.unshift(curr);
-            curr = previous.get(curr);
-        }
-        return path;
-    }, []);
 
     const handleNodeClick = useCallback((node: Node, event?: MouseEvent) => {
         // Shift+Click or Alt+Click -> Add to Path Selection
-        // Normal Click -> Open Card Details (unless in path mode?)
-
-        // Actually, let's keep it simple: 
-        // If Shift is held, we manipulate the path selection.
-        // If not held, we open the card (and maybe clear path selection?).
+        // Normal Click -> Open Card Details
 
         const isModifier = event?.shiftKey || event?.ctrlKey || event?.metaKey || event?.altKey;
 
@@ -148,8 +81,11 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     // Calculate path if exactly 2 nodes
                     if (next.size === 2) {
                         const [start, end] = Array.from(next);
-                        const path = findWeightedPath(start, end, graphData.links);
-                        if (path) {
+                        // Use the imported strong path algo
+                        // Note: graphData.links has source/target as Objects here (from D3) but our util handles it
+                        const path = findStrongestPath(graphData.nodes, graphData.links, start, end);
+
+                        if (path && path.length > 0) {
                             const newPathLinks = new Set<string>();
                             for (let i = 0; i < path.length - 1; i++) {
                                 const a = path[i];
@@ -179,7 +115,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         // User might want to keep the path visible while exploring. 
         // Let's keep it.
 
-    }, [findWeightedPath, graphData.links, onNodeClick]);
+    }, [graphData, onNodeClick]);
 
     // ===============================================
     // DATA FILTERING vs HIGHLIGHTING
