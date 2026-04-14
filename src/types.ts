@@ -13,6 +13,7 @@ export interface Card {
     suppressedConnections?: string[]; // IDs of excluded/blacklisted connections
     createdAt?: number;
     updatedAt?: number;
+    progress?: UserCardProgress;
 }
 
 // Export a value to ensure this file is treated as a module at runtime
@@ -41,4 +42,14 @@ export interface Link {
     type?: string;
     reason?: string;
     quality?: 'boost' | 'match' | 'neutral';
+}
+
+export interface UserCardProgress {
+    status: 'new' | 'learning' | 'review' | 'suspended';
+    step: number;
+    dueDate: string;
+    interval: number;
+    easeFactor: number;
+    lapses: number;
+    isLeech?: boolean;
 }
