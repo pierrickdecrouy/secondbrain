@@ -427,6 +427,11 @@ function AppContent() {
     return (
       <div className="app-container">
         <HomePage
+          cards={cards}
+          onNavigateToCard={(id) => {
+            setSelectedCardId(id);
+            setShowHome(false);
+          }}
           onSearch={(query) => {
             setSearchQuery(query);
             setShowHome(false);
