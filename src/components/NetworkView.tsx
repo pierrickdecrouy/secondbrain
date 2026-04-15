@@ -50,6 +50,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Search Depth State (1 = direct match, 2 = neighbors, 3 = extended, 0/Infinity = All)
     const [searchDepth, setSearchDepth] = useState<number>(1);
+    const [reviewTimeMarker] = useState<number>(() => Date.now());
 
     // Link Hover State
     const [hoverLink, setHoverLink] = useState<Link | null>(null);
@@ -212,7 +213,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             groups.get(clusterId)!.push(nodeId);
         });
 
-        const now = Date.now();
         const withScores = Array.from(groups.values())
             .filter(group => group.length >= 3)
             .map(group => {
@@ -225,11 +225,11 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     const p = card.progress;
                     if (!p) return 0.25;
                     const intervalScore = Math.min(1, Math.max(0, (p.interval || 0) / 21));
-                    const overduePenalty = p.dueDate && new Date(p.dueDate).getTime() < now ? 0.35 : 0;
+                    const overduePenalty = p.dueDate && new Date(p.dueDate).getTime() < reviewTimeMarker ? 0.35 : 0;
                     return Math.max(0, intervalScore - overduePenalty);
                 });
                 const mastery = masteryScores.reduce((sum, n) => sum + n, 0) / masteryScores.length;
-                const overdueCount = clusterCards.filter(card => card.progress?.dueDate && new Date(card.progress.dueDate).getTime() <= now).length;
+                const overdueCount = clusterCards.filter(card => card.progress?.dueDate && new Date(card.progress.dueDate).getTime() <= reviewTimeMarker).length;
                 const weakness = (1 - mastery) + (overdueCount / clusterCards.length) * 0.7;
                 return { cardIds: clusterCards.map(c => c.id), weakness, mastery, overdueCount };
             })
@@ -238,7 +238,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             .slice(0, 4);
 
         return withScores;
-    }, [structuralData, cards, onClusterReview]);
+    }, [structuralData, cards, onClusterReview, reviewTimeMarker]);
 
     // ===============================================
     // RENDER HELPERS
