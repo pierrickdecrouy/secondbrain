@@ -21,7 +21,8 @@ export const DEFAULT_FSRS_CONFIG: FSRSConfig = {
     stabilityGain: 0.22,
     stabilityLoss: 0.55
 };
-const MAX_DIFFICULTY_PLUS_ONE = 11; // difficulty is normalized on a 1-10 scale
+const DIFFICULTY_SCALE_SIZE = 11; // distance from 0 for a 1..10 difficulty scale
+const LEECH_THRESHOLD = 8;
 
 const nowIso = () => new Date().toISOString();
 const addMinutesIso = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
@@ -78,14 +79,14 @@ export function calculateFsrsProgress(
             reps,
             lapses,
             lastReview: nowIso(),
-            isLeech: lapses >= 8
+            isLeech: lapses >= LEECH_THRESHOLD
         };
     }
 
     const difficultyShift = feedback === 2 ? config.difficultyStepDown * 0.5 : config.difficultyStepDown;
     difficulty = clamp(difficulty - difficultyShift, 1, 10);
 
-    const retrievabilityBonus = (MAX_DIFFICULTY_PLUS_ONE - difficulty) / 10;
+    const retrievabilityBonus = (DIFFICULTY_SCALE_SIZE - difficulty) / 10;
     const growth = 1 + config.stabilityGain * retrievabilityBonus * (feedback === 3 ? 1.25 : 0.85);
     stability = Math.max(0.2, stability * growth);
 
@@ -104,6 +105,6 @@ export function calculateFsrsProgress(
         stability,
         reps,
         lastReview: nowIso(),
-        isLeech: lapses >= 8
+        isLeech: lapses >= LEECH_THRESHOLD
     };
 }

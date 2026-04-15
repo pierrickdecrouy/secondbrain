@@ -204,6 +204,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                                     if (!value) {
                                         return 'color-empty';
                                     }
+                                    // Some calendar values may come from empty slots without count metadata.
                                     const count = hasHeatmapCount(value) ? value.count || 0 : 0;
                                     return 'color-scale-' + Math.min(count, 4);
                                 }}
