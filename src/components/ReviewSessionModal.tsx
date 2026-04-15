@@ -12,6 +12,12 @@ interface ReviewSessionModalProps {
     onJumpToCard?: (cardId: string) => void;
 }
 
+const REVIEW_ACTIONS: Array<{ rating: 1 | 2 | 3; label: string; style: React.CSSProperties }> = [
+    { rating: 1, label: 'Je ne connais pas', style: { background: '#fee2e2', color: '#991b1b' } },
+    { rating: 2, label: 'Moyen', style: { background: '#fef3c7', color: '#92400e' } },
+    { rating: 3, label: 'Je connais', style: { background: '#dcfce7', color: '#166534' } }
+];
+
 const getLinkedCardIds = (card: Card, allCards: Card[]): string[] => {
     const ids = new Set<string>(card.manualConnections || []);
     const text = `${card.content} ${card.details}`.toLowerCase();
@@ -113,9 +119,16 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                         </button>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button className="browse-filter-pill" style={{ background: '#fee2e2', color: '#991b1b' }} onClick={() => handleRate(1)}>Je ne connais pas</button>
-                        <button className="browse-filter-pill" style={{ background: '#fef3c7', color: '#92400e' }} onClick={() => handleRate(2)}>Moyen</button>
-                        <button className="browse-filter-pill" style={{ background: '#dcfce7', color: '#166534' }} onClick={() => handleRate(3)}>Je connais</button>
+                        {REVIEW_ACTIONS.map(action => (
+                            <button
+                                key={action.rating}
+                                className="browse-filter-pill"
+                                style={action.style}
+                                onClick={() => handleRate(action.rating)}
+                            >
+                                {action.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
