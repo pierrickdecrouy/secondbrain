@@ -21,6 +21,7 @@ export const DEFAULT_FSRS_CONFIG: FSRSConfig = {
     stabilityGain: 0.22,
     stabilityLoss: 0.55
 };
+const MAX_DIFFICULTY_PLUS_ONE = 11; // difficulty is normalized on a 1-10 scale
 
 const nowIso = () => new Date().toISOString();
 const addMinutesIso = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
@@ -84,7 +85,7 @@ export function calculateFsrsProgress(
     const difficultyShift = feedback === 2 ? config.difficultyStepDown * 0.5 : config.difficultyStepDown;
     difficulty = clamp(difficulty - difficultyShift, 1, 10);
 
-    const retrievabilityBonus = (11 - difficulty) / 10;
+    const retrievabilityBonus = (MAX_DIFFICULTY_PLUS_ONE - difficulty) / 10;
     const growth = 1 + config.stabilityGain * retrievabilityBonus * (feedback === 3 ? 1.25 : 0.85);
     stability = Math.max(0.2, stability * growth);
 

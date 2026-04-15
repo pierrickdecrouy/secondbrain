@@ -4,6 +4,14 @@ import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import type { Card } from '../types';
 
+interface HeatmapValue {
+    count?: number;
+}
+
+const hasHeatmapCount = (value: unknown): value is HeatmapValue => {
+    return typeof value === 'object' && value !== null && 'count' in value;
+};
+
 interface HomePageProps {
     cards: Card[];
     onNavigateToCard: (id: string) => void;
@@ -196,7 +204,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                                     if (!value) {
                                         return 'color-empty';
                                     }
-                                    const count = (value as { count?: number }).count || 0;
+                                    const count = hasHeatmapCount(value) ? value.count || 0 : 0;
                                     return 'color-scale-' + Math.min(count, 4);
                                 }}
                             />
