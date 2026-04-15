@@ -11,10 +11,12 @@ import {
 } from 'lucide-react';
 import { NetworkTooltip } from './NetworkTooltip';
 import { findStrongestPath } from '../algorithms/graphAlgorithms';
+import { detectCommunities } from '../algorithms/communityDetection';
 
 interface NetworkViewProps {
     cards: Card[];
     onNodeClick?: (id: string) => void;
+    onClusterReview?: (cardIds: string[]) => void;
     searchQuery?: string;
     highlightedIds?: Set<string>;
     activeFilters?: string[];
@@ -30,6 +32,7 @@ interface NetworkViewProps {
 export const NetworkView: React.FC<NetworkViewProps> = ({
     cards,
     onNodeClick,
+    onClusterReview,
     searchQuery,
     highlightedIds,
     activeFilters,
@@ -199,6 +202,43 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
         return accumulated;
     }, [structuralData, searchQuery, highlightedIds, searchDepth]);
+
+    const weakClusters = useMemo(() => {
+        if (!onClusterReview || structuralData.nodes.length < 3) return [];
+        const communities = detectCommunities(structuralData.nodes, structuralData.links);
+        const groups = new Map<string, string[]>();
+        communities.forEach((clusterId, nodeId) => {
+            if (!groups.has(clusterId)) groups.set(clusterId, []);
+            groups.get(clusterId)!.push(nodeId);
+        });
+
+        const now = Date.now();
+        const withScores = Array.from(groups.values())
+            .filter(group => group.length >= 3)
+            .map(group => {
+                const clusterCards = group
+                    .map(id => cards.find(c => c.id === id))
+                    .filter((c): c is Card => Boolean(c));
+                if (clusterCards.length === 0) return null;
+
+                const masteryScores = clusterCards.map(card => {
+                    const p = card.progress;
+                    if (!p) return 0.25;
+                    const intervalScore = Math.min(1, Math.max(0, (p.interval || 0) / 21));
+                    const overduePenalty = p.dueDate && new Date(p.dueDate).getTime() < now ? 0.35 : 0;
+                    return Math.max(0, intervalScore - overduePenalty);
+                });
+                const mastery = masteryScores.reduce((sum, n) => sum + n, 0) / masteryScores.length;
+                const overdueCount = clusterCards.filter(card => card.progress?.dueDate && new Date(card.progress.dueDate).getTime() <= now).length;
+                const weakness = (1 - mastery) + (overdueCount / clusterCards.length) * 0.7;
+                return { cardIds: clusterCards.map(c => c.id), weakness, mastery, overdueCount };
+            })
+            .filter((entry): entry is { cardIds: string[]; weakness: number; mastery: number; overdueCount: number } => Boolean(entry))
+            .sort((a, b) => b.weakness - a.weakness)
+            .slice(0, 4);
+
+        return withScores;
+    }, [structuralData, cards, onClusterReview]);
 
     // ===============================================
     // RENDER HELPERS
@@ -557,6 +597,26 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     </div>
                 )}
             </div>
+
+            {weakClusters.length > 0 && onClusterReview && (
+                <div className="absolute top-4 left-4 z-40 pointer-events-auto">
+                    <div className="bg-white/95 border border-slate-200 rounded-xl shadow-lg p-3 min-w-[260px]">
+                        <div className="text-xs font-semibold text-slate-700 mb-2">Cluster Review (priorité)</div>
+                        <div className="flex flex-col gap-2">
+                            {weakClusters.map((cluster, idx) => (
+                                <button
+                                    key={`${cluster.cardIds[0]}-${idx}`}
+                                    className="text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                                    onClick={() => onClusterReview(cluster.cardIds)}
+                                >
+                                    <div className="text-xs font-semibold text-slate-800">Cluster #{idx + 1} · {cluster.cardIds.length} fiches</div>
+                                    <div className="text-[11px] text-slate-500">Maîtrise: {(cluster.mastery * 100).toFixed(0)}% · En retard: {cluster.overdueCount}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Bottom Left: Selection Info (Polished) */}
             {selectedNodes.size > 0 && (

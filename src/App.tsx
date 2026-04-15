@@ -4,10 +4,12 @@ import { loadCardsAsync, saveCardsAsync } from './storage';
 import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
 import { calculateQualityScore } from './algorithms/qualityScoring';
+import { calculateFsrsProgress } from './algorithms/fsrs';
 import { loadFeedback, recordNegativeFeedback, recordPositiveFeedback, getLinkFeedback } from './linkFeedback';
 import { DetailModal } from './components/DetailModal';
 import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
+import { ReviewSessionModal } from './components/ReviewSessionModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { Edit2, Trash2, Loader2 } from 'lucide-react';
 import { ThemeProvider } from './context/ThemeContext';
@@ -59,6 +61,7 @@ function AppContent() {
   const [semanticReady, setSemanticReady] = useState(false);
   const [embeddingsReady, setEmbeddingsReady] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [reviewSession, setReviewSession] = useState<{ cardIds: string[]; title: string } | null>(null);
 
   // Manual Backup Feature
   const handleExportBackup = () => {
@@ -195,6 +198,41 @@ function AppContent() {
     cards.find(c => c.id === selectedCardId),
     [cards, selectedCardId]);
 
+  const reviewSessionCards = useMemo(() => {
+    if (!reviewSession) return [];
+    const idSet = new Set(reviewSession.cardIds);
+    return cards.filter(card => idSet.has(card.id));
+  }, [cards, reviewSession]);
+
+  const openDueReviewSession = useCallback(() => {
+    const now = Date.now();
+    const dueCards = cards.filter(card => {
+      const dueDate = card.progress?.dueDate ? new Date(card.progress.dueDate).getTime() : 0;
+      if (!card.progress) return false;
+      if (card.progress.status === 'learning' || card.progress.status === 'review') {
+        return dueDate <= now;
+      }
+      return false;
+    });
+    const fallback = dueCards.length > 0 ? dueCards : cards.slice(0, 20);
+    setReviewSession({
+      cardIds: fallback.map(c => c.id),
+      title: dueCards.length > 0 ? 'Révision planifiée (FSRS)' : 'Session découverte'
+    });
+  }, [cards]);
+
+  const handleRateCard = useCallback((cardId: string, rating: 1 | 2 | 3) => {
+    setCards(prev => prev.map(card => {
+      if (card.id !== cardId) return card;
+      const nextProgress = calculateFsrsProgress(card.progress, rating);
+      return {
+        ...card,
+        progress: nextProgress,
+        updatedAt: Date.now()
+      };
+    }));
+  }, []);
+
   const modals = (
     <>
       {selectedCard && (
@@ -247,6 +285,17 @@ function AppContent() {
           title={cardToDelete.title}
           onConfirm={confirmDelete}
           onCancel={() => setCardToDelete(null)}
+        />
+      )}
+
+      {reviewSession && reviewSessionCards.length > 0 && (
+        <ReviewSessionModal
+          cards={reviewSessionCards}
+          allCards={cards}
+          title={reviewSession.title}
+          onClose={() => setReviewSession(null)}
+          onRate={handleRateCard}
+          onJumpToCard={(id) => setSelectedCardId(id)}
         />
       )}
     </>
@@ -437,6 +486,7 @@ function AppContent() {
             setShowHome(false);
           }}
           onStartBrowsing={() => setShowHome(false)}
+          onStartReviewSession={openDueReviewSession}
           onAddCard={() => {
             // Stay on home page background
             setAddDataMode('create');
@@ -484,6 +534,12 @@ function AppContent() {
               <NetworkView
                 cards={filteredCards}
                 onNodeClick={(id) => setSelectedCardId(id)}
+                onClusterReview={(clusterCardIds) => {
+                  setReviewSession({
+                    cardIds: clusterCardIds,
+                    title: `Cluster review (${clusterCardIds.length} fiches)`
+                  });
+                }}
                 searchQuery={searchQuery}
                 highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
                 activeFilters={activeFilters}
