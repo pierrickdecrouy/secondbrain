@@ -192,11 +192,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 startDate={startDate}
                                 endDate={endDate}
                                 values={heatmapValues}
-                                classForValue={(value: { count?: number } | undefined) => {
+                                classForValue={(value) => {
                                     if (!value) {
                                         return 'color-empty';
                                     }
-                                    return 'color-scale-' + Math.min(value.count || 0, 4);
+                                    const count = (value as { count?: number }).count || 0;
+                                    return 'color-scale-' + Math.min(count, 4);
                                 }}
                             />
                         </div>
