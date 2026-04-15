@@ -13,6 +13,8 @@ import { NetworkTooltip } from './NetworkTooltip';
 import { findStrongestPath } from '../algorithms/graphAlgorithms';
 import { detectCommunities } from '../algorithms/communityDetection';
 
+const OVERDUE_PENALTY_FACTOR = 0.35;
+
 interface NetworkViewProps {
     cards: Card[];
     onNodeClick?: (id: string) => void;
@@ -225,7 +227,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     const p = card.progress;
                     if (!p) return 0.25;
                     const intervalScore = Math.min(1, Math.max(0, (p.interval || 0) / 21));
-                    const overduePenalty = p.dueDate && new Date(p.dueDate).getTime() < reviewTimeMarker ? 0.35 : 0;
+                    const overduePenalty = p.dueDate && new Date(p.dueDate).getTime() < reviewTimeMarker ? OVERDUE_PENALTY_FACTOR : 0;
                     return Math.max(0, intervalScore - overduePenalty);
                 });
                 const mastery = masteryScores.reduce((sum, n) => sum + n, 0) / masteryScores.length;
