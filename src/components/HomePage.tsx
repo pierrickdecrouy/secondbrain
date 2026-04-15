@@ -9,6 +9,7 @@ interface HomePageProps {
     onNavigateToCard: (id: string) => void;
     onSearch: (query: string) => void;
     onStartBrowsing: () => void;
+    onStartReviewSession?: () => void;
     onAddCard: () => void;
     onBatchImport: () => void;
     onBackgroundExport?: () => void;
@@ -20,6 +21,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     onNavigateToCard,
     onSearch,
     onStartBrowsing,
+    onStartReviewSession,
     onAddCard,
     onBatchImport,
     onBackgroundExport,
@@ -27,6 +29,22 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
     const [showFabMenu, setShowFabMenu] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+    const [showWidgetSettings, setShowWidgetSettings] = useState(false);
+    const [widgetPrefs, setWidgetPrefs] = useState(() => {
+        const raw = localStorage.getItem('pharmabrain_home_widgets');
+        if (raw) {
+            try {
+                return JSON.parse(raw) as Record<string, boolean>;
+            } catch {
+                // noop
+            }
+        }
+        return {
+            review: true,
+            heatmap: true,
+            recent: true
+        };
+    });
 
     const dueCards = cards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
     const learningCards = cards.filter(c => c.progress?.status === 'learning' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
@@ -74,6 +92,14 @@ export const HomePage: React.FC<HomePageProps> = ({
     const handleBackup = () => {
         setShowFabMenu(false);
         onBackgroundExport?.();
+    };
+
+    const toggleWidget = (widget: string) => {
+        setWidgetPrefs(prev => {
+            const next = { ...prev, [widget]: !prev[widget] };
+            localStorage.setItem('pharmabrain_home_widgets', JSON.stringify(next));
+            return next;
+        });
     };
 
     return (
@@ -135,45 +161,61 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <button className="home-browse-btn" onClick={onStartBrowsing}>
                     Parcourir toutes les fiches
                 </button>
+                <button className="home-browse-btn" onClick={() => setShowWidgetSettings(v => !v)} style={{ marginTop: '0.5rem' }}>
+                    Personnaliser l'accueil
+                </button>
+                {showWidgetSettings && (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                        <button style={{ border: '1px solid #cbd5e1', padding: '0.4rem 0.75rem', borderRadius: '999px', background: widgetPrefs.review ? '#dcfce7' : 'white' }} onClick={() => toggleWidget('review')}>Widget révision</button>
+                        <button style={{ border: '1px solid #cbd5e1', padding: '0.4rem 0.75rem', borderRadius: '999px', background: widgetPrefs.heatmap ? '#dcfce7' : 'white' }} onClick={() => toggleWidget('heatmap')}>Widget activité</button>
+                        <button style={{ border: '1px solid #cbd5e1', padding: '0.4rem 0.75rem', borderRadius: '999px', background: widgetPrefs.recent ? '#dcfce7' : 'white' }} onClick={() => toggleWidget('recent')}>Widget récents</button>
+                    </div>
+                )}
 
                 {/* Categories on single row */}
 
                 {/* 1. Dashboard Action */}
                 <div style={{ marginTop: '2rem', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>Bonjour, vous avez {totalToReview} fiches à réviser aujourd'hui.</h2>
-                        <button onClick={onStartBrowsing} style={{ marginTop: '1rem', padding: '0.75rem 2rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>
-                            Lancer la session
-                        </button>
-                    </div>
+                    {widgetPrefs.review && (
+                        <div style={{ textAlign: 'center' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>Bonjour, vous avez {totalToReview} fiches à réviser aujourd'hui.</h2>
+                            <button onClick={onStartReviewSession || onStartBrowsing} style={{ marginTop: '1rem', padding: '0.75rem 2rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}>
+                                Lancer la session
+                            </button>
+                        </div>
+                    )}
 
-                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#475569', marginBottom: '1rem', textAlign: 'center' }}>Activité (Derniers 6 mois)</h3>
-                        <CalendarHeatmap
-                            startDate={startDate}
-                            endDate={endDate}
-                            values={heatmapValues}
-                            classForValue={(value: any) => {
-                                if (!value) {
-                                    return 'color-empty';
-                                }
-                                return 'color-scale-' + Math.min(value.count, 4);
-                            }}
-                        />
-                    </div>
+                    {widgetPrefs.heatmap && (
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#475569', marginBottom: '1rem', textAlign: 'center' }}>Activité (Derniers 6 mois)</h3>
+                            <CalendarHeatmap
+                                startDate={startDate}
+                                endDate={endDate}
+                                values={heatmapValues}
+                                classForValue={(value: { count?: number } | undefined) => {
+                                    if (!value) {
+                                        return 'color-empty';
+                                    }
+                                    return 'color-scale-' + Math.min(value.count || 0, 4);
+                                }}
+                            />
+                        </div>
+                    )}
 
-                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem' }}>Dernières fiches modifiées</h3>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {recentCards.map(card => (
-                                <li key={card.id} onClick={() => onNavigateToCard(card.id)} style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.2s' }}>
-                                    <span style={{ fontWeight: 500, color: '#1e293b' }}>{card.title}</span>
-                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{card.type}</span>
-                                </li>
-                            ))}
-                            {recentCards.length === 0 && <li style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Aucune fiche récente.</li>}
-                        </ul>
-                    </div>
+                    {widgetPrefs.recent && (
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem' }}>Dernières fiches modifiées</h3>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {recentCards.map(card => (
+                                    <li key={card.id} onClick={() => onNavigateToCard(card.id)} style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.2s' }}>
+                                        <span style={{ fontWeight: 500, color: '#1e293b' }}>{card.title}</span>
+                                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{card.type}</span>
+                                    </li>
+                                ))}
+                                {recentCards.length === 0 && <li style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Aucune fiche récente.</li>}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
             </div>

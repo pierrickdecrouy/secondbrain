@@ -52,4 +52,9 @@ export interface UserCardProgress {
     easeFactor: number;
     lapses: number;
     isLeech?: boolean;
+    algorithm?: 'srs' | 'fsrs';
+    stability?: number;
+    difficulty?: number;
+    reps?: number;
+    lastReview?: string | null;
 }
