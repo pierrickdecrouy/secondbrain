@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { X, Upload, AlertCircle, CheckCircle2, FileText, FileJson } from 'lucide-react';
 import type { Card, CardType } from '../types';
 import { validateImportData } from '../utils/importValidation';
+import { rebuildIndex } from '../searchIndex';
 
 interface BatchImportModalProps {
     onImport: (cards: Card[]) => void;
@@ -19,6 +20,9 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     const [error, setError] = useState<string | null>(null);
     const [previewCount, setPreviewCount] = useState<number | null>(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [importSummary, setImportSummary] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Sanitize text (remove invisible characters like zero-width spaces)
     const sanitizeText = (text: string): string => {
@@ -31,6 +35,56 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
             .replace(/[^a-z0-9à-ÿ]+/gi, '-')
             .replace(/^-+|-+$/g, '');
     };
+
+    // Load file content into the text area
+    const loadFileContent = useCallback((file: File) => {
+        if (!file.name.endsWith('.txt') && !file.name.endsWith('.md') && !file.name.endsWith('.json')) {
+            setError('Format non supporté. Glissez un fichier .txt, .md ou .json');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target?.result as string;
+            setInput(content);
+            setError(null);
+            setImportSummary(null);
+            // Auto-detect JSON
+            const trimmed = content.trim();
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                setImportMode('json');
+                try {
+                    const parsed = JSON.parse(content);
+                    setPreviewCount(Array.isArray(parsed) ? parsed.length : 1);
+                } catch { /* ignore */ }
+            } else {
+                setImportMode('text');
+                const count = (content.match(/^#[^#]/m) ? content.split(/^#(?!#)/m).filter(Boolean).length : 0);
+                if (count > 0) setPreviewCount(count);
+            }
+        };
+        reader.readAsText(file);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) loadFileContent(file);
+    }, [loadFileContent]);
+
+    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback(() => setIsDragging(false), []);
+
+    const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) loadFileContent(file);
+        // Reset so same file can be re-selected
+        e.target.value = '';
+    }, [loadFileContent]);
 
     // Parse text format
     const parseTextFormat = (text: string): Card[] => {
@@ -169,15 +223,19 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                 }
             }
 
-            // VALIDATION STEP (Zod)
-            // Before proceeding, validate each card against Zod schema
+            // VALIDATION STEP (Zod) — partial mode: valid cards pass, invalid cards are reported
             const validationResult = validateImportData(processedCards);
 
-            if (!validationResult.success) {
-                // Show first 3 errors to avoid spam
-                const errorMsg = validationResult.errors.slice(0, 3).join('\n') +
-                    (validationResult.errors.length > 3 ? `\n... (+${validationResult.errors.length - 3} others)` : '');
-                throw new Error(`Validation failed:\n${errorMsg}`);
+            // Show warnings for skipped cards but continue with valid ones
+            if (validationResult.skippedCount > 0) {
+                const warnMsg = `${validationResult.skippedCount} fiche(s) invalide(s) ignorée(s) :\n` +
+                    validationResult.errors.slice(0, 3).join('\n') +
+                    (validationResult.errors.length > 3 ? `\n... (+${validationResult.errors.length - 3} autres)` : '');
+                console.warn('Import validation warnings:', warnMsg);
+            }
+
+            if (validationResult.validCards.length === 0) {
+                throw new Error('Aucune fiche valide après validation. Vérifiez le format.');
             }
 
             // Use the strictly valid cards
@@ -188,25 +246,28 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                 existingCards.some(existing => existing.id === newCard.id)
             );
 
-            // Remove duplicates from the batch to act as "upsert" or "skip"? 
-            // User asked: "Vérifie si l'ID existe déjà. Demande à l'utilisateur : 'Écraser ou Ignorer ?'".
-            // Since we can't easily show a dialog here without complex UI, 
-            // and we implemented "Safe Upsert" in backend, OVERWRITING is safe (no delete of others).
-            // But if user didn't INTEND to overwrite, it's bad.
-            // Let's implement a strict check: if duplicates > 0, throw error unless they check a box "Overwrite"?
-            // Or just return the list and let the parent handle?
-            // "Frontend (UI) : Ajoute un indicateur visuel..." was for indexing.
-            // For duplicates, I'll add a simple confirmation via window.confirm for now.
-
             if (duplicates.length > 0) {
-                const confirm = window.confirm(
+                const confirmOverwrite = window.confirm(
                     `${duplicates.length} fiches existent déjà (ex: ${duplicates[0].title}).\nVoulez-vous les mettre à jour (Écraser) ?\n\nAnnuler pour corriger.`
                 );
-                if (!confirm) return;
+                if (!confirmOverwrite) return;
             }
 
+            // Trigger import
             onImport(processedCards);
-            if (onClose) onClose();
+
+            // Immediately rebuild search index with the new cards
+            rebuildIndex([...existingCards, ...processedCards]);
+
+            // Show import summary instead of closing immediately
+            const skipped = validationResult.skippedCount;
+            const total = processedCards.length;
+            let summary = `✅ ${total} fiche${total !== 1 ? 's' : ''} importée${total !== 1 ? 's' : ''} et indexée${total !== 1 ? 's' : ''} immédiatement.`;
+            if (skipped > 0) summary += ` (${skipped} ignorée${skipped !== 1 ? 's' : ''} — invalide${skipped !== 1 ? 's' : ''})`;
+            setImportSummary(summary);
+
+            // Close after a short delay
+            setTimeout(() => onClose(), 2000);
 
         } catch (err: any) {
             setError(err.message || "Erreur lors de l'import");
@@ -336,16 +397,80 @@ Adulte : 500mg à 1g toutes les 4h.
                 </div>
 
                 <div className="form-group" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label>
-                        {importMode === 'text' ? 'Fiches séparées par #' : 'JSON Array'}
-                    </label>
-                    <textarea
-                        className={importMode === 'json' ? 'font-mono text-xs' : ''}
-                        style={{ flex: 1, minHeight: '300px', resize: 'vertical' }}
-                        value={input}
-                        onChange={handleInputChange}
-                        placeholder={importMode === 'text' ? '...' : '[...]'}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label style={{ margin: 0 }}>
+                            {importMode === 'text' ? 'Fiches séparées par #' : 'JSON Array'}
+                        </label>
+                        <button
+                            type="button"
+                            style={{
+                                background: 'none',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                padding: '3px 10px',
+                                fontSize: '0.78rem',
+                                color: '#475569',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                            }}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <FileText size={13} /> Ouvrir un fichier (.txt / .md / .json)
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".txt,.md,.json"
+                            style={{ display: 'none' }}
+                            onChange={handleFileSelect}
+                        />
+                    </div>
+                    {/* Drop Zone */}
+                    <div
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            border: isDragging ? '2px dashed #6366f1' : '2px dashed transparent',
+                            borderRadius: '8px',
+                            transition: 'border-color 0.2s',
+                            background: isDragging ? '#f0f0ff' : 'transparent',
+                        }}
+                    >
+                        {isDragging && (
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'rgba(99, 102, 241, 0.08)',
+                                borderRadius: '8px',
+                                zIndex: 10,
+                                pointerEvents: 'none',
+                                fontSize: '1rem',
+                                color: '#6366f1',
+                                fontWeight: 600,
+                                gap: '10px',
+                            }}>
+                                <Upload size={20} /> Déposez le fichier ici
+                            </div>
+                        )}
+                        <textarea
+                            className={importMode === 'json' ? 'font-mono text-xs' : ''}
+                            style={{ flex: 1, minHeight: '300px', resize: 'vertical' }}
+                            value={input}
+                            onChange={handleInputChange}
+                            placeholder={importMode === 'text'
+                                ? 'Collez vos fiches ici ou glissez un fichier .txt/.md...'
+                                : 'Collez votre JSON ici ou glissez un fichier .json...'}
+                        />
+                    </div>
                 </div>
 
                 {error && (
@@ -355,7 +480,14 @@ Adulte : 500mg à 1g toutes les 4h.
                     </div>
                 )}
 
-                {previewCount !== null && !error && (
+                {importSummary && (
+                    <div className="import-message success">
+                        <CheckCircle2 size={16} />
+                        {importSummary}
+                    </div>
+                )}
+
+                {previewCount !== null && !error && !importSummary && (
                     <div className="import-message success">
                         <CheckCircle2 size={16} />
                         {previewCount} fiches détectées

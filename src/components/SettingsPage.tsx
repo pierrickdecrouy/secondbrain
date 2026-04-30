@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     BookOpen,
     Database,
@@ -12,15 +12,22 @@ import {
     Brain,
     Zap,
     ShieldAlert,
-    Activity
+    Activity,
+    Download,
+    Upload,
+    Calendar,
+    Clock,
 } from 'lucide-react';
 import { KnowledgeHealthWidget } from './KnowledgeHealthWidget';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
-import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults, saveCardsAsync } from '../storage';
+import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults, saveCardsAsync, loadSrsConfig, saveSrsConfig } from '../storage';
 import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbreviations';
 import './SettingsPage.css';
 import { useTheme } from '../context/ThemeContext';
 import { getDashboardStats, resetFeedback, type DashboardStats } from '../linkFeedback';
+import type { SRSConfig } from '../algorithms/srs';
+import { daysUntilExam } from '../algorithms/srs';
+import type { Node, Link } from '../types';
 
 interface SettingsPageProps {
     onClose: () => void;
@@ -28,9 +35,12 @@ interface SettingsPageProps {
     availableCategories?: string[]; // Added property
     cards: import('../types').Card[];
     onReviewLowQuality: () => void;
+    graphNodes?: Node[];
+    graphLinks?: Link[];
+    onReviewCard?: (cardId: string) => void;
 }
 
-type Tab = 'dictionary' | 'stats' | 'general' | 'data' | 'intelligence';
+type Tab = 'dictionary' | 'stats' | 'general' | 'data' | 'intelligence' | 'srs';
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const { onClose, onSave } = props;
@@ -49,6 +59,18 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const [newKey, setNewKey] = useState('');
     const [newValue, setNewValue] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [abbrImportMsg, setAbbrImportMsg] = useState<string | null>(null);
+    const abbrFileRef = useRef<HTMLInputElement>(null);
+
+    // SRS Config state
+    const [srsConfig, setSrsConfig] = useState<SRSConfig>(() => loadSrsConfig());
+    const examDaysLeft = daysUntilExam(srsConfig.examDate);
+
+    const handleSrsConfigChange = <K extends keyof SRSConfig>(key: K, value: SRSConfig[K]) => {
+        const updated = { ...srsConfig, [key]: value };
+        setSrsConfig(updated);
+        saveSrsConfig(updated);
+    };
 
     useEffect(() => {
         const loaded = loadCustomAbbreviations();
@@ -62,6 +84,50 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             setDashStats(getDashboardStats());
         }
     }, [activeTab]);
+
+    // Export abbreviations as JSON
+    const handleExportAbbreviations = () => {
+        const blob = new Blob([JSON.stringify(abbreviations, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `abbreviations-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // Import abbreviations from JSON file
+    const handleImportAbbreviations = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const parsed = JSON.parse(ev.target?.result as string);
+                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    setAbbrImportMsg('❌ Format invalide. Le fichier doit être un objet JSON {"abbr": "définition"}.');
+                    return;
+                }
+                // Validate and merge
+                const newEntries: Record<string, string> = {};
+                Object.entries(parsed).forEach(([k, v]) => {
+                    if (typeof k === 'string' && typeof v === 'string' && k.length <= 20 && v.length <= 200) {
+                        newEntries[k.toLowerCase().trim()] = v.trim();
+                    }
+                });
+                const merged = { ...abbreviations, ...newEntries };
+                setAbbreviations(merged);
+                saveCustomAbbreviations(merged);
+                const added = Object.keys(newEntries).length;
+                setAbbrImportMsg(`✅ ${added} abréviation${added !== 1 ? 's' : ''} importée${added !== 1 ? 's' : ''} et fusionnée${added !== 1 ? 's' : ''}.`);
+                if (onSave) onSave();
+            } catch {
+                setAbbrImportMsg('❌ Fichier JSON invalide.');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
 
     const handleAdd = () => {
         if (newKey && newValue) {
@@ -145,6 +211,12 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             onClick={() => setActiveTab('stats')}
                         >
                             <Activity size={18} /> Statistiques
+                        </li>
+                        <li
+                            className={`nav-item ${activeTab === 'srs' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('srs')}
+                        >
+                            <Calendar size={18} /> Révision SRS
                         </li>
                         <li
                             className={`nav-item ${activeTab === 'general' ? 'active' : ''}`}
@@ -241,6 +313,34 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Export / Import buttons */}
+                                <div style={{ display: 'flex', gap: '10px', padding: '12px 0 0', borderTop: '1px solid #f1f5f9', marginTop: '8px' }}>
+                                    <button
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#f8f9fa', color: '#495057', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+                                        onClick={handleExportAbbreviations}
+                                    >
+                                        <Download size={14} /> Exporter JSON
+                                    </button>
+                                    <button
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#f8f9fa', color: '#495057', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+                                        onClick={() => abbrFileRef.current?.click()}
+                                    >
+                                        <Upload size={14} /> Importer JSON
+                                    </button>
+                                    <input
+                                        ref={abbrFileRef}
+                                        type="file"
+                                        accept=".json"
+                                        style={{ display: 'none' }}
+                                        onChange={handleImportAbbreviations}
+                                    />
+                                    {abbrImportMsg && (
+                                        <span style={{ fontSize: '0.8rem', color: abbrImportMsg.startsWith('✅') ? '#16a34a' : '#dc2626', alignSelf: 'center' }}>
+                                            {abbrImportMsg}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </>
                     )}
@@ -255,11 +355,179 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
                             <KnowledgeHealthWidget
                                 cards={props.cards}
+                                graphNodes={props.graphNodes}
+                                graphLinks={props.graphLinks}
+                                onReviewCard={props.onReviewCard}
                                 onReviewLowQuality={() => {
                                     onClose(); // Close settings first
                                     props.onReviewLowQuality();
                                 }}
                             />
+                        </div>
+                    )}
+
+                    {/* SRS / Exam Mode Tab */}
+                    {activeTab === 'srs' && (
+                        <div style={{ padding: '40px 60px', overflowY: 'auto', height: '100%' }}>
+                            <div style={{ marginBottom: '32px' }}>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px' }}>
+                                    Paramètres de révision
+                                </h2>
+                                <p style={{ color: '#8c9b9f' }}>
+                                    Configurez l'algorithme de répétition espacée (SRS/FSRS).
+                                </p>
+                            </div>
+
+                            {/* Exam Mode Card */}
+                            <div style={{
+                                background: srsConfig.examModeEnabled
+                                    ? 'linear-gradient(135deg, #ede9fe 0%, #fdf4ff 100%)'
+                                    : 'white',
+                                border: `1.5px solid ${srsConfig.examModeEnabled ? '#8b5cf6' : '#e9ecef'}`,
+                                borderRadius: '16px',
+                                padding: '28px',
+                                marginBottom: '20px',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                                transition: 'all 0.3s ease',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                            <Calendar size={20} color="#8b5cf6" />
+                                            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#2c3e50', margin: 0 }}>
+                                                Mode Examen Proche
+                                            </h3>
+                                            {srsConfig.examModeEnabled && examDaysLeft !== null && examDaysLeft > 0 && (
+                                                <span style={{
+                                                    background: examDaysLeft <= 7 ? '#dc2626' : '#d97706',
+                                                    color: 'white',
+                                                    borderRadius: '12px',
+                                                    padding: '2px 10px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 700,
+                                                }}>
+                                                    J-{examDaysLeft}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: 0 }}>
+                                            Active quand l'examen est à ≤15 jours. Divise les intervalles par 2 pour intensifier les révisions.
+                                        </p>
+                                    </div>
+                                    {/* Toggle */}
+                                    <button
+                                        onClick={() => handleSrsConfigChange('examModeEnabled', !srsConfig.examModeEnabled)}
+                                        style={{
+                                            width: '48px',
+                                            height: '26px',
+                                            borderRadius: '13px',
+                                            border: 'none',
+                                            background: srsConfig.examModeEnabled ? '#8b5cf6' : '#d1d5db',
+                                            cursor: 'pointer',
+                                            position: 'relative',
+                                            transition: 'background 0.2s',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: '3px',
+                                            left: srsConfig.examModeEnabled ? '24px' : '3px',
+                                            width: '20px',
+                                            height: '20px',
+                                            borderRadius: '50%',
+                                            background: 'white',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                            transition: 'left 0.2s',
+                                        }} />
+                                    </button>
+                                </div>
+
+                                {srsConfig.examModeEnabled && (
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            Date de l'examen
+                                        </label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <input
+                                                type="date"
+                                                value={srsConfig.examDate ?? ''}
+                                                onChange={(e) => handleSrsConfigChange('examDate', e.target.value || null)}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    border: '1.5px solid #d1d5db',
+                                                    borderRadius: '8px',
+                                                    fontSize: '0.9rem',
+                                                    color: '#374151',
+                                                    background: 'white',
+                                                }}
+                                            />
+                                            {examDaysLeft !== null && (
+                                                <span style={{
+                                                    fontSize: '0.85rem',
+                                                    color: examDaysLeft <= 0 ? '#dc2626' : examDaysLeft <= 7 ? '#d97706' : examDaysLeft <= 15 ? '#6d28d9' : '#6b7280',
+                                                    fontWeight: 600,
+                                                }}>
+                                                    {examDaysLeft <= 0
+                                                        ? "L'examen est passé"
+                                                        : examDaysLeft <= 15
+                                                        ? `⚡ Mode actif — J-${examDaysLeft} (intervalles ÷2)`
+                                                        : `Dans ${examDaysLeft} jours (mode s'activera à J-15)`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Context Hints */}
+                            <div style={{
+                                background: 'white',
+                                border: '1px solid #e9ecef',
+                                borderRadius: '16px',
+                                padding: '24px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                            <Clock size={18} color="#3b82f6" />
+                                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#2c3e50', margin: 0 }}>
+                                                Rappels contextuels
+                                            </h3>
+                                        </div>
+                                        <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: 0 }}>
+                                            Affiche les liens du graphe comme aide-mémoire pendant la révision.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleSrsConfigChange('showContextHint', !srsConfig.showContextHint)}
+                                        style={{
+                                            width: '48px',
+                                            height: '26px',
+                                            borderRadius: '13px',
+                                            border: 'none',
+                                            background: srsConfig.showContextHint ? '#3b82f6' : '#d1d5db',
+                                            cursor: 'pointer',
+                                            position: 'relative',
+                                            transition: 'background 0.2s',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: '3px',
+                                            left: srsConfig.showContextHint ? '24px' : '3px',
+                                            width: '20px',
+                                            height: '20px',
+                                            borderRadius: '50%',
+                                            background: 'white',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                            transition: 'left 0.2s',
+                                        }} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     X,
@@ -7,11 +6,13 @@ import {
     Search,
     EyeOff,
     Upload,
-    Info
+    Info,
+    Link2,
 } from 'lucide-react';
 import type { Card, CardType } from '../types';
 import { CARD_TYPES } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { suggestAbbreviationLinks } from '../utils/abbreviationLinks';
 import './CardForm.css';
 
 interface CardFormProps {
@@ -69,6 +70,21 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     }, [card]);
 
     // ... (rest of derived lists)
+
+    // Abbreviation link suggestions
+    const abbrevSuggestions = useMemo(() => {
+        const draftCard: Card = {
+            id: card?.id ?? '_draft',
+            type: (formData.type as CardType) || 'data',
+            title: formData.title || '',
+            subtitle: formData.subtitle || '',
+            content: formData.content || '',
+            details: formData.details || '',
+            tags: formData.tags || [],
+        };
+        if (!draftCard.title && !draftCard.content && !draftCard.details) return [];
+        return suggestAbbreviationLinks(draftCard, existingCards, 5);
+    }, [formData.title, formData.content, formData.details, existingCards, card?.id]);
 
     // Derived Lists
     const connectionCandidates = useMemo(() => {

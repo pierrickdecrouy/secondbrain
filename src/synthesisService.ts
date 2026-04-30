@@ -5,8 +5,80 @@
  * Phase 2: LLM-powered (wllama - TBD)
  */
 
-import type { Card } from './types';
+import type { Card, CardSegment } from './types';
 import { expandMedicalQuery } from './medicalAbbreviations';
+
+/**
+ * Slugify a heading for use as a segment ID suffix.
+ */
+function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80);
+}
+
+/**
+ * Split a card's markdown `details` into named segments based on H1/H2/H3 headings.
+ * Each segment contains the heading title and the text below it until the next heading.
+ * If no headings are found, returns a single segment with all content.
+ */
+export function segmentCard(card: Card): CardSegment[] {
+    const text = (card.details || card.content || '').trim();
+    if (!text) return [];
+
+    // Match headings: # Title, ## Title, ### Title
+    const headingPattern = /^(#{1,3})\s+(.+)$/m;
+    const lines = text.split('\n');
+
+    const segments: CardSegment[] = [];
+    let currentTitle: string | null = null;
+    let currentLines: string[] = [];
+
+    const flushSegment = (title: string | null, contentLines: string[]) => {
+        const content = contentLines.join('\n').trim();
+        if (!content && !title) return;
+        const segTitle = title ?? card.title;
+        const segContent = content || card.subtitle || '';
+        if (!segContent) return;
+        const slug = slugify(segTitle);
+        segments.push({
+            id: `${card.id}__${slug}`,
+            cardId: card.id,
+            title: segTitle,
+            content: segContent,
+        });
+    };
+
+    for (const line of lines) {
+        const match = line.match(headingPattern);
+        if (match) {
+            // Flush the previous segment
+            flushSegment(currentTitle, currentLines);
+            currentTitle = match[2].trim();
+            currentLines = [];
+        } else {
+            currentLines.push(line);
+        }
+    }
+    // Flush last segment
+    flushSegment(currentTitle, currentLines);
+
+    // If no headings were found, return a single segment
+    if (segments.length === 0) {
+        segments.push({
+            id: `${card.id}__main`,
+            cardId: card.id,
+            title: card.title,
+            content: text,
+        });
+    }
+
+    return segments;
+}
 
 /**
  * Generate a synthesis from matched cards

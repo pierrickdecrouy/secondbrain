@@ -16,6 +16,18 @@ export interface Card {
     progress?: UserCardProgress;
 }
 
+/**
+ * A segment is a sub-section of a card (e.g. a H2/H3 chapter).
+ * It has its own SRS progress for micro-learning.
+ */
+export interface CardSegment {
+    id: string;           // Unique: `${cardId}__${slugified title}`
+    cardId: string;       // Parent card ID
+    title: string;        // Section heading (e.g. "Mécanisme d'action")
+    content: string;      // Text content of the segment
+    progress?: UserCardProgress;
+}
+
 // Export a value to ensure this file is treated as a module at runtime
 export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;
 

@@ -6,6 +6,7 @@ export interface SRSConfig {
     minEaseFactor: number;
     fuzzEnabled: boolean;
     examDate?: string | null;
+    examModeEnabled?: boolean; // Intensify reviews when exam is ≤15 days away
     showContextHint?: boolean; // Show Mind Map breadcrumbs during review
 }
 
@@ -14,6 +15,7 @@ export const DEFAULT_SRS_CONFIG: SRSConfig = {
     defaultEaseFactor: 2.5,
     minEaseFactor: 1.3,
     fuzzEnabled: true,
+    examModeEnabled: false,
     showContextHint: true // Contextual Recall enabled by default
 };
 
@@ -43,6 +45,48 @@ export interface SRSResult {
     easeFactor: number;
     lapses: number;
     isLeech?: boolean;
+}
+
+/**
+ * Compute how many days until the exam. Returns null if no date is set.
+ */
+export function daysUntilExam(examDate?: string | null): number | null {
+    if (!examDate) return null;
+    const exam = new Date(examDate);
+    if (isNaN(exam.getTime())) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    exam.setHours(0, 0, 0, 0);
+    return Math.ceil((exam.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Applies the "Exam Mode" modifier to a computed SRS result.
+ * When the exam is within 15 days, intervals are halved (min 1) to intensify revision.
+ */
+export function applyExamModifier(result: SRSResult, days: number): SRSResult {
+    if (days > 15 || days <= 0) return result;
+
+    if (result.status === 'review') {
+        const newInterval = Math.max(1, Math.floor(result.interval / 2));
+        return {
+            ...result,
+            interval: newInterval,
+            dueDate: getDueDate(newInterval),
+        };
+    }
+
+    if (result.status === 'learning') {
+        // Shorten learning steps by 50% (min 1 minute)
+        return {
+            ...result,
+            dueDate: getDueTime(Math.max(1, Math.floor(
+                (new Date(result.dueDate).getTime() - Date.now()) / 60000 / 2
+            ))),
+        };
+    }
+
+    return result;
 }
 
 export const calculateSrsData = (
@@ -200,6 +244,14 @@ export const calculateSrsData = (
                 dueDate: getDueDate(newInterval),
                 lapses: lapses
             };
+        }
+    }
+
+    // Apply Exam Mode modifier if enabled and exam is within 15 days
+    if (config.examModeEnabled && config.examDate) {
+        const days = daysUntilExam(config.examDate);
+        if (days !== null && days > 0 && days <= 15) {
+            result = applyExamModifier(result, days);
         }
     }
 

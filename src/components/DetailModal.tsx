@@ -1,10 +1,13 @@
-import React, { useMemo } from 'react';
-import { X, Link2, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Link2, ChevronLeft, ChevronRight, BookOpen, Layers } from 'lucide-react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { searchCards } from '../searchIndex';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
+import { segmentCard } from '../synthesisService';
+import { loadSegmentProgress } from '../storage';
+import { SegmentReviewModal } from './SegmentReviewModal';
 
 interface DetailModalProps {
     card: Card;
@@ -17,6 +20,8 @@ interface DetailModalProps {
 }
 
 export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClose, onLinkClick, actions, onNext, onPrev }) => {
+    const [showSegmentReview, setShowSegmentReview] = useState(false);
+
     // Find backlinks using FlexSearch (cards that contain this card's title)
     // This is faster and smarter (fuzzy, stemmed) than regex
     const backlinks = useMemo(() => {
@@ -56,6 +61,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
         // For now, we use backlinks count as a proxy for "connectivity"
         return calculateQualityScore(card, backlinks.length + forwardLinks.length);
     }, [card, backlinks.length, forwardLinks.length]);
+
+    // Compute segments for micro-learning
+    const segments = useMemo(() => segmentCard(card), [card]);
+    const segmentProgress = useMemo(() => loadSegmentProgress(), [card.id]);
+
+    // Count how many segments have been reviewed
+    const reviewedSegments = segments.filter(s => segmentProgress[s.id]).length;
 
     const handleOverlayClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
@@ -148,6 +160,45 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     </div>
                 )}
 
+                {/* Micro-Learning: Segment overview */}
+                {segments.length > 1 && (
+                    <div style={{
+                        margin: '0 0 0 0',
+                        padding: '14px 24px',
+                        background: '#f8f7ff',
+                        borderTop: '1px solid #ede9fe',
+                        borderBottom: '1px solid #ede9fe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#6d28d9', fontWeight: 600 }}>
+                            <Layers size={15} />
+                            {segments.length} sections · {reviewedSegments} évaluée{reviewedSegments !== 1 ? 's' : ''}
+                        </div>
+                        <button
+                            onClick={() => setShowSegmentReview(true)}
+                            style={{
+                                background: '#6d28d9',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '6px 14px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                            }}
+                        >
+                            <BookOpen size={13} />
+                            Réviser par sections
+                        </button>
+                    </div>
+                )}
+
                 {/* Markdown content */}
                 <div className="modal-body markdown-content">
                     <MarkdownRenderer content={card.details} />
@@ -203,6 +254,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     ))}
                 </div>
             </div>
+
+            {/* Segment Review Modal */}
+            {showSegmentReview && (
+                <SegmentReviewModal
+                    segments={segments}
+                    cardTitle={card.title}
+                    onClose={() => setShowSegmentReview(false)}
+                />
+            )}
         </div>
     );
 };

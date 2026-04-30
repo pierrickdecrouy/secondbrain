@@ -1,4 +1,6 @@
 import type { Card } from './types';
+import type { SRSConfig } from './algorithms/srs';
+import { DEFAULT_SRS_CONFIG } from './algorithms/srs';
 import { initialCards } from './data';
 import { MEDICAL_ABBREVIATIONS } from './medicalAbbreviations';
 
@@ -157,4 +159,59 @@ export const saveCustomAbbreviations = (abbreviations: Record<string, string>) =
 
 export const resetToDefaults = () => {
     localStorage.removeItem(CUSTOM_ABBREVIATIONS_KEY);
+};
+
+// SRS Config Storage
+const SRS_CONFIG_KEY = 'pharmabrain_srs_config';
+
+export const loadSrsConfig = (): SRSConfig => {
+    try {
+        const stored = localStorage.getItem(SRS_CONFIG_KEY);
+        if (stored) {
+            return { ...DEFAULT_SRS_CONFIG, ...JSON.parse(stored) };
+        }
+    } catch (e) {
+        console.error('Failed to load SRS config', e);
+    }
+    return { ...DEFAULT_SRS_CONFIG };
+};
+
+export const saveSrsConfig = (config: SRSConfig): void => {
+    try {
+        localStorage.setItem(SRS_CONFIG_KEY, JSON.stringify(config));
+    } catch (e) {
+        console.error('Failed to save SRS config', e);
+    }
+};
+
+// Card Segment Progress Storage
+const SEGMENT_PROGRESS_KEY = 'pharmabrain_segment_progress';
+
+export type SegmentProgressMap = Record<string, import('./types').UserCardProgress>;
+
+export const loadSegmentProgress = (): SegmentProgressMap => {
+    try {
+        const stored = localStorage.getItem(SEGMENT_PROGRESS_KEY);
+        if (stored) return JSON.parse(stored) as SegmentProgressMap;
+    } catch (e) {
+        console.error('Failed to load segment progress', e);
+    }
+    return {};
+};
+
+export const saveSegmentProgress = (map: SegmentProgressMap): void => {
+    try {
+        localStorage.setItem(SEGMENT_PROGRESS_KEY, JSON.stringify(map));
+    } catch (e) {
+        console.error('Failed to save segment progress', e);
+    }
+};
+
+export const updateSegmentProgress = (
+    segmentId: string,
+    progress: import('./types').UserCardProgress
+): void => {
+    const current = loadSegmentProgress();
+    current[segmentId] = progress;
+    saveSegmentProgress(current);
 };

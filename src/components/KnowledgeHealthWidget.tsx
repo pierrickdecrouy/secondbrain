@@ -1,15 +1,25 @@
 
 import React, { useMemo } from 'react';
-import { Brain, AlertCircle } from 'lucide-react';
-import type { Card } from '../types';
+import { Brain, AlertCircle, Network } from 'lucide-react';
+import type { Card, Node, Link } from '../types';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
+import { detectWeakNodes } from '../algorithms/graphAlgorithms';
 
 interface KnowledgeHealthWidgetProps {
     cards: Card[];
     onReviewLowQuality: () => void;
+    graphNodes?: Node[];
+    graphLinks?: Link[];
+    onReviewCard?: (cardId: string) => void;
 }
 
-export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ cards, onReviewLowQuality }) => {
+export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({
+    cards,
+    onReviewLowQuality,
+    graphNodes = [],
+    graphLinks = [],
+    onReviewCard,
+}) => {
 
     // Calculate stats
     const stats = useMemo(() => {
@@ -24,9 +34,6 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
         let weakCount = 0; // Incomplet + Ebauche
 
         cards.forEach(card => {
-            // Using a dummy connectivity count of 3 as an average if unavailable, 
-            // since we don't have full graph access here without heavy computation.
-            // For dashboard purposes, the content score dominates.
             const result = calculateQualityScore(card, card.manualConnections?.length || 0);
 
             switch (result.label) {
@@ -41,10 +48,34 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
         return { counts, weakCount, total: cards.length };
     }, [cards]);
 
+    // Build quality map for all cards (used by detectWeakNodes)
+    const qualityMap = useMemo(() => {
+        const map = new Map<string, { score: number; label: string }>();
+        cards.forEach(card => {
+            const result = calculateQualityScore(card, card.manualConnections?.length || 0);
+            map.set(card.id, { score: result.score, label: result.label });
+        });
+        return map;
+    }, [cards]);
+
+    // Detect weak/isolated nodes from graph data
+    const weakNodes = useMemo(() => {
+        if (graphNodes.length === 0) return [];
+        return detectWeakNodes(graphNodes, graphLinks, qualityMap, 3);
+    }, [graphNodes, graphLinks, qualityMap]);
+
     // Compute widths for bars
     const getWidth = (count: number) => {
         if (stats.total === 0) return '0%';
         return `${Math.max(2, (count / stats.total) * 100)}%`;
+    };
+
+    const qualityLabelColors: Record<string, string> = {
+        'Ébauche': '#94a3b8',
+        'Incomplet': '#f97316',
+        'Correct': '#3b82f6',
+        'Robuste': '#10b981',
+        'Excellence': '#f59e0b',
     };
 
     return (
@@ -174,11 +205,97 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
 
             </div>
 
+            {/* Proactive Graph Suggestions */}
+            {weakNodes.length > 0 && (
+                <div style={{
+                    marginTop: '24px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #f1f5f9',
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#475569',
+                    }}>
+                        <Network size={15} color="#6366f1" />
+                        Nœuds à renforcer
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {weakNodes.map(node => (
+                            <div
+                                key={node.id}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    background: '#f8fafc',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '10px',
+                                    padding: '8px 12px',
+                                    gap: '8px',
+                                }}
+                            >
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontSize: '0.82rem',
+                                        fontWeight: 600,
+                                        color: '#1e293b',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                    }}>
+                                        {node.name}
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+                                        {node.reason} · {node.connectionCount} lien{node.connectionCount !== 1 ? 's' : ''}
+                                    </div>
+                                </div>
+                                <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 600,
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    background: `${qualityLabelColors[node.qualityLabel] ?? '#94a3b8'}18`,
+                                    color: qualityLabelColors[node.qualityLabel] ?? '#94a3b8',
+                                    border: `1px solid ${qualityLabelColors[node.qualityLabel] ?? '#94a3b8'}40`,
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    {node.qualityLabel}
+                                </span>
+                                {onReviewCard && (
+                                    <button
+                                        onClick={() => onReviewCard(node.id)}
+                                        title="Réviser cette fiche"
+                                        style={{
+                                            background: '#ede9fe',
+                                            color: '#6d28d9',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            padding: '4px 10px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        Réviser
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Footer / Actions */}
             {stats.weakCount > 0 && (
                 <div style={{
-                    marginTop: '28px',
-                    paddingTop: '20px',
+                    marginTop: '20px',
+                    paddingTop: '16px',
                     borderTop: '1px solid #f1f5f9',
                     display: 'flex',
                     justifyContent: 'flex-end'
@@ -214,7 +331,7 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                 </div>
             )}
 
-            {stats.weakCount === 0 && stats.total > 0 && (
+            {stats.weakCount === 0 && stats.total > 0 && weakNodes.length === 0 && (
                 <div style={{
                     marginTop: '28px',
                     paddingTop: '20px',

@@ -5,6 +5,74 @@ interface GraphNode {
 
 // GraphLink interface removed as it was unused
 
+export interface WeakNode {
+    id: string;
+    name: string;
+    connectionCount: number;
+    qualityScore: number;
+    qualityLabel: string;
+    reason: string;
+}
+
+/**
+ * Detect weak nodes in the graph:
+ * - Isolated nodes (0 or very few connections)
+ * - Low-quality nodes (Ébauche or Incomplet)
+ * Returns nodes sorted by weakness (worst first), limited to `limit`.
+ */
+export function detectWeakNodes(
+    nodes: Array<{ id: string; name?: string }>,
+    links: Array<{ source: string | any; target: string | any }>,
+    qualityMap: Map<string, { score: number; label: string }>,
+    limit = 5
+): WeakNode[] {
+    const getId = (n: string | any): string =>
+        typeof n === 'object' && n !== null && 'id' in n ? n.id : String(n);
+
+    // Count connections per node
+    const connectionCounts = new Map<string, number>();
+    nodes.forEach(n => connectionCounts.set(n.id, 0));
+    links.forEach(link => {
+        const s = getId(link.source);
+        const t = getId(link.target);
+        connectionCounts.set(s, (connectionCounts.get(s) ?? 0) + 1);
+        connectionCounts.set(t, (connectionCounts.get(t) ?? 0) + 1);
+    });
+
+    const results: WeakNode[] = [];
+
+    nodes.forEach(node => {
+        const connections = connectionCounts.get(node.id) ?? 0;
+        const quality = qualityMap.get(node.id) ?? { score: 0, label: 'Ébauche' };
+
+        const isIsolated = connections === 0;
+        const isWeak = quality.label === 'Ébauche' || quality.label === 'Incomplet';
+
+        if (!isIsolated && !isWeak) return;
+
+        const reasons: string[] = [];
+        if (isIsolated) reasons.push('nœud isolé');
+        if (isWeak) reasons.push(`qualité ${quality.label}`);
+
+        results.push({
+            id: node.id,
+            name: node.name ?? node.id,
+            connectionCount: connections,
+            qualityScore: quality.score,
+            qualityLabel: quality.label,
+            reason: reasons.join(', '),
+        });
+    });
+
+    // Sort: isolated + weakest quality first
+    results.sort((a, b) => {
+        if (a.connectionCount !== b.connectionCount) return a.connectionCount - b.connectionCount;
+        return a.qualityScore - b.qualityScore;
+    });
+
+    return results.slice(0, limit);
+}
+
 /**
  * Dijkstra's Algorithm for "Strongest Path"
  * Cost = 1 / value (Higher confidence = Lower cost = Preferred)
