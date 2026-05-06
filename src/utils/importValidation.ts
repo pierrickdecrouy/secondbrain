@@ -14,7 +14,14 @@ const MAX_BATCH_SIZE = 2_000;
 const SCRIPT_INJECTION_RE = /<\s*script[\s>]/i;
 const DANGEROUS_PROTO_RE = /javascript\s*:/i;
 
-/** Strip invisible / zero-width characters that can corrupt IDs */
+/** Strip invisible / zero-width characters that can corrupt IDs:
+ *  \u0000-\u0008  – C0 control characters (NUL..BS)
+ *  \u000B-\u000C  – VT, FF
+ *  \u000E-\u001F  – SO..US (remaining C0 controls)
+ *  \u007F         – DEL
+ *  \u200B-\u200D  – Zero-width space/non-joiner/joiner
+ *  \uFEFF         – BOM / zero-width no-break space
+ */
 const sanitizeString = (s: string): string => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200D\uFEFF]/g, '').trim();
 
 // Zod Schema for strict validation
