@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, EyeOff, Eye, X } from 'lucide-react';
+import { CaretLeft, CaretRight, EyeSlash, Eye, X } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -79,10 +79,10 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                     <button className="browse-btn-icon" onClick={() => setHideSummary(v => !v)}>
-                        {hideSummary ? <Eye size={16} /> : <EyeOff size={16} />} Résumé
+                        {hideSummary ? <Eye size={16} /> : <EyeSlash size={16} />} Résumé
                     </button>
                     <button className="browse-btn-icon" onClick={() => setHideDetails(v => !v)}>
-                        {hideDetails ? <Eye size={16} /> : <EyeOff size={16} />} Détails
+                        {hideDetails ? <Eye size={16} /> : <EyeSlash size={16} />} Détails
                     </button>
                 </div>
 
@@ -112,10 +112,10 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <button className="browse-btn-icon" onClick={() => setIndex(i => Math.max(0, i - 1))} disabled={index === 0}>
-                            <ChevronLeft size={16} />
+                            <CaretLeft size={16} />
                         </button>
                         <button className="browse-btn-icon" onClick={() => setIndex(i => Math.min(cards.length - 1, i + 1))} disabled={index === cards.length - 1}>
-                            <ChevronRight size={16} />
+                            <CaretRight size={16} />
                         </button>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
