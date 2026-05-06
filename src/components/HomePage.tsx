@@ -2,11 +2,12 @@ import { useState } from 'react';
 import {
     MagnifyingGlass, Plus, X, FileText, UploadSimple, GearSix,
     BookOpen, Brain, Lightning, ArrowRight, SlidersHorizontal,
-    FloppyDisk, Books, Clock
+    FloppyDisk, Books, Clock, Moon, Sun
 } from '@phosphor-icons/react';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import type { Card } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface HeatmapValue {
     count?: number;
@@ -39,6 +40,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     onBackgroundExport,
     onSettings,
 }) => {
+    const { darkMode, toggleDarkMode } = useTheme();
     const [showFabMenu, setShowFabMenu] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [showWidgetSettings, setShowWidgetSettings] = useState(false);
@@ -106,6 +108,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <span className="home-topbar-name">PharmaBrain</span>
                 </div>
                 <div className="home-topbar-actions app-no-drag">
+                    <button
+                        className="home-topbar-btn"
+                        onClick={toggleDarkMode}
+                        title={darkMode ? 'Mode clair' : 'Mode sombre'}
+                    >
+                        {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
                     <button
                         className="home-topbar-btn"
                         onClick={() => setShowWidgetSettings(v => !v)}

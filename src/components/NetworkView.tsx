@@ -270,6 +270,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const nodePaint = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
 
+        // Dark mode detection
+        const isDark = document.documentElement.classList.contains('dark');
+
         // Visual States
         const isHover = node === hoverNode;
         const isSelected = selectedNodes.has(node.id);
@@ -290,7 +293,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.save();
 
         if (isDimmed) {
-            ctx.globalAlpha = 0.05; // Very faint for non-relevant nodes
+            ctx.globalAlpha = 0.06; // Very faint for non-relevant nodes
         }
 
         const label = node.name;
@@ -301,7 +304,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         if (isHover || isSelected) {
             ctx.beginPath();
             ctx.arc(node.x, node.y, radius + 4, 0, 2 * Math.PI, false);
-            ctx.fillStyle = isSelected ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = isSelected ? 'rgba(59, 130, 246, 0.25)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0, 0, 0, 0.08)');
             ctx.fill();
             ctx.strokeStyle = isSelected ? '#3b82f6' : color;
             ctx.lineWidth = 2 / globalScale;
@@ -314,10 +317,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.fillStyle = color;
         ctx.fill();
 
-        // Quality Check & Badge - REMOVED per user request (Project: Clean Network)
-        // Nodes are filtered by App.tsx so context is already "Weak Cards Only"
-
-
         // Text Visibility Logic
         // 1. Hover/Selected: ALWAYS show.
         // 2. Search Active: Only show if Highlighted AND zoomed in closer than global view.
@@ -327,12 +326,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         if (isHover || isSelected) {
             showText = true;
         } else if (searchHighlightIds) {
-            // Search Mode: Only show matches, and only if not too far zoomed out
             if (searchHighlightIds.has(node.id) && globalScale > 0.8) {
                 showText = true;
             }
         } else {
-            // Normal Mode
             if (globalScale > 1.5 && !isDimmed) {
                 showText = true;
             }
@@ -344,12 +341,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Stroke for readability
-            ctx.strokeStyle = '#ffffff';
+            // Stroke for readability (use bg color as outline)
+            ctx.strokeStyle = isDark ? '#0f172a' : '#ffffff';
             ctx.lineWidth = 3 / globalScale;
             ctx.strokeText(label, node.x, node.y + radius + 6);
 
-            ctx.fillStyle = '#1e293b';
+            ctx.fillStyle = isDark ? '#f1f5f9' : '#1e293b';
             ctx.fillText(label, node.x, node.y + radius + 6);
         }
 
@@ -433,13 +430,23 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             fgRef.current.d3Force('center').strength(0.6); // Strong centering
             fgRef.current.d3Force('link').distance(40); // Shorter links
             fgRef.current.d3ReheatSimulation();
+        } else if (use3D && fgRef.current) {
+            // 3D physics tuning
+            try {
+                fgRef.current.d3Force('charge')?.strength(-60);
+                fgRef.current.d3Force('link')?.distance(50);
+                fgRef.current.d3ReheatSimulation?.();
+            } catch {
+                // ForceGraph3D may not be mounted yet, ignore
+            }
         }
     }, [fgRef, graphData, use3D]);
 
     if (isLoading && graphData.nodes.length === 0) {
+        const isDark = document.documentElement.classList.contains('dark');
         return (
-            <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                <div className="flex flex-col items-center gap-4 text-slate-400">
+            <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                <div className={`flex flex-col items-center gap-4 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
                     <CircleNotch className="animate-spin" size={32} />
                     <p className="text-sm font-medium">Chargement du graphe...</p>
                 </div>
@@ -465,14 +472,68 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         }
     };
 
+    const isDark = document.documentElement.classList.contains('dark');
+    const graphBg = isDark ? '#0f172a' : '#f8fafc';
+
+    // 3D node color: apply highlight/dim logic via color
+    const get3DNodeColor = (node: any) => {
+        const baseColor = getTypeColor(node.type);
+        const isHovered = hoverNode?.id === node.id;
+
+        let isDimmed3D = false;
+        if (hoverNode) {
+            const isNeighbor = structuralData.links.some(link => {
+                const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
+                const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+                return (src === hoverNode.id && tgt === node.id) || (tgt === hoverNode.id && src === node.id);
+            });
+            if (!isHovered && !isNeighbor) isDimmed3D = true;
+        } else if (searchHighlightIds && !searchHighlightIds.has(node.id)) {
+            isDimmed3D = true;
+        }
+
+        if (isDimmed3D) return isDark ? '#1e2d3d' : '#cbd5e1';
+        if (selectedNodes.has(node.id)) return '#3b82f6';
+        return baseColor;
+    };
+
+    // 3D link color: dim non-highlighted links
+    const get3DLinkColor = (link: any) => {
+        const src = typeof link.source === 'object' ? link.source : { type: 'drug', id: link.source };
+        const tgt = typeof link.target === 'object' ? link.target : { type: 'drug', id: link.target };
+        const srcId = src.id;
+        const tgtId = tgt.id;
+
+        if (hoverNode) {
+            const isConnected = srcId === hoverNode.id || tgtId === hoverNode.id;
+            if (!isConnected) return isDark ? '#1e293b' : '#e2e8f0';
+        } else if (searchHighlightIds) {
+            if (!searchHighlightIds.has(srcId) || !searchHighlightIds.has(tgtId)) {
+                return isDark ? '#1e293b' : '#e2e8f0';
+            }
+        }
+
+        const linkKey = [srcId, tgtId].sort().join('-');
+        if (pathLinks.has(linkKey)) return '#6366f1';
+        return getTypeColor(src.type);
+    };
+
     return (
-        <div className="relative w-full h-full bg-slate-50 overflow-hidden">
+        <div
+            className="relative w-full h-full overflow-hidden"
+            style={{ background: graphBg }}
+        >
 
             {/* 2D / 3D toggle button */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex bg-white/90 border border-slate-200 rounded-lg shadow-sm overflow-hidden backdrop-blur-sm">
+            <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex border rounded-lg shadow-sm overflow-hidden backdrop-blur-sm
+                ${isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'}`}>
                 <button
                     onClick={() => setUse3D(false)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${!use3D ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors
+                        ${!use3D
+                            ? 'bg-slate-900 text-white'
+                            : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+                        }`}
                     title="Vue 2D"
                 >
                     <Square size={14} weight={!use3D ? 'fill' : 'regular'} />
@@ -480,7 +541,11 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 </button>
                 <button
                     onClick={() => setUse3D(true)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${use3D ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors
+                        ${use3D
+                            ? 'bg-slate-900 text-white'
+                            : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+                        }`}
                     title="Vue 3D"
                 >
                     <Cube size={14} weight={use3D ? 'fill' : 'regular'} />
@@ -492,7 +557,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             {use3D ? (
                 <Suspense fallback={
                     <div className="w-full h-full flex items-center justify-center">
-                        <CircleNotch className="animate-spin text-slate-400" size={32} />
+                        <CircleNotch className={`animate-spin ${isDark ? 'text-slate-500' : 'text-slate-400'}`} size={32} />
                     </div>
                 }>
                     <ForceGraph3D
@@ -500,17 +565,39 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         width={width}
                         height={height}
                         graphData={structuralData}
-                        nodeLabel="name"
-                        nodeColor={(node: any) => getTypeColor(node.type)}
-                        nodeVal={(node: any) => Math.max(1, Math.min(node.val || 1, 4))}
-                        linkColor={(link: any) => {
-                            const src = typeof link.source === 'object' ? link.source : { type: 'drug' };
-                            return getTypeColor(src.type);
+                        nodeLabel={(node: any) => node.name}
+                        nodeColor={get3DNodeColor}
+                        nodeVal={(node: any) => {
+                            const base = Math.max(1, Math.min(node.val || 1, 4));
+                            return hoverNode?.id === node.id ? base * 2 : base;
                         }}
-                        linkOpacity={0.4}
-                        linkWidth={1}
-                        onNodeClick={(node: any) => onNodeClick?.(node.id)}
-                        backgroundColor="#f8fafc"
+                        nodeOpacity={0.9}
+                        linkColor={get3DLinkColor}
+                        linkOpacity={0.6}
+                        linkWidth={(link: any) => {
+                            const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
+                            const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+                            const linkKey = [src, tgt].sort().join('-');
+                            if (pathLinks.has(linkKey)) return 3;
+                            if (hoverNode && (src === hoverNode.id || tgt === hoverNode.id)) return 2;
+                            return 1;
+                        }}
+                        onNodeHover={(node: any) => {
+                            setHoverNode(node || null);
+                            document.body.style.cursor = node ? 'pointer' : 'default';
+                        }}
+                        onNodeClick={(node: any) => {
+                            handleGraphNodeClick(node);
+                        }}
+                        onBackgroundClick={() => {
+                            setSelectedNodes(new Set());
+                            setPathLinks(new Set());
+                        }}
+                        backgroundColor={graphBg}
+                        d3AlphaDecay={0.02}
+                        d3VelocityDecay={0.3}
+                        warmupTicks={50}
+                        cooldownTicks={100}
                     />
                 </Suspense>
             ) : (
@@ -564,78 +651,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 </div>
             )}
 
-            {/* Selection Card with actions */}
-            {selectedNodes.size > 0 && (
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-40 pointer-events-auto">
-                    <div className="
-                        bg-white/95 backdrop-blur-md 
-                        border border-slate-200 shadow-xl
-                        rounded-xl p-3 flex items-center gap-4
-                        animate-in slide-in-from-bottom-4 zoom-in-95 duration-200
-                     ">
-                        <div className="flex -space-x-2">
-                            {Array.from(selectedNodes).slice(0, 3).map(id => {
-                                const node = graphData.nodes.find(n => n.id === id);
-                                return (
-                                    <div key={id}
-                                        className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
-                                        style={{ backgroundColor: node ? getTypeColor(node.type) : '#ccc' }}
-                                        title={node?.name}
-                                    >
-                                        {node?.name.substring(0, 1)}
-                                    </div>
-                                );
-                            })}
-                            {selectedNodes.size > 3 && (
-                                <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shadow-sm">
-                                    +{selectedNodes.size - 3}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col">
-                            <div className="text-xs font-semibold text-slate-700">
-                                {selectedNodes.size} sélectionné(s)
-                            </div>
-                            {pathLinks.size > 0 && (
-                                <div className="text-[10px] text-indigo-500 font-medium flex items-center gap-1">
-                                    <Lightning size={10} fill="currentColor" /> Chemin trouvé ({pathLinks.size} liens)
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="h-8 w-px bg-slate-200 mx-1" />
-
-                        <div className="flex items-center gap-2">
-                            {selectedNodes.size === 1 && (
-                                <button
-                                    onClick={() => onNodeClick?.(Array.from(selectedNodes)[0])}
-                                    className="px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors"
-                                >
-                                    Voir Détails
-                                </button>
-                            )}
-                            <button
-                                onClick={() => {
-                                    setSelectedNodes(new Set());
-                                    setPathLinks(new Set());
-                                }}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-
-            {/* Top Right: Search Depth / Legend (unchanged mostly, just positioning check) */}
+            {/* Top Right: Search Depth control */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 items-end pointer-events-none">
                 {searchQuery && (
-                    <div className="pointer-events-auto flex items-center gap-2 bg-white/90 p-1.5 rounded-lg border border-slate-200 shadow-sm backdrop-blur-sm">
-                        <span className="text-xs font-semibold text-slate-500 px-2">Profondeur:</span>
-                        <div className="flex bg-slate-100 rounded p-0.5">
+                    <div className={`pointer-events-auto flex items-center gap-2 p-1.5 rounded-lg border shadow-sm backdrop-blur-sm
+                        ${isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'}`}>
+                        <span className={`text-xs font-semibold px-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Profondeur:</span>
+                        <div className={`flex rounded p-0.5 ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                             {[0, 1, 2, 3].map(d => (
                                 <button
                                     key={d}
@@ -643,8 +665,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                                     className={`
                                         px-2 py-0.5 text-xs rounded transition-all
                                         ${searchDepth === d
-                                            ? 'bg-white text-emerald-600 shadow-sm font-medium'
-                                            : 'text-slate-400 hover:text-slate-600'}
+                                            ? isDark ? 'bg-slate-900 text-emerald-400 shadow-sm font-medium' : 'bg-white text-emerald-600 shadow-sm font-medium'
+                                            : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}
                                     `}
                                 >
                                     {d === 0 ? 'Match' : `+${d}`}
@@ -655,19 +677,30 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 )}
             </div>
 
+            {/* Top Left: Cluster Review panel */}
             {weakClusters.length > 0 && onClusterReview && (
                 <div className="absolute top-4 left-4 z-40 pointer-events-auto">
-                    <div className="bg-white/95 border border-slate-200 rounded-xl shadow-lg p-3 min-w-[260px]">
-                        <div className="text-xs font-semibold text-slate-700 mb-2">Cluster Review (priorité)</div>
+                    <div className={`border rounded-xl shadow-lg p-3 min-w-[260px]
+                        ${isDark ? 'bg-slate-800/95 border-slate-700' : 'bg-white/95 border-slate-200'}`}>
+                        <div className={`text-xs font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                            Cluster Review (priorité)
+                        </div>
                         <div className="flex flex-col gap-2">
                             {weakClusters.map((cluster, idx) => (
                                 <button
                                     key={`${cluster.cardIds[0]}-${idx}`}
-                                    className="text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                                    className={`text-left px-3 py-2 rounded-lg border transition-colors
+                                        ${isDark
+                                            ? 'border-slate-700 hover:border-indigo-500 hover:bg-indigo-900/30'
+                                            : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'}`}
                                     onClick={() => onClusterReview(cluster.cardIds)}
                                 >
-                                    <div className="text-xs font-semibold text-slate-800">Cluster #{idx + 1} · {cluster.cardIds.length} fiches</div>
-                                    <div className="text-[11px] text-slate-500">Maîtrise: {(cluster.mastery * 100).toFixed(0)}% · En retard: {cluster.overdueCount}</div>
+                                    <div className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                        Cluster #{idx + 1} · {cluster.cardIds.length} fiches
+                                    </div>
+                                    <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        Maîtrise: {(cluster.mastery * 100).toFixed(0)}% · En retard: {cluster.overdueCount}
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -675,27 +708,23 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 </div>
             )}
 
-            {/* Bottom Left: Selection Info (Polished) */}
+            {/* Bottom Left: Selection Info */}
             {selectedNodes.size > 0 && (
                 <div className="absolute bottom-6 left-6 z-40 pointer-events-auto">
-                    <div className="
-                        bg-white/95 backdrop-blur-md 
-                        border border-slate-200/60 
-                        shadow-[0_8px_30px_rgba(0,0,0,0.12)]
-                        rounded-xl p-4
-                        flex flex-col gap-3
-                        min-w-[240px]
-                        animate-in zoom-in-95 duration-200
-                    ">
+                    <div className={`backdrop-blur-md border rounded-xl p-4 flex flex-col gap-3 min-w-[240px] animate-in zoom-in-95 duration-200
+                        ${isDark
+                            ? 'bg-slate-800/95 border-slate-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.4)]'
+                            : 'bg-white/95 border-slate-200/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)]'}`}>
                         <div className="flex items-center justify-between">
-                            <span className="font-semibold text-slate-800 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">
+                            <span className={`font-semibold flex items-center gap-2 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold
+                                    ${isDark ? 'bg-indigo-900/60 text-indigo-300' : 'bg-indigo-100 text-indigo-600'}`}>
                                     {selectedNodes.size}
                                 </span>
                                 éléments
                             </span>
                             <button
-                                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                                className={`text-xs transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
                                 onClick={() => {
                                     setSelectedNodes(new Set());
                                     setPathLinks(new Set());
@@ -707,15 +736,14 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
                         {selectedNodes.size === 2 && (
                             <div className={`
-                                text-xs px-3 py-2 rounded-lg border 
+                                text-xs px-3 py-2 rounded-lg border flex items-center gap-2
                                 ${pathLinks.size > 0
-                                    ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
-                                    : 'bg-slate-50 border-slate-100 text-slate-500'}
-                                flex items-center gap-2
+                                    ? isDark ? 'bg-indigo-900/30 border-indigo-700/50 text-indigo-300' : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                    : isDark ? 'bg-slate-700/50 border-slate-600 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}
                             `}>
                                 {pathLinks.size > 0 ? (
                                     <>
-                                        <Lightning size={12} className="text-indigo-500" />
+                                        <Lightning size={12} className={isDark ? 'text-indigo-400' : 'text-indigo-500'} />
                                         <span>Chemin optimal (Dijkstra)</span>
                                     </>
                                 ) : (
@@ -724,9 +752,15 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                             </div>
                         )}
 
-                        <div className="flex gap-2 mt-1">
-                            {/* Future actions here */}
-                        </div>
+                        {selectedNodes.size === 1 && (
+                            <button
+                                onClick={() => onNodeClick?.(Array.from(selectedNodes)[0])}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
+                                    ${isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                            >
+                                Voir Détails
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

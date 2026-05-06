@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CARD_COLORS as DEFAULT_CARD_COLORS } from '../theme';
+import { CARD_COLORS as DEFAULT_CARD_COLORS, DEFAULT_CARD_ICONS } from '../theme';
 
 // Define the shape of our context
 interface ThemeContextType {
@@ -11,16 +11,38 @@ interface ThemeContextType {
     resetCategoryIcons: () => void;
     getCategoryColor: (type: string) => string;
     getCategoryIcon: (type: string) => string;
+    darkMode: boolean;
+    toggleDarkMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY_COLORS = 'pharmabrain_theme_colors';
 const STORAGE_KEY_ICONS = 'pharmabrain_theme_icons';
-
-import { DEFAULT_CARD_ICONS } from '../theme';
+const STORAGE_KEY_DARK = 'pharmabrain_dark_mode';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // Initialize dark mode
+    const [darkMode, setDarkMode] = useState<boolean>(() => {
+        try {
+            return localStorage.getItem(STORAGE_KEY_DARK) === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
+
+    // Apply dark class to html element
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', darkMode);
+        try {
+            localStorage.setItem(STORAGE_KEY_DARK, String(darkMode));
+        } catch (e) {
+            console.error('Failed to save dark mode preference', e);
+        }
+    }, [darkMode]);
+
+    const toggleDarkMode = () => setDarkMode(prev => !prev);
+
     // Initialize state for Colors
     const [categoryColors, setCategoryColors] = useState<Record<string, string>>(() => {
         try {
@@ -122,7 +144,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             resetCategoryColors,
             resetCategoryIcons,
             getCategoryColor,
-            getCategoryIcon
+            getCategoryIcon,
+            darkMode,
+            toggleDarkMode
         }}>
             {children}
         </ThemeContext.Provider>
