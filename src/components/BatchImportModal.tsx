@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, AlertCircle, CheckCircle2, FileText, FileJson } from 'lucide-react';
+import { X, UploadSimple, Warning, CheckCircle, FileText, FileCode } from '@phosphor-icons/react';
 import type { Card, CardType } from '../types';
 import { validateImportData } from '../utils/importValidation';
 
@@ -278,7 +278,7 @@ Adulte : 500mg à 1g toutes les 4h.
 
                             <div>
                                 <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <FileJson size={16} /> Format JSON
+                                    <FileCode size={16} /> Format JSON
                                 </h4>
                                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
                                     <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
@@ -315,7 +315,7 @@ Adulte : 500mg à 1g toutes les 4h.
                         className={`import-tab ${importMode === 'json' ? 'active' : ''}`}
                         onClick={() => { setImportMode('json'); setInput(''); setError(null); setPreviewCount(null); }}
                     >
-                        <FileJson size={16} />
+                        <FileCode size={16} />
                         JSON
                     </button>
                 </div>
@@ -356,14 +356,14 @@ Adulte : 500mg à 1g toutes les 4h.
 
                 {error && (
                     <div className="import-message error">
-                        <AlertCircle size={16} />
+                        <Warning size={16} />
                         {error}
                     </div>
                 )}
 
                 {previewCount !== null && !error && (
                     <div className="import-message success">
-                        <CheckCircle2 size={16} />
+                        <CheckCircle size={16} />
                         {previewCount} fiches détectées
                     </div>
                 )}
@@ -378,7 +378,7 @@ Adulte : 500mg à 1g toutes les 4h.
                     onClick={handleImport}
                     disabled={!input.trim() || !!error}
                 >
-                    <Upload size={18} />
+                    <UploadSimple size={18} />
                     Importer
                 </button>
             </div>

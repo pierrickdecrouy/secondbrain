@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
-import { Edit2, Trash2 } from 'lucide-react';
+import { PencilSimple, Trash } from '@phosphor-icons/react';
 import { stripMarkdown } from '../utils';
 
 interface CardItemProps {
@@ -27,12 +27,12 @@ export const CardItem: React.FC<CardItemProps> = ({ card, onClick, onEdit, onDel
             <div className="card-actions">
                 {onEdit && (
                     <button className="card-action-btn" onClick={handleEdit} title="Modifier">
-                        <Edit2 size={14} />
+                        <PencilSimple size={14} />
                     </button>
                 )}
                 {onDelete && (
                     <button className="card-action-btn delete" onClick={handleDelete} title="Supprimer">
-                        <Trash2 size={14} />
+                        <Trash size={14} />
                     </button>
                 )}
             </div>

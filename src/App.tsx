@@ -11,7 +11,7 @@ import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
 import { ReviewSessionModal } from './components/ReviewSessionModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { Edit2, Trash2, Loader2 } from 'lucide-react';
+import { PencilSimple, Trash, CircleNotch } from '@phosphor-icons/react';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Lazy load heavy components
@@ -39,7 +39,7 @@ function LoadingFallback() {
   return (
     <div className="flex items-center justify-center h-full w-full min-h-[50vh]">
       <div className="flex flex-col items-center gap-4 text-slate-400">
-        <Loader2 className="animate-spin" size={48} />
+        <CircleNotch className="animate-spin" size={48} />
         <p className="text-sm font-medium">Chargement...</p>
       </div>
 
@@ -244,10 +244,10 @@ function AppContent() {
           actions={
             <div className="modal-actions">
               <button className="btn-icon" onClick={() => handleEditCard(selectedCard)} title="Modifier">
-                <Edit2 size={18} />
+                <PencilSimple size={18} />
               </button>
               <button className="btn-icon" onClick={() => handleDeleteCard(selectedCard)} title="Supprimer">
-                <Trash2 size={18} />
+                <Trash size={18} />
               </button>
             </div>
           }

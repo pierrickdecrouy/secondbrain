@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 
 interface ConfirmDeleteModalProps {
     title: string;
@@ -17,7 +17,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ title, o
         <div className="modal-overlay" onClick={handleOverlayClick}>
             <div className="confirm-modal">
                 <div className="confirm-icon">
-                    <AlertTriangle size={32} />
+                    <Warning size={32} />
                 </div>
                 <h3 className="confirm-title">Supprimer cette fiche ?</h3>
                 <p className="confirm-message">

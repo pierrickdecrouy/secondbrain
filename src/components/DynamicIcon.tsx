@@ -1,21 +1,21 @@
 import React from 'react';
-import * as Icons from 'lucide-react';
+import * as PhosphorIcons from '@phosphor-icons/react';
 
 export const AVAILABLE_ICONS = [
     'Pill',
-    'Activity',
-    'Biohazard',
+    'ChartLine',
     'Database',
     'Stethoscope',
     'Heart',
     'Brain',
-    'Dna',
+    'DnaStrand',
     'Syringe',
     'Thermometer',
-    'Beaker',
+    'Flask',
     'FileText',
-    'Zap',
-    'FlaskConical'
+    'Lightning',
+    'TestTube',
+    'Atom'
 ];
 
 interface DynamicIconProps extends React.SVGProps<SVGSVGElement> {
@@ -26,12 +26,11 @@ interface DynamicIconProps extends React.SVGProps<SVGSVGElement> {
 
 export const DynamicIcon: React.FC<DynamicIconProps> = ({ name, size = 24, className, ...props }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const LucideIcon = (Icons as any)[name];
+    const PhosphorIcon = (PhosphorIcons as any)[name];
 
-    if (!LucideIcon) {
-        // Fallback
-        return <Icons.FileText size={size} className={className} {...props} />;
+    if (!PhosphorIcon) {
+        return <PhosphorIcons.FileText size={size} className={className} {...props} />;
     }
 
-    return <LucideIcon size={size} className={className} {...props} />;
+    return <PhosphorIcon size={size} className={className} {...props} />;
 };

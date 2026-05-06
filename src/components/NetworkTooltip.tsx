@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, Link as LinkIcon, GitMerge, Hand, Zap, Trash2 } from 'lucide-react';
+import { Brain, Link as LinkIcon, ArrowsMerge, Hand, Lightning, Trash } from '@phosphor-icons/react';
 import './NetworkTooltip.css';
 
 interface NetworkTooltipProps {
@@ -14,7 +14,7 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
             case 'explicit':
                 return { label: 'Référence', className: 'reference', icon: LinkIcon };
             case 'hybrid':
-                return { label: 'Hybride', className: 'hybrid', icon: GitMerge };
+                return { label: 'Hybride', className: 'hybrid', icon: ArrowsMerge };
             case 'manual':
                 return { label: 'Manuel', className: 'manual', icon: Hand };
             case 'semantic':
@@ -86,7 +86,7 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
 
                 {/* BODY */}
                 <div className="network-tooltip-body">
-                    <Zap size={16} className="text-yellow-400 shrink-0 mt-0.5" fill="currentColor" />
+                    <Lightning size={16} className="text-yellow-400 shrink-0 mt-0.5" fill="currentColor" />
                     <div>
                         {getDescription()}
                     </div>
@@ -96,7 +96,7 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
                 {onReportIncorrect && (
                     <div className="network-tooltip-footer">
                         <button className="network-tooltip-btn-feedback" onClick={onReportIncorrect}>
-                            <Trash2 size={13} />
+                            <Trash size={13} />
                             <span>Signaler comme incorrect</span>
                         </button>
                     </div>
