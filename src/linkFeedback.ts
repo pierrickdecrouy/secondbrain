@@ -494,7 +494,8 @@ export function suggestAbbreviationLinks(
 
         if (matchingCardIds.length === 0) continue;
 
-        // Confidence: higher when more synonyms match and the abbreviation is well-known
+        // Confidence heuristic: base 0.4 (abbreviation found) + 0.1 per matching card, capped at 1.0.
+        // A single match gives 0.5; five or more matches saturate at 1.0.
         const confidence = Math.min(1, 0.4 + matchingCardIds.length * 0.1);
 
         suggestions.push({

@@ -88,7 +88,9 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
             const score = srsWeaknessScore(card);
             if (score < 0.25) return; // Below threshold
 
-            const p = card.progress!;
+            const p = card.progress;
+            if (!p) return; // Safety guard (srsWeaknessScore already returns 0 without progress)
+
             let detail = '';
             if (p.status === 'suspended') {
                 detail = 'Carte suspendue (leech)';
