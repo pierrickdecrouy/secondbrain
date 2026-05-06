@@ -7,6 +7,7 @@ export interface SRSConfig {
     fuzzEnabled: boolean;
     examDate?: string | null;
     showContextHint?: boolean; // Show Mind Map breadcrumbs during review
+    examModeEnabled?: boolean; // Intensify reviews when exam is near
 }
 
 export const DEFAULT_SRS_CONFIG: SRSConfig = {
@@ -14,8 +15,30 @@ export const DEFAULT_SRS_CONFIG: SRSConfig = {
     defaultEaseFactor: 2.5,
     minEaseFactor: 1.3,
     fuzzEnabled: true,
-    showContextHint: true // Contextual Recall enabled by default
+    showContextHint: true, // Contextual Recall enabled by default
+    examModeEnabled: false,
 };
+
+/** Number of days before exam date to activate "Examen Proche" mode */
+export const EXAM_MODE_WINDOW_DAYS = 15;
+
+/** Maximum interval (in days) to enforce when "Examen Proche" mode is active */
+export const EXAM_MODE_MAX_INTERVAL = 14;
+
+/**
+ * Returns true when exam mode should be active:
+ * - examModeEnabled is set
+ * - examDate is provided and within EXAM_MODE_WINDOW_DAYS days from now
+ */
+export function isExamModeActive(config: SRSConfig): boolean {
+    if (!config.examModeEnabled) return false;
+    if (!config.examDate) return false;
+    const now = Date.now();
+    const exam = new Date(config.examDate).getTime();
+    if (isNaN(exam)) return false;
+    const daysUntilExam = (exam - now) / (1000 * 60 * 60 * 24);
+    return daysUntilExam >= 0 && daysUntilExam <= EXAM_MODE_WINDOW_DAYS;
+}
 
 // Helper to get the due date string (UTC)
 const getDueDate = (days: number): string => {
@@ -201,6 +224,12 @@ export const calculateSrsData = (
                 lapses: lapses
             };
         }
+    }
+
+    // "Examen Proche" mode: cap interval so reviews intensify in the 15 days before exam
+    if (result.status === 'review' && isExamModeActive(config)) {
+        result.interval = Math.min(result.interval, EXAM_MODE_MAX_INTERVAL);
+        result.dueDate = getDueDate(result.interval);
     }
 
     return result;
