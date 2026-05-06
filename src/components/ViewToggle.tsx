@@ -1,4 +1,4 @@
-import { LayoutGrid, Share2, AlignJustify } from 'lucide-react';
+import { SquaresFour, ShareNetwork, Rows } from '@phosphor-icons/react';
 
 export type ViewMode = 'grid' | 'network' | 'list';
 
@@ -15,7 +15,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({ viewMode, onViewChange }
                 onClick={() => onViewChange('grid')}
                 title="Vue Grille"
             >
-                <LayoutGrid size={18} />
+                <SquaresFour size={18} />
                 <span>Grille</span>
             </button>
             <button
@@ -23,7 +23,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({ viewMode, onViewChange }
                 onClick={() => onViewChange('list')}
                 title="Vue Liste"
             >
-                <AlignJustify size={18} />
+                <Rows size={18} />
                 <span>Liste</span>
             </button>
             <button
@@ -31,7 +31,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({ viewMode, onViewChange }
                 onClick={() => onViewChange('network')}
                 title="Vue Réseau"
             >
-                <Share2 size={18} />
+                <ShareNetwork size={18} />
                 <span>Réseau</span>
             </button>
         </div>

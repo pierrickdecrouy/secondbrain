@@ -4,17 +4,17 @@ import {
     Database,
     X,
     Plus,
-    Search,
-    Trash2,
-    Library,
+    MagnifyingGlass,
+    Trash,
+    Books,
     Palette,
-    RotateCcw,
+    ArrowCounterClockwise,
     Brain,
-    Zap,
-    ShieldAlert,
-    Activity,
-    CalendarClock
-} from 'lucide-react';
+    Lightning,
+    ShieldWarning,
+    ChartLine,
+    Timer
+} from '@phosphor-icons/react';
 import { KnowledgeHealthWidget } from './KnowledgeHealthWidget';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
 import { loadCustomAbbreviations, saveCustomAbbreviations, resetToDefaults, saveCardsAsync } from '../storage';
@@ -185,7 +185,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
                             onClick={() => setActiveTab('stats')}
                         >
-                            <Activity size={18} /> Statistiques
+                            <ChartLine size={18} /> Statistiques
                         </li>
                         <li
                             className={`nav-item ${activeTab === 'general' ? 'active' : ''}`}
@@ -209,7 +209,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             className={`nav-item ${activeTab === 'revision' ? 'active' : ''}`}
                             onClick={() => setActiveTab('revision')}
                         >
-                            <CalendarClock size={18} /> Révision
+                            <Timer size={18} /> Révision
                         </li>
                     </ul>
                 </aside>
@@ -253,11 +253,11 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             <div className="list-section">
                                 <div className="list-header">
                                     <div className="list-title">
-                                        <Library size={16} style={{ marginRight: 8 }} />
+                                        <Books size={16} style={{ marginRight: 8 }} />
                                         Bibliothèque <span className="counter">{Object.keys(abbreviations).length}</span>
                                     </div>
                                     <div className="search-box">
-                                        <Search size={14} />
+                                        <MagnifyingGlass size={14} />
                                         <input
                                             type="text"
                                             placeholder="Rechercher..."
@@ -273,7 +273,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                         <div key={key} className="definition-row">
                                             <div className="badge">{key}</div>
                                             <div className="def-text">{value}</div>
-                                            <Trash2
+                                            <Trash
                                                 size={16}
                                                 className="delete-icon"
                                                 onClick={() => handleDelete(key)}
@@ -283,7 +283,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
                                     {filteredAbbreviations.length === 0 && (
                                         <div style={{ textAlign: 'center', padding: '40px', color: '#8c9b9f' }}>
-                                            <Search size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
+                                            <MagnifyingGlass size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
                                             <p style={{ fontSize: '0.9rem' }}>Aucun résultat trouvé.</p>
                                         </div>
                                     )}
@@ -328,7 +328,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                     className="btn-secondary"
                                     style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                                 >
-                                    <RotateCcw size={14} /> Restaurer
+                                    <ArrowCounterClockwise size={14} /> Restaurer
                                 </button>
                             </div>
 
@@ -475,7 +475,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                         padding: '12px', background: '#fed7d7', borderRadius: '12px',
                                         color: '#c53030', height: 'fit-content'
                                     }}>
-                                        <Trash2 size={24} />
+                                        <Trash size={24} />
                                     </div>
                                     <div>
                                         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px' }}>Zone de danger</h3>
@@ -524,7 +524,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                         padding: '12px', background: '#c53030', borderRadius: '12px',
                                         color: 'white', height: 'fit-content'
                                     }}>
-                                        <ShieldAlert size={24} />
+                                        <ShieldWarning size={24} />
                                     </div>
                                     <div>
                                         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#742a2a', marginBottom: '8px' }}>ZONE MORTELLE</h3>
@@ -568,7 +568,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                             }}
                                         >
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <Trash2 size={16} />
+                                                <Trash size={16} />
                                                 TOUT SUPPRIMER
                                             </span>
                                         </button>
@@ -670,7 +670,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                     padding: '20px',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Zap className="text-amber-500" size={16} /> Scores type-pair appris</h3>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Lightning className="text-amber-500" size={16} /> Scores type-pair appris</h3>
                                     {Object.entries(dashStats.typePairScores).length === 0 ? (
                                         <div style={{ color: '#9ca3af', fontSize: '0.85rem', fontStyle: 'italic' }}>Pas encore de données</div>
                                     ) : (
@@ -700,7 +700,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                     marginBottom: '24px',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><ShieldAlert className="text-red-500" size={16} /> Mots-clés toxiques</h3>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c3e50', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><ShieldWarning className="text-red-500" size={16} /> Mots-clés toxiques</h3>
                                     <p style={{ color: '#8c9b9f', fontSize: '0.8rem', marginBottom: '12px' }}>
                                         Ces mots génèrent souvent des faux positifs. L'algo les pénalise automatiquement.
                                     </p>
@@ -731,7 +731,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div style={{ padding: '10px', background: '#fed7d7', borderRadius: '10px', color: '#c53030' }}>
-                                        <Trash2 size={20} />
+                                        <Trash size={20} />
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 600, color: '#2c3e50', marginBottom: '4px' }}>Réinitialiser l'intelligence</div>
@@ -767,7 +767,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                         <div style={{ padding: '40px 60px', overflowY: 'auto', height: '100%' }}>
                             <div style={{ marginBottom: '32px' }}>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <CalendarClock size={24} color="#6366f1" />
+                                    <Timer size={24} color="#6366f1" />
                                     Paramètres de Révision
                                 </h2>
                                 <p style={{ color: '#8c9b9f' }}>

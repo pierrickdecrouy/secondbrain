@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Search, X } from 'lucide-react';
+import { MagnifyingGlass, X } from '@phosphor-icons/react';
 
 interface OmniboxProps {
     searchQuery: string;
@@ -48,7 +48,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
     return (
         <div className="omnibox">
             <div className="search-wrapper">
-                <Search size={18} className="search-icon" />
+                <MagnifyingGlass size={18} className="search-icon" />
                 <input
                     ref={inputRef}
                     type="text"

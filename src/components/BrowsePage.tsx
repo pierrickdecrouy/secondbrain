@@ -1,17 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import {
-    Search,
-    Settings,
-    Download,
+    MagnifyingGlass,
+    GearSix,
+    DownloadSimple,
     Plus,
-    LayoutGrid,
-    List,
-    Share2,
-    Edit2,
-    Trash2,
+    SquaresFour,
+    Rows,
+    ShareNetwork,
+    PencilSimple,
+    Trash,
     X,
-    ArrowUpDown
-} from 'lucide-react';
+    ArrowsDownUp
+} from '@phosphor-icons/react';
 import type { Card } from '../types';
 import './BrowsePage.css';
 import SearchSynthesis from './SearchSynthesis';
@@ -135,7 +135,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     </button>
 
                     <div className="browse-search-container">
-                        <Search className="browse-search-icon" />
+                        <MagnifyingGlass className="browse-search-icon" />
                         <input
                             type="text"
                             placeholder="Rechercher ..."
@@ -158,10 +158,10 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
                 <div className="browse-header-actions">
                     <button className="browse-btn-icon" title="Paramètres" onClick={onSettings}>
-                        <Settings size={20} />
+                        <GearSix size={20} />
                     </button>
                     <button className="browse-btn-icon" title="Export" onClick={onExport}>
-                        <Download size={20} />
+                        <DownloadSimple size={20} />
                     </button>
                     <button className="browse-btn-primary" onClick={onAddCard}>
                         <Plus size={18} /> <span className="browse-btn-text">Nouvelle fiche</span>
@@ -207,7 +207,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     {(viewMode === 'grid' || viewMode === 'list') && (
                         <div className="browse-view-toggle" style={{ padding: '2px' }}>
                             <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
-                                <ArrowUpDown size={14} style={{ position: 'absolute', left: '8px', pointerEvents: 'none', color: '#64748b' }} />
+                                <ArrowsDownUp size={14} style={{ position: 'absolute', left: '8px', pointerEvents: 'none', color: '#64748b' }} />
                                 <select
                                     value={sortOption}
                                     onChange={(e) => setSortOption(e.target.value as SortOption)}
@@ -240,19 +240,19 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             className={`browse-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                             onClick={() => onViewModeChange('grid')}
                         >
-                            <LayoutGrid size={16} /> Grille
+                            <SquaresFour size={16} /> Grille
                         </button>
                         <button
                             className={`browse-view-btn ${viewMode === 'list' ? 'active' : ''}`}
                             onClick={() => onViewModeChange('list')}
                         >
-                            <List size={16} /> Liste
+                            <Rows size={16} /> Liste
                         </button>
                         <button
                             className={`browse-view-btn ${viewMode === 'network' ? 'active' : ''}`}
                             onClick={() => onViewModeChange('network')}
                         >
-                            <Share2 size={16} /> Réseau
+                            <ShareNetwork size={16} /> Réseau
                         </button>
                     </div>
                 </div>
@@ -319,8 +319,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                             </span>
                                         )}
                                         <div className="browse-card-actions" onClick={(e) => e.stopPropagation()}>
-                                            <button className="browse-action-btn" onClick={() => onEditCard(card)}><Edit2 size={16} /></button>
-                                            <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash2 size={16} /></button>
+                                            <button className="browse-action-btn" onClick={() => onEditCard(card)}><PencilSimple size={16} /></button>
+                                            <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash size={16} /></button>
                                         </div>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -400,8 +400,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
-                                                    <button className="browse-action-btn" onClick={() => onEditCard(card)}><Edit2 size={16} /></button>
-                                                    <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash2 size={16} /></button>
+                                                    <button className="browse-action-btn" onClick={() => onEditCard(card)}><PencilSimple size={16} /></button>
+                                                    <button className="browse-action-btn" onClick={() => onDeleteCard(card)}><Trash size={16} /></button>
                                                 </div>
                                             </td>
                                         </tr>

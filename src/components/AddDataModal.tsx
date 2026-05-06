@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FilePlus, Upload } from 'lucide-react';
+import { X, FilePlus, UploadSimple } from '@phosphor-icons/react';
 import { CardFormContent } from './CardForm';
 import { BatchImportContent } from './BatchImportModal';
 import type { Card } from '../types';
@@ -62,7 +62,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                                 cursor: 'pointer'
                             }}
                         >
-                            <Upload size={18} />
+                            <UploadSimple size={18} />
                             Import en Masse
                         </button>
                     </div>
