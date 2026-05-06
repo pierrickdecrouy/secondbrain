@@ -180,6 +180,12 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                 throw new Error(`Validation failed:\n${errorMsg}`);
             }
 
+            // Surface warnings (e.g. duplicate IDs that were deduplicated)
+            if (validationResult.warnings.length > 0) {
+                setError(`⚠️ ${validationResult.warnings.join(' | ')}`);
+                // Non-fatal: continue with the deduplicated cards
+            }
+
             // Use the strictly valid cards
             processedCards = validationResult.validCards;
 

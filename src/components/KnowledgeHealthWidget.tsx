@@ -1,12 +1,51 @@
 
 import React, { useMemo } from 'react';
-import { Brain, AlertCircle } from 'lucide-react';
+import { Brain, AlertCircle, Clock } from 'lucide-react';
 import type { Card } from '../types';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
 
 interface KnowledgeHealthWidgetProps {
     cards: Card[];
     onReviewLowQuality: () => void;
+}
+
+/** A card with a computed weakness score for proactive review suggestions */
+interface WeakNode {
+    id: string;
+    title: string;
+    /** "quality" – low quality score | "srs" – poor SRS metrics */
+    reason: 'quality' | 'srs';
+    detail: string;
+}
+
+/** Compute how "weak" an SRS card is. Returns a score in [0,1] (higher = weaker). */
+function srsWeaknessScore(card: Card): number {
+    const p = card.progress;
+    if (!p || p.status === 'new') return 0;
+
+    let score = 0;
+
+    // Low ease factor → card is hard to remember
+    if (p.easeFactor <= 1.5) score += 0.4;
+    else if (p.easeFactor <= 1.8) score += 0.25;
+    else if (p.easeFactor <= 2.1) score += 0.1;
+
+    // High lapse count
+    if (p.lapses >= 5) score += 0.3;
+    else if (p.lapses >= 3) score += 0.15;
+
+    // Overdue by more than 7 days
+    if (p.dueDate) {
+        const overdueMs = Date.now() - new Date(p.dueDate).getTime();
+        const overdueDays = overdueMs / (1000 * 60 * 60 * 24);
+        if (overdueDays > 14) score += 0.3;
+        else if (overdueDays > 7) score += 0.15;
+    }
+
+    // Suspended / leech
+    if (p.status === 'suspended') score += 0.5;
+
+    return Math.min(1, score);
 }
 
 export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ cards, onReviewLowQuality }) => {
@@ -39,6 +78,39 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
         });
 
         return { counts, weakCount, total: cards.length };
+    }, [cards]);
+
+    // Proactive weak node detection (SRS-based)
+    const topWeakNodes = useMemo((): WeakNode[] => {
+        const nodes: (WeakNode & { score: number })[] = [];
+
+        cards.forEach(card => {
+            const score = srsWeaknessScore(card);
+            if (score < 0.25) return; // Below threshold
+
+            const p = card.progress!;
+            let detail = '';
+            if (p.status === 'suspended') {
+                detail = 'Carte suspendue (leech)';
+            } else if (p.easeFactor <= 1.5) {
+                detail = `Facilité très basse (${p.easeFactor.toFixed(2)})`;
+            } else if (p.lapses >= 3) {
+                detail = `${p.lapses} échecs accumulés`;
+            } else {
+                const overdueDays = p.dueDate
+                    ? Math.floor((Date.now() - new Date(p.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+                    : 0;
+                detail = overdueDays > 0 ? `En retard de ${overdueDays}j` : 'Révision difficile';
+            }
+
+            nodes.push({ id: card.id, title: card.title, reason: 'srs', detail, score });
+        });
+
+        // Return top 3 weakest cards
+        return nodes
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3)
+            .map(({ score: _score, ...rest }) => rest);
     }, [cards]);
 
     // Compute widths for bars
@@ -174,12 +246,57 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
 
             </div>
 
+            {/* Proactive weak-node suggestions (SRS-based) */}
+            {topWeakNodes.length > 0 && (
+                <div style={{
+                    marginTop: '24px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #f1f5f9',
+                }}>
+                    <div style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        <Clock size={13} />
+                        Nœuds à réviser en priorité
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {topWeakNodes.map(node => (
+                            <div key={node.id} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                background: '#fff7ed',
+                                border: '1px solid #ffedd5',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                fontSize: '0.82rem',
+                            }}>
+                                <span style={{ fontWeight: 600, color: '#0f172a', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {node.title}
+                                </span>
+                                <span style={{ color: '#c2410c', marginLeft: '8px', flexShrink: 0, fontSize: '0.78rem' }}>
+                                    {node.detail}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Footer / Actions */}
             {stats.weakCount > 0 && (
                 <div style={{
-                    marginTop: '28px',
+                    marginTop: '20px',
                     paddingTop: '20px',
-                    borderTop: '1px solid #f1f5f9',
+                    borderTop: topWeakNodes.length > 0 ? 'none' : '1px solid #f1f5f9',
                     display: 'flex',
                     justifyContent: 'flex-end'
                 }}>
@@ -214,7 +331,7 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                 </div>
             )}
 
-            {stats.weakCount === 0 && stats.total > 0 && (
+            {stats.weakCount === 0 && stats.total > 0 && topWeakNodes.length === 0 && (
                 <div style={{
                     marginTop: '28px',
                     paddingTop: '20px',
