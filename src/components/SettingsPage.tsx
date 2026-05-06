@@ -12,7 +12,8 @@ import {
     Brain,
     Zap,
     ShieldAlert,
-    Activity
+    Activity,
+    CalendarClock
 } from 'lucide-react';
 import { KnowledgeHealthWidget } from './KnowledgeHealthWidget';
 import { DynamicIcon, AVAILABLE_ICONS } from './DynamicIcon';
@@ -21,6 +22,28 @@ import { MEDICAL_ABBREVIATIONS as defaultAbbreviations } from '../medicalAbbrevi
 import './SettingsPage.css';
 import { useTheme } from '../context/ThemeContext';
 import { getDashboardStats, resetFeedback, type DashboardStats } from '../linkFeedback';
+import { isExamModeActive, EXAM_MODE_WINDOW_DAYS } from '../algorithms/srs';
+
+const SRS_SETTINGS_KEY = 'pharmabrain_srs_settings';
+
+interface SrsSettings {
+    examModeEnabled: boolean;
+    examDate: string;
+}
+
+function loadSrsSettings(): SrsSettings {
+    try {
+        const raw = localStorage.getItem(SRS_SETTINGS_KEY);
+        if (raw) return JSON.parse(raw) as SrsSettings;
+    } catch {
+        // noop
+    }
+    return { examModeEnabled: false, examDate: '' };
+}
+
+function saveSrsSettings(settings: SrsSettings): void {
+    localStorage.setItem(SRS_SETTINGS_KEY, JSON.stringify(settings));
+}
 
 interface SettingsPageProps {
     onClose: () => void;
@@ -30,7 +53,7 @@ interface SettingsPageProps {
     onReviewLowQuality: () => void;
 }
 
-type Tab = 'dictionary' | 'stats' | 'general' | 'data' | 'intelligence';
+type Tab = 'dictionary' | 'stats' | 'general' | 'data' | 'intelligence' | 'revision';
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const { onClose, onSave } = props;
@@ -62,6 +85,24 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             setDashStats(getDashboardStats());
         }
     }, [activeTab]);
+
+    // SRS / Exam-mode settings
+    const [srsSettings, setSrsSettings] = useState<SrsSettings>(() => loadSrsSettings());
+
+    const handleSrsSettingsChange = (patch: Partial<SrsSettings>) => {
+        const updated = { ...srsSettings, ...patch };
+        setSrsSettings(updated);
+        saveSrsSettings(updated);
+    };
+
+    const examActive = isExamModeActive({
+        learningSteps: [1, 10],
+        defaultEaseFactor: 2.5,
+        minEaseFactor: 1.3,
+        fuzzEnabled: true,
+        examModeEnabled: srsSettings.examModeEnabled,
+        examDate: srsSettings.examDate || null,
+    });
 
     const handleAdd = () => {
         if (newKey && newValue) {
@@ -163,6 +204,12 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             onClick={() => setActiveTab('intelligence')}
                         >
                             <Brain size={18} /> Intelligence
+                        </li>
+                        <li
+                            className={`nav-item ${activeTab === 'revision' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('revision')}
+                        >
+                            <CalendarClock size={18} /> Révision
                         </li>
                     </ul>
                 </aside>
@@ -715,6 +762,175 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                             </div>
                         </div>
                     )}
+                    {/* Révision Tab – Exam mode & SRS settings */}
+                    {activeTab === 'revision' && (
+                        <div style={{ padding: '40px 60px', overflowY: 'auto', height: '100%' }}>
+                            <div style={{ marginBottom: '32px' }}>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2c3e50', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <CalendarClock size={24} color="#6366f1" />
+                                    Paramètres de Révision
+                                </h2>
+                                <p style={{ color: '#8c9b9f' }}>
+                                    Configurez le mode "Examen Proche" pour intensifier automatiquement vos révisions dans les {EXAM_MODE_WINDOW_DAYS} jours précédant l'examen.
+                                </p>
+                            </div>
+
+                            {/* Exam Mode Card */}
+                            <div style={{
+                                background: examActive ? 'linear-gradient(135deg, #fef3c7, #fff7ed)' : 'white',
+                                border: `1px solid ${examActive ? '#fcd34d' : '#e2e8f0'}`,
+                                borderRadius: '16px',
+                                padding: '28px',
+                                marginBottom: '24px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                                transition: 'all 0.3s ease',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {examActive && <span style={{ fontSize: '1rem' }}>🚨</span>}
+                                            Mode "Examen Proche"
+                                            {examActive && (
+                                                <span style={{
+                                                    fontSize: '0.7rem',
+                                                    background: '#fcd34d',
+                                                    color: '#92400e',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '20px',
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px'
+                                                }}>
+                                                    ACTIF
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: '1.5' }}>
+                                            Quand activé et que l'examen est dans les {EXAM_MODE_WINDOW_DAYS} jours,
+                                            l'intervalle SRS maximum est limité à 14 jours pour intensifier les révisions.
+                                        </p>
+                                    </div>
+                                    {/* Toggle Switch */}
+                                    <button
+                                        onClick={() => handleSrsSettingsChange({ examModeEnabled: !srsSettings.examModeEnabled })}
+                                        style={{
+                                            position: 'relative',
+                                            width: '52px',
+                                            height: '28px',
+                                            borderRadius: '14px',
+                                            border: 'none',
+                                            background: srsSettings.examModeEnabled ? '#6366f1' : '#d1d5db',
+                                            cursor: 'pointer',
+                                            transition: 'background 0.2s ease',
+                                            flexShrink: 0,
+                                            marginLeft: '16px',
+                                        }}
+                                        aria-label="Activer le mode examen"
+                                    >
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: '4px',
+                                            left: srsSettings.examModeEnabled ? '28px' : '4px',
+                                            width: '20px',
+                                            height: '20px',
+                                            borderRadius: '50%',
+                                            background: 'white',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                            transition: 'left 0.2s ease',
+                                            display: 'block',
+                                        }} />
+                                    </button>
+                                </div>
+
+                                {/* Exam Date Picker */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        color: '#64748b',
+                                        marginBottom: '8px',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        Date de l'examen
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={srsSettings.examDate}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        onChange={(e) => handleSrsSettingsChange({ examDate: e.target.value })}
+                                        disabled={!srsSettings.examModeEnabled}
+                                        style={{
+                                            padding: '10px 14px',
+                                            border: `1px solid ${srsSettings.examModeEnabled ? '#a5b4fc' : '#e2e8f0'}`,
+                                            borderRadius: '10px',
+                                            fontSize: '0.9rem',
+                                            color: srsSettings.examModeEnabled ? '#0f172a' : '#94a3b8',
+                                            background: srsSettings.examModeEnabled ? 'white' : '#f8fafc',
+                                            cursor: srsSettings.examModeEnabled ? 'pointer' : 'not-allowed',
+                                            outline: 'none',
+                                            width: '200px',
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Status banner */}
+                                {srsSettings.examModeEnabled && srsSettings.examDate && (
+                                    <div style={{
+                                        marginTop: '16px',
+                                        padding: '12px 16px',
+                                        borderRadius: '10px',
+                                        background: examActive ? '#fef3c7' : '#f0fdf4',
+                                        border: `1px solid ${examActive ? '#fcd34d' : '#86efac'}`,
+                                        fontSize: '0.85rem',
+                                        color: examActive ? '#92400e' : '#166534',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}>
+                                        {examActive
+                                            ? `🚨 Examen dans moins de ${EXAM_MODE_WINDOW_DAYS} jours — intervalles limités à 14j.`
+                                            : `✅ Examen planifié le ${new Date(srsSettings.examDate).toLocaleDateString('fr-FR')}. Le mode s'activera automatiquement à J-${EXAM_MODE_WINDOW_DAYS}.`
+                                        }
+                                    </div>
+                                )}
+                                {srsSettings.examModeEnabled && !srsSettings.examDate && (
+                                    <div style={{
+                                        marginTop: '16px',
+                                        padding: '12px 16px',
+                                        borderRadius: '10px',
+                                        background: '#fef9c3',
+                                        border: '1px solid #fde047',
+                                        fontSize: '0.85rem',
+                                        color: '#713f12',
+                                    }}>
+                                        ⚠️ Sélectionnez une date d'examen pour activer le mode.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Info box */}
+                            <div style={{
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '20px',
+                                fontSize: '0.85rem',
+                                color: '#475569',
+                                lineHeight: '1.6'
+                            }}>
+                                <strong style={{ display: 'block', marginBottom: '8px', color: '#0f172a' }}>💡 Comment ça fonctionne ?</strong>
+                                <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                                    <li>En mode normal, l'algorithme SRS peut programmer une révision dans 30, 60 ou 90 jours.</li>
+                                    <li>Quand l'examen est proche ({EXAM_MODE_WINDOW_DAYS} jours), l'intervalle maximum passe à <strong>14 jours</strong>.</li>
+                                    <li>Les cartes difficiles (faible easeFactor) continuent d'être révisées plus fréquemment.</li>
+                                    <li>Le mode se désactive automatiquement une fois l'examen passé.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                 </main>
             </div >
         </div >

@@ -434,3 +434,79 @@ export function resetFeedback(): void {
 
 // Re-export for worker: compute feedback adjustment WITH temporal decay
 export { decayFactor };
+
+// ============================================
+// Abbreviation-Based Link Suggestions
+// ============================================
+
+export interface AbbreviationLinkSuggestion {
+    /** The abbreviation found in the new card's text */
+    abbreviation: string;
+    /** The full form resolved from the abbreviation dictionaries */
+    fullForm: string;
+    /** IDs of cards whose title or content match the resolved full form */
+    matchingCardIds: string[];
+    /** Confidence score in [0, 1] */
+    confidence: number;
+}
+
+/**
+ * Scans a card's text for known medical abbreviations and returns
+ * suggested links to other cards whose content matches the resolved terms.
+ *
+ * @param card       The new/updated card to analyse
+ * @param allCards   The full card library to search for matches
+ * @param abbreviations Static + custom abbreviation dictionary (abbr → synonyms[])
+ */
+export function suggestAbbreviationLinks(
+    card: Card,
+    allCards: Card[],
+    abbreviations: Record<string, string[]>
+): AbbreviationLinkSuggestion[] {
+    const cardText = [card.title, card.subtitle || '', card.content, card.details || '']
+        .join(' ')
+        .toLowerCase();
+
+    const suggestions: AbbreviationLinkSuggestion[] = [];
+
+    for (const [abbr, synonyms] of Object.entries(abbreviations)) {
+        // Check whether the abbreviation (case-insensitive, whole word) appears in the card text
+        const abbrRe = new RegExp(`\\b${abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (!abbrRe.test(cardText)) continue;
+
+        // Skip if this card is already linked to itself
+        const matchingCardIds = allCards
+            .filter(c => c.id !== card.id)
+            .filter(c => {
+                // Skip already vetoed pairs
+                if (isVetoed(card.id, c.id)) return false;
+
+                const targetText = [c.title, c.subtitle || '', c.content, c.details || '']
+                    .join(' ')
+                    .toLowerCase();
+
+                // Check if any synonym of the abbreviation appears in the target card
+                return synonyms.some(syn =>
+                    targetText.includes(syn.toLowerCase())
+                );
+            })
+            .map(c => c.id);
+
+        if (matchingCardIds.length === 0) continue;
+
+        // Confidence heuristic: base 0.4 (abbreviation found) + 0.1 per matching card, capped at 1.0.
+        // A single match gives 0.5; five or more matches saturate at 1.0.
+        const confidence = Math.min(1, 0.4 + matchingCardIds.length * 0.1);
+
+        suggestions.push({
+            abbreviation: abbr,
+            fullForm: synonyms[0] ?? abbr,
+            matchingCardIds,
+            confidence,
+        });
+    }
+
+    // Sort by descending confidence
+    return suggestions.sort((a, b) => b.confidence - a.confidence);
+}
+
