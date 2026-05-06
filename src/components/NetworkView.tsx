@@ -1,17 +1,22 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { forceX, forceY } from 'd3-force';
 import { useGraphData } from '../hooks/useGraphData';
 import { getTypeColor } from '../theme';
 import type { Card, Node, Link } from '../types';
 import {
-    Loader2,
+    CircleNotch,
     X,
-    Zap
-} from 'lucide-react';
+    Lightning,
+    Cube,
+    Square
+} from '@phosphor-icons/react';
 import { NetworkTooltip } from './NetworkTooltip';
 import { findStrongestPath } from '../algorithms/graphAlgorithms';
 import { detectCommunities } from '../algorithms/communityDetection';
+
+// Lazy-load the 3D graph (heavy Three.js bundle)
+const ForceGraph3D = lazy(() => import('react-force-graph-3d'));
 
 const OVERDUE_PENALTY_FACTOR = 0.35;
 
@@ -44,6 +49,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     height
 }) => {
     const { graphData, isLoading } = useGraphData({ cards, vetoPairs });
+
+    // 2D / 3D mode toggle
+    const [use3D, setUse3D] = useState(false);
 
     // Interaction state
     const [hoverNode, setHoverNode] = useState<Node | null>(null);
@@ -416,7 +424,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Physics Engine Tuning
     useEffect(() => {
-        if (fgRef.current) {
+        if (!use3D && fgRef.current) {
             // Physics: Add gravity to pull isolated nodes/clusters to center
             fgRef.current.d3Force('x', forceX(0).strength(0.08));
             fgRef.current.d3Force('y', forceY(0).strength(0.08));
@@ -426,13 +434,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             fgRef.current.d3Force('link').distance(40); // Shorter links
             fgRef.current.d3ReheatSimulation();
         }
-    }, [fgRef, graphData]);
+    }, [fgRef, graphData, use3D]);
 
     if (isLoading && graphData.nodes.length === 0) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-slate-50">
                 <div className="flex flex-col items-center gap-4 text-slate-400">
-                    <Loader2 className="animate-spin" size={32} />
+                    <CircleNotch className="animate-spin" size={32} />
                     <p className="text-sm font-medium">Chargement du graphe...</p>
                 </div>
             </div>
@@ -459,36 +467,83 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     return (
         <div className="relative w-full h-full bg-slate-50 overflow-hidden">
-            <ForceGraph2D
-                ref={fgRef}
-                width={width}
-                height={height}
-                graphData={structuralData}
-                nodeLabel="name"
-                nodeCanvasObject={nodePaint}
-                linkCanvasObject={linkPaint}
 
-                cooldownTicks={100}
-                d3AlphaDecay={0.02}
-                d3VelocityDecay={0.3}
-                warmupTicks={50}
+            {/* 2D / 3D toggle button */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex bg-white/90 border border-slate-200 rounded-lg shadow-sm overflow-hidden backdrop-blur-sm">
+                <button
+                    onClick={() => setUse3D(false)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${!use3D ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                    title="Vue 2D"
+                >
+                    <Square size={14} weight={!use3D ? 'fill' : 'regular'} />
+                    2D
+                </button>
+                <button
+                    onClick={() => setUse3D(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${use3D ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+                    title="Vue 3D"
+                >
+                    <Cube size={14} weight={use3D ? 'fill' : 'regular'} />
+                    3D
+                </button>
+            </div>
 
-                onNodeHover={(node: any) => {
-                    setHoverNode(node || null);
-                    document.body.style.cursor = node ? 'pointer' : 'default';
-                }}
-                onLinkHover={handleLinkHover}
+            {/* Graph */}
+            {use3D ? (
+                <Suspense fallback={
+                    <div className="w-full h-full flex items-center justify-center">
+                        <CircleNotch className="animate-spin text-slate-400" size={32} />
+                    </div>
+                }>
+                    <ForceGraph3D
+                        ref={fgRef}
+                        width={width}
+                        height={height}
+                        graphData={structuralData}
+                        nodeLabel="name"
+                        nodeColor={(node: any) => getTypeColor(node.type)}
+                        nodeVal={(node: any) => Math.max(1, Math.min(node.val || 1, 4))}
+                        linkColor={(link: any) => {
+                            const src = typeof link.source === 'object' ? link.source : { type: 'drug' };
+                            return getTypeColor(src.type);
+                        }}
+                        linkOpacity={0.4}
+                        linkWidth={1}
+                        onNodeClick={(node: any) => onNodeClick?.(node.id)}
+                        backgroundColor="#f8fafc"
+                    />
+                </Suspense>
+            ) : (
+                <ForceGraph2D
+                    ref={fgRef}
+                    width={width}
+                    height={height}
+                    graphData={structuralData}
+                    nodeLabel="name"
+                    nodeCanvasObject={nodePaint}
+                    linkCanvasObject={linkPaint}
 
-                // Interaction Logic
-                onNodeClick={handleGraphNodeClick}
+                    cooldownTicks={100}
+                    d3AlphaDecay={0.02}
+                    d3VelocityDecay={0.3}
+                    warmupTicks={50}
 
-                onBackgroundClick={() => {
-                    setSelectedNodes(new Set());
-                    setPathLinks(new Set());
-                }}
-                minZoom={0.1}
-                maxZoom={6}
-            />
+                    onNodeHover={(node: any) => {
+                        setHoverNode(node || null);
+                        document.body.style.cursor = node ? 'pointer' : 'default';
+                    }}
+                    onLinkHover={handleLinkHover}
+
+                    onNodeClick={handleGraphNodeClick}
+
+                    onBackgroundClick={() => {
+                        setSelectedNodes(new Set());
+                        setPathLinks(new Set());
+                    }}
+                    minZoom={0.1}
+                    maxZoom={6}
+                />
+            )}
 
             {/* Top-Centered Minimalist Link Tooltip (Sober Redesign) */}
             {hoverLink && (
@@ -544,7 +599,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                             </div>
                             {pathLinks.size > 0 && (
                                 <div className="text-[10px] text-indigo-500 font-medium flex items-center gap-1">
-                                    <Zap size={10} fill="currentColor" /> Chemin trouvé ({pathLinks.size} liens)
+                                    <Lightning size={10} fill="currentColor" /> Chemin trouvé ({pathLinks.size} liens)
                                 </div>
                             )}
                         </div>
@@ -660,7 +715,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                             `}>
                                 {pathLinks.size > 0 ? (
                                     <>
-                                        <Zap size={12} className="text-indigo-500" />
+                                        <Lightning size={12} className="text-indigo-500" />
                                         <span>Chemin optimal (Dijkstra)</span>
                                     </>
                                 ) : (

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { X, Link2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Link, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -85,7 +85,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     onClick={(e) => { e.stopPropagation(); onPrev(); }}
                     title="Précédent (Flèche Gauche)"
                 >
-                    <ChevronLeft size={32} />
+                    <CaretLeft size={32} />
                 </button>
             )}
 
@@ -95,7 +95,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     onClick={(e) => { e.stopPropagation(); onNext(); }}
                     title="Suivant (Flèche Droite)"
                 >
-                    <ChevronRight size={32} />
+                    <CaretRight size={32} />
                 </button>
             )}
 
@@ -157,7 +157,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                 {forwardLinks.length > 0 && (
                     <div className="modal-links">
                         <h4 className="links-title">
-                            <Link2 size={14} />
+                            <Link size={14} />
                             Liens sortants ({forwardLinks.length})
                         </h4>
                         <div className="links-list">
@@ -179,7 +179,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                 {backlinks.length > 0 && (
                     <div className="modal-backlinks">
                         <h4 className="links-title">
-                            <Link2 size={14} />
+                            <Link size={14} />
                             Références entrantes ({backlinks.length})
                         </h4>
                         <div className="links-list">

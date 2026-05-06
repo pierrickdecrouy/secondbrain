@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Brain, AlertCircle, Clock } from 'lucide-react';
+import { Brain, WarningCircle, Clock } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
 
@@ -327,7 +327,7 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
-                        <AlertCircle size={16} />
+                        <WarningCircle size={16} />
                         Réviser les {stats.weakCount} fiches faibles
                     </button>
                 </div>

@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     X,
-    Save,
+    FloppyDisk,
     Plus,
-    Search,
-    EyeOff,
-    Upload,
+    MagnifyingGlass,
+    EyeSlash,
+    UploadSimple,
     Info
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type { Card, CardType } from '../types';
 import { CARD_TYPES } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -374,7 +374,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         <div className="connection-block">
                             <label className="field-label">Lier à d'autres fiches</label>
                             <div className="search-row app-input-row">
-                                <Search size={14} className="search-icon-input" />
+                                <MagnifyingGlass size={14} className="search-icon-input" />
                                 <input
                                     type="text"
                                     placeholder="Rechercher une fiche..."
@@ -412,7 +412,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         <div className="connection-block mt-4">
                             <label className="field-label warning">Exclusions (Masquer liens)</label>
                             <div className="search-row app-input-row warning">
-                                <EyeOff size={14} className="search-icon-input warning-icon" />
+                                <EyeSlash size={14} className="search-icon-input warning-icon" />
                                 <input
                                     type="text"
                                     placeholder="Rechercher fiche à exclure..."
@@ -426,7 +426,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                 <div className="candidates-dropdown app-dropdown">
                                     {suppressionCandidates.map(c => (
                                         <div key={c.id} className="candidate-row warning" onClick={() => toggleSuppression(c.id)}>
-                                            <EyeOff size={14} /> <span>{c.title}</span>
+                                            <EyeSlash size={14} /> <span>{c.title}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -464,7 +464,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                     placeholder="URL ou Upload..."
                                 />
                                 <label className="action-btn-secondary">
-                                    <Upload size={14} />
+                                    <UploadSimple size={14} />
                                     <input type="file" hidden onChange={handleImageUpload} />
                                 </label>
                             </div>
@@ -493,7 +493,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             <div className="card-form-footer-fixed app-footer">
                 <button className="btn-cancel app-btn-secondary" onClick={onCancel}>Annuler</button>
                 <button className="btn-save app-btn-primary" onClick={handleSave} disabled={!formData.title}>
-                    <Save size={16} /> Enregistrer
+                    <FloppyDisk size={16} /> Enregistrer
                 </button>
             </div>
         </div>

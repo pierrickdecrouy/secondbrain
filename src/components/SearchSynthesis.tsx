@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Card } from '../types';
 import { generateSearchSynthesis as generateExtraction } from '../synthesisService';
-import { Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { Brain, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface SearchSynthesisProps {
@@ -98,7 +98,7 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
                         </span>
                     </div>
                 </div>
-                {isCollapsed ? <ChevronDown size={16} color="#64748b" /> : <ChevronUp size={16} color="#64748b" />}
+                {isCollapsed ? <CaretDown size={16} color="#64748b" /> : <CaretUp size={16} color="#64748b" />}
             </div>
 
             {/* Content */}
