@@ -578,18 +578,18 @@ function App() {
           position: 'fixed',
           bottom: '20px',
           right: '20px',
-          background: 'white',
+          background: 'var(--color-surface)',
           padding: '12px 20px',
           borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          boxShadow: 'var(--shadow-lg)',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          border: '1px solid #e2e8f0'
+          border: '1px solid var(--color-border)'
         }}>
-          <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid #f3f3f3', borderTop: '2px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-          <div style={{ fontSize: '14px', fontWeight: 500, color: '#334155' }}>
+          <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid var(--color-border)', borderTop: '2px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text)' }}>
             Indexation sémantique : {indexingProgress}%
           </div>
           <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
