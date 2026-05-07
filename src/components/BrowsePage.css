@@ -652,3 +652,160 @@
         padding: 0 16px 16px 16px;
     }
 }
+
+/* ===========================
+   Dark Mode — BrowsePage
+   =========================== */
+
+html.dark .browse-container {
+    --bg-body: #0f172a;
+    --text-dark: #f1f5f9;
+    --text-grey: #94a3b8;
+    --border-light: #334155;
+    --tag-drug-bg: rgba(8, 127, 91, 0.18);
+    --tag-drug-text: #34d399;
+    --tag-patho-bg: rgba(224, 49, 49, 0.18);
+    --tag-patho-text: #f87171;
+    --tag-physio-bg: rgba(121, 80, 242, 0.18);
+    --tag-physio-text: #a78bfa;
+    --tag-data-bg: rgba(232, 89, 12, 0.18);
+    --tag-data-text: #fb923c;
+    background-color: var(--bg-body);
+    color: var(--text-dark);
+}
+
+html.dark .browse-header {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html.dark .browse-search-container input {
+    background: #0f172a;
+    color: #f1f5f9;
+    border-color: #334155;
+}
+
+html.dark .browse-search-container input:focus {
+    background: #1e293b;
+    box-shadow: 0 0 0 3px rgba(12, 166, 120, 0.15);
+}
+
+html.dark .browse-shortcut-hint {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+html.dark .browse-btn-icon {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+html.dark .browse-btn-icon:hover {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark .browse-toolbar {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html.dark .browse-filter-pill {
+    color: #94a3b8;
+}
+
+html.dark .browse-filter-pill:hover {
+    background: #334155;
+    color: #f1f5f9;
+}
+
+html.dark .browse-filter-pill.active {
+    background: rgba(12, 166, 120, 0.15);
+    color: var(--primary);
+    border-color: rgba(12, 166, 120, 0.25);
+}
+
+html.dark .browse-view-toggle {
+    background: #334155;
+}
+
+html.dark .browse-view-btn {
+    color: #94a3b8;
+}
+
+html.dark .browse-view-btn.active {
+    background: #1e293b;
+    color: var(--primary);
+}
+
+html.dark .browse-view-btn:hover:not(.active) {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .browse-content-area {
+    background: #0f172a;
+}
+
+html.dark .browse-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html.dark .browse-card:hover {
+    border-color: #475569;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    transform: translateY(-3px);
+}
+
+html.dark .browse-card-title {
+    color: #f1f5f9;
+}
+
+html.dark .browse-card-subtitle {
+    color: #94a3b8;
+}
+
+html.dark .browse-card-desc {
+    color: #94a3b8;
+}
+
+html.dark .browse-action-btn {
+    color: #94a3b8;
+}
+
+html.dark .browse-action-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .browse-list-table {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html.dark .browse-list-table th {
+    background: #0f172a;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+html.dark .browse-list-table td {
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+html.dark .browse-list-table tr:hover {
+    background: #334155;
+}
+
+html.dark .browse-network-container {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+html.dark .browse-content-area.browse-content-area--network .browse-network-container {
+    background: #0f172a;
+}

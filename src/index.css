@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* Configure Tailwind dark mode to use html.dark class */
+@variant dark (&:where(.dark, .dark *));
 
 /* ===========================
    PharmaBrain - Clean & Minimal CSS
@@ -2260,4 +2262,272 @@ body {
   overflow: hidden;
   font-size: 0.8rem;
   color: var(--color-text-muted);
+}
+
+/* ===========================
+   Dark Mode
+   =========================== */
+
+html.dark {
+  color-scheme: dark;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-border: #334155;
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --pharma-bg-modal: #1e293b;
+  --pharma-bg-sidebar: #0f172a;
+  --pharma-text-main: #e2e8f0;
+  --pharma-text-muted: #94a3b8;
+  --pharma-border: #334155;
+}
+
+html.dark body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Home page dark */
+html.dark .home-page {
+  background: linear-gradient(160deg, #0f2420 0%, #0f172a 50%, #131228 100%);
+}
+
+html.dark .home-animated-bg {
+  opacity: 0.4;
+}
+
+html.dark .home-topbar {
+  background: transparent;
+}
+
+html.dark .home-stat-card {
+  background: var(--color-surface);
+}
+
+html.dark .home-stat-card--urgent {
+  background: rgba(244, 63, 94, 0.06);
+}
+
+html.dark .home-action-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+html.dark .home-action-btn:hover {
+  border-color: var(--color-drug);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.2);
+}
+
+html.dark .home-search-box input {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+html.dark .home-search-box input:focus {
+  background: var(--color-surface);
+}
+
+html.dark .home-widget {
+  background: var(--color-surface);
+}
+
+html.dark .home-widget-toggle {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+html.dark .home-recent-item {
+  background: var(--color-bg);
+}
+
+html.dark .home-recent-item:hover {
+  background: rgba(20, 184, 166, 0.08);
+}
+
+html.dark .home-category-pill.category-drug {
+  background: rgba(20, 184, 166, 0.12);
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+html.dark .home-category-pill.category-patho {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+html.dark .home-category-pill.category-physio {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+html.dark .home-category-pill.category-data {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Cloze spoiler dark mode */
+html.dark .cloze-spoiler {
+  background-color: #64748b;
+}
+
+html.dark .cloze-spoiler:hover,
+html.dark .cloze-spoiler:active {
+  background-color: rgba(13, 148, 136, 0.25);
+}
+
+/* Nav arrow buttons dark mode */
+html.dark .nav-arrow-btn {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+html.dark .nav-arrow-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-drug);
+}
+
+/* Modal dark mode */
+html.dark .modal-content,
+html.dark .modal-container {
+  background: var(--color-surface);
+}
+
+/* Form dark mode */
+html.dark .form-group input,
+html.dark .form-group select,
+html.dark .form-group textarea {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+html.dark .form-group input:focus,
+html.dark .form-group select:focus,
+html.dark .form-group textarea:focus {
+  border-color: var(--color-drug);
+}
+
+/* Search input dark mode */
+html.dark .search-input {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+html.dark .search-kbd {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+/* Filter pills dark mode */
+html.dark .filter-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+html.dark .filter-btn:hover {
+  border-color: var(--color-text-muted);
+}
+
+/* Card items dark mode */
+html.dark .card-item {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+html.dark .card-item:hover {
+  border-color: var(--color-text-muted);
+}
+
+html.dark .card-action-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+html.dark .card-action-btn:hover {
+  background: var(--color-bg);
+}
+
+/* View toggle dark mode */
+html.dark .view-toggle {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+html.dark .view-toggle-btn:hover {
+  background: var(--color-bg);
+}
+
+/* Markdown code dark mode */
+html.dark .markdown-content code {
+  background: var(--color-bg);
+}
+
+html.dark .markdown-content pre {
+  background: var(--color-bg);
+}
+
+html.dark .markdown-content th {
+  background: var(--color-bg);
+}
+
+/* Import tab dark mode */
+html.dark .import-tab {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+html.dark .import-tab.active {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* List view dark mode */
+html.dark .card-list-container {
+  background: var(--color-surface);
+}
+
+html.dark .card-list-table th {
+  background: var(--color-bg);
+}
+
+html.dark .card-list-row:hover {
+  background-color: var(--color-bg);
+}
+
+/* Network container dark mode */
+html.dark .network-container {
+  background: #0f172a;
+  border-color: var(--color-border);
+}
+
+/* FAB dark mode */
+html.dark .fab-secondary {
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .fab-menu-item {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Topbar dark mode */
+html.dark .home-topbar-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* App header dark mode (browse page) */
+html.dark .app-header {
+  background: var(--color-bg);
+  border-color: var(--color-border);
 }

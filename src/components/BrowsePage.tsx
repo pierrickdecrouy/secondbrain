@@ -10,7 +10,9 @@ import {
     PencilSimple,
     Trash,
     X,
-    ArrowsDownUp
+    ArrowsDownUp,
+    Moon,
+    Sun
 } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import './BrowsePage.css';
@@ -71,7 +73,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     onViewModeChange,
     renderNetworkView
 }) => {
-    const { getCategoryColor, getCategoryIcon } = useTheme();
+    const { getCategoryColor, getCategoryIcon, darkMode, toggleDarkMode } = useTheme();
     const [sortOption, setSortOption] = useState<SortOption>('name-asc');
 
     const getFilterLabel = (type: string) => {
@@ -157,6 +159,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 </div>
 
                 <div className="browse-header-actions">
+                    <button className="browse-btn-icon" title={darkMode ? 'Mode clair' : 'Mode sombre'} onClick={toggleDarkMode}>
+                        {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
                     <button className="browse-btn-icon" title="Paramètres" onClick={onSettings}>
                         <GearSix size={20} />
                     </button>
