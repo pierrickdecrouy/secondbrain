@@ -134,6 +134,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 {/* Hero */}
                 <div className="home-hero">
                     <div className="logo-gradient-hero" />
+                    <h1 className="home-title" lang="fr">Tableau de bord PharmaBrain</h1>
                     <p className="home-subtitle">Navigateur de connaissances pharmaceutiques</p>
                 </div>
 
