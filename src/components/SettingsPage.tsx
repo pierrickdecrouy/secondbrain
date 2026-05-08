@@ -23,6 +23,7 @@ import './SettingsPage.css';
 import { useTheme } from '../context/ThemeContext';
 import { getDashboardStats, resetFeedback, type DashboardStats } from '../linkFeedback';
 import { isExamModeActive, EXAM_MODE_WINDOW_DAYS } from '../algorithms/srs';
+import { loadSettingAsync, loadSettingSync, saveSettingAsync } from '../persistentSettings';
 
 const SRS_SETTINGS_KEY = 'pharmabrain_srs_settings';
 
@@ -32,17 +33,11 @@ interface SrsSettings {
 }
 
 function loadSrsSettings(): SrsSettings {
-    try {
-        const raw = localStorage.getItem(SRS_SETTINGS_KEY);
-        if (raw) return JSON.parse(raw) as SrsSettings;
-    } catch {
-        // noop
-    }
-    return { examModeEnabled: false, examDate: '' };
+    return loadSettingSync<SrsSettings>(SRS_SETTINGS_KEY, { examModeEnabled: false, examDate: '' });
 }
 
 function saveSrsSettings(settings: SrsSettings): void {
-    localStorage.setItem(SRS_SETTINGS_KEY, JSON.stringify(settings));
+    saveSettingAsync(SRS_SETTINGS_KEY, settings);
 }
 
 interface SettingsPageProps {
@@ -88,6 +83,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
     // SRS / Exam-mode settings
     const [srsSettings, setSrsSettings] = useState<SrsSettings>(() => loadSrsSettings());
+
+    useEffect(() => {
+        loadSettingAsync<SrsSettings>(SRS_SETTINGS_KEY, { examModeEnabled: false, examDate: '' }).then(setSrsSettings);
+    }, []);
 
     const handleSrsSettingsChange = (patch: Partial<SrsSettings>) => {
         const updated = { ...srsSettings, ...patch };

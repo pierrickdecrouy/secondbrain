@@ -12,6 +12,7 @@
  */
 
 import type { Card } from './types';
+import { loadSettingAsync, loadSettingSync, saveSettingAsync } from './persistentSettings';
 
 // A learned pattern from user feedback
 interface FeedbackPattern {
@@ -66,37 +67,39 @@ let feedbackData: LinkFeedbackData = {
 // ============================================
 
 export function loadFeedback(): void {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            // Migrate from v1 if needed
-            feedbackData = {
-                positivePatterns: parsed.positivePatterns || [],
-                negativePatterns: parsed.negativePatterns || [],
-                typePairScores: parsed.typePairScores || {},
-                vetoPairs: parsed.vetoPairs || [],
-                toxicKeywords: parsed.toxicKeywords || {},
-                stats: parsed.stats || {
-                    totalLinksGenerated: 0,
-                    totalSuppressed: 0,
-                    totalManual: 0,
-                    suppressionHistory: []
-                }
-            };
-            console.log(`🧠 Link feedback loaded: ${feedbackData.positivePatterns.length} positive, ${feedbackData.negativePatterns.length} negative, ${feedbackData.vetoPairs.length} vetoes, ${Object.keys(feedbackData.toxicKeywords).length} toxic keywords`);
-        }
-    } catch (e) {
-        console.warn('Failed to load link feedback:', e);
-    }
+    const applyFeedback = (parsed: Partial<LinkFeedbackData>) => {
+        feedbackData = {
+            positivePatterns: parsed.positivePatterns || [],
+            negativePatterns: parsed.negativePatterns || [],
+            typePairScores: parsed.typePairScores || {},
+            vetoPairs: parsed.vetoPairs || [],
+            toxicKeywords: parsed.toxicKeywords || {},
+            stats: parsed.stats || {
+                totalLinksGenerated: 0,
+                totalSuppressed: 0,
+                totalManual: 0,
+                suppressionHistory: []
+            }
+        };
+        console.log(`🧠 Link feedback loaded: ${feedbackData.positivePatterns.length} positive, ${feedbackData.negativePatterns.length} negative, ${feedbackData.vetoPairs.length} vetoes, ${Object.keys(feedbackData.toxicKeywords).length} toxic keywords`);
+    };
+
+    const local = loadSettingSync<Partial<LinkFeedbackData> | null>(STORAGE_KEY, null);
+    if (local) applyFeedback(local);
+
+    loadSettingAsync<Partial<LinkFeedbackData> | null>(STORAGE_KEY, null)
+        .then((stored) => {
+            if (stored) applyFeedback(stored);
+        })
+        .catch((e) => {
+            console.warn('Failed to load link feedback:', e);
+        });
 }
 
 function saveFeedback(): void {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(feedbackData));
-    } catch (e) {
+    saveSettingAsync(STORAGE_KEY, feedbackData).catch((e) => {
         console.warn('Failed to save link feedback:', e);
-    }
+    });
 }
 
 // ============================================
@@ -509,4 +512,3 @@ export function suggestAbbreviationLinks(
     // Sort by descending confidence
     return suggestions.sort((a, b) => b.confidence - a.confidence);
 }
-
