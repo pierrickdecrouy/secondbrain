@@ -31,16 +31,6 @@ type GraphLink = Link & {
     target: string | GraphNode;
 };
 
-type GraphForce = {
-    strength?: (value: number) => GraphForce;
-    distance?: (value: number) => GraphForce;
-};
-
-type GraphRef = {
-    d3Force: (name: string, force?: unknown) => GraphForce | undefined;
-    d3ReheatSimulation?: () => void;
-};
-
 const linkEndpointId = (endpoint: GraphLink['source']): string =>
     typeof endpoint === 'string' ? endpoint : endpoint.id;
 
@@ -90,7 +80,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const [hoverLink, setHoverLink] = useState<Link | null>(null);
 
     // Refs for graph control
-    const fgRef = useRef<GraphRef | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fgRef = useRef<any>(null);
 
     // Interaction Logic: Click Timer for Double Click (Moved here to avoid "Rendered fewer hooks" error)
     const lastClickTimeRef = useRef<number>(0);
@@ -291,7 +282,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         }
     }, []);
 
-    const nodePaint = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodePaint = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
 
         // Dark mode detection
@@ -377,7 +369,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.restore();
     }, [hoverNode, selectedNodes, graphData.links, searchHighlightIds]);
 
-    const linkPaint = useCallback((link: GraphLink, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const linkPaint = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const source = link.source;
         const target = link.target;
 
@@ -481,7 +474,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
 
 
-    const handleGraphNodeClick = (node: GraphNode) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleGraphNodeClick = (node: any) => {
         const now = Date.now();
         const isDoubleClick = lastClickNodeIdRef.current === node.id && (now - lastClickTimeRef.current) < 300;
 
@@ -501,7 +495,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const graphBg = isDark ? '#0f172a' : '#f8fafc';
 
     // 3D node color: apply highlight/dim logic via color
-    const get3DNodeColor = (node: GraphNode) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const get3DNodeColor = (node: any) => {
         const baseColor = getTypeColor(node.type);
         const isHovered = hoverNode?.id === node.id;
 
@@ -523,7 +518,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     };
 
     // 3D link color: dim non-highlighted links
-    const get3DLinkColor = (link: GraphLink) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const get3DLinkColor = (link: any) => {
         const src = typeof link.source === 'object' ? link.source : ({ type: 'drug', id: link.source } as GraphNode);
         const tgt = typeof link.target === 'object' ? link.target : ({ type: 'drug', id: link.target } as GraphNode);
         const srcId = src.id;
@@ -597,16 +593,19 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         width={width}
                         height={height}
                         graphData={structuralData}
-                        nodeLabel={(node: GraphNode) => node.name}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        nodeLabel={(node: any) => node.name}
                         nodeColor={get3DNodeColor}
-                        nodeVal={(node: GraphNode) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        nodeVal={(node: any) => {
                             const base = Math.max(1, Math.min(node.val || 1, 4));
                             return hoverNode?.id === node.id ? base * 2 : base;
                         }}
                         nodeOpacity={0.9}
                         linkColor={get3DLinkColor}
                         linkOpacity={0.6}
-                        linkWidth={(link: GraphLink) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        linkWidth={(link: any) => {
                             const src = linkEndpointId(link.source);
                             const tgt = linkEndpointId(link.target);
                             const linkKey = [src, tgt].sort().join('-');
@@ -614,11 +613,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                             if (hoverNode && (src === hoverNode.id || tgt === hoverNode.id)) return 2;
                             return 1;
                         }}
-                        onNodeHover={(node: GraphNode | null) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        onNodeHover={(node: any) => {
                             setHoverNode(node || null);
                             document.body.style.cursor = node ? 'pointer' : 'default';
                         }}
-                        onNodeClick={(node: GraphNode) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        onNodeClick={(node: any) => {
                             handleGraphNodeClick(node);
                         }}
                         onBackgroundClick={() => {
@@ -647,7 +648,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     d3VelocityDecay={0.3}
                     warmupTicks={50}
 
-                    onNodeHover={(node: GraphNode | null) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    onNodeHover={(node: any) => {
                         setHoverNode(node || null);
                         document.body.style.cursor = node ? 'pointer' : 'default';
                     }}
