@@ -12,7 +12,15 @@ import {
     X,
     ArrowsDownUp,
     Moon,
-    Sun
+    Sun,
+    SidebarSimple,
+    ArrowLeft,
+    ArrowRight,
+    Brain,
+    CalendarCheck,
+    Clock,
+    Repeat,
+    ArrowSquareOut
 } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import './BrowsePage.css';
@@ -54,6 +62,11 @@ interface BrowsePageProps {
 
     // Optional: Render prop for Network View to reuse existing component
     renderNetworkView?: () => React.ReactNode;
+
+    // Network side panel: card shown alongside the network view
+    networkPanelCard?: Card | null;
+    onNetworkPanelClose?: () => void;
+    onCardDetail?: (id: string) => void;
 }
 
 export const BrowsePage: React.FC<BrowsePageProps> = ({
@@ -71,10 +84,14 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     onDeleteCard,
     viewMode,
     onViewModeChange,
-    renderNetworkView
+    renderNetworkView,
+    networkPanelCard,
+    onNetworkPanelClose,
+    onCardDetail
 }) => {
     const { getCategoryColor, getCategoryIcon, darkMode, toggleDarkMode } = useTheme();
     const [sortOption, setSortOption] = useState<SortOption>('name-asc');
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const getFilterLabel = (type: string) => {
         switch (type) {
