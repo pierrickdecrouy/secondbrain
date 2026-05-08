@@ -13,6 +13,11 @@ interface BatchImportModalProps {
 type ImportMode = 'json' | 'text';
 type ImportCandidate = Partial<Card> & Record<string, unknown>;
 
+const pickString = (...values: unknown[]): string => {
+    const first = values.find((v): v is string => typeof v === 'string' && v.trim().length > 0);
+    return first ? first : '';
+};
+
 export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, onClose, existingCards = [] }) => {
     const [importMode, setImportMode] = useState<ImportMode>('text');
     const [input, setInput] = useState('');
@@ -135,11 +140,12 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
 
                 if (Array.isArray(parsed)) {
                     validCards = parsed.filter((c: ImportCandidate) => {
-                        const title = c.title || c.Title || c.name || c.Name;
+                        const title = pickString(c.title, c.Title, c.name, c.Name);
                         return !!title;
                     });
                 } else if (typeof parsed === 'object' && parsed !== null) {
-                    const title = parsed.title || parsed.Title || parsed.name || parsed.Name;
+                    const parsedCandidate = parsed as ImportCandidate;
+                    const title = pickString(parsedCandidate.title, parsedCandidate.Title, parsedCandidate.name, parsedCandidate.Name);
                     if (title) validCards = [parsed];
                 } else {
                     throw new Error("Le format doit être un tableau JSON ou un objet unique.");
@@ -150,19 +156,19 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                 }
 
                 processedCards = validCards.map((c) => {
-                    const title = sanitizeText(c.title || c.Title || c.name || c.Name);
+                    const title = sanitizeText(pickString(c.title, c.Title, c.name, c.Name));
                     return {
                         ...c,
-                        id: c.id ? sanitizeText(c.id) : generateSafeId(title),
+                        id: pickString(c.id) ? sanitizeText(pickString(c.id)) : generateSafeId(title),
                         title: title,
-                        type: c.type || cardType,
+                        type: pickString(c.type) || cardType,
                         tags: [
-                            ...(c.tags || []),
+                            ...(Array.isArray(c.tags) ? c.tags.filter((t): t is string => typeof t === 'string') : []),
                             ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
                         ],
-                        subtitle: sanitizeText(c.subtitle || ''),
-                        content: sanitizeText(c.content || ''),
-                        details: sanitizeText(c.details || c.content || ''),
+                        subtitle: sanitizeText(pickString(c.subtitle)),
+                        content: sanitizeText(pickString(c.content)),
+                        details: sanitizeText(pickString(c.details, c.content)),
                     };
                 });
             } else {

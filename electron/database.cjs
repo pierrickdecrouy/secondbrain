@@ -85,8 +85,7 @@ function saveCardsTransaction(cards, options = {}) {
     `);
 
     if (cards.length === 0 && !allowDeleteAll) {
-        console.warn('[DB] Refusing full delete from empty payload without explicit allowDeleteAll.');
-        return;
+        throw new Error('[DB] Refusing full delete from empty payload without explicit allowDeleteAll.');
     }
 
     const deleteMissing = db.prepare(`
