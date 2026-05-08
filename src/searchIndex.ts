@@ -24,10 +24,24 @@ const index = new (FlexSearch as any).Document({
     }
 });
 
+let indexedCardIds = new Set<string>();
+
 // Rebuild the entire index with new cards
 export function rebuildIndex(cards: Card[]): void {
-    // Clear and rebuild - FlexSearch Document doesn't have a clear() method
-    // so we re-create by re-adding all cards (add replaces existing)
+    const nextIds = new Set(cards.map(card => card.id));
+
+    // Remove cards that no longer exist
+    indexedCardIds.forEach((existingId) => {
+        if (!nextIds.has(existingId)) {
+            try {
+                index.remove(existingId);
+            } catch {
+                // Ignore if not exists
+            }
+        }
+    });
+
+    // Upsert current cards
     cards.forEach(card => {
         index.add({
             id: card.id,
@@ -37,6 +51,8 @@ export function rebuildIndex(cards: Card[]): void {
             details: card.details,
         });
     });
+
+    indexedCardIds = nextIds;
 }
 
 // Add a single card to the index
@@ -48,6 +64,7 @@ export function addToIndex(card: Card): void {
         content: card.content,
         details: card.details,
     });
+    indexedCardIds.add(card.id);
 }
 
 // Remove a card from the index
@@ -57,6 +74,7 @@ export function removeFromIndex(cardId: string): void {
     } catch {
         // Ignore if not exists
     }
+    indexedCardIds.delete(cardId);
 }
 
 // Search and return matching card IDs (keyword-based)
@@ -160,4 +178,3 @@ export async function hybridSearch(query: string, limit = 50): Promise<string[]>
 }
 
 export { index };
-
