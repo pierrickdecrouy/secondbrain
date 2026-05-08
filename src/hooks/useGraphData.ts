@@ -19,6 +19,7 @@ export interface UseGraphDataProps {
 export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: UseGraphDataProps) {
     const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Worker ref to keep the instance
     const workerRef = useRef<Worker | null>(null);
@@ -37,10 +38,12 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
             workerRef.current.onmessage = (e: MessageEvent<GraphData>) => {
                 const { nodes, links } = e.data;
                 setLexicalResult({ nodes, links });
+                setError(null);
             };
 
             workerRef.current.onerror = (err) => {
                 console.error('Graph worker error:', err);
+                setError('Erreur de génération du graphe. Réessayez dans quelques secondes.');
                 setIsLoading(false);
             };
         }
@@ -59,6 +62,7 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
         if (!workerRef.current || cards.length === 0) return;
 
         setIsLoading(true);
+        setError(null);
 
         // Prepare payload matching WorkerInput interface
         const payload = {
@@ -97,7 +101,10 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
                 }));
                 setSemanticLinks(formattedLinks);
             })
-            .catch(err => console.error('[Graph] Semantic compute error:', err));
+            .catch(err => {
+                console.error('[Graph] Semantic compute error:', err);
+                setError('Erreur de calcul sémantique du graphe.');
+            });
 
     }, [cards, vetoPairs, semanticReady]);
 
@@ -114,8 +121,8 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
 
         const mergedLinks = [...lexicalLinks];
         const existingKeys = new Set(lexicalLinks.map(l => {
-            const s = typeof l.source === 'object' ? (l.source as any).id : l.source;
-            const t = typeof l.target === 'object' ? (l.target as any).id : l.target;
+            const s = typeof l.source === 'object' ? l.source.id : l.source;
+            const t = typeof l.target === 'object' ? l.target.id : l.target;
             return [s, t].sort().join('-');
         }));
 
@@ -139,5 +146,5 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
     // We only expose loading state for the *initial* lexical build mostly
     // Semantic can stream in late.
 
-    return { graphData, isLoading };
+    return { graphData, isLoading, error };
 }

@@ -6,7 +6,6 @@ import { getTypeColor } from '../theme';
 import type { Card, Node, Link } from '../types';
 import {
     CircleNotch,
-    X,
     Lightning,
     Cube,
     Square
@@ -20,6 +19,21 @@ const ForceGraph3D = lazy(() => import('react-force-graph-3d'));
 
 const OVERDUE_PENALTY_FACTOR = 0.35;
 
+type GraphNode = Node & {
+    x?: number;
+    y?: number;
+    val?: number;
+    manualConnections?: string[];
+};
+
+type GraphLink = Link & {
+    source: string | GraphNode;
+    target: string | GraphNode;
+};
+
+const linkEndpointId = (endpoint: GraphLink['source']): string =>
+    typeof endpoint === 'string' ? endpoint : endpoint.id;
+
 interface NetworkViewProps {
     cards: Card[];
     onNodeClick?: (id: string) => void;
@@ -32,7 +46,7 @@ interface NetworkViewProps {
     vetoPairs?: string[];
     width?: number; // Optional, defaults to auto-fill
     height?: number;
-    typeCompat?: any;
+    typeCompat?: Record<string, number>;
 }
 
 
@@ -48,7 +62,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     width,
     height
 }) => {
-    const { graphData, isLoading } = useGraphData({ cards, vetoPairs });
+    const { graphData, isLoading, error } = useGraphData({ cards, vetoPairs });
 
     // 2D / 3D mode toggle
     const [use3D, setUse3D] = useState(false);
@@ -66,6 +80,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const [hoverLink, setHoverLink] = useState<Link | null>(null);
 
     // Refs for graph control
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fgRef = useRef<any>(null);
 
     // Interaction Logic: Click Timer for Double Click (Moved here to avoid "Rendered fewer hooks" error)
@@ -156,8 +171,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     return false;
                 });
                 links = links.filter(l => {
-                    const src = typeof l.source === 'object' ? (l.source as any).id : l.source;
-                    const tgt = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                    const src = linkEndpointId(l.source as GraphLink['source']);
+                    const tgt = linkEndpointId(l.target as GraphLink['target']);
                     return keepIds.has(src) && keepIds.has(tgt);
                 });
             }
@@ -195,8 +210,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         for (let d = 0; d < searchDepth; d++) {
             const nextLayer = new Set<string>();
             structuralData.links.forEach(l => {
-                const src = typeof l.source === 'object' ? (l.source as any).id : l.source;
-                const tgt = typeof l.target === 'object' ? (l.target as any).id : l.target;
+                const src = linkEndpointId(l.source as GraphLink['source']);
+                const tgt = linkEndpointId(l.target as GraphLink['target']);
 
                 if (currentLayer.has(src) && !accumulated.has(tgt)) {
                     nextLayer.add(tgt);
@@ -267,6 +282,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         }
     }, []);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodePaint = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
 
@@ -281,8 +297,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
         if (hoverNode) {
             const isNeighbor = graphData.links.some(link => {
-                const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
-                const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+                const src = linkEndpointId(link.source as GraphLink['source']);
+                const tgt = linkEndpointId(link.target as GraphLink['target']);
                 return (src === hoverNode.id && tgt === node.id) || (tgt === hoverNode.id && src === node.id);
             });
             if (!isHover && !isNeighbor) isDimmed = true;
@@ -353,10 +369,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         ctx.restore();
     }, [hoverNode, selectedNodes, graphData.links, searchHighlightIds]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linkPaint = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const source = link.source;
         const target = link.target;
 
+        if (typeof source === 'string' || typeof target === 'string') return;
         if (!Number.isFinite(source.x) || !Number.isFinite(source.y) ||
             !Number.isFinite(target.x) || !Number.isFinite(target.y)) return;
 
@@ -456,6 +474,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
 
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleGraphNodeClick = (node: any) => {
         const now = Date.now();
         const isDoubleClick = lastClickNodeIdRef.current === node.id && (now - lastClickTimeRef.current) < 300;
@@ -476,6 +495,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const graphBg = isDark ? '#0f172a' : '#f8fafc';
 
     // 3D node color: apply highlight/dim logic via color
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const get3DNodeColor = (node: any) => {
         const baseColor = getTypeColor(node.type);
         const isHovered = hoverNode?.id === node.id;
@@ -483,8 +503,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         let isDimmed3D = false;
         if (hoverNode) {
             const isNeighbor = structuralData.links.some(link => {
-                const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
-                const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+                const src = linkEndpointId(link.source as GraphLink['source']);
+                const tgt = linkEndpointId(link.target as GraphLink['target']);
                 return (src === hoverNode.id && tgt === node.id) || (tgt === hoverNode.id && src === node.id);
             });
             if (!isHovered && !isNeighbor) isDimmed3D = true;
@@ -498,9 +518,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     };
 
     // 3D link color: dim non-highlighted links
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const get3DLinkColor = (link: any) => {
-        const src = typeof link.source === 'object' ? link.source : { type: 'drug', id: link.source };
-        const tgt = typeof link.target === 'object' ? link.target : { type: 'drug', id: link.target };
+        const src = typeof link.source === 'object' ? link.source : ({ type: 'drug', id: link.source } as GraphNode);
+        const tgt = typeof link.target === 'object' ? link.target : ({ type: 'drug', id: link.target } as GraphNode);
         const srcId = src.id;
         const tgtId = tgt.id;
 
@@ -523,6 +544,13 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             className="relative w-full h-full overflow-hidden"
             style={{ background: graphBg }}
         >
+            {error && (
+                <div className="absolute top-4 left-4 right-4 z-50 pointer-events-none">
+                    <div className={`mx-auto max-w-2xl rounded-lg border px-4 py-2 text-sm shadow-sm ${isDark ? 'bg-red-900/70 border-red-700 text-red-100' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                        {error}
+                    </div>
+                </div>
+            )}
 
             {/* 2D / 3D toggle button */}
             <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex border rounded-lg shadow-sm overflow-hidden backdrop-blur-sm
@@ -565,8 +593,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         width={width}
                         height={height}
                         graphData={structuralData}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         nodeLabel={(node: any) => node.name}
                         nodeColor={get3DNodeColor}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         nodeVal={(node: any) => {
                             const base = Math.max(1, Math.min(node.val || 1, 4));
                             return hoverNode?.id === node.id ? base * 2 : base;
@@ -574,18 +604,21 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         nodeOpacity={0.9}
                         linkColor={get3DLinkColor}
                         linkOpacity={0.6}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         linkWidth={(link: any) => {
-                            const src = typeof link.source === 'object' ? (link.source as any).id : link.source;
-                            const tgt = typeof link.target === 'object' ? (link.target as any).id : link.target;
+                            const src = linkEndpointId(link.source);
+                            const tgt = linkEndpointId(link.target);
                             const linkKey = [src, tgt].sort().join('-');
                             if (pathLinks.has(linkKey)) return 3;
                             if (hoverNode && (src === hoverNode.id || tgt === hoverNode.id)) return 2;
                             return 1;
                         }}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         onNodeHover={(node: any) => {
                             setHoverNode(node || null);
                             document.body.style.cursor = node ? 'pointer' : 'default';
                         }}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         onNodeClick={(node: any) => {
                             handleGraphNodeClick(node);
                         }}
@@ -615,6 +648,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     d3VelocityDecay={0.3}
                     warmupTicks={50}
 
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onNodeHover={(node: any) => {
                         setHoverNode(node || null);
                         document.body.style.cursor = node ? 'pointer' : 'default';
@@ -640,8 +674,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         onReportIncorrect={
                             (hoverLink.type === 'semantic' || hoverLink.type === 'hybrid' || hoverLink.type === 'rrf' || !hoverLink.type) && onSuppressConnections
                                 ? () => {
-                                    const sId = typeof hoverLink.source === 'string' ? hoverLink.source : (hoverLink.source as any).id;
-                                    const tId = typeof hoverLink.target === 'string' ? hoverLink.target : (hoverLink.target as any).id;
+                                    const sId = linkEndpointId(hoverLink.source as GraphLink['source']);
+                                    const tId = linkEndpointId(hoverLink.target as GraphLink['target']);
                                     onSuppressConnections([{ sourceId: sId, targetId: tId }]);
                                     setHoverLink(null);
                                 }

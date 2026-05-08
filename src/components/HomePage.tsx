@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     MagnifyingGlass, Plus, X, FileText, UploadSimple, GearSix,
     BookOpen, Brain, Lightning, ArrowRight, SlidersHorizontal,
@@ -8,6 +8,7 @@ import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import type { Card } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { loadSettingAsync, loadSettingSync, saveSettingAsync } from '../persistentSettings';
 
 interface HeatmapValue {
     count?: number;
@@ -44,17 +45,14 @@ export const HomePage: React.FC<HomePageProps> = ({
     const [showFabMenu, setShowFabMenu] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [showWidgetSettings, setShowWidgetSettings] = useState(false);
-    const [widgetPrefs, setWidgetPrefs] = useState(() => {
-        const raw = localStorage.getItem('pharmabrain_home_widgets');
-        if (raw) {
-            try {
-                return JSON.parse(raw) as Record<string, boolean>;
-            } catch {
-                // noop
-            }
-        }
-        return { review: true, heatmap: true, recent: true };
-    });
+    const [widgetPrefs, setWidgetPrefs] = useState(() =>
+        loadSettingSync<Record<string, boolean>>('pharmabrain_home_widgets', { review: true, heatmap: true, recent: true })
+    );
+
+    useEffect(() => {
+        loadSettingAsync<Record<string, boolean>>('pharmabrain_home_widgets', { review: true, heatmap: true, recent: true })
+            .then(setWidgetPrefs);
+    }, []);
 
     const dueCards = cards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
     const learningCards = cards.filter(c => c.progress?.status === 'learning' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
@@ -90,7 +88,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     const toggleWidget = (widget: string) => {
         setWidgetPrefs(prev => {
             const next = { ...prev, [widget]: !prev[widget] };
-            localStorage.setItem('pharmabrain_home_widgets', JSON.stringify(next));
+            saveSettingAsync('pharmabrain_home_widgets', next);
             return next;
         });
     };

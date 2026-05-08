@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CARD_COLORS as DEFAULT_CARD_COLORS, DEFAULT_CARD_ICONS } from '../theme';
+import { loadSettingAsync, loadSettingSync, removeSettingAsync, saveSettingAsync } from '../persistentSettings';
 
 // Define the shape of our context
 interface ThemeContextType {
@@ -24,67 +25,56 @@ const STORAGE_KEY_DARK = 'pharmabrain_dark_mode';
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Initialize dark mode
     const [darkMode, setDarkMode] = useState<boolean>(() => {
-        try {
-            return localStorage.getItem(STORAGE_KEY_DARK) === 'true';
-        } catch (e) {
-            return false;
-        }
+        return loadSettingSync<boolean>(STORAGE_KEY_DARK, false);
     });
 
     // Apply dark class to html element
     useEffect(() => {
         document.documentElement.classList.toggle('dark', darkMode);
-        try {
-            localStorage.setItem(STORAGE_KEY_DARK, String(darkMode));
-        } catch (e) {
-            console.error('Failed to save dark mode preference', e);
-        }
+        saveSettingAsync(STORAGE_KEY_DARK, darkMode);
     }, [darkMode]);
+
+    useEffect(() => {
+        loadSettingAsync<boolean>(STORAGE_KEY_DARK, false).then(setDarkMode);
+    }, []);
 
     const toggleDarkMode = () => setDarkMode(prev => !prev);
 
     // Initialize state for Colors
     const [categoryColors, setCategoryColors] = useState<Record<string, string>>(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY_COLORS);
-            if (stored) {
-                return { ...DEFAULT_CARD_COLORS, ...JSON.parse(stored) };
-            }
-        } catch (e) {
-            console.error('Failed to load theme colors', e);
+        const stored = loadSettingSync<Record<string, string> | null>(STORAGE_KEY_COLORS, null);
+        if (stored) {
+            return { ...DEFAULT_CARD_COLORS, ...stored };
         }
         return { ...DEFAULT_CARD_COLORS };
     });
 
     // Initialize state for Icons
     const [categoryIcons, setCategoryIcons] = useState<Record<string, string>>(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY_ICONS);
-            if (stored) {
-                return { ...DEFAULT_CARD_ICONS, ...JSON.parse(stored) };
-            }
-        } catch (e) {
-            console.error('Failed to load theme icons', e);
+        const stored = loadSettingSync<Record<string, string> | null>(STORAGE_KEY_ICONS, null);
+        if (stored) {
+            return { ...DEFAULT_CARD_ICONS, ...stored };
         }
         return { ...DEFAULT_CARD_ICONS };
     });
 
+    useEffect(() => {
+        loadSettingAsync<Record<string, string> | null>(STORAGE_KEY_COLORS, null).then((stored) => {
+            if (stored) setCategoryColors({ ...DEFAULT_CARD_COLORS, ...stored });
+        });
+        loadSettingAsync<Record<string, string> | null>(STORAGE_KEY_ICONS, null).then((stored) => {
+            if (stored) setCategoryIcons({ ...DEFAULT_CARD_ICONS, ...stored });
+        });
+    }, []);
+
     // Save Colors to localStorage
     useEffect(() => {
-        try {
-            localStorage.setItem(STORAGE_KEY_COLORS, JSON.stringify(categoryColors));
-        } catch (e) {
-            console.error('Failed to save theme colors', e);
-        }
+        saveSettingAsync(STORAGE_KEY_COLORS, categoryColors);
     }, [categoryColors]);
 
     // Save Icons to localStorage
     useEffect(() => {
-        try {
-            localStorage.setItem(STORAGE_KEY_ICONS, JSON.stringify(categoryIcons));
-        } catch (e) {
-            console.error('Failed to save theme icons', e);
-        }
+        saveSettingAsync(STORAGE_KEY_ICONS, categoryIcons);
     }, [categoryIcons]);
 
 
@@ -105,12 +95,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const resetCategoryColors = () => {
         setCategoryColors({ ...DEFAULT_CARD_COLORS });
-        localStorage.removeItem(STORAGE_KEY_COLORS);
+        removeSettingAsync(STORAGE_KEY_COLORS);
     };
 
     const resetCategoryIcons = () => {
         setCategoryIcons({ ...DEFAULT_CARD_ICONS });
-        localStorage.removeItem(STORAGE_KEY_ICONS);
+        removeSettingAsync(STORAGE_KEY_ICONS);
     };
 
     // Helper to get color

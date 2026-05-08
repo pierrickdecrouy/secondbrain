@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, UploadSimple, Warning, CheckCircle, FileText, FileCode } from '@phosphor-icons/react';
 import type { Card, CardType } from '../types';
 import { validateImportData } from '../utils/importValidation';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface BatchImportModalProps {
     onImport: (cards: Card[]) => void;
@@ -10,6 +11,12 @@ interface BatchImportModalProps {
 }
 
 type ImportMode = 'json' | 'text';
+type ImportCandidate = Partial<Card> & Record<string, unknown>;
+
+const pickString = (...values: unknown[]): string => {
+    const first = values.find((v): v is string => typeof v === 'string' && v.trim().length > 0);
+    return first ? first : '';
+};
 
 export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, onClose, existingCards = [] }) => {
     const [importMode, setImportMode] = useState<ImportMode>('text');
@@ -19,6 +26,8 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     const [error, setError] = useState<string | null>(null);
     const [previewCount, setPreviewCount] = useState<number | null>(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [pendingImportCards, setPendingImportCards] = useState<Card[] | null>(null);
+    const [duplicateSample, setDuplicateSample] = useState<string>('');
 
     // Sanitize text (remove invisible characters like zero-width spaces)
     const sanitizeText = (text: string): string => {
@@ -127,15 +136,16 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
 
             if (importMode === 'json') {
                 const parsed = JSON.parse(input);
-                let validCards: any[] = [];
+                let validCards: ImportCandidate[] = [];
 
                 if (Array.isArray(parsed)) {
-                    validCards = parsed.filter((c: any) => {
-                        const title = c.title || c.Title || c.name || c.Name;
+                    validCards = parsed.filter((c: ImportCandidate) => {
+                        const title = pickString(c.title, c.Title, c.name, c.Name);
                         return !!title;
                     });
                 } else if (typeof parsed === 'object' && parsed !== null) {
-                    const title = parsed.title || parsed.Title || parsed.name || parsed.Name;
+                    const parsedCandidate = parsed as ImportCandidate;
+                    const title = pickString(parsedCandidate.title, parsedCandidate.Title, parsedCandidate.name, parsedCandidate.Name);
                     if (title) validCards = [parsed];
                 } else {
                     throw new Error("Le format doit être un tableau JSON ou un objet unique.");
@@ -145,20 +155,20 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                     throw new Error("Aucune fiche valide trouvée.");
                 }
 
-                processedCards = validCards.map((c: any) => {
-                    const title = sanitizeText(c.title || c.Title || c.name || c.Name);
+                processedCards = validCards.map((c) => {
+                    const title = sanitizeText(pickString(c.title, c.Title, c.name, c.Name));
                     return {
                         ...c,
-                        id: c.id ? sanitizeText(c.id) : generateSafeId(title),
+                        id: pickString(c.id) ? sanitizeText(pickString(c.id)) : generateSafeId(title),
                         title: title,
-                        type: c.type || cardType,
+                        type: pickString(c.type) || cardType,
                         tags: [
-                            ...(c.tags || []),
+                            ...(Array.isArray(c.tags) ? c.tags.filter((t): t is string => typeof t === 'string') : []),
                             ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
                         ],
-                        subtitle: sanitizeText(c.subtitle || ''),
-                        content: sanitizeText(c.content || ''),
-                        details: sanitizeText(c.details || c.content || ''),
+                        subtitle: sanitizeText(pickString(c.subtitle)),
+                        content: sanitizeText(pickString(c.content)),
+                        details: sanitizeText(pickString(c.details, c.content)),
                     };
                 });
             } else {
@@ -204,18 +214,18 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
             // "Frontend (UI) : Ajoute un indicateur visuel..." was for indexing.
             // For duplicates, I'll add a simple confirmation via window.confirm for now.
 
-            if (duplicates.length > 0) {
-                const confirm = window.confirm(
-                    `${duplicates.length} fiches existent déjà (ex: ${duplicates[0].title}).\nVoulez-vous les mettre à jour (Écraser) ?\n\nAnnuler pour corriger.`
-                );
-                if (!confirm) return;
+            if (duplicates.length > 0 && duplicates[0]) {
+                setPendingImportCards(processedCards);
+                setDuplicateSample(`${duplicates.length} fiches existent déjà (ex: ${duplicates[0].title}).`);
+                return;
             }
 
             onImport(processedCards);
             if (onClose) onClose();
 
-        } catch (err: any) {
-            setError(err.message || "Erreur lors de l'import");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Erreur lors de l'import";
+            setError(message);
         }
     };
 
@@ -382,6 +392,31 @@ Adulte : 500mg à 1g toutes les 4h.
                     Importer
                 </button>
             </div>
+            {pendingImportCards && (
+                <ConfirmDeleteModal
+                    title="Conflits d'identifiants"
+                    heading="Des fiches existent déjà"
+                    message={
+                        <>
+                            {duplicateSample}<br />
+                            Voulez-vous les écraser avec les nouvelles données ?
+                        </>
+                    }
+                    confirmLabel="Écraser"
+                    cancelLabel="Annuler"
+                    confirmClassName="btn-primary"
+                    onConfirm={() => {
+                        onImport(pendingImportCards);
+                        setPendingImportCards(null);
+                        setDuplicateSample('');
+                        if (onClose) onClose();
+                    }}
+                    onCancel={() => {
+                        setPendingImportCards(null);
+                        setDuplicateSample('');
+                    }}
+                />
+            )}
         </div>
     );
 };

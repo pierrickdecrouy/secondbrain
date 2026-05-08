@@ -110,7 +110,7 @@ async function generateEmbedding(text: string, id?: string) {
 }
 
 // Generate embeddings for batch of texts (more efficient)
-async function generateBatchEmbeddings(texts: string[], cardIds: string[]) {
+async function generateBatchEmbeddings(texts: string[], cardIds: string[], id?: string) {
     if (!extractor) {
         await initModel();
     }
@@ -136,14 +136,15 @@ async function generateBatchEmbeddings(texts: string[], cardIds: string[]) {
             if (i % 10 === 0 || i === texts.length - 1) {
                 self.postMessage({
                     type: 'progress',
+                    id,
                     progress: ((i + 1) / texts.length) * 100
                 } as WorkerResponse);
             }
         }
 
-        self.postMessage({ type: 'embeddings', embeddings } as WorkerResponse);
+        self.postMessage({ type: 'embeddings', id, embeddings } as WorkerResponse);
     } catch (error) {
-        self.postMessage({ type: 'error', error: String(error) } as WorkerResponse);
+        self.postMessage({ type: 'error', id, error: String(error) } as WorkerResponse);
     }
 }
 
@@ -159,7 +160,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
             if (text) await generateEmbedding(text, id);
             break;
         case 'embedBatch':
-            if (texts && cardIds) await generateBatchEmbeddings(texts, cardIds);
+            if (texts && cardIds) await generateBatchEmbeddings(texts, cardIds, id);
             break;
     }
 };

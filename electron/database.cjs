@@ -76,11 +76,17 @@ function getAllCards() {
     return rows.map(rowToCard);
 }
 
-function saveCardsTransaction(cards) {
+function saveCardsTransaction(cards, options = {}) {
+    const { allowDeleteAll = false } = options;
+
     const insert = db.prepare(`
         INSERT OR REPLACE INTO cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
         VALUES (@id, @type, @title, @subtitle, @content, @tags, @metadata, @createdAt, @updatedAt)
     `);
+
+    if (cards.length === 0 && !allowDeleteAll) {
+        throw new Error('[DB] Refusing full delete from empty payload without explicit allowDeleteAll.');
+    }
 
     const deleteMissing = db.prepare(`
         DELETE FROM cards WHERE id NOT IN (${cards.map(() => '?').join(',')})
@@ -101,8 +107,6 @@ function saveCardsTransaction(cards) {
             const ids = cards.map(c => c.id);
             deleteMissing.run(...ids);
         } else {
-            // If empty array passed, delete everything? Careful.
-            // Yes, if user deleted everything.
             db.prepare('DELETE FROM cards').run();
         }
     });
