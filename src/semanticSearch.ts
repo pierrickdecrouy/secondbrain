@@ -26,8 +26,10 @@ const pendingQueries = new Map<string, {
     reject: (error: Error) => void;
 }>();
 
-let batchResolve: ((embeddings: { cardId: string; embedding: number[] }[]) => void) | null = null;
-let batchReject: ((error: Error) => void) | null = null;
+const pendingBatches = new Map<string, {
+    resolve: (embeddings: { cardId: string; embedding: number[] }[]) => void;
+    reject: (error: Error) => void;
+}>();
 
 // Progress callback
 let onProgressCallback: ((progress: number) => void) | null = null;
@@ -94,10 +96,10 @@ export function initSemanticSearch(
                 break;
 
             case 'embeddings':
-                if (batchResolve) {
-                    batchResolve(embeddings);
-                    batchResolve = null;
-                    batchReject = null;
+                if (id && pendingBatches.has(id)) {
+                    const { resolve } = pendingBatches.get(id)!;
+                    pendingBatches.delete(id);
+                    resolve(embeddings);
                 }
                 break;
 
@@ -108,10 +110,10 @@ export function initSemanticSearch(
                     pendingQueries.delete(id);
                     reject(new Error(error));
                 }
-                if (batchReject) {
-                    batchReject(new Error(error));
-                    batchResolve = null;
-                    batchReject = null;
+                if (id && pendingBatches.has(id)) {
+                    const { reject } = pendingBatches.get(id)!;
+                    pendingBatches.delete(id);
+                    reject(new Error(error));
                 }
                 break;
         }
@@ -247,7 +249,10 @@ async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promi
         }
 
         await new Promise<void>((resolve, reject) => {
-            batchResolve = (embeddings) => {
+            const batchId = `batch-${Date.now()}-${i}-${Math.random()}`;
+
+            pendingBatches.set(batchId, {
+                resolve: (embeddings) => {
                 const entries = embeddings.map(({ cardId, embedding }) => {
                     const card = cards.find(c => c.id === cardId);
                     return {
@@ -265,10 +270,11 @@ async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promi
                     console.error("Failed to add embeddings:", err);
                 }
                 resolve();
-            };
-            batchReject = reject;
+            },
+                reject
+            });
 
-            embeddingWorker!.postMessage({ type: 'embedBatch', texts, cardIds });
+            embeddingWorker!.postMessage({ type: 'embedBatch', id: batchId, texts, cardIds });
         });
 
         // Update progress callback if available
@@ -336,6 +342,7 @@ export async function computePrecisionGraph(
 ): Promise<{ source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf'; reason?: string }[]> {
     const links: { source: string; target: string; value: number; type: 'explicit' | 'semantic' | 'hybrid' | 'rrf'; reason?: string }[] = [];
     const processedPairs = new Set<string>();
+    const cardById = new Map(cards.map(card => [card.id, card]));
 
     // Fast lookup for vetoed pairs
     const vetoSet = new Set(vetoPairs);
@@ -396,7 +403,7 @@ export async function computePrecisionGraph(
         const allCandidates = new Set([...semanticCandidates.keys(), ...keywordCandidates.keys()]);
 
         for (const candidateId of allCandidates) {
-            const cardB = cards.find(c => c.id === candidateId);
+            const cardB = cardById.get(candidateId);
             if (!cardB) continue;
 
             const pairId = [cardA.id, cardB.id].sort().join('-');

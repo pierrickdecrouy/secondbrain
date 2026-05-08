@@ -9,6 +9,9 @@ interface ElectronAPI {
     onRequestSave: (callback: () => void) => void;
     loadAbbreviations: () => Promise<Record<string, string[]>>;
     saveAbbreviations: (abbrevs: Record<string, string[]>) => Promise<{ success: boolean; error?: string }>;
+    loadSetting: <T = unknown>(key: string) => Promise<T | undefined>;
+    saveSetting: (key: string, value: unknown) => Promise<{ success: boolean; error?: string }>;
+    removeSetting: (key: string) => Promise<{ success: boolean; error?: string }>;
 
     // Vector Index
     loadVectorIndex: () => Promise<Uint8Array | null>;

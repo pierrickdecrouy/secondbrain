@@ -86,29 +86,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
         }
     };
 
-    const filteredCards = useMemo(() => {
-        let result = cards;
-
-        // 1. Filter by Type / Quality
-        if (activeFilters.length > 0 && !activeFilters.includes('all')) {
-            if (activeFilters.includes('needs-review')) {
-                // Special case: Filter by quality < 50
-                result = result.filter(card => {
-                    const connectivity = card.manualConnections?.length || 0;
-                    const assessment = calculateQualityScore(card, connectivity);
-                    return assessment.score < 50;
-                });
-            } else {
-                // Standard Type Filter
-                result = result.filter(card => activeFilters.includes(card.type));
-            }
-        }
-
-        return result;
-    }, [cards, activeFilters]);
-
     const sortedCards = useMemo(() => {
-        const sorted = [...filteredCards];
+        const sorted = [...cards];
         switch (sortOption) {
             case 'name-asc':
                 return sorted.sort((a, b) => a.title.localeCompare(b.title));

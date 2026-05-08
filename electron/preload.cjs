@@ -23,6 +23,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Learned abbreviations
     loadAbbreviations: () => ipcRenderer.invoke('load-abbreviations'),
     saveAbbreviations: (abbrevs) => ipcRenderer.invoke('save-abbreviations', abbrevs),
+    loadSetting: (key) => ipcRenderer.invoke('load-setting', key),
+    saveSetting: (key, value) => ipcRenderer.invoke('save-setting', key, value),
+    removeSetting: (key) => ipcRenderer.invoke('remove-setting', key),
 
     // Vector Index
     loadVectorIndex: () => ipcRenderer.invoke('load-vector-index'),

@@ -22,6 +22,7 @@ const userDataPath = app.getPath('userData');
 const legacyDbPath = path.join(userDataPath, 'pharma-brain-db.json');
 const sqlitePath = path.join(userDataPath, 'pharma-brain.db');
 const imagesPath = path.join(userDataPath, 'images');
+const settingsPath = path.join(userDataPath, 'settings.json');
 
 // Initialize SQLite
 try {
@@ -34,6 +35,28 @@ try {
 // Ensure images directory exists
 if (!fs.existsSync(imagesPath)) {
     fs.mkdirSync(imagesPath, { recursive: true });
+}
+
+function readSettings() {
+    try {
+        if (!fs.existsSync(settingsPath)) return {};
+        const raw = fs.readFileSync(settingsPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+        console.error('Error reading settings:', error);
+        return {};
+    }
+}
+
+function writeSettings(settings) {
+    try {
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+        return { success: true };
+    } catch (error) {
+        console.error('Error writing settings:', error);
+        return { success: false, error: error.message };
+    }
 }
 
 function createWindow() {
@@ -207,6 +230,24 @@ ipcMain.handle('save-abbreviations', async (event, abbreviations) => {
         console.error('Error saving abbreviations:', error);
         return { success: false, error: error.message };
     }
+});
+
+// Generic settings storage (renderer preferences/state)
+ipcMain.handle('load-setting', async (event, key) => {
+    const settings = readSettings();
+    return settings[key];
+});
+
+ipcMain.handle('save-setting', async (event, key, value) => {
+    const settings = readSettings();
+    settings[key] = value;
+    return writeSettings(settings);
+});
+
+ipcMain.handle('remove-setting', async (event, key) => {
+    const settings = readSettings();
+    delete settings[key];
+    return writeSettings(settings);
 });
 
 // Vector Index Persistence
@@ -404,4 +445,3 @@ app.on('activate', () => {
         createWindow();
     }
 });
-
