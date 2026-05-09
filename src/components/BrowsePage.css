@@ -509,6 +509,19 @@
 }
 
 /* Network Mode Container */
+.browse-network-layout {
+    height: 100%;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    position: relative;
+}
+
+.browse-network-layout.has-panel {
+    grid-template-columns: minmax(0, 1fr) 420px;
+}
+
 .browse-network-container {
     height: 100%;
     width: 100%;
@@ -524,6 +537,74 @@
     border: none;
     background: var(--bg-body);
     /* Match body bg or keep white? */
+}
+
+.card-side-panel {
+    height: 100%;
+    overflow-y: auto;
+    border-left: 1px solid var(--border-light);
+    background: white;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-side-panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.card-side-panel-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.card-side-panel-title {
+    font-size: 1rem;
+    line-height: 1.4;
+    margin: 0;
+    color: var(--text-dark);
+    overflow-wrap: anywhere;
+}
+
+.card-side-panel-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.card-side-panel-nav {
+    display: flex;
+    gap: 8px;
+}
+
+.card-side-panel-subtitle {
+    margin: 0;
+    color: var(--text-grey);
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+}
+
+.card-side-panel-section {
+    background: #f8fafc;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.card-side-panel-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
+    color: var(--text-grey);
+}
+
+.card-side-panel-links-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* Custom Table for List View */
@@ -650,6 +731,19 @@
 
     .browse-content-area {
         padding: 0 16px 16px 16px;
+    }
+
+    .browse-network-layout.has-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .card-side-panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: min(92vw, 420px);
+        z-index: 50;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
     }
 }
 
@@ -808,4 +902,18 @@ html.dark .browse-network-container {
 
 html.dark .browse-content-area.browse-content-area--network .browse-network-container {
     background: #0f172a;
+}
+
+html.dark .card-side-panel {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html.dark .card-side-panel-title {
+    color: #f1f5f9;
+}
+
+html.dark .card-side-panel-section {
+    background: #0f172a;
+    border-color: #334155;
 }
