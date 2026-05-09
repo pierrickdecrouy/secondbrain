@@ -45,7 +45,7 @@ export const CardSidePanel: React.FC<CardSidePanelProps> = ({
                     <h3 className="card-side-panel-title">{card.title}</h3>
                 </div>
                 <div className="card-side-panel-actions">
-                    <button className="browse-action-btn" onClick={onPinToggle} title={pinned ? 'Désépingler' : 'Épingler'}>
+                    <button className="browse-action-btn" onClick={onPinToggle} title={pinned ? 'Dépingler' : 'Épingler'}>
                         {pinned ? <PushPinSlash size={16} /> : <PushPin size={16} />}
                     </button>
                     <button className="browse-action-btn" onClick={onClose} title="Fermer">

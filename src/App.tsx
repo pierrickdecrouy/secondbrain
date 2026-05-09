@@ -728,7 +728,7 @@ function AppContent() {
     <div className="workspace-shell">
       <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="workspace-sidebar-header">
-          <h3>Workspace</h3>
+          <h3>Espace de travail</h3>
           <div className="workspace-sidebar-actions">
             <button className="workspace-btn" onClick={createWorkspace} title="Nouveau workspace">
               <Plus size={14} />
