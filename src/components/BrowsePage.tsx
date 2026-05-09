@@ -12,15 +12,7 @@ import {
     X,
     ArrowsDownUp,
     Moon,
-    Sun,
-    SidebarSimple,
-    ArrowLeft,
-    ArrowRight,
-    Brain,
-    CalendarCheck,
-    Clock,
-    Repeat,
-    ArrowSquareOut
+    Sun
 } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import './BrowsePage.css';
@@ -29,6 +21,7 @@ import { useTheme } from '../context/ThemeContext';
 import { stripMarkdown } from '../utils';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
 import { DynamicIcon } from './DynamicIcon';
+import { CardSidePanel } from './CardSidePanel';
 import iconSvg from '../../public/icon.svg';
 
 // Type for ViewMode
@@ -66,7 +59,8 @@ interface BrowsePageProps {
     // Network side panel: card shown alongside the network view
     networkPanelCard?: Card | null;
     onNetworkPanelClose?: () => void;
-    onCardDetail?: (id: string) => void;
+    networkPanelPinned?: boolean;
+    onNetworkPanelPinToggle?: () => void;
 }
 
 export const BrowsePage: React.FC<BrowsePageProps> = ({
@@ -87,11 +81,11 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     renderNetworkView,
     networkPanelCard,
     onNetworkPanelClose,
-    onCardDetail
+    networkPanelPinned,
+    onNetworkPanelPinToggle
 }) => {
     const { getCategoryColor, getCategoryIcon, darkMode, toggleDarkMode } = useTheme();
     const [sortOption, setSortOption] = useState<SortOption>('name-asc');
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const getFilterLabel = (type: string) => {
         switch (type) {
@@ -415,8 +409,30 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
                 {
                     viewMode === 'network' && (
-                        <div className="browse-network-container">
-                            {renderNetworkView && renderNetworkView()}
+                        <div className={`browse-network-layout ${networkPanelCard ? 'has-panel' : ''}`}>
+                            <div className="browse-network-container">
+                                {renderNetworkView && renderNetworkView()}
+                            </div>
+                            {networkPanelCard && (
+                                <CardSidePanel
+                                    card={networkPanelCard}
+                                    allCards={cards}
+                                    onClose={() => onNetworkPanelClose?.()}
+                                    onPinToggle={() => onNetworkPanelPinToggle?.()}
+                                    pinned={Boolean(networkPanelPinned)}
+                                    onLinkClick={onCardClick}
+                                    onPrev={(() => {
+                                        const idx = sortedCards.findIndex(c => c.id === networkPanelCard.id);
+                                        if (idx > 0) return () => onCardClick(sortedCards[idx - 1].id);
+                                        return undefined;
+                                    })()}
+                                    onNext={(() => {
+                                        const idx = sortedCards.findIndex(c => c.id === networkPanelCard.id);
+                                        if (idx >= 0 && idx < sortedCards.length - 1) return () => onCardClick(sortedCards[idx + 1].id);
+                                        return undefined;
+                                    })()}
+                                />
+                            )}
                         </div>
                     )
                 }

@@ -14,6 +14,7 @@ export interface Card {
     createdAt?: number;
     updatedAt?: number;
     progress?: UserCardProgress;
+    workspaceId?: string;
 }
 
 // Export a value to ensure this file is treated as a module at runtime
