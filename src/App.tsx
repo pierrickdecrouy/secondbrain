@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense, type ReactElement } from 'react';
 import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
 import { rebuildIndex, hybridSearch } from './searchIndex';
@@ -6,12 +6,13 @@ import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
 import { calculateQualityScore } from './algorithms/qualityScoring';
 import { calculateFsrsProgress } from './algorithms/fsrs';
 import { loadFeedback, recordNegativeFeedback, recordPositiveFeedback, getLinkFeedback } from './linkFeedback';
+import { loadSettingAsync, saveSettingAsync } from './persistentSettings';
 import { DetailModal } from './components/DetailModal';
 import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
 import { ReviewSessionModal } from './components/ReviewSessionModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { PencilSimple, Trash, CircleNotch } from '@phosphor-icons/react';
+import { PencilSimple, Trash, CircleNotch, House, Cards, ShareNetwork, ClockCounterClockwise, GearSix, Plus, PencilSimpleLine, TrashSimple, SidebarSimple } from '@phosphor-icons/react';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Lazy load heavy components
@@ -20,6 +21,12 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const BrowsePage = lazy(() => import('./components/BrowsePage').then(module => ({ default: module.BrowsePage })));
 
 type ViewMode = 'grid' | 'list' | 'network';
+type AppSection = 'dashboard' | 'cards' | 'network' | 'review' | 'settings';
+type Workspace = { id: string; name: string; createdAt: number; updatedAt: number };
+
+const WORKSPACES_KEY = 'pharmabrain_workspaces_v1';
+const ACTIVE_WORKSPACE_KEY = 'pharmabrain_active_workspace_v1';
+const DEFAULT_WORKSPACE_ID = 'workspace-default';
 
 // Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -54,14 +61,18 @@ function AppContent() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [activeSection, setActiveSection] = useState<AppSection>('dashboard');
   const [addDataMode, setAddDataMode] = useState<'none' | 'create' | 'edit' | 'import'>('none');
   const [editingCard, setEditingCard] = useState<Card | null>(null);
-  const [showHome, setShowHome] = useState(true); // Start on home page
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [semanticReady, setSemanticReady] = useState(false);
   const [embeddingsReady, setEmbeddingsReady] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [reviewSession, setReviewSession] = useState<{ cardIds: string[]; title: string } | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
+  const [networkPanelPinned, setNetworkPanelPinned] = useState(false);
+  const [pinnedCardId, setPinnedCardId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Manual Backup Feature
   const handleExportBackup = () => {
@@ -78,38 +89,42 @@ function AppContent() {
   };
 
   const handleSaveCard = useCallback((card: Card) => {
+    const scopedCard = {
+      ...card,
+      workspaceId: card.workspaceId ?? activeWorkspaceId
+    };
     setCards(prev => {
-      const exists = prev.find(c => c.id === card.id);
+      const exists = prev.find(c => c.id === scopedCard.id);
 
       // Record positive feedback for new manual connections
-      if (card.manualConnections && card.manualConnections.length > 0) {
+      if (scopedCard.manualConnections && scopedCard.manualConnections.length > 0) {
         const oldCard = exists;
         const oldManual = new Set(oldCard?.manualConnections || []);
-        card.manualConnections.forEach(targetId => {
+        scopedCard.manualConnections.forEach(targetId => {
           if (!oldManual.has(targetId)) {
             // New manual link — positive signal
             const targetCard = prev.find(c => c.id === targetId);
             if (targetCard) {
-              recordPositiveFeedback(card, targetCard);
+              recordPositiveFeedback(scopedCard, targetCard);
             }
           }
         });
       }
 
       if (exists) {
-        return prev.map(c => c.id === card.id ? card : c);
+        return prev.map(c => c.id === scopedCard.id ? scopedCard : c);
       }
-      return [...prev, card];
+      return [...prev, scopedCard];
     });
 
     // Semantic Indexing: Force update for this specific card
     import('./semanticSearch').then(({ buildCardEmbeddings }) => {
-      buildCardEmbeddings([card], true);
+      buildCardEmbeddings([scopedCard], true);
     });
 
     setAddDataMode('none');
     setEditingCard(null);
-  }, []);
+  }, [activeWorkspaceId]);
 
   const handleDeleteCard = useCallback((card: Card) => {
     setCardToDelete(card);
@@ -132,10 +147,14 @@ function AppContent() {
   }, []);
 
   const handleBatchImport = useCallback(async (newCards: Card[]) => {
+    const scopedCards = newCards.map(card => ({
+      ...card,
+      workspaceId: card.workspaceId ?? activeWorkspaceId
+    }));
     // 1. Update React State (Optimistic UI)
     setCards(prev => {
       const merged = [...prev];
-      newCards.forEach(nc => {
+      scopedCards.forEach(nc => {
         const index = merged.findIndex(c => c.id === nc.id);
         if (index >= 0) {
           merged[index] = nc;
@@ -148,7 +167,7 @@ function AppContent() {
 
     // 2. Safe Bulk Upsert via Electron (No Delete!)
     if (window.electronAPI?.importCards) {
-      const result = await window.electronAPI.importCards(newCards);
+      const result = await window.electronAPI.importCards(scopedCards);
       if (!result.success) {
         console.error("Import failed:", result.error);
         alert("Erreur lors de la sauvegarde: " + result.error);
@@ -160,8 +179,9 @@ function AppContent() {
 
     // 3. Trigger Semantic Indexing
     // Force update for imported cards (covers new AND updated ones)
-    buildCardEmbeddings(newCards, true);
-  }, []);
+    buildCardEmbeddings(scopedCards, true);
+    setActiveSection('cards');
+  }, [activeWorkspaceId]);
 
   const handleSuppressConnections = useCallback((pairs: { sourceId: string, targetId: string }[]) => {
     setCards(prev => {
@@ -193,20 +213,31 @@ function AppContent() {
     });
   }, []);
 
+  const activeWorkspace = useMemo(
+    () => workspaces.find(w => w.id === activeWorkspaceId) ?? null,
+    [workspaces, activeWorkspaceId]
+  );
 
-  const selectedCard = useMemo(() =>
-    cards.find(c => c.id === selectedCardId),
-    [cards, selectedCardId]);
+  const workspaceCards = useMemo(
+    () => cards.filter(card => (card.workspaceId ?? DEFAULT_WORKSPACE_ID) === activeWorkspaceId),
+    [cards, activeWorkspaceId]
+  );
+
+  const selectedCard = useMemo(() => {
+    const panelCardId = networkPanelPinned && pinnedCardId ? pinnedCardId : selectedCardId;
+    if (!panelCardId) return null;
+    return workspaceCards.find(c => c.id === panelCardId) ?? null;
+  }, [workspaceCards, selectedCardId, networkPanelPinned, pinnedCardId]);
 
   const reviewSessionCards = useMemo(() => {
     if (!reviewSession) return [];
     const idSet = new Set(reviewSession.cardIds);
-    return cards.filter(card => idSet.has(card.id));
-  }, [cards, reviewSession]);
+    return workspaceCards.filter(card => idSet.has(card.id));
+  }, [workspaceCards, reviewSession]);
 
   const openDueReviewSession = useCallback(() => {
     const now = Date.now();
-    const dueCards = cards.filter(card => {
+    const dueCards = workspaceCards.filter(card => {
       const dueDate = card.progress?.dueDate ? new Date(card.progress.dueDate).getTime() : 0;
       if (!card.progress) return false;
       if (card.progress.status === 'learning' || card.progress.status === 'review') {
@@ -214,12 +245,13 @@ function AppContent() {
       }
       return false;
     });
-    const fallback = dueCards.length > 0 ? dueCards : cards.slice(0, 20);
+    const fallback = dueCards.length > 0 ? dueCards : workspaceCards.slice(0, 20);
     setReviewSession({
       cardIds: fallback.map(c => c.id),
       title: dueCards.length > 0 ? 'Révision planifiée (FSRS)' : 'Session découverte'
     });
-  }, [cards]);
+    setActiveSection('cards');
+  }, [workspaceCards]);
 
   const handleRateCard = useCallback((cardId: string, rating: 1 | 2 | 3) => {
     setCards(prev => prev.map(card => {
@@ -233,12 +265,14 @@ function AppContent() {
     }));
   }, []);
 
+  const isNetworkContext = activeSection === 'network' || (activeSection === 'cards' && viewMode === 'network');
+
   const modals = (
     <>
-      {selectedCard && (
+      {selectedCard && !isNetworkContext && (
         <DetailModal
           card={selectedCard}
-          allCards={cards}
+          allCards={workspaceCards}
           onClose={() => setSelectedCardId(null)}
           onLinkClick={(id) => setSelectedCardId(id)}
           actions={
@@ -320,7 +354,7 @@ function AppContent() {
       }
     );
   }, []);
-  // Load cards and learned abbreviations on mount
+  // Load cards and workspace settings on mount
   useEffect(() => {
     const loadData = async () => {
       console.log('Starting data load...');
@@ -338,9 +372,37 @@ function AppContent() {
         loadFeedback();
 
         console.log('Loading cards...');
-        const loadedCards = await loadCardsAsync();
-        console.log(`Loaded ${loadedCards.length} cards.`);
-        setCards(loadedCards);
+        const [loadedCards, storedWorkspaces, storedActiveWorkspace] = await Promise.all([
+          loadCardsAsync(),
+          loadSettingAsync<Workspace[]>(WORKSPACES_KEY, []),
+          loadSettingAsync<string>(ACTIVE_WORKSPACE_KEY, DEFAULT_WORKSPACE_ID)
+        ]);
+
+        const normalizedWorkspaces = storedWorkspaces.length > 0
+          ? storedWorkspaces
+          : [{ id: DEFAULT_WORKSPACE_ID, name: 'Espace principal', createdAt: Date.now(), updatedAt: Date.now() }];
+
+        const workspaceIdSet = new Set(normalizedWorkspaces.map(w => w.id));
+        const migratedCards = loadedCards.map(card => {
+          const workspaceId = card.workspaceId && workspaceIdSet.has(card.workspaceId)
+            ? card.workspaceId
+            : normalizedWorkspaces[0].id;
+          return { ...card, workspaceId };
+        });
+
+        const activeWorkspace = normalizedWorkspaces.some(w => w.id === storedActiveWorkspace)
+          ? storedActiveWorkspace
+          : normalizedWorkspaces[0].id;
+
+        await Promise.all([
+          saveSettingAsync(WORKSPACES_KEY, normalizedWorkspaces),
+          saveSettingAsync(ACTIVE_WORKSPACE_KEY, activeWorkspace)
+        ]);
+
+        console.log(`Loaded ${migratedCards.length} cards.`);
+        setWorkspaces(normalizedWorkspaces);
+        setActiveWorkspaceId(activeWorkspace);
+        setCards(migratedCards);
       } catch (e) {
         console.error('Error loading cards:', e);
       } finally {
@@ -381,18 +443,18 @@ function AppContent() {
 
   // Save cards whenever they change (async for Electron support)
   useEffect(() => {
-    // Skip initial save and only save when we have data and loading is complete
-    if (!isLoading && cards.length > 0) {
+    // Skip initial save and only save when loading is complete
+    if (!isLoading) {
       saveCardsAsync(cards);
     }
   }, [cards, isLoading]);
 
   // Rebuild FlexSearch index when cards change
   useEffect(() => {
-    if (cards.length > 0) {
-      rebuildIndex(cards);
+    if (workspaceCards.length > 0) {
+      rebuildIndex(workspaceCards);
     }
-  }, [cards]);
+  }, [workspaceCards]);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -412,7 +474,7 @@ function AppContent() {
 
   const filteredCards = useMemo(() => {
     // 1. Type filter / Quality Filter
-    let result = cards;
+    let result = workspaceCards;
     if (activeFilters.length > 0) {
       if (activeFilters.includes('needs-review')) {
         // Quality Filter
@@ -439,7 +501,7 @@ function AppContent() {
     }
 
     return result;
-  }, [cards, searchResultIds, activeFilters]);
+  }, [workspaceCards, searchResultIds, activeFilters]);
 
   const handleFilterToggle = (type: string) => {
     setActiveFilters(prev =>
@@ -449,111 +511,280 @@ function AppContent() {
     );
   };
 
-  // Show settings page
-  if (showSettings) {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <SettingsPage
-          onClose={() => {
-            setShowSettings(false);
-            setShowHome(true);
-          }}
-          availableCategories={Array.from(new Set(cards.map(c => c.type))).sort()}
-          cards={cards}
-          onReviewLowQuality={() => {
-            setShowSettings(false);
-            setActiveFilters(['needs-review']); // Trigger the special filter
-            setShowHome(false); // Go to BrowsePage
-          }}
-        />
-      </Suspense>
-    );
+  const createWorkspace = async () => {
+    const name = window.prompt('Nom du nouvel espace de travail :');
+    if (!name?.trim()) return;
+    const now = Date.now();
+    const workspace: Workspace = {
+      id: `workspace-${now}`,
+      name: name.trim(),
+      createdAt: now,
+      updatedAt: now
+    };
+    const next = [...workspaces, workspace];
+    setWorkspaces(next);
+    setActiveWorkspaceId(workspace.id);
+    await Promise.all([
+      saveSettingAsync(WORKSPACES_KEY, next),
+      saveSettingAsync(ACTIVE_WORKSPACE_KEY, workspace.id)
+    ]);
+  };
 
-  }
+  const renameWorkspace = async () => {
+    if (!activeWorkspace) return;
+    const name = window.prompt('Renommer cet espace :', activeWorkspace.name);
+    if (!name?.trim()) return;
+    const next = workspaces.map(w => w.id === activeWorkspace.id
+      ? { ...w, name: name.trim(), updatedAt: Date.now() }
+      : w);
+    setWorkspaces(next);
+    await saveSettingAsync(WORKSPACES_KEY, next);
+  };
 
-  // Show home page
-  if (showHome) {
-    return (
-      <div className="app-container">
+  const deleteWorkspace = async () => {
+    if (!activeWorkspace || workspaces.length <= 1) return;
+    const confirmed = window.confirm(`Supprimer l'espace "${activeWorkspace.name}" et ses fiches ?`);
+    if (!confirmed) return;
+    const remaining = workspaces.filter(w => w.id !== activeWorkspace.id);
+    const fallbackWorkspaceId = remaining[0].id;
+    setCards(prev => prev.filter(c => (c.workspaceId ?? DEFAULT_WORKSPACE_ID) !== activeWorkspace.id));
+    setWorkspaces(remaining);
+    setActiveWorkspaceId(fallbackWorkspaceId);
+    setSelectedCardId(null);
+    setPinnedCardId(null);
+    setNetworkPanelPinned(false);
+    await Promise.all([
+      saveSettingAsync(WORKSPACES_KEY, remaining),
+      saveSettingAsync(ACTIVE_WORKSPACE_KEY, fallbackWorkspaceId)
+    ]);
+  };
+
+  const navigateSection = useCallback((section: AppSection) => {
+    setActiveSection(section);
+    setSidebarOpen(false);
+    if (section === 'network') {
+      setViewMode('network');
+    }
+    if (section === 'cards' && viewMode === 'network') {
+      setViewMode('grid');
+    }
+    if (section !== 'network' && viewMode !== 'network') {
+      setNetworkPanelPinned(false);
+      setPinnedCardId(null);
+    }
+    if (section === 'review') {
+      openDueReviewSession();
+    }
+  }, [viewMode, openDueReviewSession]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent('app-focus-search'));
+      }
+      if (event.key === 'Escape' && isNetworkContext && !networkPanelPinned) {
+        setSelectedCardId(null);
+      }
+      if (event.altKey && ['1', '2', '3', '4', '5'].includes(event.key)) {
+        event.preventDefault();
+        const mapping: Record<string, AppSection> = {
+          '1': 'dashboard',
+          '2': 'cards',
+          '3': 'network',
+          '4': 'review',
+          '5': 'settings'
+        };
+        navigateSection(mapping[event.key]);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isNetworkContext, networkPanelPinned, navigateSection]);
+
+  const renderMainContent = () => {
+    if (activeSection === 'dashboard') {
+      return (
         <HomePage
-          cards={cards}
+          cards={workspaceCards}
           onNavigateToCard={(id) => {
             setSelectedCardId(id);
-            setShowHome(false);
+            navigateSection('cards');
           }}
           onSearch={(query) => {
             setSearchQuery(query);
-            setShowHome(false);
+            navigateSection('cards');
           }}
-          onStartBrowsing={() => setShowHome(false)}
+          onStartBrowsing={() => navigateSection('cards')}
           onStartReviewSession={openDueReviewSession}
-          onAddCard={() => {
-            // Stay on home page background
-            setAddDataMode('create');
-          }}
-          onBatchImport={() => {
-            setAddDataMode('import');
-          }}
+          onAddCard={() => setAddDataMode('create')}
+          onBatchImport={() => setAddDataMode('import')}
           onBackgroundExport={handleExportBackup}
-          onSettings={() => {
-            setShowHome(false);
-            setShowSettings(true);
+          onSettings={() => navigateSection('settings')}
+        />
+      );
+    }
+
+    if (activeSection === 'settings') {
+      return (
+        <SettingsPage
+          onClose={() => navigateSection('dashboard')}
+          availableCategories={Array.from(new Set(workspaceCards.map(c => c.type))).sort()}
+          cards={workspaceCards}
+          onReviewLowQuality={() => {
+            setActiveFilters(['needs-review']);
+            navigateSection('cards');
           }}
         />
-        {modals}
-      </div>
+      );
+    }
+
+    return (
+      <BrowsePage
+        cards={filteredCards}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeFilters={activeFilters}
+        onFilterToggle={(type) => {
+          if (type === 'all') {
+            if (activeFilters.length > 0) setActiveFilters([]);
+          } else {
+            handleFilterToggle(type);
+          }
+        }}
+        onHome={() => navigateSection('dashboard')}
+        onSettings={() => navigateSection('settings')}
+        onExport={handleExportBackup}
+        onAddCard={() => setAddDataMode('create')}
+        onCardClick={(id) => {
+          if (isNetworkContext && networkPanelPinned) {
+            setPinnedCardId(id);
+          }
+          setSelectedCardId(id);
+        }}
+        onEditCard={handleEditCard}
+        onDeleteCard={handleDeleteCard}
+        viewMode={activeSection === 'network' ? 'network' : viewMode}
+        onViewModeChange={setViewMode}
+        networkPanelCard={isNetworkContext ? selectedCard : null}
+        networkPanelPinned={networkPanelPinned}
+        onNetworkPanelClose={() => {
+          setSelectedCardId(null);
+          if (!networkPanelPinned) {
+            setPinnedCardId(null);
+          }
+        }}
+        onNetworkPanelPinToggle={() => {
+          setNetworkPanelPinned(prev => {
+            const next = !prev;
+            if (next && selectedCard) {
+              setPinnedCardId(selectedCard.id);
+            }
+            if (!next) {
+              setPinnedCardId(null);
+            }
+            return next;
+          });
+        }}
+        renderNetworkView={() => (
+          <Suspense fallback={<LoadingFallback />}>
+            <NetworkView
+              cards={filteredCards}
+              onNodeClick={(id) => {
+                if (networkPanelPinned) {
+                  setPinnedCardId(id);
+                }
+                setSelectedCardId(id);
+              }}
+              onClusterReview={(clusterCardIds) => {
+                setReviewSession({
+                  cardIds: clusterCardIds,
+                  title: `Cluster review (${clusterCardIds.length} fiches)`
+                });
+              }}
+              searchQuery={searchQuery}
+              highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
+              activeFilters={activeFilters}
+              onSuppressConnections={handleSuppressConnections}
+              semanticReady={embeddingsReady}
+              vetoPairs={getLinkFeedback().vetoPairs}
+              typeCompat={getLinkFeedback().typePairScores}
+            />
+          </Suspense>
+        )}
+      />
     );
-  }
+  };
+
+  const navItems: Array<{ id: AppSection; label: string; icon: ReactElement }> = [
+    { id: 'dashboard', label: 'Dashboard', icon: <House size={16} /> },
+    { id: 'cards', label: 'Cartes', icon: <Cards size={16} /> },
+    { id: 'network', label: 'Réseau', icon: <ShareNetwork size={16} /> },
+    { id: 'review', label: 'Révision', icon: <ClockCounterClockwise size={16} /> },
+    { id: 'settings', label: 'Paramètres', icon: <GearSix size={16} /> }
+  ];
 
   return (
-    <>
-      <Suspense fallback={<LoadingFallback />}>
-        <BrowsePage
-          cards={filteredCards}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          activeFilters={activeFilters}
-          onFilterToggle={(type) => {
-            if (type === 'all') {
-              if (activeFilters.length > 0) setActiveFilters([]);
-            } else {
-              handleFilterToggle(type);
-            }
+    <div className="workspace-shell">
+      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="workspace-sidebar-header">
+          <h3>Workspace</h3>
+          <div className="workspace-sidebar-actions">
+            <button className="workspace-btn" onClick={createWorkspace} title="Nouveau workspace">
+              <Plus size={14} />
+            </button>
+            <button className="workspace-btn" onClick={renameWorkspace} disabled={!activeWorkspace} title="Renommer workspace">
+              <PencilSimpleLine size={14} />
+            </button>
+            <button className="workspace-btn" onClick={deleteWorkspace} disabled={!activeWorkspace || workspaces.length <= 1} title="Supprimer workspace">
+              <TrashSimple size={14} />
+            </button>
+          </div>
+        </div>
+
+        <select
+          className="workspace-select"
+          value={activeWorkspaceId}
+          onChange={async (e) => {
+            const next = e.target.value;
+            setActiveWorkspaceId(next);
+            setSelectedCardId(null);
+            setPinnedCardId(null);
+            setNetworkPanelPinned(false);
+            setActiveFilters([]);
+            setSearchQuery('');
+            await saveSettingAsync(ACTIVE_WORKSPACE_KEY, next);
           }}
-          onHome={() => setShowHome(true)}
-          onSettings={() => setShowSettings(true)}
-          onExport={handleExportBackup}
-          onAddCard={() => setAddDataMode('create')}
-          onCardClick={(id) => setSelectedCardId(id)}
-          onEditCard={handleEditCard}
-          onDeleteCard={handleDeleteCard}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          renderNetworkView={() => (
-            <Suspense fallback={<LoadingFallback />}>
-              <NetworkView
-                cards={filteredCards}
-                onNodeClick={(id) => setSelectedCardId(id)}
-                onClusterReview={(clusterCardIds) => {
-                  setReviewSession({
-                    cardIds: clusterCardIds,
-                    title: `Cluster review (${clusterCardIds.length} fiches)`
-                  });
-                }}
-                searchQuery={searchQuery}
-                highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
-                activeFilters={activeFilters}
-                onSuppressConnections={handleSuppressConnections}
-                semanticReady={embeddingsReady}
-                vetoPairs={getLinkFeedback().vetoPairs}
-                typeCompat={getLinkFeedback().typePairScores} // We pass scores, logic inside handles matrix
-              />
-            </Suspense>
-          )}
-        />
-      </Suspense>
+        >
+          {workspaces.map(workspace => (
+            <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+          ))}
+        </select>
+
+        <nav className="workspace-nav">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''}`}
+              onClick={() => navigateSection(item.id)}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="workspace-main">
+        <button className="workspace-mobile-menu" onClick={() => setSidebarOpen(prev => !prev)} title="Menu">
+          <SidebarSimple size={18} />
+        </button>
+        <Suspense fallback={<LoadingFallback />}>
+          {renderMainContent()}
+        </Suspense>
+      </div>
       {modals}
-    </>
+    </div>
   );
 }
 
