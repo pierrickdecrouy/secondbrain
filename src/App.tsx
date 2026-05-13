@@ -10,9 +10,10 @@ import { loadSettingAsync, saveSettingAsync } from './persistentSettings';
 import { DetailModal } from './components/DetailModal';
 import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
+import { StatsPage } from './components/StatsPage';
 import { ReviewSessionModal } from './components/ReviewSessionModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { PencilSimple, Trash, CircleNotch, House, Cards, ShareNetwork, ClockCounterClockwise, GearSix, Plus, PencilSimpleLine, TrashSimple, SidebarSimple } from '@phosphor-icons/react';
+import { PencilSimple, Trash, CircleNotch, House, Cards, ShareNetwork, ClockCounterClockwise, GearSix, Plus, PencilSimpleLine, TrashSimple, SidebarSimple, ChartBar, CaretDoubleLeft, CaretDoubleRight } from '@phosphor-icons/react';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Lazy load heavy components
@@ -21,7 +22,7 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const BrowsePage = lazy(() => import('./components/BrowsePage').then(module => ({ default: module.BrowsePage })));
 
 type ViewMode = 'grid' | 'list' | 'network';
-type AppSection = 'dashboard' | 'cards' | 'network' | 'review' | 'settings';
+type AppSection = 'dashboard' | 'cards' | 'network' | 'review' | 'settings' | 'stats';
 type Workspace = { id: string; name: string; createdAt: number; updatedAt: number };
 
 const WORKSPACES_KEY = 'pharmabrain_workspaces_v1';
@@ -73,6 +74,11 @@ function AppContent() {
   const [networkPanelPinned, setNetworkPanelPinned] = useState(false);
   const [pinnedCardId, setPinnedCardId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', sidebarCollapsed.toString());
+  }, [sidebarCollapsed]);
 
   // Manual Backup Feature
   const handleExportBackup = () => {
@@ -607,6 +613,17 @@ function AppContent() {
       return (
         <HomePage
           cards={workspaceCards}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          onWorkspaceChange={async (id) => {
+            setActiveWorkspaceId(id);
+            setSelectedCardId(null);
+            setPinnedCardId(null);
+            setNetworkPanelPinned(false);
+            setActiveFilters([]);
+            setSearchQuery('');
+            await saveSettingAsync(ACTIVE_WORKSPACE_KEY, id);
+          }}
           onNavigateToCard={(id) => {
             setSelectedCardId(id);
             navigateSection('cards');
@@ -635,6 +652,14 @@ function AppContent() {
             setActiveFilters(['needs-review']);
             navigateSection('cards');
           }}
+        />
+      );
+    }
+    if (activeSection === 'stats') {
+      return (
+        <StatsPage
+          cards={workspaceCards}
+          onClose={() => navigateSection('dashboard')}
         />
       );
     }
@@ -721,45 +746,54 @@ function AppContent() {
     { id: 'cards', label: 'Cartes', icon: <Cards size={16} /> },
     { id: 'network', label: 'Réseau', icon: <ShareNetwork size={16} /> },
     { id: 'review', label: 'Révision', icon: <ClockCounterClockwise size={16} /> },
-    { id: 'settings', label: 'Paramètres', icon: <GearSix size={16} /> }
+    { id: 'stats', label: 'Statistiques', icon: <ChartBar size={16} /> }
   ];
 
   return (
-    <div className="workspace-shell">
-      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''}`}>
+    <div className={`workspace-shell ${activeSection === 'dashboard' ? 'home-layout' : ''} ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="workspace-sidebar-header">
-          <h3>Espace de travail</h3>
+          {!sidebarCollapsed && <h3>Espace</h3>}
           <div className="workspace-sidebar-actions">
-            <button className="workspace-btn" onClick={createWorkspace} title="Nouveau workspace">
-              <Plus size={14} />
-            </button>
-            <button className="workspace-btn" onClick={renameWorkspace} disabled={!activeWorkspace} title="Renommer workspace">
-              <PencilSimpleLine size={14} />
-            </button>
-            <button className="workspace-btn" onClick={deleteWorkspace} disabled={!activeWorkspace || workspaces.length <= 1} title="Supprimer workspace">
-              <TrashSimple size={14} />
+            {!sidebarCollapsed && (
+              <>
+                <button className="workspace-btn" onClick={createWorkspace} title="Nouveau workspace">
+                  <Plus size={14} />
+                </button>
+                <button className="workspace-btn" onClick={renameWorkspace} disabled={!activeWorkspace} title="Renommer workspace">
+                  <PencilSimpleLine size={14} />
+                </button>
+                <button className="workspace-btn" onClick={deleteWorkspace} disabled={!activeWorkspace || workspaces.length <= 1} title="Supprimer workspace">
+                  <TrashSimple size={14} />
+                </button>
+              </>
+            )}
+            <button className="workspace-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title="Réduire/Agrandir" style={sidebarCollapsed ? {width: '100%'} : {}}>
+              {sidebarCollapsed ? <CaretDoubleRight size={14} /> : <CaretDoubleLeft size={14} />}
             </button>
           </div>
         </div>
 
-        <select
-          className="workspace-select"
-          value={activeWorkspaceId}
-          onChange={async (e) => {
-            const next = e.target.value;
-            setActiveWorkspaceId(next);
-            setSelectedCardId(null);
-            setPinnedCardId(null);
-            setNetworkPanelPinned(false);
-            setActiveFilters([]);
-            setSearchQuery('');
-            await saveSettingAsync(ACTIVE_WORKSPACE_KEY, next);
-          }}
-        >
-          {workspaces.map(workspace => (
-            <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
-          ))}
-        </select>
+        {!sidebarCollapsed && (
+          <select
+            className="workspace-select"
+            value={activeWorkspaceId}
+            onChange={async (e) => {
+              const next = e.target.value;
+              setActiveWorkspaceId(next);
+              setSelectedCardId(null);
+              setPinnedCardId(null);
+              setNetworkPanelPinned(false);
+              setActiveFilters([]);
+              setSearchQuery('');
+              await saveSettingAsync(ACTIVE_WORKSPACE_KEY, next);
+            }}
+          >
+            {workspaces.map(workspace => (
+              <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+            ))}
+          </select>
+        )}
 
         <nav className="workspace-nav">
           {navItems.map(item => (
@@ -767,9 +801,10 @@ function AppContent() {
               key={item.id}
               className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''}`}
               onClick={() => navigateSection(item.id)}
+              title={sidebarCollapsed ? item.label : undefined}
             >
               {item.icon}
-              {item.label}
+              {!sidebarCollapsed && item.label}
             </button>
           ))}
         </nav>

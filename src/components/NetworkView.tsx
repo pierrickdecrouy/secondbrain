@@ -13,6 +13,7 @@ import {
 import { NetworkTooltip } from './NetworkTooltip';
 import { findStrongestPath } from '../algorithms/graphAlgorithms';
 import { detectCommunities } from '../algorithms/communityDetection';
+import { useTheme } from '../context/ThemeContext';
 
 // Lazy-load the 3D graph (heavy Three.js bundle)
 const ForceGraph3D = lazy(() => import('react-force-graph-3d'));
@@ -63,6 +64,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     height
 }) => {
     const { graphData, isLoading, error } = useGraphData({ cards, vetoPairs });
+    const { darkMode: isDark } = useTheme();
 
     // 2D / 3D mode toggle
     const [use3D, setUse3D] = useState(false);
@@ -286,9 +288,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const nodePaint = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
 
-        // Dark mode detection
-        const isDark = document.documentElement.classList.contains('dark');
-
         // Visual States
         const isHover = node === hoverNode;
         const isSelected = selectedNodes.has(node.id);
@@ -367,7 +366,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         }
 
         ctx.restore();
-    }, [hoverNode, selectedNodes, graphData.links, searchHighlightIds]);
+    }, [hoverNode, selectedNodes, graphData.links, searchHighlightIds, isDark]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linkPaint = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -491,7 +490,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         }
     };
 
-    const isDark = document.documentElement.classList.contains('dark');
     const graphBg = isDark ? '#0f172a' : '#f8fafc';
 
     // 3D node color: apply highlight/dim logic via color
@@ -553,30 +551,30 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             )}
 
             {/* 2D / 3D toggle button */}
-            <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex border rounded-lg shadow-sm overflow-hidden backdrop-blur-sm
-                ${isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-slate-200'}`}>
+            <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex p-1 rounded-xl shadow-sm backdrop-blur-md transition-colors
+                ${isDark ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-slate-100/80 border border-slate-200/50'}`}>
                 <button
                     onClick={() => setUse3D(false)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors
+                    className={`flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 min-w-[70px]
                         ${!use3D
-                            ? 'bg-slate-900 text-white'
-                            : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+                            ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm')
+                            : (isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50')
                         }`}
                     title="Vue 2D"
                 >
-                    <Square size={14} weight={!use3D ? 'fill' : 'regular'} />
+                    <Square size={14} weight={!use3D ? 'fill' : 'bold'} />
                     2D
                 </button>
                 <button
                     onClick={() => setUse3D(true)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors
+                    className={`flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 min-w-[70px]
                         ${use3D
-                            ? 'bg-slate-900 text-white'
-                            : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'
+                            ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm')
+                            : (isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50')
                         }`}
                     title="Vue 3D"
                 >
-                    <Cube size={14} weight={use3D ? 'fill' : 'regular'} />
+                    <Cube size={14} weight={use3D ? 'fill' : 'bold'} />
                     3D
                 </button>
             </div>
