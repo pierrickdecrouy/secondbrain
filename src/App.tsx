@@ -405,10 +405,44 @@ function AppContent() {
           saveSettingAsync(ACTIVE_WORKSPACE_KEY, activeWorkspace)
         ]);
 
-        console.log(`Loaded ${migratedCards.length} cards.`);
+        let finalCards = migratedCards;
+
+        if (finalCards.length === 0) {
+          console.log('No cards found, generating mock cards for demonstration.');
+          const now = Date.now();
+          const mockCards: Card[] = [
+            {
+              id: 'mock-1', name: 'Paracétamol', type: 'drug', content: '# Paracétamol\n\nAnalgésique et antipyrétique très courant.',
+              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
+              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 }
+            },
+            {
+              id: 'mock-2', name: 'Fièvre', type: 'patho', content: '# Fièvre\n\nÉlévation de la température corporelle.',
+              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
+              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 },
+              manualConnections: ['mock-1']
+            },
+            {
+              id: 'mock-3', name: 'Hépatotoxicité', type: 'side-effect', content: '# Hépatotoxicité\n\nToxicité pour le foie. Effet indésirable majeur du paracétamol en cas de surdosage.',
+              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
+              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 },
+              manualConnections: ['mock-1']
+            },
+            {
+              id: 'mock-4', name: 'Glutathion', type: 'physio', content: '# Glutathion\n\nAntioxydant important pour détoxifier le métabolite toxique du paracétamol (NAPQI).',
+              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
+              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 },
+              manualConnections: ['mock-3']
+            }
+          ];
+          finalCards = mockCards;
+          await saveCardsAsync(finalCards);
+        }
+
+        console.log(`Loaded ${finalCards.length} cards.`);
         setWorkspaces(normalizedWorkspaces);
         setActiveWorkspaceId(activeWorkspace);
-        setCards(migratedCards);
+        setCards(finalCards);
       } catch (e) {
         console.error('Error loading cards:', e);
       } finally {
