@@ -253,6 +253,10 @@ body,
   justify-content: center;
 }
 
+.workspace-sidebar-backdrop {
+  display: none;
+}
+
 .app-header {
   flex-shrink: 0;
   background: var(--color-bg);
@@ -467,6 +471,18 @@ body,
   .workspace-mobile-menu {
     display: inline-flex;
   }
+
+  .workspace-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(15, 23, 42, 0.35);
+    cursor: pointer;
+  }
 }
 
 html.dark .workspace-sidebar {
@@ -480,6 +496,10 @@ html.dark .workspace-mobile-menu {
   background: #1e293b;
   border-color: #334155;
   color: #f1f5f9;
+}
+
+html.dark .workspace-sidebar-backdrop {
+  background: rgba(2, 6, 23, 0.58);
 }
 
 html.dark .workspace-nav-item:hover {

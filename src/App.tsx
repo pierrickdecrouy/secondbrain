@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense, type ReactElement } from 'react';
 import type { Card } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
+import { initialCards } from './data';
 import { rebuildIndex, hybridSearch } from './searchIndex';
 import { initSemanticSearch, buildCardEmbeddings } from './semanticSearch';
 import { calculateQualityScore } from './algorithms/qualityScoring';
@@ -13,7 +14,7 @@ import { HomePage } from './components/HomePage';
 import { StatsPage } from './components/StatsPage';
 import { ReviewSessionModal } from './components/ReviewSessionModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { PencilSimple, Trash, CircleNotch, House, Cards, ShareNetwork, ClockCounterClockwise, GearSix, Plus, PencilSimpleLine, TrashSimple, SidebarSimple, ChartBar, CaretDoubleLeft, CaretDoubleRight } from '@phosphor-icons/react';
+import { PencilSimple, Trash, CircleNotch, House, Cards, ShareNetwork, ClockCounterClockwise, Plus, PencilSimpleLine, TrashSimple, SidebarSimple, ChartBar, CaretDoubleLeft, CaretDoubleRight } from '@phosphor-icons/react';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Lazy load heavy components
@@ -28,6 +29,25 @@ type Workspace = { id: string; name: string; createdAt: number; updatedAt: numbe
 const WORKSPACES_KEY = 'pharmabrain_workspaces_v1';
 const ACTIVE_WORKSPACE_KEY = 'pharmabrain_active_workspace_v1';
 const DEFAULT_WORKSPACE_ID = 'workspace-default';
+const WORKSPACE_SEED_COUNT = 4;
+const INITIAL_LOAD_SEED_COUNT = 6;
+
+function buildWorkspaceSeedCards(workspaceId: string, limit = WORKSPACE_SEED_COUNT): Card[] {
+  const seeds = initialCards.slice(0, Math.min(limit, initialCards.length));
+  const seedIds = new Set(seeds.map(card => card.id));
+  const now = Date.now();
+
+  return seeds.map((card) => ({
+    ...card,
+    id: `${workspaceId}-${card.id}`,
+    workspaceId,
+    createdAt: now,
+    updatedAt: now,
+    manualConnections: card.manualConnections
+      ?.filter(targetId => seedIds.has(targetId))
+      .map(targetId => `${workspaceId}-${targetId}`)
+  }));
+}
 
 // Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -405,37 +425,11 @@ function AppContent() {
           saveSettingAsync(ACTIVE_WORKSPACE_KEY, activeWorkspace)
         ]);
 
-        let finalCards = migratedCards;
+        let finalCards: Card[] = migratedCards;
 
         if (finalCards.length === 0) {
-          console.log('No cards found, generating mock cards for demonstration.');
-          const now = Date.now();
-          const mockCards: Card[] = [
-            {
-              id: 'mock-1', name: 'Paracétamol', type: 'drug', content: '# Paracétamol\n\nAnalgésique et antipyrétique très courant.',
-              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
-              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 }
-            },
-            {
-              id: 'mock-2', name: 'Fièvre', type: 'patho', content: '# Fièvre\n\nÉlévation de la température corporelle.',
-              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
-              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 },
-              manualConnections: ['mock-1']
-            },
-            {
-              id: 'mock-3', name: 'Hépatotoxicité', type: 'side-effect', content: '# Hépatotoxicité\n\nToxicité pour le foie. Effet indésirable majeur du paracétamol en cas de surdosage.',
-              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
-              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 },
-              manualConnections: ['mock-1']
-            },
-            {
-              id: 'mock-4', name: 'Glutathion', type: 'physio', content: '# Glutathion\n\nAntioxydant important pour détoxifier le métabolite toxique du paracétamol (NAPQI).',
-              createdAt: now, updatedAt: now, workspaceId: activeWorkspace,
-              progress: { status: 'learning', interval: 1, easeFactor: 2.5, dueDate: new Date(now).toISOString(), reviewCount: 0 },
-              manualConnections: ['mock-3']
-            }
-          ];
-          finalCards = mockCards;
+          console.log('No cards found, seeding starter cards.');
+          finalCards = buildWorkspaceSeedCards(activeWorkspace, INITIAL_LOAD_SEED_COUNT);
           await saveCardsAsync(finalCards);
         }
 
@@ -562,11 +556,15 @@ function AppContent() {
       updatedAt: now
     };
     const next = [...workspaces, workspace];
+    const seededCards = buildWorkspaceSeedCards(workspace.id);
+    const nextCards = [...cards, ...seededCards];
     setWorkspaces(next);
+    setCards(nextCards);
     setActiveWorkspaceId(workspace.id);
     await Promise.all([
       saveSettingAsync(WORKSPACES_KEY, next),
-      saveSettingAsync(ACTIVE_WORKSPACE_KEY, workspace.id)
+      saveSettingAsync(ACTIVE_WORKSPACE_KEY, workspace.id),
+      saveCardsAsync(nextCards)
     ]);
   };
 
@@ -623,6 +621,10 @@ function AppContent() {
         event.preventDefault();
         window.dispatchEvent(new CustomEvent('app-focus-search'));
       }
+      if (event.key === 'Escape' && sidebarOpen) {
+        setSidebarOpen(false);
+        return;
+      }
       if (event.key === 'Escape' && isNetworkContext && !networkPanelPinned) {
         setSelectedCardId(null);
       }
@@ -640,7 +642,7 @@ function AppContent() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isNetworkContext, networkPanelPinned, navigateSection]);
+  }, [isNetworkContext, networkPanelPinned, navigateSection, sidebarOpen]);
 
   const renderMainContent = () => {
     if (activeSection === 'dashboard') {
@@ -783,13 +785,15 @@ function AppContent() {
     { id: 'stats', label: 'Statistiques', icon: <ChartBar size={16} /> }
   ];
 
+  const shouldCollapseSidebar = sidebarCollapsed && !sidebarOpen;
+
   return (
-    <div className={`workspace-shell ${activeSection === 'dashboard' ? 'home-layout' : ''} ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+    <div className={`workspace-shell ${shouldCollapseSidebar ? 'sidebar-collapsed' : ''}`}>
+      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''}`}>
         <div className="workspace-sidebar-header">
-          {!sidebarCollapsed && <h3>Espace</h3>}
+          {!shouldCollapseSidebar && <h3>Espace</h3>}
           <div className="workspace-sidebar-actions">
-            {!sidebarCollapsed && (
+            {!shouldCollapseSidebar && (
               <>
                 <button className="workspace-btn" onClick={createWorkspace} title="Nouveau workspace">
                   <Plus size={14} />
@@ -802,13 +806,13 @@ function AppContent() {
                 </button>
               </>
             )}
-            <button className="workspace-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title="Réduire/Agrandir" style={sidebarCollapsed ? {width: '100%'} : {}}>
-              {sidebarCollapsed ? <CaretDoubleRight size={14} /> : <CaretDoubleLeft size={14} />}
+            <button className="workspace-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title="Réduire/Agrandir" style={shouldCollapseSidebar ? { width: '100%' } : {}}>
+              {shouldCollapseSidebar ? <CaretDoubleRight size={14} /> : <CaretDoubleLeft size={14} />}
             </button>
           </div>
         </div>
 
-        {!sidebarCollapsed && (
+        {!shouldCollapseSidebar && (
           <select
             className="workspace-select"
             value={activeWorkspaceId}
@@ -835,14 +839,17 @@ function AppContent() {
               key={item.id}
               className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''}`}
               onClick={() => navigateSection(item.id)}
-              title={sidebarCollapsed ? item.label : undefined}
+              title={shouldCollapseSidebar ? item.label : undefined}
             >
               {item.icon}
-              {!sidebarCollapsed && item.label}
+              {!shouldCollapseSidebar && item.label}
             </button>
           ))}
         </nav>
       </aside>
+      {sidebarOpen && (
+        <button className="workspace-sidebar-backdrop" aria-label="Fermer le menu" onClick={() => setSidebarOpen(false)} />
+      )}
 
       <div className="workspace-main">
         <button className="workspace-mobile-menu" onClick={() => setSidebarOpen(prev => !prev)} title="Menu">
