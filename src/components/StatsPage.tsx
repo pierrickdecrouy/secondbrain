@@ -19,6 +19,8 @@ const hasHeatmapCount = (value: unknown): value is HeatmapValue =>
 const asPercent = (value: number) => `${Math.round(value * 100)}%`;
 
 export const StatsPage: React.FC<StatsPageProps> = ({ cards, onClose }) => {
+    const now = Date.now();
+
     const heatmapDataMap = new Map<string, number>();
     cards.forEach((card) => {
         if (!card.updatedAt) return;
@@ -27,10 +29,17 @@ export const StatsPage: React.FC<StatsPageProps> = ({ cards, onClose }) => {
     });
 
     const heatmapValues = Array.from(heatmapDataMap.entries()).map(([date, count]) => ({ date, count }));
-    const dueCards = cards.filter((c) => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
+    const dueCards = cards.filter((c) =>
+        c.progress?.status === 'review' &&
+        c.progress.dueDate &&
+        new Date(c.progress.dueDate).getTime() <= now
+    );
     const learningCards = cards.filter((c) => c.progress?.status === 'learning');
     const newCards = cards.filter((c) => !c.progress || c.progress.status === 'new');
-    const totalReviewsDone = cards.reduce((acc, c) => acc + (c.progress?.reps ?? 0), 0);
+    const totalReviewsDone = cards.reduce((acc, c) => {
+        const progress = c.progress as (typeof c.progress & { reviewCount?: number }) | undefined;
+        return acc + (progress?.reps ?? progress?.reviewCount ?? 0);
+    }, 0);
 
     const byType = Array.from(new Set(cards.map((card) => card.type))).sort().map((type) => ({
         type,
