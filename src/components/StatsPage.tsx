@@ -1,7 +1,7 @@
 import React from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
-import { Lightning, BookOpen, Brain, Clock, Plus } from '@phosphor-icons/react';
+import { BookOpen, Brain, ChartBar, ClockCounterClockwise, Lightning, X } from '@phosphor-icons/react';
 import type { Card } from '../types';
 
 interface StatsPageProps {
@@ -13,120 +13,122 @@ interface HeatmapValue {
     count?: number;
 }
 
-const hasHeatmapCount = (value: unknown): value is HeatmapValue => {
-    return typeof value === 'object' && value !== null && 'count' in value;
-};
+const hasHeatmapCount = (value: unknown): value is HeatmapValue =>
+    typeof value === 'object' && value !== null && 'count' in value;
+
+const asPercent = (value: number) => `${Math.round(value * 100)}%`;
 
 export const StatsPage: React.FC<StatsPageProps> = ({ cards, onClose }) => {
-    const heatmapDataMap = new Map<string, number>();
-    cards.forEach(c => {
-        if (c.updatedAt) {
-            const dateStr = new Date(c.updatedAt).toISOString().split('T')[0];
-            heatmapDataMap.set(dateStr, (heatmapDataMap.get(dateStr) || 0) + 1);
-        }
-    });
-    const heatmapValues = Array.from(heatmapDataMap.entries()).map(([date, count]) => ({ date, count }));
+    const now = Date.now();
 
-    const endDate = new Date();
+    const heatmapDataMap = new Map<string, number>();
+    cards.forEach((card) => {
+        if (!card.updatedAt) return;
+        const day = new Date(card.updatedAt).toISOString().split('T')[0];
+        heatmapDataMap.set(day, (heatmapDataMap.get(day) || 0) + 1);
+    });
+
+    const heatmapValues = Array.from(heatmapDataMap.entries()).map(([date, count]) => ({ date, count }));
+    const dueCards = cards.filter((c) =>
+        c.progress?.status === 'review' &&
+        c.progress.dueDate &&
+        new Date(c.progress.dueDate).getTime() <= now
+    );
+    const learningCards = cards.filter((c) => c.progress?.status === 'learning');
+    const newCards = cards.filter((c) => !c.progress || c.progress.status === 'new');
+    const totalReviewsDone = cards.reduce((acc, c) => {
+        const progress = c.progress as (typeof c.progress & { reviewCount?: number }) | undefined;
+        return acc + (progress?.reps ?? progress?.reviewCount ?? 0);
+    }, 0);
+
+    const byType = Array.from(new Set(cards.map((card) => card.type))).sort().map((type) => ({
+        type,
+        count: cards.filter((card) => card.type === type).length
+    }));
+
+    const reviewedRatio = cards.length > 0 ? (cards.length - newCards.length) / cards.length : 0;
+
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - 6);
 
-    const dueCards = cards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
-    const learningCards = cards.filter(c => c.progress?.status === 'learning');
-    const totalToReview = dueCards.length;
-    const newCards = cards.filter(c => !c.progress || c.progress.status === 'new');
-
-    const totalReviewsDone = cards.reduce((acc, c) => acc + (c.progress?.reviewCount || 0), 0);
-
     return (
-        <div className="flex flex-col h-full bg-[var(--color-bg)] overflow-y-auto">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-bg)]/90 backdrop-blur z-10">
-                <div>
-                    <h1 className="text-2xl font-semibold text-[var(--color-text)] tracking-tight flex items-center gap-2">
-                        <Lightning className="text-[var(--color-drug)]" weight="duotone" />
-                        Statistiques
-                    </h1>
-                    <p className="text-sm text-[var(--color-text-muted)] mt-1">Analyse de votre apprentissage</p>
+        <div className="stats-page">
+            <header className="stats-header app-drag-region">
+                <div className="stats-title-wrap app-no-drag">
+                    <div className="stats-title-icon">
+                        <ChartBar size={18} weight="duotone" />
+                    </div>
+                    <div>
+                        <h1>Statistiques</h1>
+                        <p>Vision synthétique de votre progression et de l’activité de vos cartes.</p>
+                    </div>
                 </div>
-                <button
-                    onClick={onClose}
-                    className="px-4 py-2 text-sm font-medium border border-[var(--color-border)] rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
+                <button className="stats-close-btn app-no-drag" onClick={onClose}>
+                    <X size={16} />
                     Retour
                 </button>
-            </div>
+            </header>
 
-            <div className="p-8 max-w-5xl mx-auto w-full flex flex-col gap-8">
-                {/* Key Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden group hover:shadow-md transition-shadow">
-                        <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-300">
-                            <BookOpen size={100} weight="duotone" />
-                        </div>
-                        <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider z-10">
-                            Total Fiches
-                        </div>
-                        <div className="text-4xl font-black text-[var(--color-text)] mt-2 z-10">{cards.length}</div>
-                    </div>
-                    
-                    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden group hover:shadow-md transition-shadow">
-                        <div className="absolute -right-4 -bottom-4 text-[var(--color-patho)] opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-300">
-                            <Clock size={100} weight="duotone" />
-                        </div>
-                        <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider z-10">
-                            À Réviser
-                        </div>
-                        <div className="text-4xl font-black text-[var(--color-text)] mt-2 z-10">{totalToReview}</div>
-                    </div>
+            <div className="stats-content">
+                <section className="stats-kpi-grid">
+                    <article className="stats-kpi-card">
+                        <div className="stats-kpi-label"><BookOpen size={14} /> Total fiches</div>
+                        <div className="stats-kpi-value">{cards.length}</div>
+                    </article>
+                    <article className="stats-kpi-card">
+                        <div className="stats-kpi-label"><ClockCounterClockwise size={14} /> À revoir</div>
+                        <div className="stats-kpi-value">{dueCards.length}</div>
+                    </article>
+                    <article className="stats-kpi-card">
+                        <div className="stats-kpi-label"><Brain size={14} /> En apprentissage</div>
+                        <div className="stats-kpi-value">{learningCards.length}</div>
+                    </article>
+                    <article className="stats-kpi-card">
+                        <div className="stats-kpi-label"><Lightning size={14} /> Révisions effectuées</div>
+                        <div className="stats-kpi-value">{totalReviewsDone}</div>
+                    </article>
+                </section>
 
-                    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden group hover:shadow-md transition-shadow">
-                        <div className="absolute -right-4 -bottom-4 text-[var(--color-physio)] opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-300">
-                            <Plus size={100} weight="duotone" />
+                <section className="stats-grid">
+                    <article className="stats-panel">
+                        <h3>Activité (6 derniers mois)</h3>
+                        <div className="home-heatmap-wrap">
+                            <CalendarHeatmap
+                                startDate={startDate}
+                                endDate={new Date()}
+                                values={heatmapValues}
+                                classForValue={(value) => {
+                                    if (!value) return 'color-empty';
+                                    const count = hasHeatmapCount(value) ? value.count || 0 : 0;
+                                    return `color-scale-${Math.min(count, 4)}`;
+                                }}
+                            />
                         </div>
-                        <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider z-10">
-                            Nouvelles
-                        </div>
-                        <div className="text-4xl font-black text-[var(--color-text)] mt-2 z-10">{newCards.length}</div>
-                    </div>
+                    </article>
 
-                    <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm flex flex-col gap-2 relative overflow-hidden group hover:shadow-md transition-shadow">
-                        <div className="absolute -right-4 -bottom-4 text-[var(--color-data)] opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-300">
-                            <Brain size={100} weight="duotone" />
-                        </div>
-                        <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider z-10">
-                            En Cours
-                        </div>
-                        <div className="text-4xl font-black text-[var(--color-text)] mt-2 z-10">{learningCards.length}</div>
-                    </div>
-                </div>
+                    <article className="stats-panel">
+                        <h3>Répartition des types</h3>
+                        <ul className="stats-type-list">
+                            {byType.map((entry) => (
+                                <li key={entry.type}>
+                                    <span>{entry.type}</span>
+                                    <strong>{entry.count}</strong>
+                                </li>
+                            ))}
+                        </ul>
+                    </article>
+                </section>
 
-                <div className="bg-gradient-to-r from-[var(--color-drug)] to-[var(--color-physio)] rounded-2xl p-6 text-white shadow-lg flex flex-col gap-2 relative overflow-hidden group">
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-30 group-hover:scale-110 transition-all duration-300">
-                        <Lightning size={120} weight="fill" />
+                <section className="stats-panel stats-progress-panel">
+                    <h3>Progression globale</h3>
+                    <div className="stats-progress-row">
+                        <span>Fiches déjà étudiées</span>
+                        <strong>{asPercent(reviewedRatio)}</strong>
                     </div>
-                    <div className="text-white/80 text-sm font-bold uppercase tracking-wider z-10">Total des révisions effectuées</div>
-                    <div className="text-5xl font-black z-10">{totalReviewsDone}</div>
-                </div>
-
-                {/* Heatmap */}
-                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-[var(--color-text)] mb-6 flex items-center gap-2">
-                        <Lightning className="text-[var(--color-data)]" />
-                        Activité (6 derniers mois)
-                    </h3>
-                    <div className="home-heatmap-wrap" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
-                        <CalendarHeatmap
-                            startDate={startDate}
-                            endDate={endDate}
-                            values={heatmapValues}
-                            classForValue={(value) => {
-                                if (!value) return 'color-empty';
-                                const count = hasHeatmapCount(value) ? value.count || 0 : 0;
-                                return 'color-scale-' + Math.min(count, 4);
-                            }}
-                        />
+                    <div className="stats-progress-track">
+                        <div className="stats-progress-fill" style={{ width: asPercent(reviewedRatio) }} />
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     );
