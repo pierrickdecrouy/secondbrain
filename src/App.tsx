@@ -651,24 +651,18 @@ function AppContent() {
           cards={workspaceCards}
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId}
-          onWorkspaceChange={async (id) => {
-            setActiveWorkspaceId(id);
-            setSelectedCardId(null);
-            setPinnedCardId(null);
-            setNetworkPanelPinned(false);
-            setActiveFilters([]);
-            setSearchQuery('');
-            await saveSettingAsync(ACTIVE_WORKSPACE_KEY, id);
-          }}
-          onNavigateToCard={(id) => {
-            setSelectedCardId(id);
-            navigateSection('cards');
-          }}
           onSearch={(query) => {
             setSearchQuery(query);
             navigateSection('cards');
           }}
-          onStartBrowsing={() => navigateSection('cards')}
+          onStartBrowsing={() => {
+            setViewMode('grid');
+            navigateSection('cards');
+          }}
+          onStartBrowsingList={() => {
+            setViewMode('list');
+            navigateSection('cards');
+          }}
           onStartReviewSession={openDueReviewSession}
           onAddCard={() => setAddDataMode('create')}
           onBatchImport={() => setAddDataMode('import')}
@@ -786,10 +780,13 @@ function AppContent() {
   ];
 
   const shouldCollapseSidebar = sidebarCollapsed && !sidebarOpen;
+  const isHomeSection = activeSection === 'dashboard';
+  const shouldShowSidebar = !isHomeSection || sidebarOpen;
 
   return (
-    <div className={`workspace-shell ${shouldCollapseSidebar ? 'sidebar-collapsed' : ''}`}>
-      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''}`}>
+    <div className={`workspace-shell ${shouldCollapseSidebar ? 'sidebar-collapsed' : ''} ${isHomeSection ? 'home-layout' : ''} ${isHomeSection && sidebarOpen ? 'home-sidebar-open' : ''}`}>
+      {shouldShowSidebar && (
+      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''} ${isHomeSection ? 'home-overlay' : ''}`}>
         <div className="workspace-sidebar-header">
           {!shouldCollapseSidebar && <h3>Espace</h3>}
           <div className="workspace-sidebar-actions">
@@ -847,14 +844,22 @@ function AppContent() {
           ))}
         </nav>
       </aside>
+      )}
       {sidebarOpen && (
         <button className="workspace-sidebar-backdrop" aria-label="Fermer le menu" onClick={() => setSidebarOpen(false)} />
       )}
 
       <div className="workspace-main">
+        {!isHomeSection && (
         <button className="workspace-mobile-menu" onClick={() => setSidebarOpen(prev => !prev)} title="Menu">
           <SidebarSimple size={18} />
         </button>
+        )}
+        {isHomeSection && !sidebarOpen && (
+          <button className="workspace-floating-menu" onClick={() => setSidebarOpen(true)} title="Ouvrir le menu">
+            <SidebarSimple size={20} />
+          </button>
+        )}
         <Suspense fallback={<LoadingFallback />}>
           {renderMainContent()}
         </Suspense>
