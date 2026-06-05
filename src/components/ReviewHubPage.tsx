@@ -39,7 +39,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         <ClockCounterClockwise size={34} weight="bold" />
                     </div>
 
-                    <div role="text" className="mt-5 inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)] backdrop-blur">
+                    <div className="mt-5 inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)] backdrop-blur">
                         Focus quotidien
                     </div>
 
