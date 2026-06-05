@@ -20,6 +20,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
         if (!action) return;
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
+            event.stopPropagation();
             action();
         }
     };
@@ -38,7 +39,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         <ClockCounterClockwise size={34} weight="bold" />
                     </div>
 
-                    <div className="mt-5 inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)] backdrop-blur">
+                    <div role="text" className="mt-5 inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)] backdrop-blur">
                         Focus quotidien
                     </div>
 
@@ -50,8 +51,8 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         Optimisez votre apprentissage grâce à des algorithmes intelligents de répétition espacée, ou ciblez des sujets précis avec des modes spécialisés.
                     </p>
 
-                    <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-4 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-                        <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                    <div role="status" aria-live="polite" aria-atomic="true" className="mx-auto mt-6 inline-flex items-center gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-4 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        <span aria-hidden="true" className="flex h-2 w-2 rounded-full bg-emerald-500" />
                         {totalDue > 0 ? `${totalDue} carte${totalDue > 1 ? 's' : ''} à réviser aujourd'hui` : 'Aucune révision due aujourd’hui'}
                     </div>
                 </header>
@@ -59,6 +60,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
                     <div
                         role="button"
+                        aria-label={totalDue > 0 ? `Mode FSRS, ${totalDue} cartes disponibles` : 'Mode FSRS indisponible, aucune carte'}
                         tabIndex={totalDue > 0 ? 0 : -1}
                         onClick={totalDue > 0 ? onSelectFSRS : undefined}
                         onKeyDown={(event) => handleCardKeyDown(event, totalDue > 0 ? onSelectFSRS : undefined)}
@@ -67,7 +69,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                             : 'border-[var(--color-border)] opacity-70 cursor-not-allowed'
                             }`}
                     >
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400" />
+                        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400" />
                         <div className="flex items-start justify-between mb-5 mt-1">
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-wider">
                                 <Brain weight="bold" size={14} />
@@ -114,6 +116,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 
                     <div
                         role="button"
+                        aria-label={hasEnoughCardsForCluster ? 'Mode révision par cluster disponible' : 'Mode révision par cluster indisponible, pas assez de liens'}
                         tabIndex={hasEnoughCardsForCluster ? 0 : -1}
                         onClick={hasEnoughCardsForCluster ? onSelectCluster : undefined}
                         onKeyDown={(event) => handleCardKeyDown(event, hasEnoughCardsForCluster ? onSelectCluster : undefined)}
@@ -122,7 +125,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                             : 'border-[var(--color-border)] opacity-70 cursor-not-allowed'
                             }`}
                     >
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
+                        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-400 via-indigo-500 to-violet-400" />
                         <div className="flex items-start justify-between mb-5 mt-1">
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 font-bold text-[10px] uppercase tracking-wider">
                                 <Graph weight="bold" size={14} />
@@ -165,12 +168,13 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 
                     <div
                         role="button"
+                        aria-label="Mode bachotage intensif disponible"
                         tabIndex={0}
                         onClick={onSelectIntensive}
                         onKeyDown={(event) => handleCardKeyDown(event, onSelectIntensive)}
                         className="group relative overflow-hidden text-left w-full rounded-3xl border border-[var(--color-border)] transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 bg-[var(--color-surface)] p-6 sm:p-7 flex flex-col h-full gap-0 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-xl hover:shadow-orange-500/10 cursor-pointer dark:hover:border-orange-700"
                     >
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400" />
+                        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400" />
                         <div className="flex items-start justify-between mb-5 mt-1">
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 font-bold text-[10px] uppercase tracking-wider">
                                 <Lightning weight="bold" size={14} />
