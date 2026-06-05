@@ -44,19 +44,19 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
         if (score >= 80) {
             return (
                 <span>
-                    Forte corrélation détectée entre <strong className="text-white">"{sourceName}"</strong> et <strong className="text-white">"{targetName}"</strong>.
+                    Forte corrélation détectée entre <strong>"{sourceName}"</strong> et <strong>"{targetName}"</strong>.
                 </span>
             );
         } else if (score >= 50) {
             return (
                 <span>
-                    Corrélation modérée entre <strong className="text-white">"{sourceName}"</strong> et <strong className="text-white">"{targetName}"</strong>.
+                    Corrélation modérée entre <strong>"{sourceName}"</strong> et <strong>"{targetName}"</strong>.
                 </span>
             );
         } else {
             return (
                 <span>
-                    Faible lien potentiel entre <strong className="text-white">"{sourceName}"</strong> et <strong className="text-white">"{targetName}"</strong>.
+                    Faible lien potentiel entre <strong>"{sourceName}"</strong> et <strong>"{targetName}"</strong>.
                 </span>
             );
         }

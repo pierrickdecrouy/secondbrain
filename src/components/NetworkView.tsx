@@ -12,13 +12,11 @@ import {
 } from '@phosphor-icons/react';
 import { NetworkTooltip } from './NetworkTooltip';
 import { findStrongestPath } from '../algorithms/graphAlgorithms';
-import { detectCommunities } from '../algorithms/communityDetection';
 import { useTheme } from '../context/ThemeContext';
 
 // Lazy-load the 3D graph (heavy Three.js bundle)
 const ForceGraph3D = lazy(() => import('react-force-graph-3d'));
 
-const OVERDUE_PENALTY_FACTOR = 0.35;
 
 type GraphNode = Node & {
     x?: number;
@@ -38,7 +36,6 @@ const linkEndpointId = (endpoint: GraphLink['source']): string =>
 interface NetworkViewProps {
     cards: Card[];
     onNodeClick?: (id: string) => void;
-    onClusterReview?: (cardIds: string[]) => void;
     searchQuery?: string;
     highlightedIds?: Set<string>;
     activeFilters?: string[];
@@ -48,20 +45,25 @@ interface NetworkViewProps {
     width?: number; // Optional, defaults to auto-fill
     height?: number;
     typeCompat?: Record<string, number>;
+    activeNodeId?: string | null;
+    pendingClusterReview?: boolean;
+    onStartClusterReview?: (clusterNodeIds: string[]) => void;
 }
 
 
 export const NetworkView: React.FC<NetworkViewProps> = ({
     cards,
     onNodeClick,
-    onClusterReview,
     searchQuery,
     highlightedIds,
     activeFilters,
     onSuppressConnections,
     vetoPairs,
     width,
-    height
+    height,
+    activeNodeId,
+    pendingClusterReview,
+    onStartClusterReview
 }) => {
     const { graphData, isLoading, error } = useGraphData({ cards, vetoPairs });
     const { darkMode: isDark } = useTheme();
@@ -76,7 +78,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Search Depth State (1 = direct match, 2 = neighbors, 3 = extended, 0/Infinity = All)
     const [searchDepth, setSearchDepth] = useState<number>(1);
-    const [reviewTimeMarker] = useState<number>(() => Date.now());
 
     // Link Hover State
     const [hoverLink, setHoverLink] = useState<Link | null>(null);
@@ -89,6 +90,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const lastClickTimeRef = useRef<number>(0);
     const lastClickNodeIdRef = useRef<string | null>(null);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+
 
 
     // ===============================================
@@ -192,6 +195,37 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         return { nodes, links };
     }, [graphData, activeFilters]);
 
+    // ===============================================
+    // RECENTER ON ACTIVE NODE
+    // ===============================================
+    useEffect(() => {
+        if (activeNodeId && fgRef.current) {
+            // Find node by id in structural data
+            const targetNode = structuralData.nodes.find(n => n.id === activeNodeId) as GraphNode;
+            if (targetNode && typeof targetNode.x === 'number' && typeof targetNode.y === 'number') {
+                if (use3D) {
+                    // 3D camera positioning
+                    const distance = 80;
+                    const distRatio = 1 + distance / Math.hypot(targetNode.x || 1, targetNode.y || 1, (targetNode as any).z || 1);
+                    fgRef.current.cameraPosition(
+                        { 
+                            x: targetNode.x * distRatio, 
+                            y: targetNode.y * distRatio, 
+                            z: ((targetNode as any).z || 0) * distRatio 
+                        },
+                        targetNode, // lookAt
+                        1000  // duration ms
+                    );
+                } else {
+                    // 2D centerAt
+                    fgRef.current.centerAt(targetNode.x, targetNode.y, 800);
+                    // Optional: zoom in slightly
+                    fgRef.current.zoom(2, 800);
+                }
+            }
+        }
+    }, [activeNodeId, structuralData.nodes, use3D]);
+
     // 2. Visual Highlight: Determines what is "Dimmed" based on Search
     const searchHighlightIds = useMemo(() => {
         if (!searchQuery && (!highlightedIds || highlightedIds.size === 0)) return null; // No active search highlight
@@ -231,41 +265,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         return accumulated;
     }, [structuralData, searchQuery, highlightedIds, searchDepth]);
 
-    const weakClusters = useMemo(() => {
-        if (!onClusterReview || structuralData.nodes.length < 3) return [];
-        const communities = detectCommunities(structuralData.nodes, structuralData.links);
-        const groups = new Map<string, string[]>();
-        communities.forEach((clusterId, nodeId) => {
-            if (!groups.has(clusterId)) groups.set(clusterId, []);
-            groups.get(clusterId)!.push(nodeId);
-        });
 
-        const withScores = Array.from(groups.values())
-            .filter(group => group.length >= 3)
-            .map(group => {
-                const clusterCards = group
-                    .map(id => cards.find(c => c.id === id))
-                    .filter((c): c is Card => Boolean(c));
-                if (clusterCards.length === 0) return null;
-
-                const masteryScores = clusterCards.map(card => {
-                    const p = card.progress;
-                    if (!p) return 0.25;
-                    const intervalScore = Math.min(1, Math.max(0, (p.interval || 0) / 21));
-                    const overduePenalty = p.dueDate && new Date(p.dueDate).getTime() < reviewTimeMarker ? OVERDUE_PENALTY_FACTOR : 0;
-                    return Math.max(0, intervalScore - overduePenalty);
-                });
-                const mastery = masteryScores.reduce((sum, n) => sum + n, 0) / masteryScores.length;
-                const overdueCount = clusterCards.filter(card => card.progress?.dueDate && new Date(card.progress.dueDate).getTime() <= reviewTimeMarker).length;
-                const weakness = (1 - mastery) + (overdueCount / clusterCards.length) * 0.7;
-                return { cardIds: clusterCards.map(c => c.id), weakness, mastery, overdueCount };
-            })
-            .filter((entry): entry is { cardIds: string[]; weakness: number; mastery: number; overdueCount: number } => Boolean(entry))
-            .sort((a, b) => b.weakness - a.weakness)
-            .slice(0, 4);
-
-        return withScores;
-    }, [structuralData, cards, onClusterReview, reviewTimeMarker]);
 
     // ===============================================
     // RENDER HELPERS
@@ -538,10 +538,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     };
 
     return (
-        <div
-            className="relative w-full h-full overflow-hidden"
-            style={{ background: graphBg }}
-        >
+        <div className="flex w-full h-full" style={{ background: graphBg }}>
+            <div className="relative flex-1 h-full overflow-hidden">
             {error && (
                 <div className="absolute top-4 left-4 right-4 z-50 pointer-events-none">
                     <div className={`mx-auto max-w-2xl rounded-lg border px-4 py-2 text-sm shadow-sm ${isDark ? 'bg-red-900/70 border-red-700 text-red-100' : 'bg-red-50 border-red-200 text-red-700'}`}>
@@ -709,36 +707,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 )}
             </div>
 
-            {/* Top Left: Cluster Review panel */}
-            {weakClusters.length > 0 && onClusterReview && (
-                <div className="absolute top-4 left-4 z-40 pointer-events-auto">
-                    <div className={`border rounded-xl shadow-lg p-3 min-w-[260px]
-                        ${isDark ? 'bg-slate-800/95 border-slate-700' : 'bg-white/95 border-slate-200'}`}>
-                        <div className={`text-xs font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                            Cluster Review (priorité)
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            {weakClusters.map((cluster, idx) => (
-                                <button
-                                    key={`${cluster.cardIds[0]}-${idx}`}
-                                    className={`text-left px-3 py-2 rounded-lg border transition-colors
-                                        ${isDark
-                                            ? 'border-slate-700 hover:border-indigo-500 hover:bg-indigo-900/30'
-                                            : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'}`}
-                                    onClick={() => onClusterReview(cluster.cardIds)}
-                                >
-                                    <div className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                                        Cluster #{idx + 1} · {cluster.cardIds.length} fiches
-                                    </div>
-                                    <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        Maîtrise: {(cluster.mastery * 100).toFixed(0)}% · En retard: {cluster.overdueCount}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* We moved the Cluster Review panel to the right side flex container */}
 
             {/* Bottom Left: Selection Info */}
             {selectedNodes.size > 0 && (
@@ -783,6 +752,32 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                                 )}
                             </div>
                         )}
+                        
+                        {selectedNodes.size === 1 && pendingClusterReview && (
+                            <button
+                                onClick={() => {
+                                    const nodeId = Array.from(selectedNodes)[0];
+                                    const neighborIds = new Set<string>();
+                                    neighborIds.add(nodeId);
+                                    graphData.links.forEach((l: GraphLink) => {
+                                        if (linkEndpointId(l.source) === nodeId) neighborIds.add(linkEndpointId(l.target));
+                                        if (linkEndpointId(l.target) === nodeId) neighborIds.add(linkEndpointId(l.source));
+                                    });
+                                    if (onStartClusterReview) {
+                                        onStartClusterReview(Array.from(neighborIds));
+                                    }
+                                }}
+                                className={`
+                                    w-full py-2 px-3 mt-2 rounded-lg font-bold text-sm transition-all shadow-sm
+                                    ${isDark 
+                                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
+                                        : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                                    }
+                                `}
+                            >
+                                Réviser ce cluster
+                            </button>
+                        )}
 
                         {selectedNodes.size === 1 && (
                             <button
@@ -796,6 +791,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     </div>
                 </div>
             )}
+
+            </div>
+            
         </div>
     );
 };

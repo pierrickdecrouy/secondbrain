@@ -39,7 +39,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     // with '  \n' which ensures a hard break in Markdown.
     const processedContent = React.useMemo(() => {
         if (!content) return '';
-        return content.replace(/(?<!\\)\\(?=\s|$)/g, '  \n');
+        let processed = content.replace(/(?<!\\)\\(?=\s|$)/g, '  \n');
+        // Handle highlight syntax: ==text== -> <mark>text</mark>
+        processed = processed.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+        return processed;
     }, [content]);
 
     return (
@@ -65,6 +68,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                     h2: ({ node, ...props }) => <h2 {...props} className="text-xl font-semibold text-slate-800 mt-5 mb-3" />,
                     h3: ({ node, ...props }) => <h3 {...props} className="text-lg font-semibold text-slate-800 mt-4 mb-2" />,
 
+                    // Style mark tags (highlights)
+                    mark: ({ node, ...props }) => (
+                        <mark {...props} className="bg-yellow-200/60 dark:bg-yellow-500/30 text-inherit px-1 rounded-sm" />
+                    ),
                     // Customize link rendering if needed
                     a: ({ node, ...props }) => (
                         <a {...props} className="text-blue-600 hover:text-blue-800 underline transition-colors" target="_blank" rel="noopener noreferrer" />

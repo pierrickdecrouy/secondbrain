@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import {
-    MagnifyingGlass, Plus, X, UploadSimple, GearSix,
-    BookOpen, Brain, Rows,
-    FloppyDisk, Moon, SquaresFour, Sun
+    MagnifyingGlass, Plus, X,
+    BookOpen, Brain
 } from '@phosphor-icons/react';
 import type { Card } from '../types';
-import { useTheme } from '../context/ThemeContext';
 
 type Workspace = { id: string; name: string; createdAt: number; updatedAt: number };
 
@@ -29,14 +27,9 @@ export const HomePage: React.FC<HomePageProps> = ({
     activeWorkspaceId,
     onSearch,
     onStartBrowsing,
-    onStartBrowsingList,
     onStartReviewSession,
     onAddCard,
-    onBatchImport,
-    onBackgroundExport,
-    onSettings,
 }) => {
-    const { darkMode, toggleDarkMode } = useTheme();
     const [searchValue, setSearchValue] = useState('');
 
     const dueCards = cards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date());
@@ -59,44 +52,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="home-page">
             <div className="home-animated-bg" />
 
-            {/* Top bar */}
-            <div className="home-topbar app-drag-region">
-                <div className="home-topbar-actions app-no-drag" style={{marginLeft: 'auto'}}>
-                    <button
-                        className="home-topbar-btn"
-                        onClick={toggleDarkMode}
-                        title={darkMode ? 'Mode clair' : 'Mode sombre'}
-                    >
-                        {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
-                    {onBackgroundExport && (
-                        <button
-                            className="home-topbar-btn"
-                            onClick={onBackgroundExport}
-                            title="Sauvegarde"
-                        >
-                            <FloppyDisk size={18} />
-                        </button>
-                    )}
-                    <button
-                        className="home-topbar-btn"
-                        onClick={onBatchImport}
-                        title="Import en masse"
-                    >
-                        <UploadSimple size={18} />
-                    </button>
-                    <button
-                        className="home-topbar-btn"
-                        onClick={onSettings}
-                        title="Paramètres"
-                    >
-                        <GearSix size={18} />
-                    </button>
-                </div>
-            </div>
-
             {/* Main Center Content */}
-            <div className="home-content app-no-drag">
+            <div className="home-content app-no-drag" style={{ paddingTop: '2rem' }}>
                 <h1 className="home-greeting">
                     {getGreeting()}, <span>Pierrick</span>
                 </h1>
@@ -138,32 +95,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                         <span className="speed-dial-label">Révision</span>
                     </button>
 
-                    <div className="speed-dial-with-options">
-                        <button className="speed-dial-btn action-browse" onClick={onStartBrowsing}>
-                            <div className="speed-dial-icon-wrap">
-                                <BookOpen size={28} weight="duotone" />
-                            </div>
-                            <span className="speed-dial-label">Cartes</span>
-                        </button>
-                        <span className="speed-dial-subactions">
-                            <button
-                                className="speed-dial-subaction"
-                                onClick={onStartBrowsing}
-                                title="Ouvrir en grille"
-                            >
-                                <SquaresFour size={14} />
-                                Grille
-                            </button>
-                            <button
-                                className="speed-dial-subaction"
-                                onClick={onStartBrowsingList}
-                                title="Ouvrir en liste"
-                            >
-                                <Rows size={14} />
-                                Liste
-                            </button>
-                        </span>
-                    </div>
+                    <button className="speed-dial-btn action-browse" onClick={onStartBrowsing}>
+                        <div className="speed-dial-icon-wrap">
+                            <BookOpen size={28} weight="duotone" />
+                        </div>
+                        <span className="speed-dial-label">Parcourir</span>
+                    </button>
 
                     <button className="speed-dial-btn action-add" onClick={onAddCard}>
                         <div className="speed-dial-icon-wrap">

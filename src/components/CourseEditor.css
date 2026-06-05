@@ -1,0 +1,217 @@
+.course-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  min-height: 400px;
+}
+
+.course-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.course-editor-toolbar .toolbar-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 6px;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.course-editor-toolbar .toolbar-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.course-editor-toolbar .toolbar-btn.is-active {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.course-editor-toolbar .toolbar-divider {
+  width: 1px;
+  background: #cbd5e1;
+  margin: 0 4px;
+}
+
+.course-editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  cursor: text;
+}
+
+.course-editor-content .ProseMirror {
+  outline: none;
+  min-height: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Base ProseMirror styles matching the user's HTML */
+.course-editor-content .ProseMirror p {
+  margin-bottom: 1rem;
+  line-height: 1.65;
+}
+
+.course-editor-content .ProseMirror h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.course-editor-content .ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.course-editor-content .ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.course-editor-content .ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.course-editor-content .ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.course-editor-content .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.course-editor-content .ProseMirror table th {
+  background: #f8fafc;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.course-editor-content .ProseMirror table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.course-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Custom Alert Nodes */
+.medical-alert {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  border-left: 4px solid;
+  page-break-inside: avoid;
+}
+
+.medical-alert-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.medical-alert-header svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+/* Definition */
+.medical-alert[data-type="definition"] {
+  background-color: #eff6ff; /* blue-50 */
+  border-left-color: #60a5fa; /* blue-400 */
+}
+.medical-alert[data-type="definition"] .medical-alert-header {
+  color: #1e40af; /* blue-800 */
+}
+
+/* Concours */
+.medical-alert[data-type="concours"] {
+  background-color: #fffbeb; /* amber-50 */
+  border-left-color: #fbbf24; /* amber-400 */
+}
+.medical-alert[data-type="concours"] .medical-alert-header {
+  color: #92400e; /* amber-800 */
+}
+
+/* Vigilance */
+.medical-alert[data-type="vigilance"] {
+  background-color: #fef2f2; /* red-50 */
+  border-left-color: #f87171; /* red-400 */
+}
+.medical-alert[data-type="vigilance"] .medical-alert-header {
+  color: #991b1b; /* red-800 */
+}
+
+/* Expert */
+.medical-alert[data-type="expert"] {
+  background-color: #f8fafc; /* slate-50 */
+  border-left-color: #475569; /* slate-600 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+.medical-alert[data-type="expert"] .medical-alert-header {
+  color: #0f172a; /* slate-900 */
+}
+.medical-alert[data-type="expert"] .medical-alert-content {
+  color: #334155;
+  font-style: italic;
+  border-left: 2px solid #e2e8f0;
+  padding-left: 1rem;
+  margin-left: 0.25rem;
+}
+
+/* Content area for alerts */
+.medical-alert-content {
+  color: #000;
+  font-size: 0.875rem;
+}
+.medical-alert-content p {
+  margin-bottom: 0.5rem;
+}
+.medical-alert-content p:last-child {
+  margin-bottom: 0;
+}

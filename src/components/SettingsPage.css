@@ -1,6 +1,6 @@
 /* SettingsPage.css */
 
-:root {
+.settings-modal-overlay {
     --primary: #4fb286;
     /* Vert PharmaBrain */
     --primary-light: #e8f5f0;

@@ -19,6 +19,7 @@ export interface Card {
 
 // Export a value to ensure this file is treated as a module at runtime
 export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;
+export const COURSE_TYPE = 'course';
 
 export const generateId = (text: string): string => {
     return text
