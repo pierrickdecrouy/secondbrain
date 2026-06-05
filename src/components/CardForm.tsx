@@ -7,11 +7,13 @@ import {
     MagnifyingGlass,
     EyeSlash,
     UploadSimple,
-    Info
+    Info,
+    Highlighter
 } from '@phosphor-icons/react';
 import type { Card, CardType } from '../types';
 import { CARD_TYPES } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { CourseEditor } from './CourseEditor';
 import './CardForm.css';
 
 interface CardFormProps {
@@ -136,7 +138,22 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         }));
     };
 
-
+    const insertSyntax = (prefix: string, suffix: string) => {
+        const textarea = document.getElementById('md-textarea') as HTMLTextAreaElement;
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const details = formData.details || '';
+        const selectedText = details.substring(start, end);
+        const before = details.substring(0, start);
+        const after = details.substring(end);
+        
+        setFormData({ ...formData, details: before + prefix + selectedText + suffix + after });
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
+        }, 0);
+    };
 
     const toggleConnection = (targetId: string) => {
         setFormData(prev => {
@@ -262,7 +279,14 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                 <div className="form-box app-style">
                     <div className="box-header app-header-style flex-between">
                         <h3>Contenu</h3>
-                        <div className="header-actions">
+                        <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                className="icon-btn"
+                                onClick={() => insertSyntax('==', '==')}
+                                title="Surligner la sélection (==texte==)"
+                            >
+                                <Highlighter size={16} />
+                            </button>
                             <button
                                 className={`icon-btn ${showMarkdownInfo ? 'active' : ''}`}
                                 onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
@@ -299,6 +323,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                                 <li>||Caché||</li>
                                                 <li>$$Math$$</li>
                                                 <li>![Alt](url)</li>
+                                                <li>==Surligné==</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -308,12 +333,10 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     </div>
                     <div className="box-content no-padding">
 
-                        <textarea
-                            value={formData.details}
-                            onChange={e => setFormData({ ...formData, details: e.target.value })}
-                            placeholder="Rédigez le contenu..."
-                            className="boxed-textarea app-textarea"
-                            rows={15}
+                        <CourseEditor
+                            value={formData.details || ''}
+                            onChange={(val) => setFormData({ ...formData, details: val })}
+                            existingCards={existingCards}
                         />
                     </div>
                 </div>

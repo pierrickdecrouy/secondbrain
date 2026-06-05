@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense, type ReactElement } from 'react';
 import type { Card } from './types';
+import { COURSE_TYPE } from './types';
 import { loadCardsAsync, saveCardsAsync } from './storage';
 import { initialCards } from './data';
 import { rebuildIndex, hybridSearch } from './searchIndex';
@@ -11,11 +12,14 @@ import { loadSettingAsync, saveSettingAsync } from './persistentSettings';
 import { DetailModal } from './components/DetailModal';
 import { AddDataModal } from './components/AddDataModal';
 import { HomePage } from './components/HomePage';
+import { CoursesPage } from './components/CoursesPage';
 import { StatsPage } from './components/StatsPage';
 import { ReviewSessionModal } from './components/ReviewSessionModal';
+import { ReviewHubPage } from './components/ReviewHubPage';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { PencilSimple, Trash, CircleNotch, House, Cards, ShareNetwork, ClockCounterClockwise, Plus, PencilSimpleLine, TrashSimple, SidebarSimple, ChartBar, CaretDoubleLeft, CaretDoubleRight } from '@phosphor-icons/react';
-import { ThemeProvider } from './context/ThemeContext';
+import { PencilSimple, Trash, CircleNotch, House, ShareNetwork, ClockCounterClockwise, Plus, ChartBar, MagnifyingGlass, GearSix, Moon, Sun, CaretDown, Command, DownloadSimple, List, ArrowLeft, Stack, BookOpen, Graph, X } from '@phosphor-icons/react';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ExtndLogo } from './components/ExtndLogo';
 
 // Lazy load heavy components
 const NetworkView = lazy(() => import('./components/NetworkView').then(module => ({ default: module.NetworkView })));
@@ -23,7 +27,7 @@ const SettingsPage = lazy(() => import('./components/SettingsPage'));
 const BrowsePage = lazy(() => import('./components/BrowsePage').then(module => ({ default: module.BrowsePage })));
 
 type ViewMode = 'grid' | 'list' | 'network';
-type AppSection = 'dashboard' | 'cards' | 'network' | 'review' | 'settings' | 'stats';
+type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
 type Workspace = { id: string; name: string; createdAt: number; updatedAt: number };
 
 const WORKSPACES_KEY = 'pharmabrain_workspaces_v1';
@@ -83,11 +87,13 @@ function AppContent() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [activeSection, setActiveSection] = useState<AppSection>('dashboard');
+  const { darkMode, toggleDarkMode } = useTheme();
   const [addDataMode, setAddDataMode] = useState<'none' | 'create' | 'edit' | 'import'>('none');
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [cardToDelete, setCardToDelete] = useState<Card | null>(null);
   const [semanticReady, setSemanticReady] = useState(false);
   const [embeddingsReady, setEmbeddingsReady] = useState(false);
+  const [pendingClusterReview, setPendingClusterReview] = useState(false);
   const [reviewSession, setReviewSession] = useState<{ cardIds: string[]; title: string } | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
@@ -262,6 +268,10 @@ function AppContent() {
   }, [workspaceCards, reviewSession]);
 
   const openDueReviewSession = useCallback(() => {
+    setActiveSection('review');
+  }, []);
+
+  const startFSRSReview = useCallback(() => {
     const now = Date.now();
     const dueCards = workspaceCards.filter(card => {
       const dueDate = card.progress?.dueDate ? new Date(card.progress.dueDate).getTime() : 0;
@@ -275,6 +285,23 @@ function AppContent() {
     setReviewSession({
       cardIds: fallback.map(c => c.id),
       title: dueCards.length > 0 ? 'Révision planifiée (FSRS)' : 'Session découverte'
+    });
+    setActiveSection('cards');
+  }, [workspaceCards]);
+
+  const startClusterReviewMode = useCallback(() => {
+    setActiveSection('network');
+    setViewMode('network');
+    setPendingClusterReview(true);
+  }, []);
+
+  const startIntensiveReview = useCallback(() => {
+    // Shuffle all workspace cards
+    const shuffled = [...workspaceCards].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, Math.min(30, shuffled.length));
+    setReviewSession({
+      cardIds: selected.map(c => c.id),
+      title: 'Bachotage Intensif'
     });
     setActiveSection('cards');
   }, [workspaceCards]);
@@ -518,8 +545,11 @@ function AppContent() {
         });
       } else {
         // Standard Type Filter
-        result = result.filter(card => activeFilters.includes(card.type));
+        result = result.filter(card => activeFilters.includes(card.type) && card.type !== COURSE_TYPE);
       }
+    } else {
+      // Exclude courses from the main cards view by default
+      result = result.filter(card => card.type !== COURSE_TYPE);
     }
 
     // 2. Search filter using hybrid (FlexSearch + semantic)
@@ -531,7 +561,7 @@ function AppContent() {
       result = searchResultIds
         .filter(id => idSet.has(id) && idToCard.has(id))
         .map(id => idToCard.get(id)!)
-        .filter(c => activeFilters.length === 0 || activeFilters.includes(c.type));
+        .filter(c => (activeFilters.length === 0 || activeFilters.includes(c.type)) && c.type !== COURSE_TYPE);
     }
 
     return result;
@@ -543,77 +573,24 @@ function AppContent() {
         ? prev.filter(t => t !== type)
         : [...prev, type]
     );
-  };
-
-  const createWorkspace = async () => {
-    const name = window.prompt('Nom du nouvel espace de travail :');
-    if (!name?.trim()) return;
-    const now = Date.now();
-    const workspace: Workspace = {
-      id: `workspace-${now}`,
-      name: name.trim(),
-      createdAt: now,
-      updatedAt: now
-    };
-    const next = [...workspaces, workspace];
-    const seededCards = buildWorkspaceSeedCards(workspace.id);
-    const nextCards = [...cards, ...seededCards];
-    setWorkspaces(next);
-    setCards(nextCards);
-    setActiveWorkspaceId(workspace.id);
-    await Promise.all([
-      saveSettingAsync(WORKSPACES_KEY, next),
-      saveSettingAsync(ACTIVE_WORKSPACE_KEY, workspace.id),
-      saveCardsAsync(nextCards)
-    ]);
-  };
-
-  const renameWorkspace = async () => {
-    if (!activeWorkspace) return;
-    const name = window.prompt('Renommer cet espace :', activeWorkspace.name);
-    if (!name?.trim()) return;
-    const next = workspaces.map(w => w.id === activeWorkspace.id
-      ? { ...w, name: name.trim(), updatedAt: Date.now() }
-      : w);
-    setWorkspaces(next);
-    await saveSettingAsync(WORKSPACES_KEY, next);
-  };
-
-  const deleteWorkspace = async () => {
-    if (!activeWorkspace || workspaces.length <= 1) return;
-    const confirmed = window.confirm(`Supprimer l'espace "${activeWorkspace.name}" et ses fiches ?`);
-    if (!confirmed) return;
-    const remaining = workspaces.filter(w => w.id !== activeWorkspace.id);
-    const fallbackWorkspaceId = remaining[0].id;
-    setCards(prev => prev.filter(c => (c.workspaceId ?? DEFAULT_WORKSPACE_ID) !== activeWorkspace.id));
-    setWorkspaces(remaining);
-    setActiveWorkspaceId(fallbackWorkspaceId);
     setSelectedCardId(null);
-    setPinnedCardId(null);
-    setNetworkPanelPinned(false);
-    await Promise.all([
-      saveSettingAsync(WORKSPACES_KEY, remaining),
-      saveSettingAsync(ACTIVE_WORKSPACE_KEY, fallbackWorkspaceId)
-    ]);
+    if (!networkPanelPinned) setPinnedCardId(null);
   };
 
   const navigateSection = useCallback((section: AppSection) => {
     setActiveSection(section);
     setSidebarOpen(false);
+    setSelectedCardId(null); // Clear selected card when switching sections
     if (section === 'network') {
       setViewMode('network');
     }
     if (section === 'cards' && viewMode === 'network') {
       setViewMode('grid');
     }
-    if (section !== 'network' && viewMode !== 'network') {
-      setNetworkPanelPinned(false);
-      setPinnedCardId(null);
-    }
-    if (section === 'review') {
-      openDueReviewSession();
-    }
-  }, [viewMode, openDueReviewSession]);
+    // Always clear pinned cards when changing tabs to prevent unwanted foreground cards
+    setNetworkPanelPinned(false);
+    setPinnedCardId(null);
+  }, [viewMode]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -676,7 +653,7 @@ function AppContent() {
       return (
         <SettingsPage
           onClose={() => navigateSection('dashboard')}
-          availableCategories={Array.from(new Set(workspaceCards.map(c => c.type))).sort()}
+          availableCategories={Array.from(new Set(workspaceCards.map(c => c.type))).filter(t => t !== COURSE_TYPE).sort()}
           cards={workspaceCards}
           onReviewLowQuality={() => {
             setActiveFilters(['needs-review']);
@@ -693,6 +670,30 @@ function AppContent() {
         />
       );
     }
+    
+    if (activeSection === 'review') {
+      return (
+        <ReviewHubPage 
+          onSelectFSRS={startFSRSReview}
+          onSelectCluster={startClusterReviewMode}
+          onSelectIntensive={startIntensiveReview}
+          totalDue={workspaceCards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date()).length}
+          hasEnoughCardsForCluster={workspaceCards.filter(c => c.manualConnections && c.manualConnections.length > 0).length >= 1}
+        />
+      );
+    }
+    
+    if (activeSection === 'courses') {
+      return (
+        <CoursesPage
+          cards={workspaceCards}
+          onHome={() => navigateSection('dashboard')}
+          onSaveCourse={handleSaveCard}
+          onDeleteCourse={handleDeleteCard}
+          existingCards={cards}
+        />
+      );
+    }
 
     return (
       <BrowsePage
@@ -701,6 +702,8 @@ function AppContent() {
         onSearchChange={setSearchQuery}
         activeFilters={activeFilters}
         onFilterToggle={(type) => {
+          setSelectedCardId(null);
+          if (!networkPanelPinned) setPinnedCardId(null);
           if (type === 'all') {
             if (activeFilters.length > 0) setActiveFilters([]);
           } else {
@@ -751,12 +754,6 @@ function AppContent() {
                 }
                 setSelectedCardId(id);
               }}
-              onClusterReview={(clusterCardIds) => {
-                setReviewSession({
-                  cardIds: clusterCardIds,
-                  title: `Cluster review (${clusterCardIds.length} fiches)`
-                });
-              }}
               searchQuery={searchQuery}
               highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
               activeFilters={activeFilters}
@@ -764,6 +761,16 @@ function AppContent() {
               semanticReady={embeddingsReady}
               vetoPairs={getLinkFeedback().vetoPairs}
               typeCompat={getLinkFeedback().typePairScores}
+              activeNodeId={selectedCard?.id}
+              pendingClusterReview={pendingClusterReview}
+              onStartClusterReview={(clusterNodeIds) => {
+                  setPendingClusterReview(false);
+                  if (clusterNodeIds.length === 0) return;
+                  setReviewSession({
+                      cardIds: clusterNodeIds,
+                      title: 'Révision par Cluster'
+                  });
+              }}
             />
           </Suspense>
         )}
@@ -772,11 +779,12 @@ function AppContent() {
   };
 
   const navItems: Array<{ id: AppSection; label: string; icon: ReactElement }> = [
-    { id: 'dashboard', label: 'Dashboard', icon: <House size={16} /> },
-    { id: 'cards', label: 'Cartes', icon: <Cards size={16} /> },
-    { id: 'network', label: 'Réseau', icon: <ShareNetwork size={16} /> },
-    { id: 'review', label: 'Révision', icon: <ClockCounterClockwise size={16} /> },
-    { id: 'stats', label: 'Statistiques', icon: <ChartBar size={16} /> }
+    { id: 'dashboard', label: 'Vue d\'ensemble', icon: <House size={20} weight="fill" /> },
+    { id: 'cards', label: 'Base de connaissances', icon: <Stack size={20} weight="fill" /> },
+    { id: 'courses', label: 'Fiches de cours', icon: <BookOpen size={20} weight="fill" /> },
+    { id: 'network', label: 'Graphe mental', icon: <ShareNetwork size={20} weight="bold" /> },
+    { id: 'review', label: 'Sessions de révision', icon: <ClockCounterClockwise size={20} weight="bold" /> },
+    { id: 'stats', label: 'Statistiques', icon: <ChartBar size={20} weight="bold" /> }
   ];
 
   const shouldCollapseSidebar = sidebarCollapsed && !sidebarOpen;
@@ -786,84 +794,177 @@ function AppContent() {
   return (
     <div className={`workspace-shell ${shouldCollapseSidebar ? 'sidebar-collapsed' : ''} ${isHomeSection ? 'home-layout' : ''} ${isHomeSection && sidebarOpen ? 'home-sidebar-open' : ''}`}>
       {shouldShowSidebar && (
-      <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''} ${isHomeSection ? 'home-overlay' : ''}`}>
-        <div className="workspace-sidebar-header">
-          {!shouldCollapseSidebar && <h3>Espace</h3>}
-          <div className="workspace-sidebar-actions">
-            {!shouldCollapseSidebar && (
+      <div className="workspace-sidebar-container">
+        <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''} ${isHomeSection ? 'home-overlay' : ''}`}>
+          <div className="workspace-sidebar-header" style={!shouldCollapseSidebar ? { justifyContent: 'space-between', alignItems: 'center' } : {}}>
+            {!shouldCollapseSidebar ? (
               <>
-                <button className="workspace-btn" onClick={createWorkspace} title="Nouveau workspace">
-                  <Plus size={14} />
-                </button>
-                <button className="workspace-btn" onClick={renameWorkspace} disabled={!activeWorkspace} title="Renommer workspace">
-                  <PencilSimpleLine size={14} />
-                </button>
-                <button className="workspace-btn" onClick={deleteWorkspace} disabled={!activeWorkspace || workspaces.length <= 1} title="Supprimer workspace">
-                  <TrashSimple size={14} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px' }}>
+                  <ExtndLogo size={28} className="brand-icon" />
+                </div>
+                <div className="workspace-sidebar-actions">
+                  <button className="workspace-btn" onClick={() => setSidebarCollapsed(true)} title="Réduire le menu">
+                    <ArrowLeft size={16} />
+                  </button>
+                </div>
               </>
+            ) : (
+              <div className="workspace-sidebar-actions" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <button className="workspace-btn" onClick={() => setSidebarCollapsed(false)} title="Agrandir le menu">
+                  <List size={20} weight="bold" />
+                </button>
+              </div>
             )}
-            <button className="workspace-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title="Réduire/Agrandir" style={shouldCollapseSidebar ? { width: '100%' } : {}}>
-              {shouldCollapseSidebar ? <CaretDoubleRight size={14} /> : <CaretDoubleLeft size={14} />}
-            </button>
           </div>
-        </div>
 
-        {!shouldCollapseSidebar && (
-          <select
-            className="workspace-select"
-            value={activeWorkspaceId}
-            onChange={async (e) => {
-              const next = e.target.value;
-              setActiveWorkspaceId(next);
-              setSelectedCardId(null);
-              setPinnedCardId(null);
-              setNetworkPanelPinned(false);
-              setActiveFilters([]);
-              setSearchQuery('');
-              await saveSettingAsync(ACTIVE_WORKSPACE_KEY, next);
-            }}
-          >
-            {workspaces.map(workspace => (
-              <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+          {!shouldCollapseSidebar && (
+            <div style={{ padding: '0 0.75rem', marginTop: '0.5rem' }}>
+              <div className="workspace-selector-pill" style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                  <Stack size={16} className="text-emerald-600" weight="duotone" />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                    {activeWorkspace?.name || 'Espace principal'}
+                  </span>
+                </div>
+                <CaretDown size={14} className="selector-caret" />
+                <select
+                  value={activeWorkspaceId}
+                  onChange={async (e) => {
+                    const next = e.target.value;
+                    setActiveWorkspaceId(next);
+                    setSelectedCardId(null);
+                    setPinnedCardId(null);
+                    setNetworkPanelPinned(false);
+                    setActiveFilters([]);
+                    setSearchQuery('');
+                    await saveSettingAsync(ACTIVE_WORKSPACE_KEY, next);
+                  }}
+                >
+                  {workspaces.map(workspace => (
+                    <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <nav className="workspace-nav">
+            {navItems.filter(i => i.id !== 'stats').map(item => (
+              <button
+                key={item.id}
+                className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''}`}
+                onClick={() => navigateSection(item.id)}
+                title={shouldCollapseSidebar ? item.label : undefined}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
             ))}
-          </select>
-        )}
-
-        <nav className="workspace-nav">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''}`}
-              onClick={() => navigateSection(item.id)}
-              title={shouldCollapseSidebar ? item.label : undefined}
-            >
-              {item.icon}
-              {!shouldCollapseSidebar && item.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
+          </nav>
+          
+          <div className="workspace-nav-bottom" style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginBottom: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {navItems.filter(i => i.id === 'stats').map(item => (
+              <button
+                key={item.id}
+                className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''}`}
+                onClick={() => navigateSection(item.id)}
+                title={shouldCollapseSidebar ? item.label : undefined}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
+      </div>
       )}
       {sidebarOpen && (
         <button className="workspace-sidebar-backdrop" aria-label="Fermer le menu" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <div className="workspace-main">
+      <main className="workspace-main">
         {!isHomeSection && (
-        <button className="workspace-mobile-menu" onClick={() => setSidebarOpen(prev => !prev)} title="Menu">
-          <SidebarSimple size={18} />
-        </button>
+        <header className="global-header app-drag-region">
+            <div className="global-header-brand">
+                <ExtndLogo size={56} className="brand-icon" />
+                <span className="brand-text">Extnd.</span>
+                <div className="workspace-selector-pill app-no-drag">
+                   <span>Espace : <strong>{workspaces.find(w => w.id === activeWorkspaceId)?.name?.substring(0, 2).toUpperCase() || 'NI'}</strong></span>
+                   <CaretDown size={12} className="selector-caret" />
+                   <select 
+                      value={activeWorkspaceId}
+                      onChange={async (e) => {
+                          const next = e.target.value;
+                          setActiveWorkspaceId(next);
+                          setSelectedCardId(null);
+                          setPinnedCardId(null);
+                          setNetworkPanelPinned(false);
+                          setActiveFilters([]);
+                          setSearchQuery('');
+                          await saveSettingAsync(ACTIVE_WORKSPACE_KEY, next);
+                      }}
+                   >
+                     {workspaces.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                   </select>
+                </div>
+            </div>
+
+            <div className="global-header-search app-no-drag">
+               <div className="search-omnibox">
+                  <MagnifyingGlass size={16} className="search-icon" />
+                  <input 
+                     type="text" 
+                     placeholder="Rechercher une carte, une pathologie..." 
+                     value={searchQuery}
+                     onChange={(e) => {
+                         setSearchQuery(e.target.value);
+                         if (e.target.value && activeSection !== 'cards' && activeSection !== 'network') {
+                             setActiveSection('cards');
+                         }
+                     }}
+                  />
+                  <span className="search-shortcut">
+                      <Command size={10} weight="bold" /> K
+                  </span>
+               </div>
+            </div>
+
+            <div className="global-header-actions app-no-drag">
+               <button className="header-icon-btn" onClick={toggleDarkMode} title="Thème">
+                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+               </button>
+               <button className="header-icon-btn" onClick={() => setActiveSection('settings')} title="Paramètres">
+                  <GearSix size={18} />
+               </button>
+               <button className="header-icon-btn" onClick={handleExportBackup} title="Export">
+                  <DownloadSimple size={18} />
+               </button>
+               {activeSection !== 'courses' && (
+                 <button className="header-btn-primary" onClick={() => setAddDataMode('create')}>
+                    <Plus size={16} weight="bold" /> <span className="hidden sm:inline">Nouvelle fiche</span>
+                 </button>
+               )}
+            </div>
+        </header>
         )}
-        {isHomeSection && !sidebarOpen && (
-          <button className="workspace-floating-menu" onClick={() => setSidebarOpen(true)} title="Ouvrir le menu">
-            <SidebarSimple size={20} />
-          </button>
-        )}
-        <Suspense fallback={<LoadingFallback />}>
-          {renderMainContent()}
-        </Suspense>
-      </div>
+
+        <div className="workspace-content-scroll" style={isHomeSection ? { padding: 0 } : {}}>
+          {pendingClusterReview && activeSection === 'network' && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300">
+              <div className="bg-indigo-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-3">
+                <Graph size={20} weight="bold" />
+                Veuillez sélectionner un noeud central pour réviser son cluster
+                <button onClick={() => setPendingClusterReview(false)} className="ml-2 hover:bg-indigo-700 p-1 rounded-full transition-colors">
+                  <X size={14} weight="bold" />
+                </button>
+              </div>
+            </div>
+          )}
+          <Suspense fallback={<LoadingFallback />}>
+            {renderMainContent()}
+          </Suspense>
+        </div>
+      </main>
       {modals}
     </div>
   );

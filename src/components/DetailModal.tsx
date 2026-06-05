@@ -78,26 +78,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
 
     return (
         <div className="modal-overlay" onClick={handleOverlayClick}>
-            {/* Navigation Buttons (Outside wrapper for better clickable area) */}
-            {onPrev && (
-                <button
-                    className="nav-arrow-btn prev"
-                    onClick={(e) => { e.stopPropagation(); onPrev(); }}
-                    title="Précédent (Flèche Gauche)"
-                >
-                    <CaretLeft size={32} />
-                </button>
-            )}
 
-            {onNext && (
-                <button
-                    className="nav-arrow-btn next"
-                    onClick={(e) => { e.stopPropagation(); onNext(); }}
-                    title="Suivant (Flèche Droite)"
-                >
-                    <CaretRight size={32} />
-                </button>
-            )}
 
             <div className="modal-content">
                 <div className="modal-header">
@@ -133,9 +114,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                             <MarkdownRenderer content={card.content} className="text-sm text-slate-600" />
                         </div>
                     </div>
-                    <div className="modal-header-actions">
+                    <div className="modal-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {actions}
-                        <button className="modal-close" onClick={onClose}>
+                        {onPrev && (
+                            <button className="modal-close" onClick={(e) => { e.stopPropagation(); onPrev(); }} title="Précédent (Flèche Gauche)">
+                                <CaretLeft size={20} />
+                            </button>
+                        )}
+                        {onNext && (
+                            <button className="modal-close" onClick={(e) => { e.stopPropagation(); onNext(); }} title="Suivant (Flèche Droite)">
+                                <CaretRight size={20} />
+                            </button>
+                        )}
+                        <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 4px' }} />
+                        <button className="modal-close" onClick={onClose} title="Fermer">
                             <X size={20} />
                         </button>
                     </div>

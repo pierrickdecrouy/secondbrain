@@ -1,6 +1,6 @@
 /* BrowsePage.css */
 
-:root {
+.browse-container {
     --primary: #0ca678;
     /* Teal brand color */
     --primary-gradient: linear-gradient(135deg, #0ca678 0%, #20c997 100%);
@@ -236,15 +236,14 @@
 
 /* --- Toolbar (Filtres & View) --- */
 .browse-toolbar {
-    padding: 16px 32px;
+    padding: 16px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
     gap: 24px;
-    background: #ffffff;
-    /* Lighter background */
-    border-bottom: 1px solid var(--border-light);
+    background: transparent;
+    border-bottom: none;
 }
 
 .browse-filter-scroll-area {
@@ -365,7 +364,7 @@
 
 .browse-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 24px;
 }
 
@@ -519,7 +518,7 @@
 }
 
 .browse-network-layout.has-panel {
-    grid-template-columns: minmax(0, 1fr) 420px;
+    grid-template-columns: minmax(0, 1fr) 460px;
 }
 
 .browse-network-container {
@@ -535,19 +534,25 @@
 .browse-content-area.browse-content-area--network .browse-network-container {
     border-radius: 0;
     border: none;
+    border-right: 1px solid var(--border-light);
     background: var(--bg-body);
-    /* Match body bg or keep white? */
 }
 
 .card-side-panel {
     height: 100%;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
     overflow-y: auto;
-    border-left: 1px solid var(--border-light);
-    background: white;
-    padding: 16px;
+    border: none;
+    background: var(--bg-body);
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    z-index: 50;
+    position: relative;
 }
 
 .card-side-panel-header {
@@ -738,12 +743,16 @@
     }
 
     .card-side-panel {
-        position: absolute;
+        position: fixed;
         right: 0;
         top: 0;
-        width: min(92vw, 420px);
-        z-index: 50;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        z-index: 2000; /* Ensure it covers everything on mobile, like a full modal */
         box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
+        border-left: none;
     }
 }
 
@@ -801,10 +810,7 @@ html.dark .browse-btn-icon:hover {
     border-color: #475569;
 }
 
-html.dark .browse-toolbar {
-    background: #1e293b;
-    border-color: #334155;
-}
+
 
 html.dark .browse-filter-pill {
     color: #94a3b8;
@@ -905,8 +911,9 @@ html.dark .browse-content-area.browse-content-area--network .browse-network-cont
 }
 
 html.dark .card-side-panel {
-    background: #1e293b;
-    border-color: #334155;
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
 }
 
 html.dark .card-side-panel-title {

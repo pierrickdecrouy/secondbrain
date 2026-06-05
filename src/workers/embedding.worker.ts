@@ -9,6 +9,11 @@ import { pipeline, FeatureExtractionPipeline, env } from '@huggingface/transform
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+// Suppress ONNX runtime warnings (like VerifyEachNodeIsAssignedToAnEp)
+if (env.backends?.onnx) {
+    env.backends.onnx.logLevel = 'fatal';
+}
+
 let extractor: FeatureExtractionPipeline | null = null;
 let isLoading = false;
 

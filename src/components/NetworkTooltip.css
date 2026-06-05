@@ -23,20 +23,26 @@
 }
 
 .network-tooltip-card {
-    background: rgba(15, 23, 42, 0.95);
-    /* Slate-900 quasi opaque */
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
-    /* Effet verre dépoli */
     -webkit-backdrop-filter: blur(12px);
     border-radius: 12px;
     box-shadow:
-        0 20px 25px -5px rgba(0, 0, 0, 0.2),
-        0 8px 10px -6px rgba(0, 0, 0, 0.2),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-    /* Bordure subtile */
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 8px 10px -6px rgba(0, 0, 0, 0.05),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    color: #ffffff;
+    color: #334155;
     font-family: 'Inter', system-ui, sans-serif;
+}
+
+html.dark .network-tooltip-card {
+    background: rgba(15, 23, 42, 0.95);
+    box-shadow:
+        0 20px 25px -5px rgba(0, 0, 0, 0.3),
+        0 8px 10px -6px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    color: #ffffff;
 }
 
 /* Header */
@@ -45,6 +51,11 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+html.dark .network-tooltip-header {
     background: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -113,19 +124,25 @@
 .network-tooltip-score-text {
     font-size: 12px;
     font-weight: 700;
+    color: #64748b;
+}
+
+html.dark .network-tooltip-score-text {
     color: #cbd5e1;
-    /* Slate-300 */
 }
 
 /* Body */
 .network-tooltip-body {
     padding: 12px 14px;
-    color: #e2e8f0;
-    /* Slate-200 */
+    color: #475569;
     font-size: 13px;
     line-height: 1.5;
     display: flex;
     gap: 10px;
+}
+
+html.dark .network-tooltip-body {
+    color: #e2e8f0;
 }
 
 /* Footer */
