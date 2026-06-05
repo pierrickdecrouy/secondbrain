@@ -39,7 +39,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         <ClockCounterClockwise size={34} weight="bold" />
                     </div>
 
-                    <div className="mt-5 inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)] backdrop-blur">
+                    <div aria-hidden="true" className="mt-5 inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)] backdrop-blur">
                         Focus quotidien
                     </div>
 
@@ -65,7 +65,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         onClick={totalDue > 0 ? onSelectFSRS : undefined}
                         onKeyDown={(event) => handleCardKeyDown(event, totalDue > 0 ? onSelectFSRS : undefined)}
                         className={`group relative overflow-hidden text-left w-full rounded-3xl border transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 bg-[var(--color-surface)] p-6 sm:p-7 flex flex-col h-full gap-0 ${totalDue > 0
-                            ? 'border-[var(--color-border)] hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-500/10 cursor-pointer dark:hover:border-emerald-700'
+                            ? 'border-[var(--color-border)] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-500/10 cursor-pointer dark:hover:border-emerald-700'
                             : 'border-[var(--color-border)] opacity-70 cursor-not-allowed'
                             }`}
                     >
@@ -121,7 +121,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         onClick={hasEnoughCardsForCluster ? onSelectCluster : undefined}
                         onKeyDown={(event) => handleCardKeyDown(event, hasEnoughCardsForCluster ? onSelectCluster : undefined)}
                         className={`group relative overflow-hidden text-left w-full rounded-3xl border transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-[var(--color-surface)] p-6 sm:p-7 flex flex-col h-full gap-0 ${hasEnoughCardsForCluster
-                            ? 'border-[var(--color-border)] hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer dark:hover:border-indigo-700'
+                            ? 'border-[var(--color-border)] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer dark:hover:border-indigo-700'
                             : 'border-[var(--color-border)] opacity-70 cursor-not-allowed'
                             }`}
                     >
@@ -172,7 +172,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         tabIndex={0}
                         onClick={onSelectIntensive}
                         onKeyDown={(event) => handleCardKeyDown(event, onSelectIntensive)}
-                        className="group relative overflow-hidden text-left w-full rounded-3xl border border-[var(--color-border)] transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 bg-[var(--color-surface)] p-6 sm:p-7 flex flex-col h-full gap-0 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-xl hover:shadow-orange-500/10 cursor-pointer dark:hover:border-orange-700"
+                        className="group relative overflow-hidden text-left w-full rounded-3xl border border-[var(--color-border)] transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 bg-[var(--color-surface)] p-6 sm:p-7 flex flex-col h-full gap-0 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 hover:border-orange-300 hover:shadow-xl hover:shadow-orange-500/10 cursor-pointer dark:hover:border-orange-700"
                     >
                         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400" />
                         <div className="flex items-start justify-between mb-5 mt-1">
