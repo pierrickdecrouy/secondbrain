@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
-import { X, Link, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import React, { useMemo, useState } from 'react';
+import { X, Link, CaretLeft, CaretRight, EyeSlash, Eye } from '@phosphor-icons/react';
+import { motion } from 'framer-motion';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -17,6 +18,8 @@ interface DetailModalProps {
 }
 
 export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClose, onLinkClick, actions, onNext, onPrev }) => {
+    const [isExamMode, setIsExamMode] = useState(false);
+    
     // Find backlinks using FlexSearch (cards that contain this card's title)
     // This is faster and smarter (fuzzy, stemmed) than regex
     const backlinks = useMemo(() => {
@@ -80,7 +83,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
         <div className="modal-overlay" onClick={handleOverlayClick}>
 
 
-            <div className="modal-content">
+            <motion.div layoutId={`card-${card.id}`} className="modal-content">
                 <div className="modal-header">
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
@@ -110,8 +113,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                         <p className="modal-subtitle">{card.subtitle}</p>
 
                         {/* Summary / Abstract rendered with Markdown */}
-                        <div className="modal-summary" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', borderLeft: '4px solid #cbd5e1' }}>
-                            <MarkdownRenderer content={card.content} className="text-sm text-slate-600" />
+                        <div className="modal-summary">
+                            <MarkdownRenderer 
+                                content={card.content} 
+                                className="text-sm text-slate-600" 
+                                onInternalLinkClick={(target) => {
+                                    const found = allCards.find(c => c.title.toLowerCase() === target.toLowerCase());
+                                    if (found) {
+                                        onLinkClick(found.id);
+                                    } else {
+                                        console.warn("Lien interne non trouvé:", target);
+                                    }
+                                }}
+                            />
                         </div>
                     </div>
                     <div className="modal-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -126,6 +140,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                                 <CaretRight size={20} />
                             </button>
                         )}
+                        <button className={`modal-close ${isExamMode ? 'text-primary' : ''}`} onClick={() => setIsExamMode(!isExamMode)} title={isExamMode ? "Désactiver le Mode Examen" : "Activer le Mode Examen"}>
+                            {isExamMode ? <Eye size={20} /> : <EyeSlash size={20} />}
+                        </button>
                         <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 4px' }} />
                         <button className="modal-close" onClick={onClose} title="Fermer">
                             <X size={20} />
@@ -141,8 +158,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                 )}
 
                 {/* Markdown content */}
-                <div className="modal-body markdown-content">
-                    <MarkdownRenderer content={card.details} />
+                <div className={`modal-body markdown-content ${isExamMode ? 'exam-mode' : ''}`}>
+                    <MarkdownRenderer 
+                        content={card.details} 
+                        onInternalLinkClick={(target) => {
+                            const found = allCards.find(c => c.title.toLowerCase() === target.toLowerCase());
+                            if (found) {
+                                onLinkClick(found.id);
+                            } else {
+                                console.warn("Lien interne non trouvé:", target);
+                            }
+                        }}
+                    />
                 </div>
 
                 {/* Forward links (cards mentioned in this card) */}
@@ -172,7 +199,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                     <div className="modal-backlinks">
                         <h4 className="links-title">
                             <Link size={14} />
-                            Références entrantes ({backlinks.length})
+                            Mentionné dans : ({backlinks.length})
                         </h4>
                         <div className="links-list">
                             {backlinks.map(link => (
@@ -194,7 +221,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                         <span key={tag} className="tag">#{tag}</span>
                     ))}
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };

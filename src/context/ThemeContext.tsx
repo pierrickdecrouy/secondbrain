@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { CARD_COLORS as DEFAULT_CARD_COLORS, DEFAULT_CARD_ICONS } from '../theme';
 import { loadSettingAsync, loadSettingSync, removeSettingAsync, saveSettingAsync } from '../persistentSettings';
 
@@ -13,32 +13,58 @@ interface ThemeContextType {
     getCategoryColor: (type: string) => string;
     getCategoryIcon: (type: string) => string;
     darkMode: boolean;
-    toggleDarkMode: () => void;
+    themeMode: 'light' | 'dark' | 'system';
+    setThemeMode: (mode: 'light' | 'dark' | 'system') => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY_COLORS = 'pharmabrain_theme_colors';
 const STORAGE_KEY_ICONS = 'pharmabrain_theme_icons';
-const STORAGE_KEY_DARK = 'pharmabrain_dark_mode';
+const STORAGE_KEY_THEME_MODE = 'pharmabrain_theme_mode';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Initialize dark mode
-    const [darkMode, setDarkMode] = useState<boolean>(() => {
-        return loadSettingSync<boolean>(STORAGE_KEY_DARK, false);
+    const [themeMode, setThemeModeState] = useState<'light' | 'dark' | 'system'>(() => {
+        const stored = loadSettingSync<string>(STORAGE_KEY_THEME_MODE, 'system');
+        return (stored as 'light' | 'dark' | 'system') || 'system';
     });
 
-    // Apply dark class to html element
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', darkMode);
-        saveSettingAsync(STORAGE_KEY_DARK, darkMode);
-    }, [darkMode]);
+    const [darkMode, setDarkMode] = useState<boolean>(false);
 
     useEffect(() => {
-        loadSettingAsync<boolean>(STORAGE_KEY_DARK, false).then(setDarkMode);
+        loadSettingAsync<string>(STORAGE_KEY_THEME_MODE, 'system').then(stored => {
+            if (stored === 'light' || stored === 'dark' || stored === 'system') {
+                setThemeModeState(stored);
+            }
+        });
     }, []);
 
-    const toggleDarkMode = () => setDarkMode(prev => !prev);
+    useEffect(() => {
+        const applyTheme = () => {
+            let isDark = false;
+            if (themeMode === 'system') {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } else {
+                isDark = themeMode === 'dark';
+            }
+            setDarkMode(isDark);
+            document.documentElement.classList.toggle('dark', isDark);
+            saveSettingAsync(STORAGE_KEY_THEME_MODE, themeMode);
+        };
+
+        applyTheme();
+
+        if (themeMode === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handler = () => applyTheme();
+            mediaQuery.addEventListener('change', handler);
+            return () => mediaQuery.removeEventListener('change', handler);
+        }
+    }, [themeMode]);
+
+    const setThemeMode = (mode: 'light' | 'dark' | 'system') => {
+        setThemeModeState(mode);
+    };
 
     // Initialize state for Colors
     const [categoryColors, setCategoryColors] = useState<Record<string, string>>(() => {
@@ -78,33 +104,33 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, [categoryIcons]);
 
 
-    const setCategoryColor = (type: string, color: string) => {
+    const setCategoryColor = useCallback((type: string, color: string) => {
         setCategoryColors(prev => ({
             ...prev,
             [type]: color
         }));
-    };
+    }, []);
 
-    const setCategoryIcon = (type: string, iconName: string) => {
+    const setCategoryIcon = useCallback((type: string, iconName: string) => {
         setCategoryIcons(prev => ({
             ...prev,
             [type]: iconName
         }));
-    };
+    }, []);
 
 
-    const resetCategoryColors = () => {
+    const resetCategoryColors = useCallback(() => {
         setCategoryColors({ ...DEFAULT_CARD_COLORS });
         removeSettingAsync(STORAGE_KEY_COLORS);
-    };
+    }, []);
 
-    const resetCategoryIcons = () => {
+    const resetCategoryIcons = useCallback(() => {
         setCategoryIcons({ ...DEFAULT_CARD_ICONS });
         removeSettingAsync(STORAGE_KEY_ICONS);
-    };
+    }, []);
 
     // Helper to get color
-    const getCategoryColor = (type: string): string => {
+    const getCategoryColor = useCallback((type: string): string => {
         if (categoryColors[type]) {
             return categoryColors[type];
         }
@@ -115,29 +141,36 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
         const h = Math.abs(hash) % 360;
         return `hsl(${h}, 65%, 45%)`;
-    };
+    }, [categoryColors]);
 
     // Helper to get icon
-    const getCategoryIcon = (type: string): string => {
+    const getCategoryIcon = useCallback((type: string): string => {
         if (categoryIcons[type]) {
             return categoryIcons[type];
         }
         return 'FileText'; // Default fallback icon
-    };
+    }, [categoryIcons]);
+
+    const contextValue = useMemo(() => ({
+        categoryColors,
+        categoryIcons,
+        setCategoryColor,
+        setCategoryIcon,
+        resetCategoryColors,
+        resetCategoryIcons,
+        getCategoryColor,
+        getCategoryIcon,
+        darkMode,
+        themeMode,
+        setThemeMode
+    }), [
+        categoryColors, categoryIcons, setCategoryColor, setCategoryIcon,
+        resetCategoryColors, resetCategoryIcons, getCategoryColor, getCategoryIcon,
+        darkMode, themeMode
+    ]);
 
     return (
-        <ThemeContext.Provider value={{
-            categoryColors,
-            categoryIcons,
-            setCategoryColor,
-            setCategoryIcon,
-            resetCategoryColors,
-            resetCategoryIcons,
-            getCategoryColor,
-            getCategoryIcon,
-            darkMode,
-            toggleDarkMode
-        }}>
+        <ThemeContext.Provider value={contextValue}>
             {children}
         </ThemeContext.Provider>
     );

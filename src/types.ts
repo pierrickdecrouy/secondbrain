@@ -14,7 +14,8 @@ export interface Card {
     createdAt?: number;
     updatedAt?: number;
     progress?: UserCardProgress;
-    workspaceId?: string;
+    subject?: string; // Matière / Subject category
+    workspaceId?: string; // Identifier for the workspace
 }
 
 // Export a value to ensure this file is treated as a module at runtime
@@ -34,7 +35,7 @@ export interface Node {
     type: string;
     val?: number;
     color?: string;
-    // ... any other props from worker
+    cluster?: number; // Semantic cluster assigned by the graph worker
 }
 
 export interface Link {
@@ -47,10 +48,10 @@ export interface Link {
 }
 
 export interface UserCardProgress {
-    status: 'new' | 'learning' | 'review' | 'suspended';
+    status: 'new' | 'learning' | 'review' | 'suspended' | 'relearning';
     step: number;
     dueDate: string;
-    interval: number;
+    interval: number; // Scheduled days
     easeFactor: number;
     lapses: number;
     isLeech?: boolean;
@@ -59,4 +60,15 @@ export interface UserCardProgress {
     difficulty?: number;
     reps?: number;
     lastReview?: string | null;
+    history?: string[]; // Array of ISO date strings for each review
+}
+
+export type PausedTaskType = 'card_edit' | 'course_edit' | 'review_session';
+
+export interface PausedTask {
+    id: string;
+    type: PausedTaskType;
+    title: string;
+    state: Record<string, unknown>;
+    timestamp: number;
 }

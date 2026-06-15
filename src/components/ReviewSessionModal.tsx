@@ -13,10 +13,10 @@ interface ReviewSessionModalProps {
     onJumpToCard?: (cardId: string) => void;
 }
 
-const REVIEW_ACTIONS: Array<{ rating: 1 | 2 | 3; label: string; style: React.CSSProperties }> = [
-    { rating: 1, label: 'Je ne connais pas', style: { background: '#fee2e2', color: '#991b1b' } },
-    { rating: 2, label: 'Moyen', style: { background: '#fef3c7', color: '#92400e' } },
-    { rating: 3, label: 'Je connais', style: { background: '#dcfce7', color: '#166534' } }
+const REVIEW_ACTIONS: Array<{ rating: 1 | 2 | 3; label: string; className: string }> = [
+    { rating: 1, label: 'Je ne connais pas', className: 'review-btn-1' },
+    { rating: 2, label: 'Moyen', className: 'review-btn-2' },
+    { rating: 3, label: 'Je connais', className: 'review-btn-3' }
 ];
 
 const getLinkedCardIds = (card: Card, allCards: Card[]): string[] => {
@@ -53,11 +53,41 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
     onJumpToCard
 }) => {
     const [index, setIndex] = useState(0);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
     const [showStats, setShowStats] = useState(false);
 
     const card = cards[index];
+
+    useEffect(() => {
+        // Auto-enter fullscreen when starting review if not already
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(e => console.warn('Auto-fullscreen failed:', e));
+        }
+
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
+    const toggleFullscreen = useCallback(() => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(console.error);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(console.error);
+            }
+        }
+    }, []);
+
+    const handleClose = useCallback(() => {
+        if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(console.error);
+        }
+        onClose();
+    }, [onClose]);
 
     // Reset answer revealed when changing card
     useEffect(() => {
@@ -97,18 +127,18 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
             setIndex(prev => prev + 1);
         } else {
             // Close if it's the last card
-            onClose();
+            handleClose();
         }
-    }, [card.id, index, cards.length, onRate, isAnswerRevealed, onClose]);
+    }, [card.id, index, cards.length, onRate, isAnswerRevealed, handleClose]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') {
-                setIndex(i => Math.max(0, i - 1));
-            } else if (e.key === 'ArrowRight') {
-                setIndex(i => Math.min(cards.length - 1, i + 1));
-            } else if (e.key === 'Escape' && isFullscreen) {
-                setIsFullscreen(false);
+            if (e.key === 'Escape') {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(console.error);
+                } else {
+                    handleClose();
+                }
                 e.stopPropagation();
             } else if (e.key === ' ' || e.key === 'Enter') {
                 if (!isAnswerRevealed) {
@@ -123,15 +153,15 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleRate, isFullscreen, cards.length, isAnswerRevealed]);
+    }, [handleRate, isAnswerRevealed, handleClose]);
 
     const qualityScore = card.progress?.difficulty ? (10 - card.progress.difficulty) * 10 : 50;
 
     return (
         <div className="modal-overlay" style={{ padding: isFullscreen ? '0' : 'var(--modal-overlay-padding, 20px)' }}>
             
-            <div className="modal-content review-modal-content" style={{ width: isFullscreen ? '100vw' : 'min(800px, 95vw)', height: isFullscreen ? '100vh' : 'auto', maxHeight: isFullscreen ? '100vh' : '92vh', borderRadius: isFullscreen ? '0' : '16px', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
-                <div className="modal-header" style={{ display: 'block', borderBottom: 'none', paddingBottom: '0', background: 'var(--color-surface)', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', paddingTop: '16px', paddingLeft: '24px', paddingRight: '24px' }}>
+            <div className="modal-content review-modal-content" style={{ width: isFullscreen ? '100vw' : 'min(800px, 95vw)', height: isFullscreen ? '100vh' : 'auto', maxHeight: isFullscreen ? '100vh' : '85vh', borderRadius: isFullscreen ? '0' : '16px', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
+                <div className="modal-header" style={{ display: 'block', borderBottom: 'none', paddingBottom: '0', background: 'var(--color-surface)', borderTopLeftRadius: isFullscreen ? '0' : '16px', borderTopRightRadius: isFullscreen ? '0' : '16px', paddingTop: '16px', paddingLeft: '24px', paddingRight: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -149,10 +179,10 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                             </button>
 
                             <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 4px' }} />
-                            <button className="modal-close" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Quitter le plein écran" : "Mettre au premier plan"}>
+                            <button className="modal-close" onClick={toggleFullscreen} title={isFullscreen ? "Quitter le plein écran" : "Mettre au premier plan"}>
                                 {isFullscreen ? <CornersIn size={20} /> : <CornersOut size={20} />}
                             </button>
-                            <button className="modal-close" onClick={onClose} title="Fermer"><X size={20} /></button>
+                            <button className="modal-close" onClick={handleClose} title="Fermer"><X size={20} /></button>
                         </div>
                     </div>
                     {/* Progress Bar */}
@@ -173,7 +203,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Difficulté</div>
-                                <div style={{ fontSize: '1rem', fontWeight: 600, color: qualityScore < 40 ? '#ef4444' : qualityScore > 70 ? '#10b981' : '#f59e0b', marginTop: '4px' }}>
+                                <div style={{ fontSize: '1rem', fontWeight: 600, color: qualityScore < 40 ? 'var(--color-danger)' : qualityScore > 70 ? 'var(--color-success)' : 'var(--color-warning)', marginTop: '4px' }}>
                                     {card.progress?.difficulty ? `${card.progress.difficulty.toFixed(1)} / 10` : 'N/A'}
                                 </div>
                             </div>
@@ -192,15 +222,14 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                         </div>
                     )}
 
-                    <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '32px', boxShadow: 'var(--shadow)', border: '1px solid var(--color-border)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '32px', boxShadow: 'none', border: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
                         
                         <div style={{ textAlign: 'center', marginBottom: isAnswerRevealed ? '32px' : '0', flex: isAnswerRevealed ? 'none' : 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <h3 style={{ margin: '0 0 8px 0', fontSize: '1.75rem', color: 'var(--color-text)', fontWeight: 700 }}>{card.title}</h3>
                             {card.subtitle && <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '1.1rem', fontFamily: 'monospace' }}>{card.subtitle}</p>}
                         </div>
                         
-                        {!isAnswerRevealed ? (
-                            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                            <div style={{ display: !isAnswerRevealed ? 'flex' : 'none', marginTop: 'auto', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                                 <button 
                                     onClick={() => setIsAnswerRevealed(true)}
                                     style={{ background: 'var(--color-drug)', color: 'white', border: 'none', padding: '16px 32px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-lg)', transition: 'transform 0.2s, background 0.2s', width: '100%', maxWidth: '400px' }}
@@ -213,8 +242,8 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                     Appuyez sur <kbd style={{ background: 'var(--color-bg)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border)', fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-text)' }}>Espace</kbd> pour révéler
                                 </div>
                             </div>
-                        ) : (
-                            <div className="markdown-content" style={{ flex: 1, animation: 'fadeIn 0.3s ease-out' }}>
+
+                            <div className="markdown-content" style={{ display: isAnswerRevealed ? 'block' : 'none', flex: 1, animation: 'fadeIn 0.3s ease-out' }}>
                                 {card.content && (
                                     <div style={{ marginBottom: card.details ? '24px' : '0' }}>
                                         <MarkdownRenderer content={card.content} />
@@ -243,7 +272,6 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                     </div>
                                 )}
                             </div>
-                        )}
                     </div>
                 </div>
 
@@ -253,9 +281,8 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                             {REVIEW_ACTIONS.map(action => (
                                 <button
                                     key={action.rating}
-                                    className="review-action-btn"
+                                    className={`review-action-btn ${action.className}`}
                                     style={{ 
-                                        ...action.style, 
                                         flex: 1, 
                                         display: 'flex',
                                         flexDirection: 'column',

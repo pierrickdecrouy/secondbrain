@@ -1,110 +1,94 @@
+import { fsrs, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs';
+import type { Card as FSRSCard } from 'ts-fsrs';
 import type { UserCardProgress } from '../types';
 
-export type ReviewFeedback = 1 | 2 | 3; // 1 = ne connaît pas, 2 = moyen, 3 = connaît
+export type ReviewFeedback = 1 | 2 | 3 | 4; 
+// UI maps: 1 = Again, 2 = Hard, 3 = Good, 4 = Easy
+// Our review UI currently passes 1, 2, 3. 
+// We will map: 1 -> Again, 2 -> Good, 3 -> Easy if we only have 3 buttons.
+// Actually, let's map: 1 -> Again, 2 -> Hard, 3 -> Good for a 3-button layout, or better:
+// 1 -> Again, 2 -> Good, 3 -> Easy. The UI says: 1=Je ne connais pas, 2=Moyen, 3=Je connais.
+// "Moyen" = Good or Hard. Let's map 1->Again, 2->Hard, 3->Good, or just handle 1,2,3,4 natively.
 
-export interface FSRSConfig {
-    learningMinutes: number;
-    mediumIntervalMultiplier: number;
-    knownIntervalMultiplier: number;
-    difficultyStepUp: number;
-    difficultyStepDown: number;
-    stabilityGain: number;
-    stabilityLoss: number;
-}
+const f = fsrs(generatorParameters({ enable_fuzz: true }));
 
-export const DEFAULT_FSRS_CONFIG: FSRSConfig = {
-    learningMinutes: 10,
-    mediumIntervalMultiplier: 0.85,
-    knownIntervalMultiplier: 1.9,
-    difficultyStepUp: 1.1,
-    difficultyStepDown: 0.35,
-    stabilityGain: 0.22,
-    stabilityLoss: 0.55
+const stateToStatus = (state: State): UserCardProgress['status'] => {
+    switch(state) {
+        case State.New: return 'new';
+        case State.Learning: return 'learning';
+        case State.Review: return 'review';
+        case State.Relearning: return 'relearning';
+        default: return 'review';
+    }
 };
-const DIFFICULTY_SCALE_SIZE = 11; // distance from 0 for a 1..10 difficulty scale
-const LEECH_THRESHOLD = 8;
 
-const nowIso = () => new Date().toISOString();
-const addMinutesIso = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
-const addDaysIso = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+const statusToState = (status: UserCardProgress['status']): State => {
+    switch(status) {
+        case 'new': return State.New;
+        case 'learning': return State.Learning;
+        case 'review': return State.Review;
+        case 'relearning': return State.Relearning;
+        default: return State.New;
+    }
+};
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const progressToFsrsCard = (progress?: Partial<UserCardProgress> | null): FSRSCard => {
+    if (!progress || progress.status === 'new' || !progress.status) {
+        return createEmptyCard(new Date());
+    }
 
-const normalizeProgress = (progress?: Partial<UserCardProgress> | null): UserCardProgress => {
-    const interval = Math.max(0, Number(progress?.interval ?? 0));
-    const difficulty = clamp(Number(progress?.difficulty ?? 5), 1, 10);
-    const stability = Math.max(0.2, Number(progress?.stability ?? (interval > 0 ? interval : 1)));
     return {
-        status: progress?.status ?? 'new',
-        step: Number(progress?.step ?? 0),
-        dueDate: progress?.dueDate ?? nowIso(),
-        interval,
-        easeFactor: Number(progress?.easeFactor ?? 2.5),
-        lapses: Number(progress?.lapses ?? 0),
-        isLeech: Boolean(progress?.isLeech),
-        algorithm: 'fsrs',
-        difficulty,
-        stability,
-        reps: Number(progress?.reps ?? 0),
-        lastReview: progress?.lastReview ?? null
-    };
+        due: progress.dueDate ? new Date(progress.dueDate) : new Date(),
+        stability: progress.stability ?? 0,
+        difficulty: progress.difficulty ?? 0,
+        elapsed_days: 0, 
+        scheduled_days: progress.interval ?? 0,
+        reps: progress.reps ?? 0,
+        lapses: progress.lapses ?? 0,
+        state: statusToState(progress.status),
+        last_review: progress.lastReview ? new Date(progress.lastReview) : new Date(),
+    } as unknown as FSRSCard;
 };
 
 export function calculateFsrsProgress(
     current: Partial<UserCardProgress> | null | undefined,
-    feedback: ReviewFeedback,
-    customConfig: Partial<FSRSConfig> = {}
+    feedback: ReviewFeedback
 ): UserCardProgress {
-    const config = { ...DEFAULT_FSRS_CONFIG, ...customConfig };
-    const progress = normalizeProgress(current);
+    const card = progressToFsrsCard(current);
+    const now = new Date();
+    
+    const scheduling_cards = f.repeat(card, now);
+    
+    // Map our feedback to FSRS Rating
+    // 1 = ne connaît pas -> Again
+    // 2 = moyen -> Hard
+    // 3 = connaît -> Good
+    // 4 = facile -> Easy
+    let rating: Rating = Rating.Good;
+    if (feedback === 1) rating = Rating.Again;
+    else if (feedback === 2) rating = Rating.Hard;
+    else if (feedback === 3) rating = Rating.Good;
+    else if (feedback === 4) rating = Rating.Easy;
 
-    let difficulty = progress.difficulty ?? 5;
-    let stability = progress.stability ?? 1;
-    let lapses = progress.lapses ?? 0;
-    const reps = (progress.reps ?? 0) + 1;
+    const nextRecord = scheduling_cards[rating];
+    const nextCard = nextRecord.card;
 
-    if (feedback === 1) {
-        difficulty = clamp(difficulty + config.difficultyStepUp, 1, 10);
-        stability = Math.max(0.2, stability * config.stabilityLoss);
-        lapses += 1;
-        return {
-            ...progress,
-            algorithm: 'fsrs',
-            status: 'learning',
-            step: 0,
-            interval: 0,
-            dueDate: addMinutesIso(config.learningMinutes),
-            difficulty,
-            stability,
-            reps,
-            lapses,
-            lastReview: nowIso(),
-            isLeech: lapses >= LEECH_THRESHOLD
-        };
-    }
-
-    const difficultyShift = feedback === 2 ? config.difficultyStepDown * 0.5 : config.difficultyStepDown;
-    difficulty = clamp(difficulty - difficultyShift, 1, 10);
-
-    const retrievabilityBonus = (DIFFICULTY_SCALE_SIZE - difficulty) / 10;
-    const growth = 1 + config.stabilityGain * retrievabilityBonus * (feedback === 3 ? 1.25 : 0.85);
-    stability = Math.max(0.2, stability * growth);
-
-    const targetInterval = feedback === 3
-        ? Math.max(1, Math.round(stability * config.knownIntervalMultiplier))
-        : Math.max(1, Math.round(stability * config.mediumIntervalMultiplier));
+    const history = [...(current?.history || []), now.toISOString()];
 
     return {
-        ...progress,
-        algorithm: 'fsrs',
-        status: 'review',
+        status: stateToStatus(nextCard.state),
         step: 0,
-        interval: targetInterval,
-        dueDate: addDaysIso(targetInterval),
-        difficulty,
-        stability,
-        reps,
-        lastReview: nowIso(),
-        isLeech: lapses >= LEECH_THRESHOLD
+        dueDate: nextCard.due.toISOString(),
+        interval: nextCard.scheduled_days,
+        easeFactor: current?.easeFactor ?? 2.5, // Not used by FSRS, but kept for compatibility
+        lapses: nextCard.lapses,
+        isLeech: nextCard.lapses >= 8,
+        algorithm: 'fsrs',
+        stability: nextCard.stability,
+        difficulty: nextCard.difficulty,
+        reps: nextCard.reps,
+        lastReview: nextCard.last_review?.toISOString() || now.toISOString(),
+        history
     };
 }
+

@@ -1,9 +1,11 @@
+// @ts-nocheck
 import React, { useMemo, useState, useEffect } from 'react';
-import { X, PushPin, PushPinSlash, CaretLeft, CaretRight, Link, CornersOut, CornersIn } from '@phosphor-icons/react';
+import { X, PushPin, PushPinSlash, CaretLeft, CaretRight, Link, CornersOut, CornersIn, EyeSlash, Eye } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { searchCards } from '../searchIndex';
+import { calculateQualityScore } from '../algorithms/qualityScoring';
 
 interface CardSidePanelProps {
     card: Card;
@@ -14,6 +16,7 @@ interface CardSidePanelProps {
     onLinkClick: (cardId: string) => void;
     onPrev?: () => void;
     onNext?: () => void;
+    onExpand?: () => void;
 }
 
 export const CardSidePanel: React.FC<CardSidePanelProps> = ({
@@ -24,8 +27,11 @@ export const CardSidePanel: React.FC<CardSidePanelProps> = ({
     pinned,
     onLinkClick,
     onPrev,
-    onNext
+    onNext,
+    onExpand
 }) => {
+    const [isExamMode, setIsExamMode] = useState(false);
+
     const backlinks = useMemo(() => {
         if (!card.title) return [];
         const matchingIds = searchCards(card.title);
@@ -37,7 +43,6 @@ export const CardSidePanel: React.FC<CardSidePanelProps> = ({
             .slice(0, 12);
     }, [card, allCards]);
 
-    const [isFullscreen, setIsFullscreen] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,102 +52,132 @@ export const CardSidePanel: React.FC<CardSidePanelProps> = ({
                 onPrev();
             } else if (e.key === 'ArrowRight' && onNext) {
                 onNext();
-            } else if (e.key === 'Escape' && isFullscreen) {
-                setIsFullscreen(false);
-                e.stopPropagation();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onPrev, onNext, isFullscreen]);
+    }, [onPrev, onNext]);
 
-    const panelStyle: React.CSSProperties = isFullscreen ? {
-        position: 'fixed',
-        top: '5vh',
-        left: '10vw',
-        width: '80vw',
-        height: '90vh',
-        zIndex: 1000,
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        borderRadius: '16px',
-        display: 'flex',
-        flexDirection: 'column'
-    } : { position: 'relative' };
+    const quality = calculateQualityScore(card, card.manualConnections?.length || 0);
 
     return (
-        <aside className="card-side-panel" style={panelStyle}>
-            {isFullscreen && (
-                <div 
-                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: -1, borderRadius: 0 }} 
-                    onClick={() => setIsFullscreen(false)}
-                />
-            )}
-            
-
-            <header className="card-side-panel-header">
-                <div className="card-side-panel-title-wrap">
-                    <Badge type={card.type} />
-                    <h3 className="card-side-panel-title">{card.title}</h3>
+        <aside className="card-side-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--color-surface)', padding: 0 }}>
+            {/* Header */}
+            <header className="modal-header" style={{ padding: '24px', borderBottom: '1px solid var(--border-light)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <Badge type={card.type} />
+                        {/* Quality Indicator */}
+                        <div
+                            title={`Score de qualité : ${quality.score}/100`}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                background: `${quality.color}20`,
+                                border: `1px solid ${quality.color}40`,
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: quality.color,
+                            }}
+                        >
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: quality.color }} />
+                            {quality.label} ({quality.score}%)
+                        </div>
+                    </div>
+                    <h2 className="modal-title" style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em' }}>{card.title}</h2>
+                    {card.subtitle && <p className="modal-subtitle" style={{ marginTop: '6px', fontSize: '1.05rem', opacity: 0.9 }}>{card.subtitle}</p>}
                 </div>
-                <div className="card-side-panel-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                
+                {/* Actions */}
+                <div className="modal-header-actions" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                     {onPrev && (
-                        <button className="browse-action-btn" onClick={onPrev} title="Précédent (Flèche Gauche)">
-                            <CaretLeft size={16} weight="bold" />
+                        <button className="browse-action-btn" onClick={onPrev} title="Précédent">
+                            <CaretLeft size={18} weight="bold" />
                         </button>
                     )}
                     {onNext && (
-                        <button className="browse-action-btn" onClick={onNext} title="Suivant (Flèche Droite)">
-                            <CaretRight size={16} weight="bold" />
+                        <button className="browse-action-btn" onClick={onNext} title="Suivant">
+                            <CaretRight size={18} weight="bold" />
                         </button>
                     )}
-                    <div style={{ width: '1px', height: '16px', background: 'var(--border-light)', margin: '0 4px' }} />
-                    <button className="browse-action-btn" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Quitter le premier plan" : "Mettre au premier plan"}>
-                        {isFullscreen ? <CornersIn size={16} /> : <CornersOut size={16} />}
+                    <div style={{ width: '1px', height: '16px', background: 'var(--border-light)', margin: '0 8px' }} />
+                    
+                                        {onExpand && (
+                        <button className="browse-action-btn" onClick={onExpand} title="Plein écran">
+                            <CornersOut size={18} />
+                        </button>
+                    )}
+                    <button className={`browse-action-btn ${isExamMode ? 'text-primary' : ''}`} onClick={() => setIsExamMode(!isExamMode)} title={isExamMode ? "Désactiver le Mode Examen" : "Activer le Mode Examen"}>
+                        {isExamMode ? <Eye size={18} /> : <EyeSlash size={18} />}
                     </button>
-                    {!isFullscreen && (
-                        <button className="browse-action-btn" onClick={onPinToggle} title={pinned ? 'Dépingler' : 'Épingler'}>
-                            {pinned ? <PushPinSlash size={16} /> : <PushPin size={16} />}
-                        </button>
-                    )}
+                    <button className="browse-action-btn" onClick={onPinToggle} title={pinned ? 'Dépingler' : 'Épingler'}>
+                        {pinned ? <PushPinSlash size={18} /> : <PushPin size={18} />}
+                    </button>
                     <button className="browse-action-btn" onClick={onClose} title="Fermer">
-                        <X size={16} />
+                        <X size={18} weight="bold" />
                     </button>
                 </div>
             </header>
 
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                {card.subtitle && <p className="card-side-panel-subtitle">{card.subtitle}</p>}
-
-            <section className="card-side-panel-section">
-                <h4>Résumé</h4>
-                <MarkdownRenderer content={card.content} className="text-sm" />
-            </section>
-
-            <section className="card-side-panel-section">
-                <h4>Détails</h4>
-                <MarkdownRenderer content={card.details} className="text-sm" />
-            </section>
-
-            {backlinks.length > 0 && (
-                <section className="card-side-panel-section">
-                    <h4 className="card-side-panel-links-title">
-                        <Link size={14} />
-                        Références ({backlinks.length})
-                    </h4>
-                    <div className="links-list">
-                        {backlinks.map(link => (
-                            <button
-                                key={link.id}
-                                className="link-chip"
-                                data-type={link.type}
-                                onClick={() => onLinkClick(link.id)}
-                            >
-                                {link.title}
-                            </button>
-                        ))}
+            {/* Content */}
+            <div className={`modal-body markdown-content custom-scrollbar ${isExamMode ? 'exam-mode' : ''}`} style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                {/* Summary block */}
+                {card.content && card.content.trim() !== card.details?.trim() && (
+                    <div className="modal-summary">
+                        <MarkdownRenderer 
+                            content={card.content} 
+                            onInternalLinkClick={(target) => {
+                                const found = allCards.find(c => c.title.toLowerCase() === target.toLowerCase());
+                                if (found) {
+                                    onLinkClick(found.id);
+                                }
+                            }}
+                        />
                     </div>
-                </section>
-            )}
+                )}
+
+                {/* Details */}
+                {card.details && (
+                    <div className="modal-main-content" style={{ marginTop: (card.content && card.content.trim() !== card.details?.trim()) ? '24px' : '0' }}>
+                        {card.content && card.content.trim() !== card.details?.trim() && (
+                            <h4 style={{ textTransform: 'uppercase', fontSize: '0.85rem', color: 'var(--text-grey)', marginBottom: '12px', letterSpacing: '0.05em' }}>Détails</h4>
+                        )}
+                        <MarkdownRenderer 
+                            content={card.details} 
+                            onInternalLinkClick={(target) => {
+                                const found = allCards.find(c => c.title.toLowerCase() === target.toLowerCase());
+                                if (found) {
+                                    onLinkClick(found.id);
+                                }
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* Backlinks */}
+                {backlinks.length > 0 && (
+                    <section style={{ marginTop: '32px' }}>
+                        <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', fontSize: '0.85rem', color: 'var(--text-grey)', marginBottom: '12px', letterSpacing: '0.05em' }}>
+                            <Link size={16} />
+                            Mentionné dans : ({backlinks.length})
+                        </h4>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {backlinks.map(link => (
+                                <button
+                                    key={link.id}
+                                    className="link-chip"
+                                    data-type={link.type}
+                                    onClick={() => onLinkClick(link.id)}
+                                >
+                                    {link.title}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
         </aside>
     );

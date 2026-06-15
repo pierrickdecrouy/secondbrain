@@ -58,7 +58,6 @@ async function initModel() {
             dtype: 'fp32' // WebGPU usually requires fp32 or fp16, not q8
         }) as FeatureExtractionPipeline;
 
-        console.log('[Embedding Worker] WebGPU initialized successfully');
         self.postMessage({ type: 'ready' } as WorkerResponse);
     } catch (webGpuError) {
         console.warn('[Embedding Worker] WebGPU failed, falling back to WASM (CPU):', webGpuError);
@@ -78,7 +77,6 @@ async function initModel() {
                 dtype: 'q8'
             }) as FeatureExtractionPipeline;
 
-            console.log('[Embedding Worker] WASM (CPU) initialized successfully');
             self.postMessage({ type: 'ready' } as WorkerResponse);
         } catch (cpuError) {
             console.error('[Embedding Worker] All backends failed:', cpuError);

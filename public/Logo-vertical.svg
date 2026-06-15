@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="2000" height="2000">
+  <!-- Rounded Square Frame -->
+  <rect x="320" y="180" width="360" height="360" rx="90" ry="90" fill="none" stroke="#11B880" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Curly Brace -->
+  <path d="M 490,270 C 470,270 460,285 460,305 L 460,340 C 460,355 445,360 430,360 C 445,360 460,365 460,380 L 460,415 C 460,435 470,450 490,450" fill="none" stroke="#11B880" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Dot inside Square -->
+  <circle cx="560" cy="360" r="22" fill="#11B880"/>
+
+  <!-- Text: EXTND. -->
+  <g fill="none" stroke="#11B880" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- Letter E -->
+    <path d="M 285,642 L 207,642 L 207,748 L 285,748 M 207,695 L 275,695"/>
+    
+    <!-- Letter X -->
+    <path d="M 337,642 L 403,748 M 403,642 L 337,748"/>
+    
+    <!-- Letter T -->
+    <path d="M 455,642 L 545,642 M 500,642 L 500,760"/>
+    
+    <!-- Letter N -->
+    <path d="M 597,760 L 597,630 L 663,760 L 663,630"/>
+    
+    <!-- Letter D -->
+    <path d="M 727,760 L 727,630 L 745,630 A 48 65 0 0 1 745,760 L 727,760"/>
+  </g>
+  
+  <!-- Period -->
+  <rect x="835" y="726" width="24" height="34" fill="#11B880"/>
+</svg>

@@ -1,10 +1,11 @@
 import React from 'react';
 
-export const ExtndLogo: React.FC<{ size?: number; className?: string }> = ({ size = 28, className = '' }) => (
+export const ExtndLogo: React.FC<{ size?: number | string; width?: number | string; height?: number | string; className?: string; style?: React.CSSProperties }> = ({ size, width, height, className = '', style }) => (
     <svg 
         className={className}
-        width={size} 
-        height={size} 
+        width={width || size || "100%"} 
+        height={height || size || "100%"} 
+        style={style}
         viewBox="0 0 2816 1536" 
         preserveAspectRatio="xMidYMid meet"
         fill="currentColor"

@@ -1,0 +1,61 @@
+.toggle-switch-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+}
+
+.toggle-switch-container.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.toggle-switch-text {
+    flex: 1;
+}
+
+.toggle-switch-label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.toggle-switch-description {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    background-color: var(--color-border);
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.toggle-switch.checked {
+    background-color: var(--color-drug); /* Ou une autre couleur primaire */
+}
+
+.toggle-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toggle-switch.checked .toggle-switch-thumb {
+    transform: translateX(22px);
+}

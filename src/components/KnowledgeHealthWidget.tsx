@@ -123,8 +123,8 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
 
     return (
         <div style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
             borderRadius: '16px',
             padding: '24px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
@@ -142,20 +142,20 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                 <div style={{
                     fontSize: '1.1rem',
                     fontWeight: 600,
-                    color: '#0f172a',
+                    color: 'var(--color-text)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px'
                 }}>
-                    <Brain size={24} color="#6366f1" />
+                    <Brain size={24} color="var(--color-drug)" />
                     Solidité des Connaissances
                 </div>
                 <span style={{
                     fontSize: '0.75rem',
-                    color: '#64748b',
+                    color: 'var(--color-text-muted)',
                     fontWeight: 600,
-                    background: '#f8fafc',
-                    border: '1px solid #f1f5f9',
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
                     padding: '4px 10px',
                     borderRadius: '20px'
                 }}>
@@ -168,80 +168,80 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
 
                 {/* Excellence */}
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: '#475569' }}>Excellence</div>
-                    <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
+                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Excellence</div>
+                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
                         <div style={{
                             height: '100%',
-                            background: '#f59e0b',
+                            background: 'var(--color-warning)',
                             width: getWidth(stats.counts.excellence),
                             transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
                         }} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
                         {stats.counts.excellence}
                     </div>
                 </div>
 
                 {/* Robuste */}
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: '#475569' }}>Robuste</div>
-                    <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
+                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Robuste</div>
+                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
                         <div style={{
                             height: '100%',
-                            background: '#10b981',
+                            background: 'var(--color-success)',
                             width: getWidth(stats.counts.robuste),
                             transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
                         }} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
                         {stats.counts.robuste}
                     </div>
                 </div>
 
                 {/* Correct */}
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: '#475569' }}>Correct</div>
-                    <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
+                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Correct</div>
+                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
                         <div style={{
                             height: '100%',
-                            background: '#3b82f6',
+                            background: 'var(--color-physio)',
                             width: getWidth(stats.counts.correct),
                             transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
                         }} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
                         {stats.counts.correct}
                     </div>
                 </div>
 
                 {/* Incomplet */}
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: '#475569' }}>Incomplet</div>
-                    <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
+                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Incomplet</div>
+                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
                         <div style={{
                             height: '100%',
-                            background: '#f97316',
+                            background: '#f97316', // Orange stays orange or uses warning
                             width: getWidth(stats.counts.incomplet),
                             transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
                         }} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
                         {stats.counts.incomplet}
                     </div>
                 </div>
 
                 {/* Ebauche */}
                 <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: '#475569' }}>Ébauche</div>
-                    <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
+                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Ébauche</div>
+                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
                         <div style={{
                             height: '100%',
-                            background: '#94a3b8',
+                            background: 'var(--color-text-muted)',
                             width: getWidth(stats.counts.ebauche),
                             transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
                         }} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
                         {stats.counts.ebauche}
                     </div>
                 </div>
@@ -253,12 +253,12 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                 <div style={{
                     marginTop: '24px',
                     paddingTop: '20px',
-                    borderTop: '1px solid #f1f5f9',
+                    borderTop: '1px solid var(--color-border)',
                 }}>
                     <div style={{
                         fontSize: '0.8rem',
                         fontWeight: 600,
-                        color: '#64748b',
+                        color: 'var(--color-text-muted)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
                         marginBottom: '12px',
@@ -275,16 +275,16 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                background: '#fff7ed',
-                                border: '1px solid #ffedd5',
+                                background: 'var(--color-bg)',
+                                border: '1px solid var(--color-border)',
                                 borderRadius: '8px',
                                 padding: '8px 12px',
                                 fontSize: '0.82rem',
                             }}>
-                                <span style={{ fontWeight: 600, color: '#0f172a', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: 600, color: 'var(--color-text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {node.title}
                                 </span>
-                                <span style={{ color: '#c2410c', marginLeft: '8px', flexShrink: 0, fontSize: '0.78rem' }}>
+                                <span style={{ color: '#ef4444', marginLeft: '8px', flexShrink: 0, fontSize: '0.78rem' }}>
                                     {node.detail}
                                 </span>
                             </div>
@@ -298,16 +298,16 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                 <div style={{
                     marginTop: '20px',
                     paddingTop: '20px',
-                    borderTop: topWeakNodes.length > 0 ? 'none' : '1px solid #f1f5f9',
+                    borderTop: topWeakNodes.length > 0 ? 'none' : '1px solid var(--color-border)',
                     display: 'flex',
                     justifyContent: 'flex-end'
                 }}>
                     <button
                         onClick={onReviewLowQuality}
                         style={{
-                            backgroundColor: '#fff7ed',
-                            color: '#c2410c',
-                            border: '1px solid #ffedd5',
+                            backgroundColor: 'var(--color-bg)',
+                            color: '#ef4444',
+                            border: '1px solid var(--color-border)',
                             padding: '8px 16px',
                             borderRadius: '8px',
                             fontWeight: 600,
@@ -319,11 +319,11 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                             transition: 'all 0.2s ease'
                         }}
                         onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#ffedd5';
+                            e.currentTarget.style.backgroundColor = 'var(--color-surface)';
                             e.currentTarget.style.transform = 'translateY(-1px)';
                         }}
                         onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = '#fff7ed';
+                            e.currentTarget.style.backgroundColor = 'var(--color-bg)';
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
@@ -337,9 +337,9 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
                 <div style={{
                     marginTop: '28px',
                     paddingTop: '20px',
-                    borderTop: '1px solid #f1f5f9',
+                    borderTop: '1px solid var(--color-border)',
                     textAlign: 'center',
-                    color: '#10b981',
+                    color: 'var(--color-success)',
                     fontSize: '0.9rem',
                     fontWeight: 500
                 }}>

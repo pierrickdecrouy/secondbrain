@@ -1,99 +1,106 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Warning, ArrowClockwise, House } from '@phosphor-icons/react';
 
 interface Props {
-    children: ReactNode;
+  children?: ReactNode;
+  fallback?: ReactNode;
+  onReset?: () => void;
 }
 
 interface State {
-    hasError: boolean;
-    error: Error | null;
-    errorInfo: ErrorInfo | null;
+  hasError: boolean;
+  error: Error | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-    public state: State = {
-        hasError: false,
-        error: null,
-        errorInfo: null
-    };
+  public state: State = {
+    hasError: false,
+    error: null
+  };
 
-    public static getDerivedStateFromError(error: Error): State {
-        // Update state so the next render will show the fallback UI.
-        return { hasError: true, error, errorInfo: null };
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Uncaught error in ErrorBoundary:', error, errorInfo);
+  }
+
+  private handleReset = () => {
+    this.setState({ hasError: false, error: null });
+    if (this.props.onReset) {
+      this.props.onReset();
+    }
+  };
+
+  public render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          width: '100%',
+          padding: '2rem',
+          textAlign: 'center',
+          background: 'var(--color-bg)',
+          color: 'var(--color-text)',
+          borderRadius: '12px'
+        }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '1rem', borderRadius: '50%', marginBottom: '1.5rem' }}>
+            <Warning size={48} weight="duotone" />
+          </div>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>Oups ! Une erreur est survenue.</h2>
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem', maxWidth: '400px' }}>
+            L'application a rencontré un problème inattendu. Rassurez-vous, vos données sont sauvegardées.
+          </p>
+          
+          {this.state.error && (
+            <div style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              padding: '1rem',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              color: '#ef4444',
+              maxWidth: '600px',
+              overflow: 'auto',
+              textAlign: 'left',
+              marginBottom: '2rem',
+              fontFamily: 'monospace'
+            }}>
+              {this.state.error.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              onClick={this.handleReset}
+              className="settings-btn secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <ArrowClockwise size={18} />
+              Réessayer
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="settings-btn primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <House size={18} />
+              Recharger l'application
+            </button>
+          </div>
+        </div>
+      );
     }
 
-    public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error("Uncaught error:", error, errorInfo);
-        this.setState({ error, errorInfo });
-    }
-
-    public render() {
-        if (this.state.hasError) {
-            return (
-                <div style={{
-                    padding: '2rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100vh',
-                    backgroundColor: '#f8fafc',
-                    color: '#334155',
-                    fontFamily: 'system-ui, sans-serif'
-                }}>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>
-                        Une erreur est survenue
-                    </h1>
-                    <p style={{ marginBottom: '2rem' }}>
-                        L'application a rencontré un problème inattendu.
-                    </p>
-
-                    <button
-                        onClick={() => window.location.reload()}
-                        style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            cursor: 'pointer',
-                            fontSize: '1rem',
-                            fontWeight: 500,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                            marginBottom: '2rem'
-                        }}
-                    >
-                        Recharger l'application
-                    </button>
-
-                    {this.state.error && (
-                        <details style={{ width: '100%', maxWidth: '800px' }}>
-                            <summary style={{ cursor: 'pointer', marginBottom: '0.5rem', fontWeight: 500 }}>
-                                Détails de l'erreur
-                            </summary>
-                            <div style={{
-                                backgroundColor: '#1e293b',
-                                color: '#e2e8f0',
-                                padding: '1rem',
-                                borderRadius: '0.5rem',
-                                overflow: 'auto',
-                                maxHeight: '400px',
-                                fontSize: '0.85rem',
-                                fontFamily: 'monospace'
-                            }}>
-                                <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>
-                                    {this.state.error.toString()}
-                                </p>
-                                <pre style={{ whiteSpace: 'pre-wrap' }}>
-                                    {this.state.errorInfo?.componentStack || 'Pas de stack trace disponible'}
-                                </pre>
-                            </div>
-                        </details>
-                    )}
-                </div>
-            );
-        }
-
-        return this.props.children;
-    }
+    return this.props.children;
+  }
 }

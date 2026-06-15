@@ -25,21 +25,21 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
     return (
         <div className="course-viewer" style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'var(--color-bg)', overflow: 'hidden' }}>
             {/* Header / Nav */}
-            <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', backgroundColor: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', zIndex: 10 }}>
-                <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontWeight: 600 }}>
+            <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 32px', backgroundColor: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', zIndex: 10 }}>
+                <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontWeight: 600, transition: 'color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.color = 'var(--color-text)'} onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}>
                     <ArrowLeft size={20} />
                     Retour
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                    <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-surface)'} onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-bg)'}>
                         <Printer size={20} />
                         Exporter en PDF
                     </button>
-                    <button onClick={onDelete} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', color: '#ef4444', border: '1px solid #fca5a5', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                    <button onClick={onDelete} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg)', color: 'var(--color-danger)', border: '1px solid #fca5a5', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-danger-bg)'} onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-bg)'}>
                         <Trash size={20} />
                         Supprimer
                     </button>
-                    <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0369a1', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(3,105,161,0.2)' }}>
+                    <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-success)', color: 'var(--color-surface)', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)', transition: 'transform 0.1s' }} onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.97)'} onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}>
                         <PencilSimple size={20} />
                         Modifier
                     </button>

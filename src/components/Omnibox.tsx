@@ -73,7 +73,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: '#94a3b8',
+                            color: 'var(--color-text-muted)',
                             padding: 4,
                             display: 'flex',
                             alignItems: 'center',

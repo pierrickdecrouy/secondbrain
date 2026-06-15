@@ -25,12 +25,13 @@ export const Badge: React.FC<BadgeProps> = ({ type, className }) => {
 
     return (
         <span
+            key={`badge-${type}`}
             className={`card-badge ${className || ''}`}
             data-type={type}
             style={style}
         >
             <DynamicIcon name={iconName} size={12} />
-            {type.toUpperCase()}
+            <span>{type.toUpperCase()}</span>
         </span>
     );
 };

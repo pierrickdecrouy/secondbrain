@@ -139,7 +139,6 @@ export function learnFromCards(cards: Card[]): void {
         }
     }
 
-    console.log(`Learned ${learnedAbbreviations.size} abbreviations from ${cards.length} cards`);
 }
 
 /**
@@ -165,7 +164,6 @@ export function loadLearnedAbbreviations(data: Record<string, string[]>): void {
         learnedAbbreviations.set(abbrev, new Set(definitions));
     }
 
-    console.log(`Loaded ${learnedAbbreviations.size} learned abbreviations`);
 }
 
 /**

@@ -81,7 +81,6 @@ export function loadFeedback(): void {
                 suppressionHistory: []
             }
         };
-        console.log(`🧠 Link feedback loaded: ${feedbackData.positivePatterns.length} positive, ${feedbackData.negativePatterns.length} negative, ${feedbackData.vetoPairs.length} vetoes, ${Object.keys(feedbackData.toxicKeywords).length} toxic keywords`);
     };
 
     const local = loadSettingSync<Partial<LinkFeedbackData> | null>(STORAGE_KEY, null);
@@ -232,7 +231,6 @@ export function recordNegativeFeedback(cardA: Card, cardB: Card): void {
     }
 
     saveFeedback();
-    console.log(`📉 Negative feedback: ${cardA.title} ↔ ${cardB.title} | veto + ${keywords.length} toxic kw`);
 }
 
 /**
@@ -269,7 +267,6 @@ export function recordPositiveFeedback(cardA: Card, cardB: Card): void {
     }
 
     saveFeedback();
-    console.log(`📈 Positive feedback: ${cardA.title} ↔ ${cardB.title}`);
 }
 
 /**
@@ -432,7 +429,6 @@ export function resetFeedback(): void {
         }
     };
     saveFeedback();
-    console.log('🗑️ Link feedback reset complete');
 }
 
 // Re-export for worker: compute feedback adjustment WITH temporal decay

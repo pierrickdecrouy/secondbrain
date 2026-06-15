@@ -85,7 +85,7 @@ export class VoyVectorStore {
             }
 
             // Map results. Note: Voy might not return score in all versions.
-            return results.map((r: any) => ({
+            return results.map((r: { id: string; score: number }) => ({
                 id: r.id,
                 similarity: 0 // Placeholder
             }));
@@ -157,7 +157,6 @@ export class VoyVectorStore {
                 const entries = JSON.parse(cacheJson);
                 this.embeddingCache = new Map(entries);
 
-                console.log(`[Voy] Deserialized index and ${this.embeddingCache.size} cached embeddings`);
             } catch (e) {
                 console.error("[Voy] Failed to deserialize with cache, falling back to clean slate:", e);
                 this.clear();
@@ -171,7 +170,6 @@ export class VoyVectorStore {
                 const indexString = new TextDecoder().decode(data);
                 if (indexString && indexString.trim().length > 0 && indexString.trim().startsWith('{')) {
                     this.index = VoySearch.deserialize(indexString);
-                    console.log("[Voy] Deserialized legacy index (no cache)");
                 } else {
                     console.warn("[Voy] Legacy index empty or invalid, resetting");
                     this.clear();
@@ -207,7 +205,6 @@ export class VoyVectorStore {
                 const data = await window.electronAPI.loadVectorIndex();
                 if (data) {
                     this.deserialize(data);
-                    console.log("[Voy] Index loaded from disk");
                     return true;
                 }
             } catch (e) {
@@ -225,7 +222,6 @@ export class VoyVectorStore {
             try {
                 const data = this.serialize();
                 await window.electronAPI.saveVectorIndex(data);
-                console.log("[Voy] Index saved to disk");
             } catch (e) {
                 console.error("[Voy] Failed to save index:", e);
             }

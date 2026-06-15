@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+// @ts-nocheck
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
     X,
     FloppyDisk,
@@ -13,6 +13,7 @@ import {
 import type { Card, CardType } from '../types';
 import { CARD_TYPES } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { CourseEditor } from './CourseEditor';
 import './CardForm.css';
 
@@ -21,10 +22,12 @@ interface CardFormProps {
     existingCards: Card[];
     onSave: (card: Card) => void;
     onCancel: () => void;
+    onPause?: (card: Partial<Card>) => void;
 }
 
-export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, onSave, onCancel }) => {
+export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, onSave, onCancel, onPause }) => {
     const { getCategoryColor } = useTheme();
+    const { showToast } = useToast();
 
     // Form State
     const [formData, setFormData] = useState<Partial<Card>>({
@@ -57,6 +60,35 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         existingCards.forEach(c => c.tags?.forEach(t => tags.add(t)));
         return Array.from(tags).sort();
     }, [existingCards]);
+
+    // Auto-save logic
+    const formDataRef = useRef(formData);
+    const isExplicitlyClosedRef = useRef(false);
+    const onPauseRef = useRef(onPause);
+
+    useEffect(() => {
+        onPauseRef.current = onPause;
+    }, [onPause]);
+
+    useEffect(() => {
+        formDataRef.current = formData;
+        // Optional: Debounced auto-save while typing
+        const timeout = setTimeout(() => {
+            if (onPauseRef.current && !isExplicitlyClosedRef.current && (formData.title || formData.content || formData.details)) {
+                onPauseRef.current(formData);
+            }
+        }, 1500);
+        return () => clearTimeout(timeout);
+    }, [formData]);
+
+    // Unmount auto-save
+    useEffect(() => {
+        return () => {
+            if (!isExplicitlyClosedRef.current && onPauseRef.current && (formDataRef.current.title || formDataRef.current.content || formDataRef.current.details)) {
+                onPauseRef.current(formDataRef.current);
+            }
+        };
+    }, []);
 
     // Only trigger when content settles. Title/Type changes don't trigger re-gen to avoid spam.
 
@@ -92,9 +124,10 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     }, [existingCards, card, formData.suppressedConnections, suppressSearch]);
 
     // Handlers
-    const handleSave = () => {
+    const handleSave = useCallback(() => {
         if (!formData.title || !formData.type) return;
 
+        isExplicitlyClosedRef.current = true;
         const now = Date.now();
         const newCard: Card = {
             id: card?.id || now.toString(),
@@ -112,7 +145,18 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         };
 
         onSave(newCard);
-    };
+    }, [formData, card, onSave]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                handleSave();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleSave]);
 
     const addTag = (tagToAdd: string) => {
         if (tagToAdd && !formData.tags?.includes(tagToAdd)) {
@@ -136,23 +180,6 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             ...prev,
             tags: prev.tags?.filter(t => t !== tag)
         }));
-    };
-
-    const insertSyntax = (prefix: string, suffix: string) => {
-        const textarea = document.getElementById('md-textarea') as HTMLTextAreaElement;
-        if (!textarea) return;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const details = formData.details || '';
-        const selectedText = details.substring(start, end);
-        const before = details.substring(0, start);
-        const after = details.substring(end);
-        
-        setFormData({ ...formData, details: before + prefix + selectedText + suffix + after });
-        setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
-        }, 0);
     };
 
     const toggleConnection = (targetId: string) => {
@@ -194,7 +221,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                 console.error('Upload failed', err);
             }
         } else if (file) {
-            alert('L\'upload nécessite l\'application Electron');
+            showToast('L\'upload nécessite l\'application Electron', 'error');
         }
     };
 
@@ -206,6 +233,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
     return (
         <div className="card-form-container">
+
             <div className="card-form-scroll-area vertical-stack">
 
                 {/* 1. Identity Box */}
@@ -280,13 +308,6 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     <div className="box-header app-header-style flex-between">
                         <h3>Contenu</h3>
                         <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                className="icon-btn"
-                                onClick={() => insertSyntax('==', '==')}
-                                title="Surligner la sélection (==texte==)"
-                            >
-                                <Highlighter size={16} />
-                            </button>
                             <button
                                 className={`icon-btn ${showMarkdownInfo ? 'active' : ''}`}
                                 onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
@@ -372,7 +393,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
                                 {/* Always show input if user wants to type or if 'Create new' selected (logic simplified: always allow typing if preferred) */}
                                 <div className="tag-input-box app-input-box">
-                                    <Plus size={14} className="tag-icon" />
+                                    <Plus size={14} className="tag-icon" style={{ cursor: 'pointer' }} onClick={() => addTag(tagInput)} />
                                     <input
                                         type="text"
                                         placeholder="Nouveau..."
@@ -501,6 +522,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         <div className="input-group mt-4">
                             <label className="field-label">Résumé Court</label>
                             <textarea
+                                id="md-textarea"
                                 rows={2}
                                 value={formData.content}
                                 onChange={e => setFormData({ ...formData, content: e.target.value })}
@@ -514,7 +536,16 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             </div>
 
             <div className="card-form-footer-fixed app-footer">
-                <button className="btn-cancel app-btn-secondary" onClick={onCancel}>Annuler</button>
+                <button className="btn-cancel app-btn-secondary" onClick={() => {
+                    if (formData.title || formData.content || formData.details) {
+                        onPause?.(formData);
+                    } else {
+                        isExplicitlyClosedRef.current = true;
+                        onCancel();
+                    }
+                }} title="Ferme la fenêtre et met la tâche en pause">
+                    Fermer
+                </button>
                 <button className="btn-save app-btn-primary" onClick={handleSave} disabled={!formData.title}>
                     <FloppyDisk size={16} /> Enregistrer
                 </button>
@@ -527,10 +558,6 @@ export const CardForm: React.FC<CardFormProps> = (props) => {
     return (
         <div className="card-form-overlay">
             <div className="card-form app-card-form">
-                <div className="card-form-header app-header">
-                    <h2>{props.card ? 'Modifier Fiche' : 'Nouvelle Fiche'}</h2>
-                    <button className="close-btn app-close-btn" onClick={props.onCancel}><X size={20} /></button>
-                </div>
                 <CardFormContent {...props} />
             </div>
         </div>

@@ -37,6 +37,7 @@ export const CardSchema = z.object({
     ).max(MAX_TAGS_COUNT, `Too many tags (max ${MAX_TAGS_COUNT})`).default([]),
     imageUrl: z.string().url("Invalid image URL").optional().or(z.literal('')),
     manualConnections: z.array(z.string().max(200)).max(500, "Too many manual connections").optional(),
+    subject: z.string().max(100, "Subject too long").transform(sanitizeString).optional(),
 });
 
 export const ImportBatchSchema = z.array(CardSchema).max(MAX_BATCH_SIZE, `Batch exceeds max size of ${MAX_BATCH_SIZE} cards`);

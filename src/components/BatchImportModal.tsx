@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { X, UploadSimple, Warning, CheckCircle, FileText, FileCode } from '@phosphor-icons/react';
+import React, { useState, useEffect } from 'react';
+import { X, UploadSimple, Warning, FileText, FileCode, Info } from '@phosphor-icons/react';
 import type { Card, CardType } from '../types';
 import { validateImportData } from '../utils/importValidation';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { useTheme } from '../context/ThemeContext';
 
 interface BatchImportModalProps {
     onImport: (cards: Card[]) => void;
@@ -19,87 +20,124 @@ const pickString = (...values: unknown[]): string => {
 };
 
 export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, onClose, existingCards = [] }) => {
+    const { getCategoryColor } = useTheme();
     const [importMode, setImportMode] = useState<ImportMode>('text');
     const [input, setInput] = useState('');
     const [cardType, setCardType] = useState<CardType>('drug');
     const [groupName, setGroupName] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [previewCount, setPreviewCount] = useState<number | null>(null);
+    const [parsedCards, setParsedCards] = useState<Card[]>([]);
     const [showHelp, setShowHelp] = useState(false);
     const [pendingImportCards, setPendingImportCards] = useState<Card[] | null>(null);
     const [duplicateSample, setDuplicateSample] = useState<string>('');
 
-    // Sanitize text (remove invisible characters like zero-width spaces)
-    const sanitizeText = (text: string): string => {
-        return text.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-    };
-
-    // Generate safe ID
+    const sanitizeText = (text: string): string => text.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+    
     const generateSafeId = (title: string): string => {
         return sanitizeText(title).toLowerCase()
             .replace(/[^a-z0-9à-ÿ]+/gi, '-')
             .replace(/^-+|-+$/g, '');
     };
 
-    // Parse text format
     const parseTextFormat = (text: string): Card[] => {
-        const sections = text.split('#').filter(s => s.trim());
         const cards: Card[] = [];
+        const lines = text.split('\n');
+        
+        const rawSections: string[][] = [];
+        let currentSection: string[] = [];
 
-        sections.forEach(section => {
-            const lines = section.trim().split('\n');
-            if (lines.length === 0) return;
+        lines.forEach(line => {
+            if (line.trim().startsWith('#') && !line.trim().startsWith('##')) {
+                if (currentSection.length > 0) {
+                    rawSections.push(currentSection);
+                }
+                // Start a new section, strip the leading '#'
+                currentSection = [line.replace(/^\s*#\s*/, '')];
+            } else {
+                if (currentSection.length > 0) {
+                    currentSection.push(line);
+                }
+            }
+        });
+        if (currentSection.length > 0) {
+            rawSections.push(currentSection);
+        }
 
-            const rawTitle = lines[0].trim();
+        rawSections.forEach(sectionLines => {
+            if (sectionLines.length === 0) return;
+
+            const rawTitle = sectionLines[0].trim();
             if (!rawTitle) return;
 
             const title = sanitizeText(rawTitle);
             const extractedTags: string[] = [];
-            const processedLines: string[] = [];
+            let subject = '';
+            
+            let subtitle = '';
+            const contentLines: string[] = [];
+            
+            let parsingMetadata = true;
+            let subtitleFound = false;
 
-            lines.slice(1).forEach(line => {
-                const tagMatch = line.match(/^\s*\[([^\]]+)\]\s*$/);
-                if (tagMatch) {
-                    const tags = tagMatch[1].split(',').map(t => sanitizeText(t.trim())).filter(Boolean);
-                    extractedTags.push(...tags);
-                } else if (line.trim()) {
-                    processedLines.push(sanitizeText(line));
+            sectionLines.slice(1).forEach(line => {
+                const trimmed = line.trim();
+                
+                if (parsingMetadata) {
+                    const tagMatch = trimmed.match(/^\[([^\]]+)\]$/);
+                    const subjectMatch = trimmed.match(/^(?:Subject|Matière|Matiere|Module)\s*:\s*(.+)$/i);
+                    
+                    if (tagMatch) {
+                        const tags = tagMatch[1].split(',').map(t => sanitizeText(t.trim())).filter(Boolean);
+                        extractedTags.push(...tags);
+                        return; // Skip this line
+                    } else if (subjectMatch) {
+                        subject = sanitizeText(subjectMatch[1]);
+                        return; // Skip this line
+                    } else if (trimmed === '') {
+                        return; // Skip empty lines in metadata section
+                    } else if (!subtitleFound && !trimmed.startsWith('##')) {
+                        // First non-metadata, non-empty line is the subtitle, IF it's not a markdown heading
+                        subtitle = sanitizeText(trimmed);
+                        subtitleFound = true;
+                        return; // Skip this line
+                    } else {
+                        // We found something else (like a heading), metadata section is over
+                        parsingMetadata = false;
+                    }
                 }
+                
+                // Content
+                contentLines.push(line);
             });
 
-            // Clean invisible chars from content logic
-            const subtitle = processedLines[0] || '';
-            const contentLines = processedLines.slice(1);
-            // Legacy mapping removed
-            const details = contentLines.length > 0 ? contentLines.join('\n\n') : subtitle;
+            const details = contentLines.join('\n').trim();
 
             cards.push({
                 id: generateSafeId(title),
                 type: cardType,
                 title,
                 subtitle,
-                content: details, // Use full details as content
-                details,
+                content: details || subtitle, // fallback if empty
+                details: details || subtitle,
                 tags: [
                     ...extractedTags,
                     ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
                 ],
+                subject: subject || undefined,
             });
         });
 
         return cards;
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const value = e.target.value;
-        setInput(value);
-        setError(null);
-        setPreviewCount(null);
+    useEffect(() => {
+        if (!input.trim()) {
+            setParsedCards([]);
+            setError(null);
+            return;
+        }
 
-        if (!value.trim()) return;
-
-        // Auto-detect JSON
-        const trimmed = value.trim();
+        const trimmed = input.trim();
         let currentMode = importMode;
 
         if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
@@ -109,59 +147,30 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
             }
         }
 
-        if (currentMode === 'json') {
-            try {
-                const parsed = JSON.parse(value);
-                if (Array.isArray(parsed)) {
-                    setPreviewCount(parsed.length);
-                } else if (typeof parsed === 'object') {
-                    setPreviewCount(1); // Single object
-                } else {
-                    setError("Le JSON doit être un tableau d'objets ou un objet unique.");
-                }
-            } catch {
-                // Don't show error while typing
-            }
-        } else {
-            const cards = parseTextFormat(value);
-            if (cards.length > 0) {
-                setPreviewCount(cards.length);
-            }
-        }
-    };
-
-    const handleImport = () => {
         try {
-            let processedCards: Card[] = [];
-
-            if (importMode === 'json') {
-                const parsed = JSON.parse(input);
+            let processed: Card[] = [];
+            if (currentMode === 'json') {
+                const parsed = JSON.parse(trimmed);
                 let validCards: ImportCandidate[] = [];
 
                 if (Array.isArray(parsed)) {
-                    validCards = parsed.filter((c: ImportCandidate) => {
-                        const title = pickString(c.title, c.Title, c.name, c.Name);
-                        return !!title;
-                    });
+                    validCards = parsed.filter((c: ImportCandidate) => !!pickString(c.title, c.Title, c.name, c.Name));
                 } else if (typeof parsed === 'object' && parsed !== null) {
                     const parsedCandidate = parsed as ImportCandidate;
-                    const title = pickString(parsedCandidate.title, parsedCandidate.Title, parsedCandidate.name, parsedCandidate.Name);
-                    if (title) validCards = [parsed];
+                    if (pickString(parsedCandidate.title, parsedCandidate.Title, parsedCandidate.name, parsedCandidate.Name)) {
+                        validCards = [parsed];
+                    }
                 } else {
-                    throw new Error("Le format doit être un tableau JSON ou un objet unique.");
+                    throw new Error("Le JSON doit être un tableau d'objets ou un objet unique.");
                 }
 
-                if (validCards.length === 0) {
-                    throw new Error("Aucune fiche valide trouvée.");
-                }
-
-                processedCards = validCards.map((c) => {
+                processed = validCards.map((c) => {
                     const title = sanitizeText(pickString(c.title, c.Title, c.name, c.Name));
                     return {
                         ...c,
                         id: pickString(c.id) ? sanitizeText(pickString(c.id)) : generateSafeId(title),
                         title: title,
-                        type: pickString(c.type) || cardType,
+                        type: (pickString(c.type) as CardType) || cardType,
                         tags: [
                             ...(Array.isArray(c.tags) ? c.tags.filter((t): t is string => typeof t === 'string') : []),
                             ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
@@ -169,58 +178,54 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                         subtitle: sanitizeText(pickString(c.subtitle)),
                         content: sanitizeText(pickString(c.content)),
                         details: sanitizeText(pickString(c.details, c.content)),
-                    };
+                        subject: pickString(c.subject, c.Subject, c.matiere, c.Matiere, c.module, c.Module) ? sanitizeText(pickString(c.subject, c.Subject, c.matiere, c.Matiere, c.module, c.Module)) : undefined,
+                    } as Card;
                 });
             } else {
-                processedCards = parseTextFormat(input);
-                if (processedCards.length === 0) {
-                    setError("Aucune fiche trouvée. Utilisez # pour séparer les fiches.");
-                    return;
-                }
+                processed = parseTextFormat(input);
+            }
+            
+            setError(null);
+            setParsedCards(processed);
+        } catch (err) {
+            setParsedCards([]);
+            if (currentMode === 'json' && input.length > 5) {
+                setError(`JSON Invalide: ${(err as Error).message}`);
+            }
+        }
+    }, [input, importMode, cardType, groupName]);
+
+
+    const handleImport = () => {
+        try {
+            if (parsedCards.length === 0) {
+                throw new Error("Aucune fiche valide trouvée.");
             }
 
-            // VALIDATION STEP (Zod)
-            // Before proceeding, validate each card against Zod schema
-            const validationResult = validateImportData(processedCards);
+            const validationResult = validateImportData(parsedCards);
 
             if (!validationResult.success) {
-                // Show first 3 errors to avoid spam
                 const errorMsg = validationResult.errors.slice(0, 3).join('\n') +
-                    (validationResult.errors.length > 3 ? `\n... (+${validationResult.errors.length - 3} others)` : '');
-                throw new Error(`Validation failed:\n${errorMsg}`);
+                    (validationResult.errors.length > 3 ? `\n... (+${validationResult.errors.length - 3} autres)` : '');
+                throw new Error(`Échec de validation:\n${errorMsg}`);
             }
 
-            // Surface warnings (e.g. duplicate IDs that were deduplicated)
             if (validationResult.warnings.length > 0) {
                 setError(`⚠️ ${validationResult.warnings.join(' | ')}`);
-                // Non-fatal: continue with the deduplicated cards
             }
 
-            // Use the strictly valid cards
-            processedCards = validationResult.validCards;
-
-            // check duplicates
-            const duplicates = processedCards.filter(newCard =>
+            const finalCards = validationResult.validCards;
+            const duplicates = finalCards.filter(newCard =>
                 existingCards.some(existing => existing.id === newCard.id)
             );
 
-            // Remove duplicates from the batch to act as "upsert" or "skip"? 
-            // User asked: "Vérifie si l'ID existe déjà. Demande à l'utilisateur : 'Écraser ou Ignorer ?'".
-            // Since we can't easily show a dialog here without complex UI, 
-            // and we implemented "Safe Upsert" in backend, OVERWRITING is safe (no delete of others).
-            // But if user didn't INTEND to overwrite, it's bad.
-            // Let's implement a strict check: if duplicates > 0, throw error unless they check a box "Overwrite"?
-            // Or just return the list and let the parent handle?
-            // "Frontend (UI) : Ajoute un indicateur visuel..." was for indexing.
-            // For duplicates, I'll add a simple confirmation via window.confirm for now.
-
             if (duplicates.length > 0 && duplicates[0]) {
-                setPendingImportCards(processedCards);
-                setDuplicateSample(`${duplicates.length} fiches existent déjà (ex: ${duplicates[0].title}).`);
+                setPendingImportCards(finalCards);
+                setDuplicateSample(`${duplicates.length} fiche(s) existent déjà (ex: ${duplicates[0].title}).`);
                 return;
             }
 
-            onImport(processedCards);
+            onImport(finalCards);
             if (onClose) onClose();
 
         } catch (err: unknown) {
@@ -237,161 +242,185 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     ];
 
     return (
-        <div className="batch-import-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.5rem', overflow: 'hidden' }}>
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+        <div className="batch-import-container" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', height: '600px', width: '100%', background: 'var(--color-bg)' }}>
+            {/* Left Pane: Editor */}
+            <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--color-border)', padding: '1.5rem', background: 'var(--color-bg)' }}>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <div className="import-mode-tabs" style={{ display: 'flex', gap: '4px', background: 'var(--color-surface)', padding: '4px', borderRadius: '8px' }}>
+                        <button
+                            style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: importMode === 'text' ? 'var(--color-bg)' : 'transparent', color: importMode === 'text' ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', boxShadow: importMode === 'text' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                            onClick={() => { setImportMode('text'); }}
+                        >
+                            <FileText size={16} />
+                            Texte
+                        </button>
+                        <button
+                            style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: importMode === 'json' ? 'var(--color-bg)' : 'transparent', color: importMode === 'json' ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', boxShadow: importMode === 'json' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                            onClick={() => { setImportMode('json'); }}
+                        >
+                            <FileCode size={16} />
+                            JSON
+                        </button>
+                    </div>
+
                     <button
-                        className="btn-secondary"
-                        style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                        style={{ background: 'transparent', border: 'none', color: showHelp ? 'var(--color-primary)' : 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
                         onClick={() => setShowHelp(!showHelp)}
                     >
-                        {showHelp ? 'Masquer l\'aide' : 'Guide & Exemples'}
-                    </button>
-                </div>
-
-                {showHelp && (
-                    <div style={{ marginBottom: '1rem', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-                            <div>
-                                <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.1rem' }}>Guide d'importation</h3>
-                                <p style={{ margin: 0, color: '#64748b' }}>
-                                    Importez des fiches enrichies avec <strong>Markdown</strong>, <strong>Tableaux HTML</strong> et <strong>Icônes SVG</strong>.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                            <div>
-                                <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <FileText size={16} /> Format Texte (#)
-                                </h4>
-                                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                                    <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
-                                        <li>Séparez les fiches avec <code># Titre de la fiche</code></li>
-                                        <li>Ligne suivante : Sous-titre</li>
-                                        <li>Tags entre crochets : <code>[Tag1, Tag2]</code></li>
-                                        <li>Le reste est le contenu (Markdown + HTML supporté)</li>
-                                    </ul>
-                                    <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
-                                        {`# Aspirine
-Anti-inflammatoire non stéroïdien
-[Douleur, Fièvre, AINS]
-
-## Posologie
-Adulte : 500mg à 1g toutes les 4h.
-
-## Mécanisme
-<div class="info-box">Inhibe irréversiblement les COX-1 et 2.</div>`}
-                                    </pre>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 style={{ color: '#334155', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <FileCode size={16} /> Format JSON
-                                </h4>
-                                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                                    <ul style={{ paddingLeft: '20px', margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem' }}>
-                                        <li>Un tableau d'objets : <code>[{`{ ... }`}, {`{ ... }`}]</code></li>
-                                        <li>Champs requis : <code>title</code></li>
-                                        <li>Champs optionnels : <code>subtitle</code>, <code>content</code> (HTML/MD), <code>tags</code> (array), <code>type</code></li>
-                                    </ul>
-                                    <pre style={{ background: '#f1f5f9', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre' }}>
-                                        {`[
-  {
-    "title": "Paracétamol",
-    "subtitle": "Antalgique antipyrétique",
-    "type": "drug",
-    "tags": ["Douleur", "Fièvre"],
-    "content": "## Indications\\nDouleurs faibles à modérées.\\n\\n<table class='w-full'><tr><td>Dose max</td><td>4g/j</td></tr></table>"
-  }
-]`}
-                                    </pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="import-mode-tabs">
-                    <button
-                        className={`import-tab ${importMode === 'text' ? 'active' : ''}`}
-                        onClick={() => { setImportMode('text'); setInput(''); setError(null); setPreviewCount(null); }}
-                    >
-                        <FileText size={16} />
-                        Texte simple
-                    </button>
-                    <button
-                        className={`import-tab ${importMode === 'json' ? 'active' : ''}`}
-                        onClick={() => { setImportMode('json'); setInput(''); setError(null); setPreviewCount(null); }}
-                    >
-                        <FileCode size={16} />
-                        JSON
+                        <Info size={18} />
+                        Guide
                     </button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label>Type par défaut</label>
-                        <select value={cardType} onChange={(e) => setCardType(e.target.value as CardType)}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Type par défaut</label>
+                        <select 
+                            value={cardType} 
+                            onChange={(e) => setCardType(e.target.value as CardType)}
+                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', outline: 'none' }}
+                        >
                             {types.map(t => (
                                 <option key={t.value} value={t.value}>{t.label}</option>
                             ))}
                         </select>
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label>Groupe (Cluster)</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Groupe (Optionnel)</label>
                         <input
                             type="text"
-                            placeholder="Ex: Antibiotiques, Cours N°1..."
+                            placeholder="Ex: Cardiologie, Cours N°1..."
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
-                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', outline: 'none' }}
                         />
                     </div>
                 </div>
 
-                <div className="form-group" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label>
-                        {importMode === 'text' ? 'Fiches séparées par #' : 'JSON Array'}
-                    </label>
-                    <textarea
-                        className={importMode === 'json' ? 'font-mono text-xs' : ''}
-                        style={{ flex: 1, minHeight: '300px', resize: 'vertical' }}
-                        value={input}
-                        onChange={handleInputChange}
-                        placeholder={importMode === 'text' ? '...' : '[...]'}
-                    />
-                </div>
+                <textarea
+                    style={{ 
+                        flex: 1, 
+                        resize: 'none', 
+                        background: 'var(--color-surface)', 
+                        color: 'var(--color-text)', 
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        fontFamily: importMode === 'json' ? 'monospace' : 'inherit',
+                        fontSize: '0.9rem',
+                        lineHeight: '1.5',
+                        outline: 'none'
+                    }}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={importMode === 'text' ? '# Titre de la fiche\nSous-titre\n[Tag1, Tag2]\n\nContenu détaillé ici...' : '[\n  {\n    "title": "Nom de la fiche",\n    "tags": ["tag1"]\n  }\n]'}
+                />
 
                 {error && (
-                    <div className="import-message error">
-                        <Warning size={16} />
+                    <div style={{ marginTop: '1rem', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                        <Warning size={16} weight="bold" />
                         {error}
                     </div>
                 )}
+            </div>
 
-                {previewCount !== null && !error && (
-                    <div className="import-message success">
-                        <CheckCircle size={16} />
-                        {previewCount} fiches détectées
+            {/* Right Pane: Preview / Help */}
+            <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', overflow: 'hidden' }}>
+                {showHelp ? (
+                    <div style={{ padding: '1.5rem', overflowY: 'auto', height: '100%' }}>
+                        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: 'var(--color-text)' }}>Guide d'importation</h3>
+                        
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <h4 style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <FileText size={16} /> Format Texte (#)
+                            </h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Utilisez le croisillon # pour délimiter vos fiches.</p>
+                            <pre style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', whiteSpace: 'pre-wrap', color: 'var(--color-text-muted)' }}>
+{`# Aspirine
+Anti-inflammatoire non stéroïdien
+[Douleur, Fièvre, AINS]
+Matière: Pharmacologie
+
+## Mécanisme
+Inhibe irréversiblement les COX.`}
+                            </pre>
+                        </div>
+
+                        <div>
+                            <h4 style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <FileCode size={16} /> Format JSON
+                            </h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Importez un tableau d'objets JSON valides.</p>
+                            <pre style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', whiteSpace: 'pre-wrap', color: 'var(--color-text-muted)' }}>
+{`[
+  {
+    "title": "Aspirine",
+    "subtitle": "AINS",
+    "type": "drug",
+    "tags": ["Douleur", "Fièvre"]
+  }
+]`}
+                            </pre>
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text)' }}>Prévisualisation</h3>
+                            <span style={{ background: 'var(--color-primary)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {parsedCards.length}
+                            </span>
+                        </div>
+                        
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {parsedCards.length === 0 ? (
+                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem' }}>
+                                    Saisissez vos données à gauche pour voir l'aperçu.
+                                </div>
+                            ) : (
+                                parsedCards.map((card, idx) => (
+                                    <div key={idx} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <strong style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.2 }}>{card.title}</strong>
+                                            {card.type && (
+                                                <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+                                                    {card.type}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {card.tags && card.tags.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                {card.tags.map(tag => (
+                                                    <span key={tag} style={{ fontSize: '0.7rem', color: getCategoryColor('default'), background: `${getCategoryColor('default')}20`, padding: '2px 6px', borderRadius: '4px' }}>
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem', background: 'var(--color-bg)' }}>
+                            <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>
+                                Annuler
+                            </button>
+                            <button
+                                className="btn-primary"
+                                onClick={handleImport}
+                                disabled={parsedCards.length === 0 || !!error}
+                                style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                            >
+                                <UploadSimple size={16} />
+                                Importer
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
 
-            <div className="form-actions" style={{ paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0', marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: '#fff' }}>
-                <button className="btn-secondary" onClick={onClose}>
-                    Annuler
-                </button>
-                <button
-                    className="btn-primary"
-                    onClick={handleImport}
-                    disabled={!input.trim() || !!error}
-                >
-                    <UploadSimple size={18} />
-                    Importer
-                </button>
-            </div>
             {pendingImportCards && (
                 <ConfirmDeleteModal
                     title="Conflits d'identifiants"
@@ -423,14 +452,14 @@ Adulte : 500mg à 1g toutes les 4h.
 
 export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
-            <div className="modal-content form-modal" style={{ maxWidth: '800px' }}>
-                <div className="modal-header">
-                    <h2 className="modal-title">Import en masse</h2>
-                    <button className="modal-close" onClick={props.onClose}>
-                        <X size={20} />
-                    </button>
-                </div>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && props.onClose()} style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', width: '90%', maxWidth: '1000px', background: 'var(--color-bg)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+                <button 
+                    onClick={props.onClose}
+                    style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', zIndex: 10, padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <X size={20} />
+                </button>
                 <BatchImportContent {...props} />
             </div>
         </div>

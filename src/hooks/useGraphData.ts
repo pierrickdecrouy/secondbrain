@@ -14,9 +14,10 @@ export interface UseGraphDataProps {
     cards: Card[];
     vetoPairs?: string[];
     semanticReady?: boolean; // Signal if we should wait for semantic search or not (optional)
+    typeCompat?: Record<string, number>;
 }
 
-export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: UseGraphDataProps) {
+export function useGraphData({ cards, vetoPairs = [], semanticReady = false, typeCompat = {} }: UseGraphDataProps) {
     const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
             cards,
             feedback: {
                 vetoPairs,
-                typePairScores: {},
+                typePairScores: typeCompat,
                 negativePatterns: [],
                 positivePatterns: [],
                 toxicKeywords: {}
@@ -77,7 +78,7 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
         };
 
         workerRef.current.postMessage(payload);
-    }, [cards, vetoPairs]);
+    }, [cards, vetoPairs, typeCompat]);
 
     // Compute Semantic Links when ready
     useEffect(() => {
@@ -86,9 +87,8 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
             return;
         }
 
-        console.log('[Graph] Computing semantic links...');
 
-        computePrecisionGraph(cards, vetoPairs)
+        computePrecisionGraph(cards, vetoPairs, typeCompat)
             .then(links => {
                 // Map to Link type
                 const formattedLinks: Link[] = links.map(l => ({
@@ -106,7 +106,7 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
                 setError('Erreur de calcul sémantique du graphe.');
             });
 
-    }, [cards, vetoPairs, semanticReady]);
+    }, [cards, vetoPairs, typeCompat, semanticReady]);
 
     // Merge Results
     useEffect(() => {
@@ -136,7 +136,6 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false }: U
             }
         });
 
-        console.log(`[Graph] Merged: ${lexicalLinks.length} lexical + ${addedCount} semantic = ${mergedLinks.length} total.`);
 
         setGraphData({ nodes, links: mergedLinks });
         setIsLoading(false);

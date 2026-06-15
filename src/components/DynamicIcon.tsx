@@ -29,8 +29,16 @@ export const DynamicIcon: React.FC<DynamicIconProps> = ({ name, size = 24, class
     const PhosphorIcon = (PhosphorIcons as any)[name];
 
     if (!PhosphorIcon) {
-        return <PhosphorIcons.FileText size={size} className={className} {...props} />;
+        return (
+            <span key="FileText" style={{ display: 'contents' }}>
+                <PhosphorIcons.FileText size={size} className={className} {...props} />
+            </span>
+        );
     }
 
-    return <PhosphorIcon size={size} className={className} {...props} />;
+    return (
+        <span key={name} style={{ display: 'contents' }}>
+            <PhosphorIcon size={size} className={className} {...props} />
+        </span>
+    );
 };

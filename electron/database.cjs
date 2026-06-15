@@ -31,8 +31,16 @@ function initDB(dbPath) {
     );
     `);
 
+    // Add Virtual Column for FSRS next_review and create Index
+    try {
+        db.exec(`ALTER TABLE cards ADD COLUMN next_review DATETIME AS (json_extract(metadata, '$.fsrs.next_review')) VIRTUAL;`);
+    } catch (e) {
+        // Column might already exist, ignore error
+    }
+
     // Create Index on Type for filtering
     db.exec(`CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(type);`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_next_review ON cards(next_review);`);
 
     console.log(`[DB] Initialized at ${dbPath}`);
 }

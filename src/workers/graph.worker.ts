@@ -7,6 +7,7 @@ interface Node {
     manualConnections?: string[];
     suppressedConnections?: string[];
     val?: number; // Importance score for visualization sizing
+    cluster?: number;
 }
 
 interface Link {
@@ -618,25 +619,72 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
     });
 
     const nodes: Node[] = cards.map(c => {
-        // Importance Score (val)
-        // 1. Degree Centrality (connections)
         const degree = degreeMap.get(c.id) || 0;
-
-        // 2. Info Density (from TF-IDF sum)
         const infoDensity = titleInfoContent.get(c.id) || 1.0;
-
-        // Composite Score: Base + (Degree * 1.5) + (Info * 0.5)
-        // Logarithmic scaling to prevent massive nodes
         const rawVal = 1 + Math.log2(1 + degree) * 1.5 + Math.log2(infoDensity) * 0.5;
 
         return {
             id: c.id,
             name: c.title,
             type: c.type,
-            val: Math.max(1, Math.min(20, rawVal)), // Clamp between 1 and 20
+            val: Math.max(1, Math.min(20, rawVal)),
             manualConnections: c.manualConnections,
             suppressedConnections: c.suppressedConnections
         };
+    });
+
+    // ===========================================
+    // PHASE 5: CLUSTERING (Label Propagation Algorithm)
+    // ===========================================
+    const labels = new Map<string, number>();
+    const adj = new Map<string, {target: string, weight: number}[]>();
+
+    nodes.forEach((n, i) => {
+        labels.set(n.id, i);
+        adj.set(n.id, []);
+    });
+
+    links.forEach(l => {
+        adj.get(l.source)!.push({ target: l.target, weight: l.value });
+        adj.get(l.target)!.push({ target: l.source, weight: l.value });
+    });
+
+    // Run LPA for a few iterations
+    for (let iter = 0; iter < 10; iter++) {
+        let changed = false;
+        // Deterministic shuffle using id to avoid hydration mismatches, but Math.random() is fine for worker
+        const shuffledNodes = [...nodes].sort(() => Math.random() - 0.5);
+
+        for (const node of shuffledNodes) {
+            const neighbors = adj.get(node.id)!;
+            if (neighbors.length === 0) continue;
+
+            const labelScores = new Map<number, number>();
+            for (const edge of neighbors) {
+                const neighborLabel = labels.get(edge.target)!;
+                labelScores.set(neighborLabel, (labelScores.get(neighborLabel) || 0) + edge.weight);
+            }
+
+            let bestLabel = labels.get(node.id)!;
+            let maxScore = -1;
+            for (const [label, score] of labelScores.entries()) {
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestLabel = label;
+                }
+            }
+
+            if (bestLabel !== labels.get(node.id)) {
+                labels.set(node.id, bestLabel);
+                changed = true;
+            }
+        }
+        if (!changed) break;
+    }
+
+    const uniqueLabels = Array.from(new Set(labels.values()));
+    nodes.forEach(n => {
+        n.cluster = uniqueLabels.indexOf(labels.get(n.id)!);
     });
 
     self.postMessage({ nodes, links });

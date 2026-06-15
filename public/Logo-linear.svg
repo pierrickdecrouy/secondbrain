@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 350 950 320" width="100%" height="100%">
+  <!-- Rounded Square Frame -->
+  <rect x="47" y="362" width="300" height="300" rx="75" ry="75" fill="none" stroke="#11B880" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Curly Brace -->
+  <path d="M 192,437 C 175,437 167,450 167,467 L 167,495 C 167,508 154,512 142,512 C 154,512 167,516 167,529 L 167,557 C 167,574 175,587 192,587" fill="none" stroke="#11B880" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Dot inside Square -->
+  <circle cx="247" cy="512" r="18" fill="#11B880"/>
+
+  <!-- Text: EXTND. -->
+  <g fill="none" stroke="#11B880" stroke-width="24" stroke-linejoin="miter">
+    <!-- Letter E -->
+    <path d="M 455,449 L 399,449 L 399,575 L 455,575 M 399,512 L 445,512" stroke-linecap="square"/>
+    
+    <!-- Letter X -->
+    <path d="M 514,449 L 570,575 M 570,449 L 514,575" stroke-linecap="square"/>
+    
+    <!-- Letter T -->
+    <path d="M 629,449 L 685,449 M 657,449 L 657,575" stroke-linecap="square"/>
+    
+    <!-- Letter N -->
+    <path d="M 744,587 L 744,437 L 800,587 L 800,437" stroke-linecap="butt"/>
+    
+    <!-- Letter D -->
+    <path d="M 859,587 L 859,437 L 875,437 A 40 75 0 0 1 875,587 L 859,587 Z"/>
+  </g>
+  
+  <!-- Period -->
+  <rect x="952" y="553" width="24" height="34" fill="#11B880"/>
+</svg>
