@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Card } from './types';
 import { initialCards } from './data';
 import { MEDICAL_ABBREVIATIONS } from './medicalAbbreviations';
@@ -120,7 +119,7 @@ export async function loadSettingAsync<T>(key: string, defaultValue: T): Promise
     }
     try {
         const setting = await db.settings.get(key);
-        return setting ? setting.value : defaultValue;
+        return setting ? (setting.value as T) : defaultValue;
     } catch (e) {
         console.error('Dexie read setting error', e);
         return defaultValue;

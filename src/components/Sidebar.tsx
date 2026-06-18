@@ -53,7 +53,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
 
   
   const navItems = [
-    { id: 'dashboard', path: '/', label: 'Vue d\'ensemble', icon: <House size={20} weight="fill" /> },
     { id: 'cards', path: '/browse', label: 'Base de connaissances', icon: <Stack size={20} weight="fill" /> },
     { id: 'courses', path: '/courses', label: 'Fiches de cours', icon: <BookOpen size={20} weight="fill" /> },
     { id: 'network', path: '/network', label: 'Graphe mental', icon: <ShareNetwork size={20} weight="bold" /> },
@@ -104,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
           )}
         </div>
 
-        <nav className="workspace-nav">
+        <nav className="workspace-nav flex flex-col gap-1.5 p-3">
           {navItems.filter(i => i.id !== 'stats').map(item => (
             <button
               key={item.id}
@@ -181,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
           )}
         </nav>
         
-        <div className="workspace-nav-bottom" style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginBottom: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: shouldCollapseSidebar ? 'center' : 'stretch' }}>
+        <div className="workspace-nav-bottom flex flex-col gap-1.5 p-3" style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', width: '100%', alignItems: shouldCollapseSidebar ? 'center' : 'stretch' }}>
           {navItems.filter(i => i.id === 'stats').map(item => (
             <button
               key={item.id}

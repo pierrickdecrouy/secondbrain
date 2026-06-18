@@ -18,11 +18,6 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 }) => {
     return (
         <div className="relative flex-1 overflow-y-auto bg-[var(--color-bg)] w-full h-full p-6 md:p-8 animate-in fade-in duration-300">
-            {/* Animated Aura Background (subtle) */}
-            <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-30">
-                <div className="absolute top-[-10%] left-[10%] w-[30rem] h-[30rem] bg-emerald-400/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '8s' }}></div>
-                <div className="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-indigo-400/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }}></div>
-            </div>
 
             <div className="relative z-10 max-w-5xl mx-auto flex flex-col gap-8 pb-20 pt-8">
                 <header className="flex flex-col gap-5">

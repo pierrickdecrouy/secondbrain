@@ -87,7 +87,7 @@ export class VoyVectorStore {
             // Map results. Note: Voy might not return score in all versions.
             return results.map((r: { id: string; score: number }) => ({
                 id: r.id,
-                similarity: 0 // Placeholder
+                similarity: r.score || 0
             }));
         } catch (e) {
             console.error("Voy search error:", e);

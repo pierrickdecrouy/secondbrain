@@ -27,7 +27,6 @@ import { MedicalAlert } from './CourseEditor'; // Reusing the same node!
 import { ClozeExtension } from './editor/ClozeExtension';
 import { CardSuggestionPlugin } from './editor/CardSuggestionPlugin';
 import { getSuggestionOptions } from './editor/suggestionConfig';
-import './CourseEditor.css'; // Reusing styles
 
 interface FullCourseEditorProps {
     course: Card;
@@ -56,9 +55,14 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const editor = useEditor({
+        editorProps: {
+            attributes: {
+                class: 'prose dark:prose-invert prose-indigo max-w-none focus:outline-none min-h-full'
+            }
+        },
         extensions: [
             StarterKit,
-            Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 px-1 rounded' } }),
+            Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded' } }),
             Underline,
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             Image.configure({ inline: true, allowBase64: true }),

@@ -72,3 +72,24 @@ export interface PausedTask {
     state: Record<string, unknown>;
     timestamp: number;
 }
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      isElectron: boolean;
+      loadCards: () => Promise<any[]>;
+      saveCards: (cards: any[]) => Promise<void>;
+      loadSetting: <T>(key: string) => Promise<T | undefined>;
+      saveSetting: <T>(key: string, value: T) => Promise<void>;
+      removeSetting: (key: string) => Promise<void>;
+      loadVectorIndex: () => Promise<Uint8Array | null>;
+      saveVectorIndex: (data: Uint8Array) => Promise<void>;
+      loadAbbreviations: () => Promise<Record<string, string[]>>;
+      saveAbbreviations: (abbreviations: Record<string, string[]>) => Promise<void>;
+      startPdfImport?: (paths: string[]) => void;
+      onPdfProgress?: (callback: (data: any) => void) => void;
+      onPdfDone?: (callback: (data: any) => void) => void;
+      onPdfError?: (callback: (error: string) => void) => void;
+    };
+  }
+}

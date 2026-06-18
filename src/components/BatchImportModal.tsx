@@ -5,6 +5,8 @@ import { validateImportData } from '../utils/importValidation';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { useTheme } from '../context/ThemeContext';
 
+import { parseJsonFormat, parseTextFormat } from '../utils/importParser';
+
 interface BatchImportModalProps {
     onImport: (cards: Card[]) => void;
     onClose: () => void;
@@ -12,12 +14,6 @@ interface BatchImportModalProps {
 }
 
 type ImportMode = 'json' | 'text';
-type ImportCandidate = Partial<Card> & Record<string, unknown>;
-
-const pickString = (...values: unknown[]): string => {
-    const first = values.find((v): v is string => typeof v === 'string' && v.trim().length > 0);
-    return first ? first : '';
-};
 
 export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, onClose, existingCards = [] }) => {
     const { getCategoryColor } = useTheme();
@@ -30,105 +26,6 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     const [showHelp, setShowHelp] = useState(false);
     const [pendingImportCards, setPendingImportCards] = useState<Card[] | null>(null);
     const [duplicateSample, setDuplicateSample] = useState<string>('');
-
-    const sanitizeText = (text: string): string => text.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-    
-    const generateSafeId = (title: string): string => {
-        return sanitizeText(title).toLowerCase()
-            .replace(/[^a-z0-9à-ÿ]+/gi, '-')
-            .replace(/^-+|-+$/g, '');
-    };
-
-    const parseTextFormat = (text: string): Card[] => {
-        const cards: Card[] = [];
-        const lines = text.split('\n');
-        
-        const rawSections: string[][] = [];
-        let currentSection: string[] = [];
-
-        lines.forEach(line => {
-            if (line.trim().startsWith('#') && !line.trim().startsWith('##')) {
-                if (currentSection.length > 0) {
-                    rawSections.push(currentSection);
-                }
-                // Start a new section, strip the leading '#'
-                currentSection = [line.replace(/^\s*#\s*/, '')];
-            } else {
-                if (currentSection.length > 0) {
-                    currentSection.push(line);
-                }
-            }
-        });
-        if (currentSection.length > 0) {
-            rawSections.push(currentSection);
-        }
-
-        rawSections.forEach(sectionLines => {
-            if (sectionLines.length === 0) return;
-
-            const rawTitle = sectionLines[0].trim();
-            if (!rawTitle) return;
-
-            const title = sanitizeText(rawTitle);
-            const extractedTags: string[] = [];
-            let subject = '';
-            
-            let subtitle = '';
-            const contentLines: string[] = [];
-            
-            let parsingMetadata = true;
-            let subtitleFound = false;
-
-            sectionLines.slice(1).forEach(line => {
-                const trimmed = line.trim();
-                
-                if (parsingMetadata) {
-                    const tagMatch = trimmed.match(/^\[([^\]]+)\]$/);
-                    const subjectMatch = trimmed.match(/^(?:Subject|Matière|Matiere|Module)\s*:\s*(.+)$/i);
-                    
-                    if (tagMatch) {
-                        const tags = tagMatch[1].split(',').map(t => sanitizeText(t.trim())).filter(Boolean);
-                        extractedTags.push(...tags);
-                        return; // Skip this line
-                    } else if (subjectMatch) {
-                        subject = sanitizeText(subjectMatch[1]);
-                        return; // Skip this line
-                    } else if (trimmed === '') {
-                        return; // Skip empty lines in metadata section
-                    } else if (!subtitleFound && !trimmed.startsWith('##')) {
-                        // First non-metadata, non-empty line is the subtitle, IF it's not a markdown heading
-                        subtitle = sanitizeText(trimmed);
-                        subtitleFound = true;
-                        return; // Skip this line
-                    } else {
-                        // We found something else (like a heading), metadata section is over
-                        parsingMetadata = false;
-                    }
-                }
-                
-                // Content
-                contentLines.push(line);
-            });
-
-            const details = contentLines.join('\n').trim();
-
-            cards.push({
-                id: generateSafeId(title),
-                type: cardType,
-                title,
-                subtitle,
-                content: details || subtitle, // fallback if empty
-                details: details || subtitle,
-                tags: [
-                    ...extractedTags,
-                    ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
-                ],
-                subject: subject || undefined,
-            });
-        });
-
-        return cards;
-    };
 
     useEffect(() => {
         if (!input.trim()) {
@@ -150,39 +47,9 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
         try {
             let processed: Card[] = [];
             if (currentMode === 'json') {
-                const parsed = JSON.parse(trimmed);
-                let validCards: ImportCandidate[] = [];
-
-                if (Array.isArray(parsed)) {
-                    validCards = parsed.filter((c: ImportCandidate) => !!pickString(c.title, c.Title, c.name, c.Name));
-                } else if (typeof parsed === 'object' && parsed !== null) {
-                    const parsedCandidate = parsed as ImportCandidate;
-                    if (pickString(parsedCandidate.title, parsedCandidate.Title, parsedCandidate.name, parsedCandidate.Name)) {
-                        validCards = [parsed];
-                    }
-                } else {
-                    throw new Error("Le JSON doit être un tableau d'objets ou un objet unique.");
-                }
-
-                processed = validCards.map((c) => {
-                    const title = sanitizeText(pickString(c.title, c.Title, c.name, c.Name));
-                    return {
-                        ...c,
-                        id: pickString(c.id) ? sanitizeText(pickString(c.id)) : generateSafeId(title),
-                        title: title,
-                        type: (pickString(c.type) as CardType) || cardType,
-                        tags: [
-                            ...(Array.isArray(c.tags) ? c.tags.filter((t): t is string => typeof t === 'string') : []),
-                            ...(groupName.trim() ? [`_group:${groupName.trim()}`] : [])
-                        ],
-                        subtitle: sanitizeText(pickString(c.subtitle)),
-                        content: sanitizeText(pickString(c.content)),
-                        details: sanitizeText(pickString(c.details, c.content)),
-                        subject: pickString(c.subject, c.Subject, c.matiere, c.Matiere, c.module, c.Module) ? sanitizeText(pickString(c.subject, c.Subject, c.matiere, c.Matiere, c.module, c.Module)) : undefined,
-                    } as Card;
-                });
+                processed = parseJsonFormat(trimmed, cardType, groupName);
             } else {
-                processed = parseTextFormat(input);
+                processed = parseTextFormat(input, cardType, groupName);
             }
             
             setError(null);
@@ -242,21 +109,21 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
     ];
 
     return (
-        <div className="batch-import-container" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', height: '600px', width: '100%', background: 'var(--color-bg)' }}>
+        <div className="grid grid-cols-[1.5fr_1fr] h-[600px] w-full bg-slate-50 dark:bg-slate-900 rounded-xl overflow-hidden">
             {/* Left Pane: Editor */}
-            <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--color-border)', padding: '1.5rem', background: 'var(--color-bg)' }}>
+            <div className="flex flex-col border-r border-slate-200 dark:border-slate-700 p-6 bg-slate-50 dark:bg-slate-900">
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <div className="import-mode-tabs" style={{ display: 'flex', gap: '4px', background: 'var(--color-surface)', padding: '4px', borderRadius: '8px' }}>
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
                         <button
-                            style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: importMode === 'text' ? 'var(--color-bg)' : 'transparent', color: importMode === 'text' ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', boxShadow: importMode === 'text' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMode === 'text' ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                             onClick={() => { setImportMode('text'); }}
                         >
                             <FileText size={16} />
                             Texte
                         </button>
                         <button
-                            style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: importMode === 'json' ? 'var(--color-bg)' : 'transparent', color: importMode === 'json' ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', boxShadow: importMode === 'json' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMode === 'json' ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                             onClick={() => { setImportMode('json'); }}
                         >
                             <FileCode size={16} />
@@ -265,7 +132,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                     </div>
 
                     <button
-                        style={{ background: 'transparent', border: 'none', color: showHelp ? 'var(--color-primary)' : 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                        className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${showHelp ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
                         onClick={() => setShowHelp(!showHelp)}
                     >
                         <Info size={18} />
@@ -273,52 +140,40 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
                     </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Type par défaut</label>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Type par défaut</label>
                         <select 
                             value={cardType} 
                             onChange={(e) => setCardType(e.target.value as CardType)}
-                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', outline: 'none' }}
+                            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             {types.map(t => (
                                 <option key={t.value} value={t.value}>{t.label}</option>
                             ))}
                         </select>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Groupe (Optionnel)</label>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Groupe (Optionnel)</label>
                         <input
                             type="text"
                             placeholder="Ex: Cardiologie, Cours N°1..."
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
-                            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', outline: 'none' }}
+                            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         />
                     </div>
                 </div>
 
                 <textarea
-                    style={{ 
-                        flex: 1, 
-                        resize: 'none', 
-                        background: 'var(--color-surface)', 
-                        color: 'var(--color-text)', 
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '8px',
-                        padding: '1rem',
-                        fontFamily: importMode === 'json' ? 'monospace' : 'inherit',
-                        fontSize: '0.9rem',
-                        lineHeight: '1.5',
-                        outline: 'none'
-                    }}
+                    className={`flex-1 resize-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${importMode === 'json' ? 'font-mono' : 'font-sans'}`}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder={importMode === 'text' ? '# Titre de la fiche\nSous-titre\n[Tag1, Tag2]\n\nContenu détaillé ici...' : '[\n  {\n    "title": "Nom de la fiche",\n    "tags": ["tag1"]\n  }\n]'}
                 />
 
                 {error && (
-                    <div style={{ marginTop: '1rem', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                    <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-lg flex items-center gap-2 text-sm font-medium">
                         <Warning size={16} weight="bold" />
                         {error}
                     </div>
@@ -326,17 +181,17 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({ onImport, 
             </div>
 
             {/* Right Pane: Preview / Help */}
-            <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)', overflow: 'hidden' }}>
+            <div className="flex flex-col bg-white dark:bg-slate-800 overflow-hidden">
                 {showHelp ? (
-                    <div style={{ padding: '1.5rem', overflowY: 'auto', height: '100%' }}>
-                        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: 'var(--color-text)' }}>Guide d'importation</h3>
+                    <div className="p-6 overflow-y-auto h-full prose prose-slate dark:prose-invert prose-sm">
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 mt-0">Guide d'importation</h3>
                         
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <h4 style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <FileText size={16} /> Format Texte (#)
+                        <div className="mb-6">
+                            <h4 className="text-md font-medium text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                                <FileText size={16} className="text-blue-500" /> Format Texte (#)
                             </h4>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Utilisez le croisillon # pour délimiter vos fiches.</p>
-                            <pre style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', whiteSpace: 'pre-wrap', color: 'var(--color-text-muted)' }}>
+                            <p className="text-slate-500 dark:text-slate-400 mb-2">Utilisez le croisillon # pour délimiter vos fiches.</p>
+                            <pre className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-xs">
 {`# Aspirine
 Anti-inflammatoire non stéroïdien
 [Douleur, Fièvre, AINS]
@@ -348,11 +203,11 @@ Inhibe irréversiblement les COX.`}
                         </div>
 
                         <div>
-                            <h4 style={{ color: 'var(--color-text)', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <FileCode size={16} /> Format JSON
+                            <h4 className="text-md font-medium text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                                <FileCode size={16} className="text-purple-500" /> Format JSON
                             </h4>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Importez un tableau d'objets JSON valides.</p>
-                            <pre style={{ background: 'var(--color-bg)', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', whiteSpace: 'pre-wrap', color: 'var(--color-text-muted)' }}>
+                            <p className="text-slate-500 dark:text-slate-400 mb-2">Importez un tableau d'objets JSON valides.</p>
+                            <pre className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-xs">
 {`[
   {
     "title": "Aspirine",
@@ -365,34 +220,34 @@ Inhibe irréversiblement les COX.`}
                         </div>
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text)' }}>Prévisualisation</h3>
-                            <span style={{ background: 'var(--color-primary)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <div className="flex flex-col h-full">
+                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 shrink-0">
+                            <h3 className="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">Prévisualisation</h3>
+                            <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm">
                                 {parsedCards.length}
                             </span>
                         </div>
                         
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2 bg-slate-50 dark:bg-slate-900/50">
                             {parsedCards.length === 0 ? (
-                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem' }}>
+                                <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm text-center p-8 italic">
                                     Saisissez vos données à gauche pour voir l'aperçu.
                                 </div>
                             ) : (
                                 parsedCards.map((card, idx) => (
-                                    <div key={idx} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <strong style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: 1.2 }}>{card.title}</strong>
+                                    <div key={idx} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl flex flex-col gap-1.5 shadow-sm">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <strong className="text-sm text-slate-800 dark:text-slate-200 leading-tight">{card.title}</strong>
                                             {card.type && (
-                                                <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+                                                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shrink-0">
                                                     {card.type}
                                                 </span>
                                             )}
                                         </div>
                                         {card.tags && card.tags.length > 0 && (
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                            <div className="flex flex-wrap gap-1 mt-1">
                                                 {card.tags.map(tag => (
-                                                    <span key={tag} style={{ fontSize: '0.7rem', color: getCategoryColor('default'), background: `${getCategoryColor('default')}20`, padding: '2px 6px', borderRadius: '4px' }}>
+                                                    <span key={tag} className="text-xs px-2 py-0.5 rounded-md" style={{ color: getCategoryColor('default'), background: `${getCategoryColor('default')}20` }}>
                                                         {tag}
                                                     </span>
                                                 ))}
@@ -403,17 +258,16 @@ Inhibe irréversiblement les COX.`}
                             )}
                         </div>
 
-                        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', gap: '1rem', background: 'var(--color-bg)' }}>
-                            <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>
+                        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-between gap-3 bg-white dark:bg-slate-800 shrink-0">
+                            <button className="flex-1 px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors" onClick={onClose}>
                                 Annuler
                             </button>
                             <button
-                                className="btn-primary"
+                                className="flex-1 px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex justify-center items-center gap-2 shadow-sm"
                                 onClick={handleImport}
                                 disabled={parsedCards.length === 0 || !!error}
-                                style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
                             >
-                                <UploadSimple size={16} />
+                                <UploadSimple size={18} weight="bold" />
                                 Importer
                             </button>
                         </div>
@@ -433,7 +287,7 @@ Inhibe irréversiblement les COX.`}
                     }
                     confirmLabel="Écraser"
                     cancelLabel="Annuler"
-                    confirmClassName="btn-primary"
+                    confirmClassName="bg-blue-600 hover:bg-blue-700 text-white"
                     onConfirm={() => {
                         onImport(pendingImportCards);
                         setPendingImportCards(null);
@@ -452,11 +306,11 @@ Inhibe irréversiblement les COX.`}
 
 export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && props.onClose()} style={{ zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', width: '90%', maxWidth: '1000px', background: 'var(--color-bg)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
+            <div className="relative w-full max-w-[1000px] shadow-2xl rounded-xl animate-in fade-in zoom-in-95 duration-200">
                 <button 
                     onClick={props.onClose}
-                    style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', zIndex: 10, padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    className="absolute top-3 right-3 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors z-10"
                 >
                     <X size={20} />
                 </button>
@@ -465,3 +319,4 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
         </div>
     );
 };
+

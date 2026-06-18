@@ -35,7 +35,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                 </div>
 
                 {!isEditMode && (
-                    <div style={{ padding: '0 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '20px' }}>
+                    <div style={{ padding: '0 2.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '24px' }}>
                         <button
                             onClick={() => setActiveTab('single')}
                             style={{

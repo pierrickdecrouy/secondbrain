@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 import {
     MagnifyingGlass, Plus,
-    BookOpen, Brain
+    BookOpen, Brain, Command
 } from '@phosphor-icons/react';
 import { useCards } from '../context/CardContext';
 import { useUI } from '../context/UIContext';
@@ -19,9 +19,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
 
     const placeholders = [
         "Que souhaitez-vous explorer aujourd'hui ?",
-        "Rechercher une pathologie, un symptôme...",
-        "Plonger dans un cours de physiologie...",
-        "Vérifier la posologie d'un médicament...",
+        "Rechercher une notion, un concept clé...",
+        "Encore en train de repousser vos révisions ?",
+        "Tapez un mot-clé (ex: Thermodynamique, Platon...)",
+        "Retrouver une fiche avant l'examen...",
+        "La réponse est probablement ici (pas sur Google)...",
+        "Le mystère des chaussettes disparues...",
+        "N'oubliez pas de boire de l'eau (et beaucoup de café)...",
+        "Courage, les partiels approchent ! (ou pas)",
+        "Explorer vos connaissances...",
+        "Quelle est la définition exacte de...",
+        "C'est l'heure de muscler son cerveau !",
+        "Chercher une excuse pour faire une pause...",
         "Reprendre vos révisions en cours..."
     ];
 
@@ -59,24 +68,26 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 </p>
 
                 {/* Search Bar (Omnibox) */}
-                <form className="home-search" onSubmit={(e) => {
+                <form className="home-search w-full max-w-3xl" onSubmit={(e) => {
                     e.preventDefault();
                     setOmniboxOpen(true);
                 }}>
-                    <div className="home-search-box">
-                        <MagnifyingGlass size={22} className="home-search-icon" weight="regular" />
+                    <div 
+                        className="relative flex items-center w-full group cursor-text"
+                        onClick={() => setOmniboxOpen(true)}
+                    >
+                        <MagnifyingGlass size={26} className="absolute left-6 text-emerald-500/70 group-hover:text-emerald-500 transition-colors z-10" weight="bold" />
                         <input
                             type="text"
-                            name="search"
-                            placeholder="Rechercher une fiche, une pathologie..."
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-full text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-md group-hover:shadow-lg group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none"
+                            style={{ padding: '18px 80px 18px 64px' }}
+                            placeholder="Rechercher..."
                             value=""
-                            onChange={() => {}}
-                            onFocus={(e) => {
-                                e.target.blur();
-                                setOmniboxOpen(true);
-                            }}
-                            autoComplete="off"
+                            readOnly
                         />
+                        <span className="absolute right-6 flex items-center gap-1.5 text-[13px] font-medium text-slate-500 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10">
+                            <Command size={16} weight="bold" /> K
+                        </span>
                     </div>
                 </form>
 

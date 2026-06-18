@@ -96,24 +96,25 @@ function saveCardsTransaction(cards, options = {}) {
         throw new Error('[DB] Refusing full delete from empty payload without explicit allowDeleteAll.');
     }
 
-    const deleteMissing = db.prepare(`
-        DELETE FROM cards WHERE id NOT IN (${cards.map(() => '?').join(',')})
-    `);
-
     const transaction = db.transaction((cards) => {
         // 1. Upsert all current cards
         for (const card of cards) {
             insert.run(cardToParams(card));
         }
-        // 2. Delete cards that are no longer present (sync behavior)
-        // Note: For a true offline-first sync, we might want soft deletes, but for now we mirror the "save all" JSON behavior.
-        // Actually, "Expected behavior" of saveCards in storage.ts is a full overwrite. 
-        // But sending ALL IDs for delete might be heavy if we have 10k cards.
-        // However, the frontend currently sends the entire array. So we must respect that.
 
         if (cards.length > 0) {
-            const ids = cards.map(c => c.id);
-            deleteMissing.run(...ids);
+            // Find ids to delete instead of using NOT IN with thousands of params
+            // which crashes SQLite due to SQLITE_MAX_VARIABLE_NUMBER
+            const keepIds = new Set(cards.map(c => c.id));
+            const existingIdsStmt = db.prepare('SELECT id FROM cards');
+            const existingIds = existingIdsStmt.all().map(row => row.id);
+            
+            const deleteStmt = db.prepare('DELETE FROM cards WHERE id = ?');
+            for (const id of existingIds) {
+                if (!keepIds.has(id)) {
+                    deleteStmt.run(id);
+                }
+            }
         } else {
             db.prepare('DELETE FROM cards').run();
         }

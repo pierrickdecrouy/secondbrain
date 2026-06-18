@@ -45,43 +45,31 @@ export const RevisionTab: React.FC = () => {
     });
 
     return (
-        <div className="settings-tab-content">
-            <div style={{ marginBottom: '32px' }}>
-                <h2 className="settings-section-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="flex-1 p-5 md:p-10 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-text-muted)]">
+            <div className="mb-8">
+                <h2 className="flex items-center gap-3 text-2xl font-bold text-[var(--color-text)] mb-2">
                     <Timer size={24} color="var(--color-drug)" />
                     Paramètres de Révision
                 </h2>
-                <p className="settings-section-desc">
+                <p className="text-[var(--color-text-muted)]">
                     Configurez le mode "Examen Proche" pour intensifier automatiquement vos révisions dans les {EXAM_MODE_WINDOW_DAYS} jours précédant l'examen.
                 </p>
             </div>
 
             {/* Exam Mode Card */}
-            <div className="settings-card" style={{
-                border: `1px solid ${examActive ? 'var(--color-warning)' : 'var(--color-border)'}`,
-                transition: 'all 0.3s ease',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div className={`bg-[var(--color-surface)] p-6 rounded-2xl border shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out mb-6 ${examActive ? 'border-[var(--color-warning)]' : 'border-[var(--color-border)]'}`}>
+                <div className="flex items-start justify-between mb-5">
                     <div>
-                        <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {examActive && <span style={{ fontSize: '1rem', color: 'var(--color-warning-dark, #b45309)', marginRight: '4px' }}>!</span>}
+                        <div className="text-base font-semibold text-[var(--color-text)] mb-1 flex items-center gap-2">
+                            {examActive && <span className="text-base text-[var(--color-warning-dark,#b45309)] mr-1">!</span>}
                             Mode "Examen Proche"
                             {examActive && (
-                                <span style={{
-                                    fontSize: '0.7rem',
-                                    background: 'var(--color-warning)',
-                                    color: 'var(--color-warning-dark, #b45309)',
-                                    padding: '2px 8px',
-                                    borderRadius: '20px',
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
-                                }}>
+                                <span className="text-[0.7rem] bg-[var(--color-warning)] text-[var(--color-warning-dark,#b45309)] py-0.5 px-2 rounded-full font-bold uppercase tracking-wide">
                                     ACTIF
                                 </span>
                             )}
                         </div>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                        <p className="text-[0.85rem] text-[var(--color-text-muted)] leading-relaxed">
                             Quand activé et que l'examen est dans les {EXAM_MODE_WINDOW_DAYS} jours,
                             l'intervalle SRS maximum est limité à 14 jours pour intensifier les révisions.
                         </p>
@@ -96,15 +84,7 @@ export const RevisionTab: React.FC = () => {
 
                 {/* Exam Date Picker */}
                 <div>
-                    <label style={{
-                        display: 'block',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: 'var(--color-text-muted)',
-                        marginBottom: '8px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                    }}>
+                    <label className="block text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase tracking-wide">
                         Date de l'examen
                     </label>
                     <input
@@ -113,34 +93,13 @@ export const RevisionTab: React.FC = () => {
                         min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => handleSrsSettingsChange({ examDate: e.target.value })}
                         disabled={!srsSettings.examModeEnabled}
-                        style={{
-                            padding: '10px 14px',
-                            border: `1px solid ${srsSettings.examModeEnabled ? 'var(--color-drug)' : 'var(--color-border)'}`,
-                            borderRadius: '10px',
-                            fontSize: '0.9rem',
-                            color: srsSettings.examModeEnabled ? 'var(--color-text)' : 'var(--color-text-muted)',
-                            background: srsSettings.examModeEnabled ? 'var(--color-bg)' : 'var(--color-surface)',
-                            cursor: srsSettings.examModeEnabled ? 'pointer' : 'not-allowed',
-                            outline: 'none',
-                            width: '200px',
-                        }}
+                        className={`py-2.5 px-3.5 border rounded-xl text-[0.9rem] w-[200px] outline-none ${srsSettings.examModeEnabled ? 'border-[var(--color-drug)] text-[var(--color-text)] bg-[var(--color-bg)] cursor-pointer' : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface)] cursor-not-allowed'}`}
                     />
                 </div>
 
                 {/* Status banner */}
                 {srsSettings.examModeEnabled && srsSettings.examDate && (
-                    <div style={{
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        borderRadius: '10px',
-                        background: examActive ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-                        border: `1px solid ${examActive ? 'var(--color-warning)' : 'var(--color-success)'}`,
-                        fontSize: '0.85rem',
-                        color: examActive ? 'var(--color-warning-dark, #b45309)' : 'var(--color-success)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}>
+                    <div className={`mt-4 py-3 px-4 rounded-xl border text-[0.85rem] flex items-center gap-2 ${examActive ? 'bg-[rgba(245,158,11,0.1)] border-[var(--color-warning)] text-[var(--color-warning-dark,#b45309)]' : 'bg-[rgba(34,197,94,0.1)] border-[var(--color-success)] text-[var(--color-success)]'}`}>
                         {examActive
                             ? `Examen dans moins de ${EXAM_MODE_WINDOW_DAYS} jours — intervalles limités à 14j.`
                             : `Examen planifié le ${new Date(srsSettings.examDate).toLocaleDateString('fr-FR')}. Le mode s'activera automatiquement à J-${EXAM_MODE_WINDOW_DAYS}.`
@@ -148,28 +107,16 @@ export const RevisionTab: React.FC = () => {
                     </div>
                 )}
                 {srsSettings.examModeEnabled && !srsSettings.examDate && (
-                    <div style={{
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        borderRadius: '10px',
-                        background: 'rgba(245, 158, 11, 0.1)',
-                        border: '1px solid var(--color-warning)',
-                        fontSize: '0.85rem',
-                        color: 'var(--color-warning-dark, #b45309)',
-                    }}>
+                    <div className="mt-4 py-3 px-4 rounded-xl bg-[rgba(245,158,11,0.1)] border border-[var(--color-warning)] text-[0.85rem] text-[var(--color-warning-dark,#b45309)]">
                         Sélectionnez une date d'examen pour activer le mode.
                     </div>
                 )}
             </div>
 
             {/* Info box */}
-            <div className="settings-card" style={{
-                fontSize: '0.85rem',
-                color: 'var(--color-text)',
-                lineHeight: '1.6'
-            }}>
-                <strong style={{ display: 'block', marginBottom: '8px', color: 'var(--color-text)' }}>Comment ça fonctionne ?</strong>
-                <ul style={{ paddingLeft: '20px', margin: 0 }}>
+            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] text-[0.85rem] text-[var(--color-text)] leading-relaxed">
+                <strong className="block mb-2 text-[var(--color-text)]">Comment ça fonctionne ?</strong>
+                <ul className="pl-5 m-0 space-y-1">
                     <li>En mode normal, l'algorithme SRS peut programmer une révision dans 30, 60 ou 90 jours.</li>
                     <li>Quand l'examen est proche ({EXAM_MODE_WINDOW_DAYS} jours), l'intervalle maximum passe à <strong>14 jours</strong>.</li>
                     <li>Les cartes difficiles (faible easeFactor) continuent d'être révisées plus fréquemment.</li>

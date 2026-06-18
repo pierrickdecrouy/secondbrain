@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Semantic Search Service
  * Manages the embedding worker and provides semantic search functionality
@@ -272,13 +271,19 @@ async function processCardEmbeddings(cards: Card[], forceUpdate: boolean): Promi
             });
 
             embeddingWorker!.postMessage({ type: 'embedBatch', id: batchId, texts, cardIds });
+
+            // Timeout after 60 seconds for a batch
+            setTimeout(() => {
+                if (pendingBatches.has(batchId)) {
+                    pendingBatches.delete(batchId);
+                    reject(new Error('Embedding batch timeout'));
+                }
+            }, 60000);
         });
 
         // Update progress callback if available
         // We can expose an onProgressCallback in the future or use a store
-        const progress = Math.round(((i + 1) / chunks.length) * 100);
-
-        // Yield to event loop
+        // const progress = Math.round(((i + 1) / chunks.length) * 100);        // Yield to event loop
         await new Promise(r => setTimeout(r, 50));
     }
 

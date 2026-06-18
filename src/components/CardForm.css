@@ -35,7 +35,7 @@
 /* Header */
 .app-header {
     background: var(--color-surface);
-    padding: 1.25rem 1.5rem;
+    padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--color-border);
     display: flex;
     justify-content: space-between;
@@ -55,8 +55,8 @@
     border: none;
     color: var(--color-text-muted);
     cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
+    padding: 6px;
+    border-radius: 6px;
     transition: all 0.2s;
 }
 
@@ -76,10 +76,10 @@
 .card-form-scroll-area {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 2.5rem 3.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
     background: var(--color-bg);
     /* Ensure background is distinct from white boxes */
 }
@@ -90,7 +90,7 @@
     border: 1px solid var(--color-border);
     /* Visible border */
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     overflow: visible;
     /* CRITICAL: Allow dropdowns to overflow */
     display: flex !important;
@@ -99,7 +99,7 @@
 }
 
 .app-header-style {
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--color-bg);
     background: var(--color-surface);
     display: flex;
@@ -113,7 +113,7 @@
 
 .app-header-style h3 {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--color-text-muted);
     text-transform: uppercase;
@@ -121,10 +121,10 @@
 }
 
 .app-content-style {
-    padding: 1.25rem;
+    padding: 1.5rem 2rem;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.5rem;
     background: var(--color-surface);
     border-radius: 0 0 12px 12px;
     min-height: 50px;
@@ -144,7 +144,7 @@
 }
 
 .field-label {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--color-text);
     display: block;
@@ -156,7 +156,7 @@
 
 .app-input {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
     border: 1px solid var(--color-border);
     /* High contrast border */
     border-radius: 8px;
@@ -174,7 +174,7 @@
 
 .app-input.title-input {
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 }
 
 .mt-2 {
@@ -183,7 +183,7 @@
 
 .app-textarea {
     width: 100%;
-    padding: 1.25rem;
+    padding: 1.5rem;
     border: none;
     resize: none;
     outline: none;
@@ -200,14 +200,14 @@
 }
 
 .app-textarea-small {
-    padding: 0.75rem;
+    padding: 1rem 1.25rem;
     border: 1px solid var(--color-border);
     border-radius: 8px;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     resize: vertical;
     width: 100%;
-    min-height: 80px;
+    min-height: 100px;
 }
 
 /* Category Dropdown */
@@ -219,7 +219,7 @@
 
 .app-select.full-width {
     width: 100%;
-    background-position: right 1rem top 50%;
+    background-position: right 1.25rem top 50%;
 }
 
 /* Tag Dropdown & Chips */
@@ -227,18 +227,18 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .app-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 0.35rem 0.75rem;
+    padding: 0.5rem 1rem;
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     border-radius: 6px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--color-text);
     font-weight: 500;
 }
@@ -254,26 +254,26 @@
 
 .tag-selector-group {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     align-items: center;
     flex-wrap: wrap;
 }
 
 .app-select {
-    padding: 0.6rem 2.5rem 0.6rem 1rem;
+    padding: 0.75rem 2.5rem 0.75rem 1.25rem;
     border: 1px solid var(--color-border);
     border-radius: 8px;
     background: var(--color-surface);
     color: var(--color-text);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     cursor: pointer;
     outline: none;
     appearance: none;
     min-width: 120px;
     background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.7rem top 50%;
-    background-size: 0.65rem auto;
+    background-position: right 1rem top 50%;
+    background-size: 0.7rem auto;
     transition: all 0.2s;
 }
 
@@ -287,7 +287,7 @@
     align-items: center;
     border: 1px dashed var(--color-border);
     border-radius: 8px;
-    padding: 0.35rem 0.6rem;
+    padding: 0.5rem 0.8rem;
     background: var(--color-bg);
     transition: all 0.2s;
 }
@@ -301,8 +301,8 @@
     border: none;
     background: transparent;
     outline: none;
-    font-size: 0.85rem;
-    width: 100px;
+    font-size: 0.95rem;
+    width: 120px;
     color: var(--color-text);
 }
 
@@ -310,11 +310,11 @@
 .app-input-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
 }
 
 .search-input {
@@ -322,7 +322,7 @@
     border: none;
     background: transparent;
     outline: none;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--color-text);
 }
 
@@ -345,12 +345,12 @@
 }
 
 .candidate-row {
-    padding: 0.6rem 1rem;
+    padding: 0.75rem 1.25rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--color-text);
 }
 
@@ -360,12 +360,12 @@
 
 /* Footer */
 .app-footer {
-    padding: 1rem 1.5rem;
+    padding: 1.5rem 2rem;
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
+    gap: 1.25rem;
     flex-shrink: 0;
 }
 

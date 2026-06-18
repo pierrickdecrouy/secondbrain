@@ -2,7 +2,6 @@ import React from 'react';
 import type { Card } from '../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ArrowLeft, PencilSimple, Printer, Trash } from '@phosphor-icons/react';
-import './CourseEditor.css'; // For medical-alert styling
 
 interface CourseViewerProps {
     course: Card;
@@ -23,52 +22,64 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
     };
 
     return (
-        <div className="course-viewer" style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'var(--color-bg)', overflow: 'hidden' }}>
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 overflow-hidden print:bg-white print:block print:h-auto print:overflow-visible">
             {/* Header / Nav */}
-            <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 32px', backgroundColor: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', zIndex: 10 }}>
-                <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontWeight: 600, transition: 'color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.color = 'var(--color-text)'} onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}>
+            <div className="flex items-center justify-between px-8 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 z-10 print:hidden">
+                <button 
+                    onClick={onBack} 
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-semibold transition-colors"
+                >
                     <ArrowLeft size={20} />
                     Retour
                 </button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-surface)'} onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-bg)'}>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={handlePrint} 
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold transition-colors"
+                    >
                         <Printer size={20} />
                         Exporter en PDF
                     </button>
-                    <button onClick={onDelete} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg)', color: 'var(--color-danger)', border: '1px solid #fca5a5', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-danger-bg)'} onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-bg)'}>
+                    <button 
+                        onClick={onDelete} 
+                        className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-lg font-semibold transition-colors"
+                    >
                         <Trash size={20} />
                         Supprimer
                     </button>
-                    <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-success)', color: 'var(--color-surface)', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)', transition: 'transform 0.1s' }} onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.97)'} onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                    <button 
+                        onClick={onEdit} 
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-sm shadow-emerald-500/20 active:scale-95 transition-all"
+                    >
                         <PencilSimple size={20} />
                         Modifier
                     </button>
                 </div>
             </div>
 
-            <div className="course-viewer-scroll-area" style={{ flex: 1, overflowY: 'auto', padding: '32px', display: 'flex', justifyContent: 'center' }}>
+            <div className="flex-1 overflow-y-auto p-8 flex justify-center print:overflow-visible print:p-0 print:block">
                 {/* Print area container */}
-                <div className="course-print-area" style={{ width: '100%', maxWidth: '1000px', backgroundColor: 'var(--color-surface)', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '48px', color: 'var(--color-text)' }}>
+                <div className="w-full max-w-[1000px] bg-white dark:bg-slate-800 rounded-xl shadow-sm p-12 text-slate-800 dark:text-slate-200 print:shadow-none print:rounded-none print:p-0 print:max-w-none print:text-black">
                     
                     {/* Meta */}
-                    <div style={{ marginBottom: '32px', borderBottom: '1px solid var(--color-border)', paddingBottom: '24px' }}>
-                        <h1 style={{ fontSize: '3rem', fontWeight: 800, margin: '0 0 16px 0', lineHeight: 1.2 }}>{course.title}</h1>
+                    <div className="mb-8 border-b border-slate-200 dark:border-slate-700 pb-6">
+                        <h1 className="text-4xl md:text-5xl font-extrabold m-0 mb-4 leading-tight text-slate-900 dark:text-white print:text-black">{course.title}</h1>
                         {course.tags && course.tags.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            <div className="flex flex-wrap gap-2">
                                 {course.tags.map(t => (
-                                    <span key={t} style={{ backgroundColor: 'var(--color-bg)', padding: '4px 10px', borderRadius: '16px', fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                    <span key={t} className="bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-sm text-slate-600 dark:text-slate-300 font-medium">
                                         #{t}
                                     </span>
                                 ))}
                             </div>
                         )}
-                        <div style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                        <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">
                             Dernière mise à jour: {new Date(course.updatedAt || Date.now()).toLocaleDateString()}
                         </div>
                     </div>
 
                     {/* Content */}
-                    <div className="course-markdown-content" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
+                    <div className="text-lg leading-relaxed print:text-black">
                         <MarkdownRenderer content={course.details || course.content || ''} />
                     </div>
                 </div>
@@ -79,14 +90,10 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 @media print {
                     @page { margin: 1.5cm; }
                     body { background: white !important; }
-                    .no-print { display: none !important; }
-                    .course-viewer { background: white !important; display: block !important; height: auto !important; overflow: visible !important; }
-                    .course-viewer-scroll-area { overflow: visible !important; padding: 0 !important; display: block !important; }
-                    .course-print-area { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; max-width: none !important; color: black !important; }
                     
                     /* Typography for print */
-                    .course-markdown-content { color: black !important; }
-                    h1, h2, h3, h4 { page-break-after: avoid; color: black !important; }
+                    .prose, .prose * { color: black !important; }
+                    h1, h2, h3, h4 { page-break-after: avoid; }
                     p, img, table { page-break-inside: avoid; }
                     img { max-width: 100% !important; }
                     

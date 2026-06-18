@@ -145,99 +145,70 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
     }
 
     return (
-        <div className="courses-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', backgroundColor: 'var(--color-bg)' }}>
-            <div style={{ padding: '32px 32px 16px 32px' }}>
-                <header className="flex flex-col gap-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h1 className="text-3xl font-bold text-[var(--color-text)] tracking-tight m-0">
-                                Fiches de Cours
-                            </h1>
-                            <p className="mt-2 text-base text-[var(--color-text-muted)] max-w-2xl m-0">
+        <div className="flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-[#0B1120]">
+            <div className="px-14 pt-14 pb-8 border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#111827]">
+                <header className="flex flex-col gap-8">
+                    <div className="flex justify-between items-end">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm">
+                                    <BookOpen size={24} weight="duotone" />
+                                </div>
+                                <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight m-0">
+                                    Fiches de Cours
+                                </h1>
+                            </div>
+                            <p className="mt-2 text-base text-slate-500 dark:text-slate-400 max-w-2xl m-0 leading-relaxed pl-[4rem]">
                                 Tous vos cours organisés dans cet espace de travail.
                             </p>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                            <div style={{ display: 'flex', backgroundColor: 'var(--color-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <div className="flex items-center gap-5">
+                            <div className="flex items-center bg-slate-100 dark:bg-[#1A2235] p-1.5 rounded-xl shadow-inner">
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    style={{
-                                        background: viewMode === 'list' ? 'var(--color-bg)' : 'transparent',
-                                        border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer',
-                                        color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                                        boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
-                                    }}
+                                    className={`px-5 py-3 rounded-lg cursor-pointer transition-all flex items-center justify-center ${viewMode === 'list' ? 'bg-white dark:bg-[#253D42] text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-white/5' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/5 border border-transparent'}`}
                                     title="Vue en liste"
                                 >
-                                    <ListDashes size={20} weight={viewMode === 'list' ? 'bold' : 'regular'} />
+                                    <ListDashes size={22} weight={viewMode === 'list' ? 'bold' : 'regular'} />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    style={{
-                                        background: viewMode === 'grid' ? 'var(--color-bg)' : 'transparent',
-                                        border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer',
-                                        color: viewMode === 'grid' ? 'var(--color-text)' : 'var(--color-text-muted)',
-                                        boxShadow: viewMode === 'grid' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
-                                    }}
+                                    className={`px-5 py-3 rounded-lg cursor-pointer transition-all flex items-center justify-center ${viewMode === 'grid' ? 'bg-white dark:bg-[#253D42] text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-white/5' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/5 border border-transparent'}`}
                                     title="Vue en grille"
                                 >
-                                    <SquaresFour size={20} weight={viewMode === 'grid' ? 'bold' : 'regular'} />
+                                    <SquaresFour size={22} weight={viewMode === 'grid' ? 'bold' : 'regular'} />
                                 </button>
                             </div>
                             <button
                                 onClick={handleCreate}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    backgroundColor: 'var(--color-drug)',
-                                    color: 'white',
-                                    padding: '10px 16px',
-                                    borderRadius: '8px',
-                                    fontWeight: 600,
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 2px 4px rgba(4, 120, 87, 0.2)'
-                                }}
+                                className="flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-bold border-none cursor-pointer shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all"
                             >
-                                <Plus size={20} />
+                                <Plus size={22} weight="bold" />
                                 Nouveau Cours
                             </button>
                         </div>
                     </div>
-
-
                 </header>
             </div>
 
-            <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+            <div className="px-12 py-8 overflow-y-auto flex-1 custom-scrollbar">
                 {/* Search and Filters */}
                 {courseCards.length > 0 && (
-                    <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="mb-8 flex flex-col gap-4">
 
                         {allTags.length > 0 && (
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <div className="flex gap-3 flex-wrap">
                                 <button
                                     onClick={() => setSelectedTag(null)}
-                                    style={{
-                                        padding: '4px 12px', borderRadius: '16px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                                        backgroundColor: selectedTag === null ? 'var(--color-text)' : 'var(--color-surface)',
-                                        color: selectedTag === null ? 'var(--color-surface)' : 'var(--color-text-muted)',
-                                        border: selectedTag === null ? '1px solid transparent' : '1px solid var(--color-border)'
-                                    }}
+                                    className={`px-5 py-2 rounded-xl cursor-pointer text-sm font-semibold transition-all ${selectedTag === null ? 'bg-slate-800 text-white dark:bg-[#253D42] dark:text-white border-transparent shadow-md' : 'bg-white dark:bg-[#1A2235] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:bg-[#1E3035]'}`}
                                 >
-                                    Tous
+                                    Tous les cours
                                 </button>
                                 {allTags.map(tag => (
                                     <button
                                         key={tag}
                                         onClick={() => setSelectedTag(tag)}
-                                        style={{
-                                            padding: '4px 12px', borderRadius: '16px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                                            backgroundColor: selectedTag === tag ? 'var(--color-drug)' : 'var(--color-surface)',
-                                            color: selectedTag === tag ? 'white' : 'var(--color-text-muted)',
-                                            border: selectedTag === tag ? '1px solid var(--color-drug)' : '1px solid var(--color-border)'
-                                        }}
+                                        className={`px-5 py-2 rounded-xl cursor-pointer text-sm font-semibold transition-all ${selectedTag === tag ? 'bg-emerald-600 text-white border-transparent shadow-md shadow-emerald-900/20' : 'bg-white dark:bg-[#1A2235] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:bg-[#1E3035]'}`}
                                     >
                                         #{tag}
                                     </button>
@@ -248,128 +219,82 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                 )}
 
                 {filteredCourses.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', marginTop: '64px' }}>
-                        <BookOpen size={48} color="var(--color-border)" weight="duotone" style={{ margin: '0 auto 16px auto' }} />
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '8px' }}>Aucun cours trouvé</h2>
-                        <p style={{ maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>
+                    <div className="flex flex-col items-center justify-center text-center text-slate-500 dark:text-slate-400 h-full mt-24 mb-16 animate-in fade-in duration-500">
+                        <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-6">
+                            <BookOpen size={48} className="text-slate-400 dark:text-slate-500" weight="duotone" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-3">Aucun cours trouvé</h2>
+                        <p className="max-w-md text-[15px] leading-relaxed">
                             {courseCards.length === 0 
                                 ? "Créez votre première fiche de cours. Celles-ci sont conçues pour des textes longs et complets." 
                                 : "Aucun cours ne correspond à votre recherche."}
                         </p>
                     </div>
                 ) : viewMode === 'grid' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
                         {filteredCourses.map(course => (
-                            <div key={course.id} style={{
-                                backgroundColor: 'var(--color-surface)',
-                                borderRadius: '12px',
-                                padding: '20px',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                border: '1px solid var(--color-border)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s, box-shadow 0.2s'
-                            }}
-                            onClick={() => handleView(course)}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'none';
-                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                            }}
+                            <div key={course.id} 
+                                className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md"
+                                onClick={() => handleView(course)}
                             >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.3 }}>{course.title || 'Sans titre'}</h3>
-                                    <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-start">
+                                    <h3 className="m-0 text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">{course.title || 'Sans titre'}</h3>
+                                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                                         <button 
                                             onClick={() => onDeleteCourse(course)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '4px' }}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                                         >
                                             <Trash size={16} />
                                         </button>
                                     </div>
                                 </div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                     Mise à jour: {new Date(course.updatedAt || Date.now()).toLocaleDateString()}
                                 </div>
-                                <p style={{
-                                    fontSize: '0.95rem',
-                                    color: 'var(--color-text-muted)',
-                                    margin: 0,
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 4,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    lineHeight: '1.6'
-                                }}>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 m-0 line-clamp-4 leading-relaxed">
                                     {stripMarkdown(course.details || course.content || '')}
                                 </p>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', maxWidth: '900px', margin: '0 auto' }}>
+                    <div className="flex flex-col gap-8 max-w-[900px] mx-auto">
                         {groupedCourses.sortedKeys.map(subject => (
                             <div key={subject}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text)' }}>{subject}</h2>
-                                    <div style={{ height: '1px', flex: 1, backgroundColor: 'var(--color-border)' }} />
+                                <div className="flex items-center gap-3 mb-4">
+                                    <h2 className="m-0 text-xl font-bold text-slate-800 dark:text-slate-100">{subject}</h2>
+                                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div className="flex flex-col gap-2">
                                     {groupedCourses.groups[subject].map(course => {
                                         const linkedCardsCount = (course.details?.match(/href="card:\/\//g) || []).length;
                                         return (
-                                            <div key={course.id} style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                backgroundColor: 'var(--color-surface)',
-                                                borderRadius: '8px',
-                                                padding: '12px 16px',
-                                                border: '1px solid var(--color-border)',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-                                            }}
-                                            onClick={() => handleView(course)}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.backgroundColor = 'var(--color-bg)';
-                                                e.currentTarget.style.borderColor = 'var(--color-text-muted)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.backgroundColor = 'var(--color-surface)';
-                                                e.currentTarget.style.borderColor = 'var(--color-border)';
-                                            }}
+                                            <div key={course.id} 
+                                                className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl p-3 px-4 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm"
+                                                onClick={() => handleView(course)}
                                             >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, overflow: 'hidden' }}>
-                                                    <BookOpen size={20} color="var(--color-text-muted)" weight="duotone" />
-                                                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                                                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                                                    <BookOpen size={20} className="text-slate-400 shrink-0" weight="duotone" />
+                                                    <div className="flex-1 overflow-hidden">
+                                                        <h3 className="m-0 text-base font-semibold text-slate-800 dark:text-slate-200 truncate">
                                                             {course.title || 'Sans titre'}
                                                         </h3>
                                                     </div>
                                                 </div>
                                                 
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexShrink: 0 }}>
+                                                <div className="flex items-center gap-6 shrink-0">
                                                     {linkedCardsCount > 0 && (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                                                            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--color-drug)' }} />
+                                                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                             {linkedCardsCount} fiche{linkedCardsCount > 1 ? 's' : ''} liée{linkedCardsCount > 1 ? 's' : ''}
                                                         </div>
                                                     )}
-                                                    <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', width: '100px', textAlign: 'right' }}>
+                                                    <div className="text-slate-500 dark:text-slate-400 text-sm w-24 text-right">
                                                         {new Date(course.updatedAt || Date.now()).toLocaleDateString()}
                                                     </div>
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); onDeleteCourse(course); }}
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-red, #dc2626)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                                                        className="p-1.5 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors flex items-center justify-center"
                                                     >
                                                         <Trash size={16} />
                                                     </button>

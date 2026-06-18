@@ -1,3 +1,4 @@
+@plugin "@tailwindcss/typography";
 @import "tailwindcss";
 
 /* Configure Tailwind dark mode to use html.dark class */
@@ -981,12 +982,12 @@ body,
 }
 
 .modal-header {
-  padding: 1.5rem;
+  padding: 2rem 2.5rem;
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .modal-close {
@@ -1502,7 +1503,7 @@ body,
   flex-direction: column;
   background: var(--color-bg);
   position: relative;
-  overflow-y: auto;
+  overflow: hidden;
   align-items: center;
 }
 
@@ -2594,7 +2595,7 @@ html.dark .form-group select:focus,
 .home-page {
   min-height: 100vh;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--color-bg);
 }
 
@@ -3207,3 +3208,117 @@ html.dark .glass-panel {
 .dark .review-btn-1 { background: #7f1d1d; color: #fca5a5; }
 .dark .review-btn-2 { background: #78350f; color: #fcd34d; }
 .dark .review-btn-3 { background: #14532d; color: #86efac; }
+
+/* Tiptap Custom Nodes (Medical Alerts & Cloze) */
+@layer components {
+  /* Custom Alert Nodes */
+  .medical-alert {
+    @apply my-6 p-4 rounded-r-lg border-l-4 break-inside-avoid;
+  }
+  
+  .medical-alert-header {
+    @apply flex items-center mb-2 text-xs font-bold uppercase tracking-wider;
+  }
+  
+  .medical-alert-header svg {
+    @apply w-5 h-5 mr-2;
+  }
+  
+  /* Definition */
+  .medical-alert[data-type="definition"] {
+    @apply bg-blue-50 border-blue-400;
+  }
+  .medical-alert[data-type="definition"] .medical-alert-header {
+    @apply text-blue-800;
+  }
+  
+  /* Concours */
+  .medical-alert[data-type="concours"] {
+    @apply bg-amber-50 border-amber-400;
+  }
+  .medical-alert[data-type="concours"] .medical-alert-header {
+    @apply text-amber-800;
+  }
+  
+  /* Vigilance */
+  .medical-alert[data-type="vigilance"] {
+    @apply bg-red-50 border-red-400;
+  }
+  .medical-alert[data-type="vigilance"] .medical-alert-header {
+    @apply text-red-800;
+  }
+  
+  /* Expert */
+  .medical-alert[data-type="expert"] {
+    background-color: var(--color-bg);
+    border-left-color: var(--color-text-muted);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  .medical-alert[data-type="expert"] .medical-alert-header {
+    color: var(--color-text);
+  }
+  .medical-alert[data-type="expert"] .medical-alert-content {
+    color: var(--color-text-muted);
+    font-style: italic;
+    border-left: 2px solid var(--color-border);
+    padding-left: 1rem;
+    margin-left: 0.25rem;
+  }
+  
+  /* Content area for alerts */
+  .medical-alert-content {
+    color: var(--color-text);
+    font-size: 0.875rem;
+  }
+  .medical-alert-content p {
+    @apply mb-2;
+  }
+  .medical-alert-content p:last-child {
+    @apply mb-0;
+  }
+  
+  /* Dark mode overrides */
+  html.dark .tiptap .medical-alert.info {
+    background-color: rgba(96, 165, 250, 0.1); /* blue-400 / 10% */
+    border-left-color: #3b82f6; /* blue-500 */
+    color: #bfdbfe; /* blue-200 */
+  }
+  html.dark .tiptap .medical-alert.warning {
+    background-color: rgba(251, 191, 36, 0.1); /* amber-400 / 10% */
+    border-left-color: #f59e0b; /* amber-500 */
+    color: #fde68a; /* amber-200 */
+  }
+  html.dark .tiptap .medical-alert.danger {
+    background-color: rgba(248, 113, 113, 0.1); /* red-400 / 10% */
+    border-left-color: #ef4444; /* red-500 */
+    color: #fecaca; /* red-200 */
+  }
+  html.dark .tiptap .medical-alert.note {
+    background-color: rgba(148, 163, 184, 0.1); /* slate-400 / 10% */
+    border-left-color: #64748b; /* slate-500 */
+    color: #e2e8f0; /* slate-200 */
+  }
+  
+  /* Cloze Deletion Styles */
+  .cloze-deletion {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  /* Exam Mode Cloze */
+  .exam-mode .cloze-deletion {
+    background-color: var(--color-border);
+    color: transparent;
+    user-select: none;
+  }
+  
+  .exam-mode .cloze-deletion:hover {
+    background-color: var(--color-primary);
+    color: white;
+  }
+}

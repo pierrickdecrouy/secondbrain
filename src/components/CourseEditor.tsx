@@ -20,7 +20,6 @@ import {
     Table as TableIcon, Link as LinkIcon, Info, Warning, GraduationCap, Brain, Cards, EyeSlash
 } from '@phosphor-icons/react';
 import { ClozeExtension } from './editor/ClozeExtension';
-import './CourseEditor.css';
 
 // --- Custom Node for Medical Alerts ---
 
@@ -94,9 +93,14 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
     const selectorRef = useRef<HTMLDivElement>(null);
 
     const editor = useEditor({
+        editorProps: {
+            attributes: {
+                class: 'prose dark:prose-invert prose-indigo max-w-3xl mx-auto focus:outline-none min-h-full'
+            }
+        },
         extensions: [
             StarterKit,
-            Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 px-1 rounded' } }),
+            Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded' } }),
             Placeholder.configure({ placeholder: 'Commencez à rédiger votre cours...' }),
             Table.configure({ resizable: true }),
             TableRow,
@@ -171,67 +175,67 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
     const filteredCards = existingCards.filter(c => c.title.toLowerCase().includes(cardSearch.toLowerCase())).slice(0, 10);
 
     return (
-        <div className="course-editor-wrapper" style={{ position: 'relative' }}>
-            <div className="course-editor-toolbar">
-                <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
+        <div className="flex flex-col h-full border border-[var(--color-border)] rounded-lg overflow-hidden bg-[var(--color-surface)] min-h-[400px]" style={{ position: 'relative' }}>
+            <div className="flex flex-wrap gap-1 p-2 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
+                <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('bold') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Gras">
                     <TextB size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`} title="Italique">
+                <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('italic') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Italique">
                     <TextItalic size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`} title="Surligner">
+                <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('highlight') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Surligner">
                     <HighlighterCircle size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleCloze().run()} className={`toolbar-btn ${editor.isActive('cloze') ? 'is-active' : ''}`} title="Texte à trou (Cmd+E)">
+                <button type="button" onClick={() => editor.chain().focus().toggleCloze().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('cloze') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Texte à trou (Cmd+E)">
                     <EyeSlash size={18} />
                 </button>
                 
-                <div className="toolbar-divider" />
+                <div className="w-[1px] bg-[var(--color-border)] mx-1" />
 
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}`} title="Titre 1">
+                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('heading', { level: 1 }) ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Titre 1">
                     <TextHOne size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`} title="Titre 2">
+                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('heading', { level: 2 }) ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Titre 2">
                     <TextHTwo size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`} title="Titre 3">
+                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('heading', { level: 3 }) ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Titre 3">
                     <TextHThree size={18} />
                 </button>
 
-                <div className="toolbar-divider" />
+                <div className="w-[1px] bg-[var(--color-border)] mx-1" />
 
-                <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`toolbar-btn ${editor.isActive('bulletList') ? 'is-active' : ''}`} title="Liste à puces">
+                <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('bulletList') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Liste à puces">
                     <ListBullets size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`toolbar-btn ${editor.isActive('orderedList') ? 'is-active' : ''}`} title="Liste numérotée">
+                <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('orderedList') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Liste numérotée">
                     <ListNumbers size={18} />
                 </button>
                 
-                <div className="toolbar-divider" />
+                <div className="w-[1px] bg-[var(--color-border)] mx-1" />
                 
-                <button type="button" onClick={setLink} className={`toolbar-btn ${editor.isActive('link') ? 'is-active' : ''}`} title="Lien">
+                <button type="button" onClick={setLink} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('link') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Lien">
                     <LinkIcon size={18} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="toolbar-btn" title="Insérer un tableau">
+                <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-text-muted)]" title="Insérer un tableau">
                     <TableIcon size={18} />
                 </button>
-                <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="toolbar-btn" title="Lier une carte existante" style={{ position: 'relative' }}>
+                <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-text-muted)]" title="Lier une carte existante" style={{ position: 'relative' }}>
                     <Cards size={18} />
                 </button>
 
-                <div className="toolbar-divider" />
+                <div className="w-[1px] bg-[var(--color-border)] mx-1" />
 
                 {/* Blocs Médicaux Spécifiques */}
-                <button type="button" onClick={() => addAlert('definition')} className="toolbar-btn" style={{ color: '#2563eb' }} title="Définition">
+                <button type="button" onClick={() => addAlert('definition')} className="bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-blue-600" title="Définition">
                     <Info size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Déf.</span>
                 </button>
-                <button type="button" onClick={() => addAlert('concours')} className="toolbar-btn" style={{ color: 'var(--color-warning)' }} title="À connaître (Concours)">
+                <button type="button" onClick={() => addAlert('concours')} className="bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-warning)]" title="À connaître (Concours)">
                     <GraduationCap size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Concours</span>
                 </button>
-                <button type="button" onClick={() => addAlert('vigilance')} className="toolbar-btn" style={{ color: 'var(--color-danger)' }} title="Vigilance">
+                <button type="button" onClick={() => addAlert('vigilance')} className="bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-danger)]" title="Vigilance">
                     <Warning size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Vigi.</span>
                 </button>
-                <button type="button" onClick={() => addAlert('expert')} className="toolbar-btn" style={{ color: 'var(--color-text)' }} title="Expert">
+                <button type="button" onClick={() => addAlert('expert')} className="bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-text)]" title="Expert">
                     <Brain size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Expert</span>
                 </button>
             </div>
@@ -270,26 +274,26 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
             )}
 
             {editor && (
-                <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="course-editor-toolbar bubble-menu">
-                    <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
+                <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-1 shadow-md dark:bg-[var(--color-surface)]">
+                    <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('bold') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Gras">
                         <TextB size={18} />
                     </button>
-                    <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`toolbar-btn ${editor.isActive('italic') ? 'is-active' : ''}`} title="Italique">
+                    <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('italic') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Italique">
                         <TextItalic size={18} />
                     </button>
-                    <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`toolbar-btn ${editor.isActive('highlight') ? 'is-active' : ''}`} title="Surligner">
+                    <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('highlight') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Surligner">
                         <HighlighterCircle size={18} />
                     </button>
-                    <button type="button" onClick={() => editor.chain().focus().toggleCloze().run()} className={`toolbar-btn ${editor.isActive('cloze') ? 'is-active' : ''}`} title="Texte à trou">
+                    <button type="button" onClick={() => editor.chain().focus().toggleCloze().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('cloze') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Texte à trou">
                         <EyeSlash size={18} />
                     </button>
-                    <button type="button" onClick={setLink} className={`toolbar-btn ${editor.isActive('link') ? 'is-active' : ''}`} title="Lien">
+                    <button type="button" onClick={setLink} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('link') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Lien">
                         <LinkIcon size={18} />
                     </button>
                 </BubbleMenu>
             )}
 
-            <div className="course-editor-content">
+            <div className="flex-1 overflow-y-auto p-6 cursor-text course-editor-content">
                 <EditorContent editor={editor} />
             </div>
         </div>

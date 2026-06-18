@@ -19,34 +19,30 @@ export const DataTab: React.FC = () => {
     };
 
     return (
-        <div className="settings-tab-content" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <div style={{
-                    width: '64px', height: '64px', background: 'var(--primary-light)',
-                    borderRadius: '16px', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', margin: '0 auto 20px', color: 'var(--color-drug)'
-                }}>
+        <div className="flex-1 p-5 md:p-10 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-text-muted)] max-w-[800px] mx-auto w-full">
+            <div className="text-center mb-10">
+                <div className="w-16 h-16 bg-[#4fb28626] rounded-2xl flex items-center justify-center mx-auto mb-5 text-[var(--color-drug)]">
                     <Database size={32} />
                 </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '10px' }}>Gestion des données</h2>
-                <p style={{ color: 'var(--color-text-muted)' }}>Sauvegardez, restaurez, ou réinitialisez vos données en toute sécurité.</p>
+                <h2 className="text-2xl font-bold text-[var(--color-text)] mb-2.5">Gestion des données</h2>
+                <p className="text-[var(--color-text-muted)]">Sauvegardez, restaurez, ou réinitialisez vos données en toute sécurité.</p>
             </div>
 
             {/* Import Anki */}
-            <div className="settings-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '8px' }}>Import Anki (.apkg)</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6 flex flex-col gap-4">
+                <h3 className="text-[1.1rem] font-bold text-[var(--color-text)] mb-2">Import Anki (.apkg)</h3>
+                <p className="text-[0.9rem] text-[var(--color-text-muted)] leading-relaxed">
                     Importez vos fiches depuis un paquet Anki. Pour l'instant, seuls les textes sont importés (les images sont ignorées).
                     Les fiches seront placées dans la catégorie "Données" avec l'étiquette "Anki".
                 </p>
                 
-                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', alignItems: 'center' }}>
-                    <div style={{ position: 'relative' }}>
+                <div className="flex gap-4 mt-3 items-center">
+                    <div className="relative">
                         <input 
                             type="file" 
                             accept=".apkg"
                             id="anki-upload"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             disabled={isImportingAnki}
                             onChange={async (e) => {
                                 const file = e.target.files?.[0];
@@ -67,26 +63,14 @@ export const DataTab: React.FC = () => {
                         />
                         <label 
                             htmlFor="anki-upload"
-                            style={{
-                                padding: '10px 20px',
-                                background: isImportingAnki ? 'var(--color-border)' : 'var(--color-drug)',
-                                color: isImportingAnki ? 'var(--color-text-muted)' : 'white',
-                                fontWeight: 600,
-                                borderRadius: '10px',
-                                cursor: isImportingAnki ? 'not-allowed' : 'pointer',
-                                fontSize: '0.9rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                transition: 'opacity 0.2s'
-                            }}
+                            className={`py-2.5 px-5 font-semibold rounded-xl text-[0.9rem] flex items-center gap-2 transition-all duration-200 ${isImportingAnki ? 'bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed opacity-70' : 'bg-[var(--color-drug)] text-white cursor-pointer hover:opacity-90'}`}
                         >
                             <UploadSimple size={18} weight="bold" />
                             {isImportingAnki ? 'Import en cours...' : 'Importer un fichier .apkg'}
                         </label>
                     </div>
                     {isImportingAnki && (
-                        <span style={{ fontSize: '0.85rem', color: 'var(--color-drug)', fontWeight: 500 }}>
+                        <span className="text-[0.85rem] text-[var(--color-drug)] font-medium">
                             {ankiImportProgress}
                         </span>
                     )}
@@ -94,13 +78,13 @@ export const DataTab: React.FC = () => {
             </div>
 
             {/* BACKUP & RESTORE */}
-            <div className="settings-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '8px' }}>Sauvegarde Complète</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6 flex flex-col gap-4">
+                <h3 className="text-[1.1rem] font-bold text-[var(--color-text)] mb-2">Sauvegarde Complète</h3>
+                <p className="text-[0.9rem] text-[var(--color-text-muted)] leading-relaxed">
                     Créez une sauvegarde de tout votre système (Fiches, Abréviations, Statistiques d'apprentissage, Paramètres).
                 </p>
                 
-                <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+                <div className="flex gap-4 mt-3">
                     <button
                         onClick={async () => {
                             const data = await exportAllData();
@@ -114,33 +98,18 @@ export const DataTab: React.FC = () => {
                             document.body.removeChild(link);
                             URL.revokeObjectURL(url);
                         }}
-                        style={{
-                            padding: '10px 20px',
-                            background: 'var(--color-drug)',
-                            color: 'white',
-                            fontWeight: 600,
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            border: 'none',
-                            fontSize: '0.9rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'opacity 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                        onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        className="py-2.5 px-5 bg-[var(--color-drug)] text-white font-semibold rounded-xl cursor-pointer border-none text-[0.9rem] flex items-center gap-2 transition-opacity duration-200 hover:opacity-90"
                     >
                         <DownloadSimple size={18} weight="bold" />
                         Télécharger le Backup
                     </button>
 
-                    <div style={{ position: 'relative' }}>
+                    <div className="relative">
                         <input 
                             type="file" 
                             accept=".json"
                             id="restore-upload"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
@@ -161,22 +130,7 @@ export const DataTab: React.FC = () => {
                         />
                         <label 
                             htmlFor="restore-upload"
-                            style={{
-                                padding: '10px 20px',
-                                background: 'transparent',
-                                color: 'var(--color-drug)',
-                                border: '1px solid var(--color-drug)',
-                                fontWeight: 600,
-                                borderRadius: '10px',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-drug)'; e.currentTarget.style.color = 'white'; }}
-                            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-drug)'; }}
+                            className="py-2.5 px-5 bg-transparent text-[var(--color-drug)] border border-[var(--color-drug)] font-semibold rounded-xl cursor-pointer text-[0.9rem] flex items-center gap-2 transition-all duration-200 hover:bg-[var(--color-drug)] hover:text-white"
                         >
                             <UploadSimple size={18} weight="bold" />
                             Restaurer
@@ -185,41 +139,20 @@ export const DataTab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="settings-card" style={{ borderColor: 'var(--color-danger, #ef4444)' }}>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                    <div style={{
-                        padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px',
-                        color: 'var(--color-danger, #ef4444)', height: 'fit-content'
-                    }}>
+            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-danger,#ef4444)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6">
+                <div className="flex gap-4">
+                    <div className="p-3 bg-red-500/10 rounded-xl text-[var(--color-danger,#ef4444)] h-fit">
                         <Trash size={24} />
                     </div>
                     <div>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '8px' }}>Zone de danger</h3>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
+                        <h3 className="text-[1.1rem] font-bold text-[var(--color-text)] mb-2">Zone de danger</h3>
+                        <p className="text-[0.9rem] text-[var(--color-text-muted)] leading-relaxed mb-5">
                             Restaurer le dictionnaire médical par défaut effacera toutes vos abréviations personnalisées.
                             Cette action est irréversible.
                         </p>
                         <button
                             onClick={handleReset}
-                            style={{
-                                padding: '10px 20px',
-                                background: 'transparent',
-                                border: '1px solid var(--color-danger, #ef4444)',
-                                color: 'var(--color-danger, #ef4444)',
-                                fontWeight: 600,
-                                borderRadius: '10px',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.background = 'var(--color-danger, #ef4444)';
-                                e.currentTarget.style.color = 'white';
-                            }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.color = 'var(--color-danger, #ef4444)';
-                            }}
+                            className="py-2.5 px-5 bg-transparent border border-[var(--color-danger,#ef4444)] text-[var(--color-danger,#ef4444)] font-semibold rounded-xl cursor-pointer text-[0.9rem] transition-all duration-200 hover:bg-[var(--color-danger,#ef4444)] hover:text-white"
                         >
                             Réinitialiser le dictionnaire
                         </button>
@@ -228,17 +161,14 @@ export const DataTab: React.FC = () => {
             </div>
 
             {/* DELETE ALL DATA (New Danger Zone) */}
-            <div className="settings-card" style={{ borderColor: 'var(--color-danger, #ef4444)' }}>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                    <div style={{
-                        padding: '12px', background: 'var(--color-danger, #ef4444)', borderRadius: '12px',
-                        color: 'white', height: 'fit-content'
-                    }}>
+            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-danger,#ef4444)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6">
+                <div className="flex gap-4">
+                    <div className="p-3 bg-[var(--color-danger,#ef4444)] rounded-xl text-white h-fit">
                         <ShieldWarning size={24} />
                     </div>
                     <div>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-danger, #ef4444)', marginBottom: '8px' }}>ZONE MORTELLE</h3>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--color-danger, #ef4444)', lineHeight: '1.5', marginBottom: '20px' }}>
+                        <h3 className="text-[1.1rem] font-bold text-[var(--color-danger,#ef4444)] mb-2">ZONE MORTELLE</h3>
+                        <p className="text-[0.9rem] text-[var(--color-danger,#ef4444)] leading-relaxed mb-5">
                             Supprimer TOUTES les données (Fiches, Liens, Dictionnaire, Intelligence).
                             L'application repartira de zéro comme au premier jour.
                         </p>
@@ -254,23 +184,7 @@ export const DataTab: React.FC = () => {
                                     }
                                 }
                             }}
-                            style={{
-                                padding: '10px 20px',
-                                background: 'var(--color-danger, #ef4444)',
-                                color: 'white',
-                                fontWeight: 600,
-                                borderRadius: '10px',
-                                cursor: 'pointer',
-                                border: 'none',
-                                fontSize: '0.9rem',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.filter = 'brightness(0.9)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.filter = 'none';
-                            }}
+                            className="py-2.5 px-5 bg-[var(--color-danger,#ef4444)] text-white font-semibold rounded-xl cursor-pointer border-none text-[0.9rem] transition-all duration-200 hover:brightness-90"
                         >
                             Tout supprimer
                         </button>

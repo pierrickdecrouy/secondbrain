@@ -11,7 +11,6 @@ import {
 } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { COURSE_TYPE } from '../types';
-import './BrowsePage.css';
 import SearchSynthesis from './SearchSynthesis';
 import { useTheme } from '../context/ThemeContext';
 import { useCards } from '../context/CardContext';
@@ -31,6 +30,7 @@ type SortOption = 'name-asc' | 'name-desc' | 'type' | 'date-created-desc' | 'dat
 interface BrowsePageProps {
     // Optional: Render prop for Network View to reuse existing component
     renderNetworkView?: (activeNodeId: string | null) => React.ReactNode;
+    isNetworkOnly?: boolean;
 
     // Network side panel: card shown alongside the network view
     networkPanelCard?: Card | null;
@@ -41,6 +41,7 @@ interface BrowsePageProps {
 
 export const BrowsePage: React.FC<BrowsePageProps> = ({
     renderNetworkView,
+    isNetworkOnly,
     networkPanelCard,
     onNetworkPanelClose,
     networkPanelPinned,
@@ -50,12 +51,6 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     const { cards, setEditingCard, setCardToDelete } = useCards();
     const { searchQuery, activeFilters, setActiveFilters, viewMode, setViewMode, setAddDataMode } = useUI();
     const { filteredCards } = useFilteredCards(cards, searchQuery, activeFilters);
-
-    useEffect(() => {
-        if (viewMode === 'network') {
-            setViewMode('grid');
-        }
-    }, [viewMode, setViewMode]);
 
     const [sortOption, setSortOption] = useState<SortOption>('name-asc');
     const [panelWidth, setPanelWidth] = useState(460);
@@ -154,14 +149,15 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     }, [filteredCards, sortOption]);
 
     return (
-        <div className="browse-container" style={{ position: "relative", display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)' }}>
+        <div className="browse-container" style={{ position: "relative", display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <div className="w-full max-w-[1600px] self-center flex flex-col flex-1 min-h-0 w-full" style={{ overflow: 'hidden' }}>
             {/* Toolbar Filters */}
-            <div className="browse-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '16px 32px 0 32px' }}>
-                <div style={{ display: 'flex', gap: '4px' }}>
+            <div className="browse-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '32px 48px 16px 48px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                         className={`browse-filter-pill ${activeFilters.length === 0 || activeFilters.includes('all') ? 'active' : ''}`}
                         onClick={() => handleFilterToggle('all')}
-                        style={{ margin: 0, border: 'none', background: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-drug)' : 'transparent', color: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-surface)' : 'var(--color-text-muted)', fontWeight: 600, padding: '6px 16px', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                        style={{ margin: 0, border: 'none', background: (activeFilters.length === 0 || activeFilters.includes('all')) ? '#059669' : 'transparent', color: (activeFilters.length === 0 || activeFilters.includes('all')) ? '#0f172a' : '#cbd5e1', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
                     >
                         Tous
                     </button>
@@ -172,7 +168,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             key={type}
                             className={`browse-filter-pill ${isActive ? 'active' : ''}`}
                             onClick={() => handleFilterToggle(type)}
-                            style={{ margin: 0, border: 'none', background: isActive ? getCategoryColor(type) : 'transparent', color: isActive ? 'var(--color-surface)' : 'var(--color-text-muted)', fontWeight: 600, padding: '6px 16px', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                            style={{ margin: 0, border: 'none', background: isActive ? getCategoryColor(type) : 'transparent', color: isActive ? '#0f172a' : '#cbd5e1', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
                         >
                             {getFilterLabel(type)}
                         </button>
@@ -182,22 +178,22 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         <button
                             className="browse-filter-pill active"
                             onClick={() => handleFilterToggle('needs-review')}
-                            style={{ margin: 0, border: 'none', backgroundColor: 'var(--color-warning)', color: 'var(--color-surface)', fontWeight: 600, padding: '6px 16px', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer' }}
+                            style={{ margin: 0, border: 'none', background: 'var(--color-warning)', color: 'var(--color-surface)', fontWeight: 600, padding: '8px 20px', borderRadius: '12px', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
                         >
                             À réviser
                         </button>
                     )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginLeft: 'auto' }}>
-                    {/* Sort Dropdown */}
-                    {(viewMode === 'grid' || viewMode === 'list') && (
-                        <div className="browse-view-toggle" style={{ padding: '4px', display: 'flex', alignItems: 'center' }}>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <ArrowsDownUp size={16} style={{ position: 'absolute', left: '10px', pointerEvents: 'none', color: 'var(--color-text-muted)' }} />
-                                <select
-                                    value={sortOption}
-                                    onChange={(e) => setSortOption(e.target.value as SortOption)}
+                <div className="browse-toolbar-right" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* Sort Options */}
+                    {!isNetworkOnly && viewMode !== 'network' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <ArrowsDownUp size={16} color="var(--color-text-muted)" />
+                            <div style={{ position: 'relative' }}>
+                                <select 
+                                    value={sortOption} 
+                                    onChange={(e) => setSortOption(e.target.value)}
                                     style={{
                                         appearance: 'none',
                                         border: 'none',
@@ -223,38 +219,37 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     )}
 
                     {/* View Toggle */}
-                    {true && (
-                        <div className="browse-view-toggle" style={{ padding: '4px', display: 'flex', gap: '4px' }}>
+                    {!isNetworkOnly && (
+                        <div className="flex items-center gap-1 bg-[#1A2235] rounded-[10px] p-1">
                             <button
                                 className={`browse-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                                 onClick={() => setViewMode('grid')}
-                                style={{ margin: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: viewMode === 'grid' ? 'var(--color-bg)' : 'transparent', color: viewMode === 'grid' ? 'var(--color-drug)' : 'var(--color-text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'grid' ? '#0B1120' : 'transparent', color: viewMode === 'grid' ? '#34d399' : '#94a3b8', fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
                             >
-                                <SquaresFour size={18} /> Grille
+                                <SquaresFour size={16} /> Grille
                             </button>
                             <button
                                 className={`browse-view-btn ${viewMode === 'list' ? 'active' : ''}`}
                                 onClick={() => setViewMode('list')}
-                                style={{ margin: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: viewMode === 'list' ? 'var(--color-bg)' : 'transparent', color: viewMode === 'list' ? 'var(--color-drug)' : 'var(--color-text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'list' ? '#0B1120' : 'transparent', color: viewMode === 'list' ? '#34d399' : '#94a3b8', fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
                             >
-                                <Rows size={18} /> Liste
+                                <Rows size={16} /> Liste
                             </button>
 
                             <button
                                 className={`browse-view-btn ${viewMode === 'split' ? 'active' : ''}`}
                                 onClick={() => setViewMode('split')}
-                                style={{ margin: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: viewMode === 'split' ? 'var(--color-bg)' : 'transparent', color: viewMode === 'split' ? 'var(--color-drug)' : 'var(--color-text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'split' ? '#0B1120' : 'transparent', color: viewMode === 'split' ? '#34d399' : '#94a3b8', fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
                             >
-                                <SquaresFour size={18} /> Mixte
+                                <SquaresFour size={16} /> Mixte
                             </button>
-
                         </div>
                     )}
                 </div>
             </div >
 
             {/* Main Content Area */}
-            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} px-10 pt-3 pb-6`} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
 
                 {/* Search Synthesis */}
                 {searchQuery && (
@@ -266,12 +261,13 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     />
                 )}
 
-                
-                <div style={{ display: viewMode === 'split' ? 'flex' : 'block', gap: '1rem', flex: 1, height: '100%', justifyContent: 'center', minHeight: 0 }}>
-                    <div style={{ flex: (viewMode === 'split' && selectedCard) ? '0 0 50%' : '1', overflowY: 'auto', paddingRight: viewMode === 'split' ? '1rem' : '4px', transition: 'all 0.3s ease-in-out', height: '100%', paddingBottom: '2rem', minWidth: 0 }}>
+                <div style={{ display: (viewMode === 'split' && !isNetworkOnly) ? 'flex' : 'block', gap: '2rem', flex: 1, justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}>
+                    
+                    {!isNetworkOnly && (
+                        <div className="custom-scrollbar" style={{ flex: (viewMode === 'split' && selectedCard) ? '0 0 50%' : '1', overflowY: 'auto', paddingRight: viewMode === 'split' ? '1rem' : '4px', transition: 'all 0.3s ease-in-out', paddingBottom: '2rem', minHeight: 0 }}>
 
                 {(viewMode === 'grid' || viewMode === 'split') && (
-                    <div className="browse-card-grid">
+                    <div className={`grid gap-6 px-4 py-4 ${viewMode === 'split' ? 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}`}>
                         {sortedCards.length === 0 ? (
                             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', color: 'var(--color-text-muted)' }}>
                                 Aucun résultat trouvé
@@ -281,17 +277,17 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                 <motion.div
                                     layoutId={`card-${card.id}`}
                                     key={card.id}
-                                    className="browse-card"
+                                    className={`browse-card ${selectedCardId === card.id ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0B1120]' : ''}`}
                                     onClick={() => setSelectedCardId(card.id)}
                                     // Inline animation delay for first few items
-                                    style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s` }}
+                                    style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s`, background: '#1e293b', borderColor: '#334155' }}
                                 >
                                     <div className="browse-card-header">
                                         <span
                                             style={{
-                                                backgroundColor: card.type === 'drug' ? 'var(--color-success-bg)' : card.type === 'pathology' ? 'var(--color-danger-bg)' : 'var(--color-bg)',
-                                                color: card.type === 'drug' ? 'var(--color-success)' : card.type === 'pathology' ? 'var(--color-danger)' : 'var(--color-text)',
-                                                border: `1px solid ${card.type === 'drug' ? 'var(--color-success-bg)' : card.type === 'pathology' ? 'var(--color-danger-bg)' : 'var(--color-border)'}`,
+                                                backgroundColor: '#0B1120',
+                                                color: getCategoryColor(card.type),
+                                                border: 'none',
                                                 textTransform: 'uppercase',
                                                 fontSize: '0.65rem',
                                                 fontWeight: 800,
@@ -325,11 +321,11 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                         </div>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <h3 className="browse-card-title">{card.title}</h3>
-                                        {card.subtitle && <div className="browse-card-subtitle">{card.subtitle}</div>}
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', margin: '8px 0 4px 0' }}>{card.title}</h3>
+                                        {card.subtitle && <div style={{ fontSize: '0.85rem', fontFamily: 'monospace', color: '#94a3b8' }}>{card.subtitle}</div>}
                                         <div style={{
                                             fontSize: '0.85rem',
-                                            color: 'var(--color-text-muted)',
+                                            color: '#cbd5e1',
                                             marginTop: '4px',
                                             display: '-webkit-box',
                                             WebkitLineClamp: 3,
@@ -412,10 +408,11 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         </div>
                     )
                 }
+                        </div>
+                    )}
 
-                    </div>
-                    {(viewMode === 'split' || viewMode === 'network') && (
-                        <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative', display: 'flex', flexDirection: 'row', height: '100%', minHeight: 0, minWidth: 0 }}>
+                    {(viewMode === 'split' || viewMode === 'network' || isNetworkOnly) && (
+                        <div className="flex-1 rounded-[16px] overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm">
                             <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
                                 {renderNetworkView && renderNetworkView(selectedCardId)}
                             </div>
@@ -495,6 +492,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     </style>
                 </div>
             )}
-    </div >
+            </div>
+        </div>
     );
 };
