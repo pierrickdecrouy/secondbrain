@@ -11,86 +11,115 @@ export const IntelligenceTab: React.FC = () => {
 
     if (!dashStats) return null;
 
+    const cardStyle = {
+        backgroundColor: '#0f1420',
+        borderRadius: 16,
+        border: '1px solid #1e293b',
+        padding: 24,
+    };
+
     return (
-        <div className="flex-1 p-5 md:p-10 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-text-muted)]">
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-[var(--color-text)] mb-2">Intelligence des liens</h2>
-                <p className="text-[var(--color-text-muted)]">Tableau de bord de qualité de l'algorithme d'apprentissage automatique.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            {/* Header */}
+            <div>
+                <h2 style={{ fontSize: 24, fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px 0' }}>Intelligence</h2>
+                <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>Tableau de bord de qualité de l'algorithme d'apprentissage automatique.</p>
             </div>
 
             {/* Learning Score Gauge */}
-            <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-[20px] p-8 text-white text-center mb-6">
-                <div className="text-[3rem] font-extrabold">
-                    {dashStats.learningScore}<span className="text-[1.2rem] opacity-80">/100</span>
+            <div style={{
+                background: 'linear-gradient(to bottom right, #667eea, #764ba2)',
+                borderRadius: 20, padding: 32, textAlign: 'center', color: 'white',
+                border: '1px solid rgba(255,255,255,0.1)'
+            }}>
+                <div style={{ fontSize: 48, fontWeight: 800 }}>
+                    {dashStats.learningScore}<span style={{ fontSize: 20, opacity: 0.8 }}>/100</span>
                 </div>
-                <div className="text-[0.95rem] opacity-90 mt-1">Score d'apprentissage</div>
-                <div className="mt-4 h-2 bg-white/25 rounded bg-clip-padding overflow-hidden">
-                    <div style={{ width: `${dashStats.learningScore}%` }} className="h-full bg-[var(--color-surface)] rounded transition-all duration-500 ease-in-out" />
+                <div style={{ fontSize: 15, opacity: 0.9, marginTop: 4 }}>Score d'apprentissage</div>
+                <div style={{ marginTop: 16, height: 8, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: `${dashStats.learningScore}%`, height: '100%', backgroundColor: '#0f1420', borderRadius: 4, transition: 'width 0.5s ease' }} />
                 </div>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-3 mb-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                 {[
-                    { label: 'Liens générés', value: dashStats.totalLinksGenerated, color: 'text-[var(--color-physio)]' },
-                    { label: 'Supprimés', value: dashStats.totalSuppressed, color: 'text-[var(--color-danger)]' },
-                    { label: 'Manuels', value: dashStats.totalManual, color: 'text-[#22c55e]' },
-                    { label: 'Taux acceptation', value: `${dashStats.acceptanceRate}%`, color: 'text-[#8b5cf6]' }
+                    { label: 'Liens générés', value: dashStats.totalLinksGenerated, color: '#a855f7' },
+                    { label: 'Supprimés', value: dashStats.totalSuppressed, color: '#ef4444' },
+                    { label: 'Manuels', value: dashStats.totalManual, color: '#22c55e' },
+                    { label: 'Taux acceptation', value: `${dashStats.acceptanceRate}%`, color: '#8b5cf6' }
                 ].map(stat => (
-                    <div key={stat.label} className="bg-[var(--color-surface)] p-4 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] text-center">
-                        <div className={`text-[1.6rem] font-bold ${stat.color}`}>{stat.value}</div>
-                        <div className="text-[0.75rem] text-[var(--color-text-muted)] mt-1">{stat.label}</div>
+                    <div key={stat.label} style={{ ...cardStyle, padding: 16, textAlign: 'center' }}>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{stat.label}</div>
                     </div>
                 ))}
             </div>
 
             {/* Patterns & Vetoes */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-                    <h3 className="text-[0.95rem] font-semibold text-[var(--color-text)] mb-3 flex items-center gap-2"><Brain className="text-purple-500" size={16} /> Patterns appris</h3>
-                    <div className="flex justify-between mb-2">
-                        <span className="text-[var(--color-text-muted)] text-[0.85rem]">Positifs (boosts)</span>
-                        <span className="font-semibold text-[#22c55e]">{dashStats.positivePatternCount}</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                <div style={cardStyle}>
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Brain color="#a855f7" size={16} /> Patterns appris
+                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Positifs (boosts)</span>
+                        <span style={{ fontWeight: 600, color: '#22c55e' }}>{dashStats.positivePatternCount}</span>
                     </div>
-                    <div className="flex justify-between mb-2">
-                        <span className="text-[var(--color-text-muted)] text-[0.85rem]">Négatifs (pénalités)</span>
-                        <span className="font-semibold text-[var(--color-danger)]">{dashStats.negativePatternCount}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Négatifs (pénalités)</span>
+                        <span style={{ fontWeight: 600, color: '#ef4444' }}>{dashStats.negativePatternCount}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-[var(--color-text-muted)] text-[0.85rem]">Vetoes (hard)</span>
-                        <span className="font-semibold text-[var(--color-warning)]">{dashStats.vetoCount}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Vetoes (hard)</span>
+                        <span style={{ fontWeight: 600, color: '#f59e0b' }}>{dashStats.vetoCount}</span>
                     </div>
                 </div>
 
                 {/* Type Pair Scores */}
-                <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-                    <h3 className="text-[0.95rem] font-semibold text-[var(--color-text)] mb-3 flex items-center gap-2"><Lightning className="text-amber-500" size={16} /> Scores type-pair appris</h3>
+                <div style={cardStyle}>
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Lightning color="#f59e0b" size={16} /> Scores type-pair appris
+                    </h3>
                     {Object.entries(dashStats.typePairScores).length === 0 ? (
-                        <div className="text-[var(--color-text-muted)] text-[0.85rem] italic">Pas encore de données</div>
+                        <div style={{ color: '#94a3b8', fontSize: 14, fontStyle: 'italic' }}>Pas encore de données</div>
                     ) : (
-                        Object.entries(dashStats.typePairScores).map(([pair, score]) => (
-                            <div key={pair} className="flex justify-between mb-1.5">
-                                <span className="text-[var(--color-text-muted)] text-[0.85rem]">{pair.replace('|', ' ↔ ')}</span>
-                                <span className={`font-semibold text-[0.85rem] ${score > 0 ? 'text-[#22c55e]' : score < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'}`}>
-                                    {score > 0 ? '+' : ''}{(score * 100).toFixed(0)}%
-                                </span>
-                            </div>
-                        ))
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {Object.entries(dashStats.typePairScores).map(([pair, score]) => (
+                                <div key={pair} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: '#94a3b8', fontSize: 14 }}>{pair.replace('|', ' ↔ ')}</span>
+                                    <span style={{ 
+                                        fontWeight: 600, fontSize: 14, 
+                                        color: score > 0 ? '#22c55e' : score < 0 ? '#ef4444' : '#94a3b8' 
+                                    }}>
+                                        {score > 0 ? '+' : ''}{(score * 100).toFixed(0)}%
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>
 
             {/* Toxic Keywords */}
             {dashStats.topToxicKeywords.length > 0 && (
-                <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6">
-                    <h3 className="text-[0.95rem] font-semibold text-[var(--color-text)] mb-3 flex items-center gap-2"><ShieldWarning className="text-red-500" size={16} /> Mots-clés toxiques</h3>
-                    <p className="text-[var(--color-text-muted)] text-[0.8rem] mb-3">
+                <div style={cardStyle}>
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <ShieldWarning color="#ef4444" size={16} /> Mots-clés toxiques
+                    </h3>
+                    <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 16px 0' }}>
                         Ces mots génèrent souvent des faux positifs. L'algo les pénalise automatiquement.
                     </p>
-                    <div className="flex flex-wrap gap-2">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {dashStats.topToxicKeywords.map(tw => (
-                            <span key={tw.word} className={`py-1 px-3 rounded-full text-[0.8rem] font-medium border ${tw.count >= 3 ? 'bg-red-500/10 text-[var(--color-danger)] border-[var(--color-danger,#ef4444)]' : 'bg-[var(--color-bg)] text-[var(--color-warning)] border-[var(--color-warning)]'}`}>
-                                {tw.word} <span className="opacity-70">×{tw.count}</span>
+                            <span key={tw.word} style={{
+                                padding: '4px 12px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
+                                border: tw.count >= 3 ? '1px solid #ef4444' : '1px solid #f59e0b',
+                                backgroundColor: tw.count >= 3 ? 'rgba(239, 68, 68, 0.1)' : '#0b0f17',
+                                color: tw.count >= 3 ? '#ef4444' : '#f59e0b',
+                                display: 'flex', alignItems: 'center', gap: 4
+                            }}>
+                                {tw.word} <span style={{ opacity: 0.7 }}>×{tw.count}</span>
                             </span>
                         ))}
                     </div>
@@ -98,14 +127,14 @@ export const IntelligenceTab: React.FC = () => {
             )}
 
             {/* Reset Button */}
-            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-danger,#ef4444)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-red-500/10 rounded-xl text-[var(--color-danger,#ef4444)]">
-                        <Trash size={20} />
+            <div style={{ ...cardStyle, border: '1px solid rgba(239, 68, 68, 0.3)', backgroundColor: '#0f1420' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ padding: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 12, color: '#ef4444', display: 'flex' }}>
+                        <Trash size={24} />
                     </div>
-                    <div className="flex-1">
-                        <div className="font-semibold text-[var(--color-text)] mb-1">Réinitialiser l'intelligence</div>
-                        <div className="text-[0.8rem] text-[var(--color-text-muted)]">Supprime tous les patterns appris, vetoes et mots toxiques.</div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: '#f1f5f9', marginBottom: 4 }}>Réinitialiser l'intelligence</div>
+                        <div style={{ fontSize: 13, color: '#94a3b8' }}>Supprime tous les patterns appris, vetoes et mots toxiques.</div>
                     </div>
                     <button
                         onClick={() => {
@@ -114,7 +143,10 @@ export const IntelligenceTab: React.FC = () => {
                                 setDashStats(getDashboardStats());
                             }
                         }}
-                        className="py-2 px-4 bg-transparent border border-[var(--color-danger,#ef4444)] text-[var(--color-danger,#ef4444)] font-semibold rounded-xl cursor-pointer text-[0.85rem] transition-all duration-200 hover:bg-[var(--color-danger,#ef4444)] hover:text-white"
+                        style={{
+                            padding: '10px 20px', backgroundColor: 'transparent', border: '1px solid #ef4444',
+                            color: '#ef4444', fontWeight: 600, borderRadius: 12, cursor: 'pointer', fontSize: 14
+                        }}
                     >
                         Réinitialiser
                     </button>

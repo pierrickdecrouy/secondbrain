@@ -4,8 +4,8 @@ import { loadCustomAbbreviations, saveCustomAbbreviations } from '../../storage'
 
 export const DictionaryTab: React.FC = () => {
     const [abbreviations, setAbbreviations] = useState<{ [key: string]: string }>({});
-    const [newKey, setNewKey] = useState('');
-    const [newValue, setNewValue] = useState('');
+    const [abbrvKey, setAbbrvKey] = useState('');
+    const [abbrvValue, setAbbrvValue] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -13,13 +13,16 @@ export const DictionaryTab: React.FC = () => {
         setAbbreviations(loaded);
     }, []);
 
-    const handleAdd = () => {
-        if (newKey && newValue) {
-            const updated = { ...abbreviations, [newKey.toLowerCase()]: newValue };
+    const handleAdd = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const k = abbrvKey.trim();
+        const v = abbrvValue.trim();
+        if (k && v) {
+            const updated = { ...abbreviations, [k.toLowerCase()]: v };
             setAbbreviations(updated);
             saveCustomAbbreviations(updated);
-            setNewKey('');
-            setNewValue('');
+            setAbbrvKey('');
+            setAbbrvValue('');
         }
     };
 
@@ -31,87 +34,171 @@ export const DictionaryTab: React.FC = () => {
     };
 
     const filteredAbbreviations = useMemo(() => {
+        const query = searchQuery.toLowerCase().trim();
         return Object.entries(abbreviations).filter(([key, value]) =>
-            key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            value.toLowerCase().includes(searchQuery.toLowerCase())
+            key.toLowerCase().includes(query) ||
+            value.toLowerCase().includes(query)
         ).sort((a, b) => a[0].localeCompare(b[0]));
     }, [abbreviations, searchQuery]);
 
     return (
-        <div className="flex-1 p-5 md:p-10 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-text-muted)] flex flex-col h-full">
-            {/* Formulaire d'ajout */}
-            <div className="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-[0_4px_12px_rgba(0,0,0,0.02)] mb-6">
-                <h3 className="text-[1.1rem] font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
-                    <div className="bg-[#4fb28626] text-[var(--color-drug)] p-1 rounded-full flex">
-                        <Plus size={16} />
-                    </div>
-                    Ajouter une définition
-                </h3>
-                <div className="flex gap-4 items-center flex-wrap">
-                    <input
-                        type="text"
-                        placeholder="Ex: IV"
-                        className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-xl text-[0.95rem] outline-none transition-all duration-200 focus:border-[var(--color-drug)] focus:ring-[3px] focus:ring-[#4fb28626] flex-1 min-w-0 flex-[1_1_120px]"
-                        value={newKey}
-                        onChange={(e) => setNewKey(e.target.value)}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Ex: Intraveineuse"
-                        className="bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-xl text-[0.95rem] outline-none transition-all duration-200 focus:border-[var(--color-drug)] focus:ring-[3px] focus:ring-[#4fb28626] flex-1 min-w-0 flex-[2_1_200px]"
-                        value={newValue}
-                        onChange={(e) => setNewValue(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    />
-                    <button 
-                        className={`bg-[var(--color-drug)] text-white border-none py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${(!newKey || !newValue) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:brightness-90 active:scale-95'} flex-none`} 
-                        onClick={handleAdd}
-                        disabled={!newKey || !newValue}
-                    >
-                        <Plus size={16} weight="bold" /> Ajouter
-                    </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* Banner Section */}
+            <div style={{
+                position: 'relative', overflow: 'hidden',
+                background: 'linear-gradient(to right, #111827, #1e293b)',
+                padding: 32, borderRadius: 16,
+                border: '1px solid rgba(46, 62, 82, 0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+                <div style={{ position: 'relative', zIndex: 10 }}>
+                    <h2 style={{ margin: '0 0 4px 0', fontSize: 24, fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        Dictionnaire
+                        <span style={{
+                            fontSize: 12, fontWeight: 700, backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            color: '#34d399', padding: '2px 8px', borderRadius: 9999,
+                            border: '1px solid rgba(16, 185, 129, 0.3)'
+                        }}>
+                            {Object.keys(abbreviations).length} Abréviations
+                        </span>
+                    </h2>
+                    <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>
+                        Gérez, ajoutez et éditez vos abréviations médicales ou scientifiques et leurs définitions globales.
+                    </p>
+                </div>
+                <div style={{
+                    position: 'absolute', right: 0, top: 0, width: 256, height: 256,
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)', borderRadius: '50%',
+                    filter: 'blur(40px)', pointerEvents: 'none'
+                }}></div>
+            </div>
+
+            {/* Add Abbreviation Card */}
+            <div style={{ backgroundColor: '#0f1420', borderRadius: 16, border: '1px solid #1e293b', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid #1e293b', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>Nouvelle abréviation</h3>
+                </div>
+                <div style={{ padding: 24 }}>
+                    <form onSubmit={handleAdd} style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 16, alignItems: 'end', margin: 0 }}>
+                        <div style={{ gridColumn: 'span 3' }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                                Abréviation
+                            </label>
+                            <input 
+                                type="text" required placeholder="ex: HTA" 
+                                value={abbrvKey} onChange={(e) => setAbbrvKey(e.target.value)} 
+                                style={{
+                                    width: '100%', boxSizing: 'border-box', backgroundColor: '#0b0f17', border: '1px solid #334155',
+                                    color: '#e2e8f0', fontSize: 14, borderRadius: 12, padding: '12px 16px', outline: 'none'
+                                }} 
+                            />
+                        </div>
+                        <div style={{ gridColumn: 'span 7' }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                                Signification complète
+                            </label>
+                            <input 
+                                type="text" required placeholder="ex: Hypertension Artérielle" 
+                                value={abbrvValue} onChange={(e) => setAbbrvValue(e.target.value)} 
+                                style={{
+                                    width: '100%', boxSizing: 'border-box', backgroundColor: '#0b0f17', border: '1px solid #334155',
+                                    color: '#e2e8f0', fontSize: 14, borderRadius: 12, padding: '12px 16px', outline: 'none'
+                                }} 
+                            />
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                            <button 
+                                type="submit" disabled={!abbrvKey.trim() || !abbrvValue.trim()} 
+                                style={{
+                                    width: '100%', boxSizing: 'border-box', backgroundColor: '#059669', color: 'white',
+                                    fontSize: 14, fontWeight: 600, borderRadius: 12, padding: '12px 16px', border: 'none',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    cursor: (!abbrvKey.trim() || !abbrvValue.trim()) ? 'not-allowed' : 'pointer',
+                                    opacity: (!abbrvKey.trim() || !abbrvValue.trim()) ? 0.5 : 1
+                                }}
+                            >
+                                <Plus size={16} weight="bold" />
+                                Ajouter
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            {/* Liste Bibliothèque */}
-            <div className="mt-5 flex-1 flex flex-col overflow-hidden">
-                <div className="flex justify-between items-center mb-4 pb-4 border-b border-[var(--color-border)]">
-                    <div className="text-[0.85rem] font-bold text-[var(--color-text-muted)] tracking-wide uppercase flex items-center">
-                        <Books size={16} className="mr-2" />
-                        Bibliothèque <span className="bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] py-0.5 px-2 rounded-xl text-xs ml-2 font-semibold">{Object.keys(abbreviations).length}</span>
-                    </div>
-                    <div className="relative flex items-center">
-                        <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="py-2 pr-3 pl-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[0.9rem] w-[200px] transition-all duration-200 text-[var(--color-text)] focus:border-[var(--color-drug)] outline-none focus:ring-[3px] focus:ring-[#4fb28626]"
+            {/* Main List Card */}
+            <div style={{ backgroundColor: '#0f1420', borderRadius: 16, border: '1px solid #1e293b', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {/* List Toolbar */}
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid #1e293b', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ position: 'relative', width: '100%', maxWidth: 320 }}>
+                        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', display: 'flex', pointerEvents: 'none' }}>
+                            <MagnifyingGlass size={16} />
+                        </span>
+                        <input 
+                            type="text" placeholder="Rechercher une abréviation..." 
+                            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} 
+                            style={{
+                                width: '100%', boxSizing: 'border-box', backgroundColor: '#0b0f17', border: '1px solid #334155',
+                                color: '#e2e8f0', fontSize: 14, borderRadius: 8, padding: '8px 16px 8px 36px', outline: 'none'
+                            }} 
                         />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '6px 12px', borderRadius: 6 }}>Tout plier</button>
+                        <button style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '6px 12px', borderRadius: 6 }}>Tout déplier</button>
                     </div>
                 </div>
 
-                <div className="overflow-y-auto flex-1 pr-1 scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-text-muted)]">
-                    {/* Items */}
-                    {filteredAbbreviations.map(([key, value]) => (
-                        <div key={key} className="group flex items-center px-4 py-3 border-b border-[var(--color-border)] transition-all duration-200 cursor-default bg-[var(--color-surface)] first:rounded-t-xl last:border-b-0 last:rounded-b-xl hover:bg-[var(--color-border)]">
-                            <div className="min-w-[65px] text-center bg-[var(--color-bg)] text-[var(--color-text)] border border-[var(--color-border)] font-semibold text-xs py-1.5 px-2.5 rounded-full mr-5 lowercase">{key}</div>
-                            <div className="text-[var(--color-text)] text-[0.95rem] flex-1 font-normal first-letter:uppercase">{value}</div>
-                            <Trash
-                                size={16}
-                                className="opacity-0 text-red-500 cursor-pointer p-2 rounded-md transition-all duration-200 hover:bg-red-500/10 group-hover:opacity-100"
-                                onClick={() => handleDelete(key)}
-                            />
+                {/* List View */}
+                <div style={{ maxHeight: 500, overflowY: 'auto' }}>
+                    {filteredAbbreviations.length === 0 ? (
+                        <div style={{ padding: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                            <Books size={48} weight="duotone" style={{ marginBottom: 16, opacity: 0.2 }} />
+                            <p style={{ margin: 0, fontWeight: 600 }}>Aucune abréviation trouvée.</p>
+                            <p style={{ margin: '4px 0 0 0', fontSize: 14, opacity: 0.7 }}>Utilisez le formulaire ci-dessus pour en ajouter.</p>
                         </div>
-                    ))}
-
-                    {filteredAbbreviations.length === 0 && (
-                        <div className="text-center p-10 text-[var(--color-text-muted)]">
-                            <MagnifyingGlass size={32} className="mx-auto mb-2.5 opacity-30" />
-                            <p className="text-[0.9rem]">Aucun résultat trouvé.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {filteredAbbreviations.map(([key, value], index) => (
+                                <div key={key} style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '16px 24px', borderBottom: index === filteredAbbreviations.length - 1 ? 'none' : '1px solid #1e293b'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                                        <div style={{ width: 80, fontFamily: 'monospace', fontWeight: 700, fontSize: 15, color: '#f1f5f9', textTransform: 'uppercase' }}>
+                                            {key}
+                                        </div>
+                                        <div style={{ fontSize: 15, color: '#94a3b8' }}>
+                                            {value}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDelete(key)}
+                                        style={{
+                                            padding: 8, backgroundColor: 'transparent', border: 'none',
+                                            color: '#64748b', cursor: 'pointer', display: 'flex', borderRadius: 8
+                                        }}
+                                        title="Supprimer"
+                                    >
+                                        <Trash size={16} />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     )}
+                </div>
+
+                {/* Pagination Footer */}
+                <div style={{ padding: '12px 24px', borderTop: '1px solid #1e293b', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 12, color: '#64748b' }}>Affichage de {filteredAbbreviations.length} abréviations</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button style={{ padding: 6, borderRadius: 8, backgroundColor: '#1e293b', color: '#94a3b8', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                            <svg style={{ width: 16, height: 16 }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#34d399', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.2)' }}>1</span>
+                        <button style={{ padding: 6, borderRadius: 8, backgroundColor: '#1e293b', color: '#94a3b8', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                            <svg style={{ width: 16, height: 16 }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

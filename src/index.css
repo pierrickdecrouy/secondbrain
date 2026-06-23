@@ -1,5 +1,14 @@
-@plugin "@tailwindcss/typography";
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-settings-bg: #0b0f17;
+  --color-settings-sidebar: #0f1420;
+  --color-settings-border: #1e293b;
+  --color-settings-input: #161f30;
+  --color-settings-card: #111827;
+  --color-settings-input-border: #243242;
+}
 
 /* Configure Tailwind dark mode to use html.dark class */
 /* stylelint-disable-next-line at-rule-no-unknown */
@@ -59,6 +68,29 @@ body {
   color: var(--color-text);
   line-height: 1.6;
   min-height: 100vh;
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
 }
 
 #root {
@@ -142,7 +174,7 @@ body,
 
 .workspace-sidebar-container {
   height: 100%;
-  width: calc(var(--sidebar-mini-width) + 16px);
+  width: 0;
   flex-shrink: 0;
   display: flex;
   position: relative;
@@ -3321,4 +3353,8 @@ html.dark .glass-panel {
     background-color: var(--color-primary);
     color: white;
   }
+}
+
+.profile-menu-item:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
 }

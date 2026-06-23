@@ -35,24 +35,24 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={handlePrint} 
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-[14px] font-medium transition-colors shadow-sm"
                     >
-                        <Printer size={20} />
-                        Exporter en PDF
+                        <Printer size={16} weight="bold" />
+                        <span>Exporter en PDF</span>
                     </button>
                     <button 
                         onClick={onDelete} 
-                        className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-lg font-semibold transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/30 rounded-lg text-[14px] font-medium transition-colors shadow-sm"
                     >
-                        <Trash size={20} />
-                        Supprimer
+                        <Trash size={16} weight="bold" />
+                        <span>Supprimer</span>
                     </button>
                     <button 
                         onClick={onEdit} 
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow-sm shadow-emerald-500/20 active:scale-95 transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-lg text-[14px] font-medium transition-colors shadow-sm active:scale-95"
                     >
-                        <PencilSimple size={20} />
-                        Modifier
+                        <PencilSimple size={16} weight="bold" />
+                        <span>Modifier</span>
                     </button>
                 </div>
             </div>

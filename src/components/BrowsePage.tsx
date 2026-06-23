@@ -47,7 +47,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     networkPanelPinned,
     onNetworkPanelPinToggle
 }) => {
-        const { getCategoryColor, getCategoryIcon } = useTheme();
+    const { getCategoryColor, getCategoryIcon, darkMode } = useTheme();
     const { cards, setEditingCard, setCardToDelete } = useCards();
     const { searchQuery, activeFilters, setActiveFilters, viewMode, setViewMode, setAddDataMode } = useUI();
     const { filteredCards } = useFilteredCards(cards, searchQuery, activeFilters);
@@ -220,18 +220,18 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
                     {/* View Toggle */}
                     {!isNetworkOnly && (
-                        <div className="flex items-center gap-1 bg-[#1A2235] rounded-[10px] p-1">
+                        <div className="flex items-center gap-1 rounded-[10px] p-1" style={{ background: darkMode ? '#1A2235' : '#e2e8f0' }}>
                             <button
                                 className={`browse-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                                 onClick={() => setViewMode('grid')}
-                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'grid' ? '#0B1120' : 'transparent', color: viewMode === 'grid' ? '#34d399' : '#94a3b8', fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'grid' ? (darkMode ? '#0B1120' : '#ffffff') : 'transparent', color: viewMode === 'grid' ? (darkMode ? '#34d399' : '#059669') : (darkMode ? '#94a3b8' : '#64748b'), fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: viewMode === 'grid' && !darkMode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                             >
                                 <SquaresFour size={16} /> Grille
                             </button>
                             <button
                                 className={`browse-view-btn ${viewMode === 'list' ? 'active' : ''}`}
                                 onClick={() => setViewMode('list')}
-                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'list' ? '#0B1120' : 'transparent', color: viewMode === 'list' ? '#34d399' : '#94a3b8', fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'list' ? (darkMode ? '#0B1120' : '#ffffff') : 'transparent', color: viewMode === 'list' ? (darkMode ? '#34d399' : '#059669') : (darkMode ? '#94a3b8' : '#64748b'), fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: viewMode === 'list' && !darkMode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                             >
                                 <Rows size={16} /> Liste
                             </button>
@@ -239,7 +239,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             <button
                                 className={`browse-view-btn ${viewMode === 'split' ? 'active' : ''}`}
                                 onClick={() => setViewMode('split')}
-                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'split' ? '#0B1120' : 'transparent', color: viewMode === 'split' ? '#34d399' : '#94a3b8', fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                style={{ margin: 0, padding: '6px 14px', borderRadius: '6px', border: 'none', background: viewMode === 'split' ? (darkMode ? '#0B1120' : '#ffffff') : 'transparent', color: viewMode === 'split' ? (darkMode ? '#34d399' : '#059669') : (darkMode ? '#94a3b8' : '#64748b'), fontWeight: 500, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: viewMode === 'split' && !darkMode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                             >
                                 <SquaresFour size={16} /> Mixte
                             </button>
@@ -280,12 +280,12 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                     className={`browse-card ${selectedCardId === card.id ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0B1120]' : ''}`}
                                     onClick={() => setSelectedCardId(card.id)}
                                     // Inline animation delay for first few items
-                                    style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s`, background: '#1e293b', borderColor: '#334155' }}
+                                    style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s`, background: darkMode ? '#1e293b' : '#ffffff', borderColor: darkMode ? '#334155' : '#e2e8f0', boxShadow: darkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.05)' }}
                                 >
                                     <div className="browse-card-header">
                                         <span
                                             style={{
-                                                backgroundColor: '#0B1120',
+                                                backgroundColor: darkMode ? '#0B1120' : '#f1f5f9',
                                                 color: getCategoryColor(card.type),
                                                 border: 'none',
                                                 textTransform: 'uppercase',
@@ -321,11 +321,11 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                         </div>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', margin: '8px 0 4px 0' }}>{card.title}</h3>
-                                        {card.subtitle && <div style={{ fontSize: '0.85rem', fontFamily: 'monospace', color: '#94a3b8' }}>{card.subtitle}</div>}
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: darkMode ? '#f8fafc' : '#0f172a', margin: '8px 0 4px 0' }}>{card.title}</h3>
+                                        {card.subtitle && <div style={{ fontSize: '0.85rem', fontFamily: 'monospace', color: darkMode ? '#94a3b8' : '#64748b' }}>{card.subtitle}</div>}
                                         <div style={{
                                             fontSize: '0.85rem',
-                                            color: '#cbd5e1',
+                                            color: darkMode ? '#cbd5e1' : '#475569',
                                             marginTop: '4px',
                                             display: '-webkit-box',
                                             WebkitLineClamp: 3,
@@ -345,60 +345,89 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
                 {
                     viewMode === 'list' && (
-                        <div style={{ background: 'var(--color-surface)', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e9ecef' }}>
-                            <table className="browse-list-table">
+                        <div style={{ backgroundColor: darkMode ? '#0f1420' : '#ffffff', borderRadius: 16, overflow: 'hidden', border: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, boxShadow: darkMode ? '0 4px 20px rgba(0, 0, 0, 0.2)' : '0 4px 15px rgba(0, 0, 0, 0.05)' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ width: '100px' }}>Type</th>
-                                        <th>Titre</th>
-                                        <th>Sous-titre</th>
-                                        <th>Extrait</th>
-                                        <th style={{ width: '100px' }}>Actions</th>
+                                        <th style={{ padding: '16px 24px', borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc', color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', width: '120px' }}>Type</th>
+                                        <th style={{ padding: '16px 24px', borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc', color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Titre</th>
+                                        <th style={{ padding: '16px 24px', borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc', color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sous-titre</th>
+                                        <th style={{ padding: '16px 24px', borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc', color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Extrait</th>
+                                        <th style={{ padding: '16px 24px', borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc', color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px', textAlign: 'right' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sortedCards.map(card => (
-                                        <motion.tr layoutId={`card-${card.id}`} key={card.id} onClick={() => setSelectedCardId(card.id)} onDoubleClick={() => setExpandedCardId(card.id)}>
-                                            <td>
+                                    {sortedCards.map((card, index) => (
+                                        <motion.tr 
+                                            layoutId={`card-${card.id}`} 
+                                            key={card.id} 
+                                            onClick={() => setSelectedCardId(card.id)} 
+                                            onDoubleClick={() => setExpandedCardId(card.id)}
+                                            style={{ cursor: 'pointer', backgroundColor: selectedCardId === card.id ? 'rgba(16, 185, 129, 0.05)' : 'transparent', transition: 'background-color 0.2s' }}
+                                        >
+                                            <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}` }}>
                                                 <span
-                                                    className="browse-tag"
                                                     style={{
-                                                        fontSize: '0.7rem',
-                                                        backgroundColor: getCategoryColor(card.type),
-                                                        color: 'var(--color-surface)',
-                                                        border: 'none',
+                                                        fontSize: 11,
+                                                        fontWeight: 700,
+                                                        backgroundColor: getCategoryColor(card.type) + '20',
+                                                        color: getCategoryColor(card.type),
+                                                        border: `1px solid ${getCategoryColor(card.type)}40`,
                                                         display: 'inline-flex',
                                                         alignItems: 'center',
-                                                        gap: '4px'
+                                                        gap: 6,
+                                                        padding: '4px 10px',
+                                                        borderRadius: 8,
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.05em'
                                                     }}
                                                 >
-                                                    <DynamicIcon name={getCategoryIcon(card.type)} size={12} /> <span>{card.type}</span>
+                                                    <DynamicIcon name={getCategoryIcon(card.type)} size={14} /> <span>{card.type}</span>
                                                 </span>
                                                 {/* Visual Badge for Low Quality */}
                                                 {activeFilters.includes('needs-review') && calculateQualityScore(card, card.manualConnections?.length || 0).score < 50 && (
                                                     <span style={{
-                                                        fontSize: '0.65rem',
-                                                        fontWeight: 700,
-                                                        color: '#c2410c',
-                                                        backgroundColor: 'var(--color-warning-bg)',
-                                                        border: '1px solid #ffedd5',
-                                                        padding: '2px 6px',
-                                                        borderRadius: '12px',
-                                                        marginLeft: '6px'
+                                                        fontSize: 10,
+                                                        fontWeight: 800,
+                                                        color: '#f87171',
+                                                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                        padding: '2px 8px',
+                                                        borderRadius: 8,
+                                                        marginLeft: 8,
+                                                        textTransform: 'uppercase'
                                                     }}>
                                                         À réviser
                                                     </span>
                                                 )}
                                             </td>
-                                            <td style={{ fontWeight: 600 }}>{card.title}</td>
-                                            <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{card.subtitle}</td>
-                                            <td style={{ color: 'var(--color-text)', fontSize: '0.9rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {stripMarkdown(card.content)}
+                                            <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0f172a', fontSize: 15 }}>
+                                                {card.title}
                                             </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
-                                                    <button className="browse-action-btn" onClick={(e) => { e.stopPropagation(); setEditingCard(card); setAddDataMode('edit'); }}><PencilSimple size={16} /></button>
-                                                    <button className="browse-action-btn" onClick={(e) => { e.stopPropagation(); setCardToDelete(card); }}><Trash size={16} /></button>
+                                            <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, fontFamily: 'monospace', fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b' }}>
+                                                {card.subtitle || '-'}
+                                            </td>
+                                            <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, color: darkMode ? '#cbd5e1' : '#475569', fontSize: 14, maxWidth: 300 }}>
+                                                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {stripMarkdown(card.content)}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setEditingCard(card); setAddDataMode('edit'); }}
+                                                        style={{ background: 'transparent', border: 'none', color: darkMode ? '#94a3b8' : '#64748b', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex' }}
+                                                        title="Modifier"
+                                                    >
+                                                        <PencilSimple size={18} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setCardToDelete(card); }}
+                                                        style={{ background: 'transparent', border: 'none', color: darkMode ? '#94a3b8' : '#64748b', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex' }}
+                                                        title="Supprimer"
+                                                    >
+                                                        <Trash size={18} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </motion.tr>

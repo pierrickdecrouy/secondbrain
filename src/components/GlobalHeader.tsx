@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { 
     MagnifyingGlass, 
     Command, 
-    Plus, 
     PencilSimple, 
     GearSix, 
     Moon, 
@@ -41,7 +40,6 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
         setOmniboxOpen, 
         userName, 
         setUserName, 
-        setAddDataMode,
         setActiveSection
     } = useUI();
 
@@ -58,7 +56,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
     }, [isHomeSection]);
 
     return (
-        <header className={`app-drag-region flex items-center justify-center py-6 min-h-[88px] z-10 shrink-0 w-full ${isHomeSection ? 'absolute top-0 left-0 border-none' : 'relative border-b border-slate-200/50 dark:border-slate-800/50'}`}>
+        <header className={`app-drag-region flex items-center justify-center py-6 min-h-[88px] z-50 shrink-0 w-full ${isHomeSection ? 'absolute top-0 left-0 border-none' : 'relative border-b border-slate-200/50 dark:border-slate-800/50'}`}>
             {!isHomeSection && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pointer-events-none" style={{ zIndex: -1 }} />
             )}
@@ -75,10 +73,10 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     </button>
                 )}
                 <img 
-                    src="/Logo-linear.svg" 
+                    src="/Logo-vertical.svg" 
                     alt="Extnd" 
                     className="app-no-drag transition-all duration-300 cursor-pointer hover:opacity-80"
-                    style={isHomeSection ? { height: '48px', marginLeft: '24px', marginTop: '24px' } : { height: '36px' }}
+                    style={isHomeSection ? { height: '72px', marginLeft: '24px', marginTop: '24px' } : { height: '56px' }}
                     onClick={() => {
                         setActiveSection('dashboard');
                         navigate('/');
@@ -135,8 +133,21 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         <>
                             <div className="fixed inset-0 z-[1050] animate-in fade-in duration-300 bg-slate-900/40 backdrop-blur-lg transition-all" 
                                 onClick={() => setProfileMenuOpen(false)}></div>
-                            <div className="absolute right-0 top-[calc(100%+12px)] z-[1100] animate-in fade-in slide-in-from-top-4 duration-200 w-[380px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-[32px] shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
-                                <div className="p-8 pb-8 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/20">
+                            <div 
+                                className="absolute right-0 z-[1100] animate-in fade-in slide-in-from-top-4 duration-200"
+                                style={{
+                                    top: 'calc(100% + 12px)',
+                                    width: 380,
+                                    backgroundColor: '#0f1420',
+                                    border: '1px solid #1e293b',
+                                    borderRadius: 24,
+                                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}
+                            >
+                                <div style={{ padding: '24px', borderBottom: '1px solid #1e293b', backgroundColor: 'rgba(15, 23, 42, 0.4)' }}>
                                     {isEditingName ? (
                                         <input 
                                             autoFocus
@@ -156,83 +167,101 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                                     setIsEditingName(false);
                                                 }
                                             }}
-                                            className="w-full bg-white dark:bg-slate-800 border border-emerald-500 rounded-xl text-slate-900 dark:text-slate-100 outline-none text-sm font-medium py-3 px-5 shadow-[0_0_0_4px_rgba(16,185,129,0.1)] transition-all"
+                                            style={{
+                                                width: '100%', backgroundColor: '#1e293b', border: '1px solid #10b981', borderRadius: 12, color: '#f1f5f9', outline: 'none', fontSize: 14, fontWeight: 500, padding: '12px 16px', boxShadow: '0 0 0 4px rgba(16, 185, 129, 0.1)'
+                                            }}
                                         />
                                     ) : (
-                                        <div className="flex items-center gap-5">
-                                            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-2xl shadow-sm border border-emerald-200/50 dark:border-emerald-800/50 shrink-0 ring-4 ring-white dark:ring-slate-900">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                            <div style={{
+                                                width: 56, height: 56, borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 'bold', flexShrink: 0, border: '1px solid rgba(16, 185, 129, 0.3)'
+                                            }}>
                                                 {userName.charAt(0).toUpperCase()}
                                             </div>
-                                            <div className="flex-1 min-w-0 pl-2">
+                                            <div style={{ flex: 1, minWidth: 0, paddingLeft: 4 }}>
                                                 <button 
-                                                    className="flex items-center gap-2.5 bg-transparent border-none p-0 cursor-pointer text-slate-900 dark:text-white font-bold text-[18px] transition-colors text-left group" 
+                                                    style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
                                                     onClick={() => { setIsEditingName(true); setTempName(userName); }} 
                                                     title="Modifier mon nom"
-                                                    aria-label="Modifier mon nom"
                                                 >
-                                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{userName}</span>
-                                                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <PencilSimple size={14} weight="bold" className="text-slate-500 dark:text-slate-400" />
+                                                    <span style={{ color: '#f8fafc', fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userName}</span>
+                                                    <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <PencilSimple size={12} weight="bold" color="#94a3b8" />
                                                     </div>
                                                 </button>
-                                                <p className="text-slate-500 dark:text-slate-400 text-[14px] m-0 mt-1.5 whitespace-nowrap overflow-hidden text-ellipsis font-medium">pierrick@extnd.app</p>
+                                                <p style={{ color: '#94a3b8', fontSize: 14, margin: '4px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>pierrick@extnd.app</p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-5 flex flex-col gap-2.5">
-                                    <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-700 dark:text-slate-200 text-[15px] font-medium border-none bg-transparent cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60 group"
-                                            onClick={() => { onNavigateSettings(); setProfileMenuOpen(false); }}>
-                                        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50">
-                                            <GearSix size={22} weight="duotone" />
+                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <button 
+                                        className="profile-menu-item"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#e2e8f0', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        onClick={() => { onNavigateSettings(); setProfileMenuOpen(false); }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: '#1e293b', color: '#94a3b8' }}>
+                                            <GearSix size={20} weight="duotone" />
                                         </div>
-                                        <span>Paramètres du compte</span>
+                                        Paramètres du compte
                                     </button>
 
-                                    <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-700 dark:text-slate-200 text-[15px] font-medium border-none bg-transparent cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60 group"
-                                            onClick={() => { setThemeMode(darkMode ? 'light' : 'dark'); setProfileMenuOpen(false); }}>
-                                        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50">
-                                            {darkMode ? <Sun size={22} weight="duotone" /> : <Moon size={22} weight="duotone" />} 
+                                    <button 
+                                        className="profile-menu-item"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#e2e8f0', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        onClick={() => { setThemeMode(darkMode ? 'light' : 'dark'); setProfileMenuOpen(false); }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: '#1e293b', color: '#94a3b8' }}>
+                                            {darkMode ? <Sun size={20} weight="duotone" /> : <Moon size={20} weight="duotone" />} 
                                         </div>
-                                        <span>{darkMode ? 'Passer au Mode Clair' : 'Passer au Mode Sombre'}</span>
+                                        {darkMode ? 'Passer au Mode Clair' : 'Passer au Mode Sombre'}
                                     </button>
 
-                                    <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-700 dark:text-slate-200 text-[15px] font-medium border-none bg-transparent cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60 group"
-                                            onClick={() => { setThemeMode('system'); setProfileMenuOpen(false); }}>
-                                        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50">
-                                            <Monitor size={22} weight="duotone" />
+                                    <button 
+                                        className="profile-menu-item"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#e2e8f0', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        onClick={() => { setThemeMode('system'); setProfileMenuOpen(false); }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: '#1e293b', color: '#94a3b8' }}>
+                                            <Monitor size={20} weight="duotone" />
                                         </div>
-                                        <span>Thème Système</span>
+                                        Thème Système
                                     </button>
 
-                                    <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-700 dark:text-slate-200 text-[15px] font-medium border-none bg-transparent cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60 group"
-                                            onClick={async () => { 
-                                                const data = await exportAllData();
-                                                const blob = new Blob([data], { type: "application/json" });
-                                                const url = URL.createObjectURL(blob);
-                                                const link = document.createElement('a');
-                                                link.href = url;
-                                                link.download = `pharma-brain-full-backup-${new Date().toISOString().split('T')[0]}.json`;
-                                                document.body.appendChild(link);
-                                                link.click();
-                                                document.body.removeChild(link);
-                                                URL.revokeObjectURL(url);
-                                                setProfileMenuOpen(false); 
-                                            }}>
-                                        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50">
-                                            <DownloadSimple size={22} weight="duotone" />
+                                    <button 
+                                        className="profile-menu-item"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#e2e8f0', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        onClick={async () => { 
+                                            const data = await exportAllData();
+                                            const blob = new Blob([data], { type: "application/json" });
+                                            const url = URL.createObjectURL(blob);
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.download = `pharma-brain-full-backup-${new Date().toISOString().split('T')[0]}.json`;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                            URL.revokeObjectURL(url);
+                                            setProfileMenuOpen(false); 
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: '#1e293b', color: '#94a3b8' }}>
+                                            <DownloadSimple size={20} weight="duotone" />
                                         </div>
-                                        <span>Sauvegarder mes données</span>
+                                        Sauvegarder mes données
                                     </button>
                                 </div>
 
-                                <div className="p-5 bg-slate-50/80 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800/60 mt-1">
-                                    <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-rose-600 dark:text-rose-500 text-[15px] font-bold border-none bg-transparent cursor-pointer transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm group"
-                                            onClick={() => setProfileMenuOpen(false)}>
-                                        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-500 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm border border-rose-200/50 dark:border-rose-800/50">
-                                            <SignOut size={22} weight="duotone" />
+                                <div style={{ padding: '12px', backgroundColor: 'rgba(15, 23, 42, 0.4)', borderTop: '1px solid #1e293b' }}>
+                                    <button 
+                                        className="profile-menu-item"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#f87171', fontSize: 15, fontWeight: 700, transition: 'background-color 0.2s', textAlign: 'left', width: '100%' }}
+                                        onClick={() => setProfileMenuOpen(false)}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#f87171' }}>
+                                            <SignOut size={20} weight="duotone" />
                                         </div>
-                                        <span>Déconnexion</span>
+                                        Déconnexion
                                     </button>
                                 </div>
                             </div>

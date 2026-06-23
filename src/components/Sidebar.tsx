@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  House, Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar,
+  Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar,
   ArrowLeft, List, Pause, Play, Trash, Tag, PencilSimple,
 } from '@phosphor-icons/react';
 import { useUI } from '../context/UIContext';

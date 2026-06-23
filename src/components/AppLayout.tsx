@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useUIStore } from '../store/useUIStore';
 import { GlobalHeader } from './GlobalHeader';
-import { House, Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar, List, Graph, X } from '@phosphor-icons/react';
+import { Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar, List, Graph, X } from '@phosphor-icons/react';
 
 type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
 
@@ -18,7 +18,6 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
   const isHomeSection = activeSection === 'dashboard';
 
   const navItems = [
-    { id: 'dashboard', label: 'Vue d\'ensemble', icon: <House size={20} weight="fill" /> },
     { id: 'cards', label: 'Base de connaissances', icon: <Stack size={20} weight="fill" /> },
     { id: 'courses', label: 'Fiches de cours', icon: <BookOpen size={20} weight="fill" /> },
     { id: 'network', label: 'Graphe mental', icon: <ShareNetwork size={20} weight="bold" /> },
