@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useMemo } from 'react';
-import { BookOpen, Plus, Trash, ListDashes, SquaresFour } from '@phosphor-icons/react';
+import { BookOpen, Plus, Trash, ListDashes, SquaresFour, FileText, MagnifyingGlass } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { COURSE_TYPE, generateId } from '../types';
 import { stripMarkdown } from '../utils';
@@ -13,6 +13,16 @@ interface CoursesPageProps {
     initialDraft?: Card | null;
     onDraftConsumed?: () => void;
 }
+
+// Color palette per subject group (bg bar color, text color for icon)
+const GROUP_COLORS = [
+    { bar: '#10b981', icon: '#10b981' }, // emerald
+    { bar: '#a855f7', icon: '#a855f7' }, // purple
+    { bar: '#3b82f6', icon: '#3b82f6' }, // blue
+    { bar: '#f43f5e', icon: '#f43f5e' }, // rose
+    { bar: '#f59e0b', icon: '#f59e0b' }, // amber
+    { bar: '#06b6d4', icon: '#06b6d4' }, // cyan
+];
 
 export const CoursesPage: React.FC<CoursesPageProps> = ({
     onPause,
@@ -28,12 +38,13 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
     
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
 
     // Resume draft
     React.useEffect(() => {
         if (initialDraft) {
             setEditingCourse(initialDraft);
-            setIsCreating(!initialDraft.title); // Or depending on ID
+            setIsCreating(!initialDraft.title);
             onDraftConsumed?.();
         }
     }, [initialDraft, onDraftConsumed]);
@@ -47,14 +58,19 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
         return Array.from(tags).sort();
     }, [courseCards]);
 
-    // Filter courses
+    // Filter courses by tag + search
     const filteredCourses = useMemo(() => {
         let result = courseCards;
-        if (selectedTag) {
-            result = result.filter(c => c.tags?.includes(selectedTag));
+        if (selectedTag) result = result.filter(c => c.tags?.includes(selectedTag));
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            result = result.filter(c =>
+                (c.title || '').toLowerCase().includes(q) ||
+                (c.subject || '').toLowerCase().includes(q)
+            );
         }
         return result;
-    }, [courseCards, selectedTag]);
+    }, [courseCards, selectedTag, search]);
 
     // Group by subject for list view
     const groupedCourses = useMemo(() => {
@@ -65,7 +81,6 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
             groups[subject].push(c);
         });
         
-        // Sort keys (Général at the end, others alphabetical)
         const sortedKeys = Object.keys(groups).sort((a, b) => {
             if (a === 'Général') return 1;
             if (b === 'Général') return -1;
@@ -105,8 +120,6 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
             ...updatedCourse,
             updatedAt: Date.now()
         });
-        // Auto-save silently; do not close the editor here.
-        // Closing the editor is handled by onCancel when clicking "Retour".
     };
 
     if (editingCourse) {
@@ -117,7 +130,6 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                 onCancel={() => {
                     setEditingCourse(null);
                     setIsCreating(false);
-                    // Return to viewer if we were editing an existing course
                     if (!isCreating && editingCourse) {
                         setViewingCourse(editingCourse);
                     }
@@ -145,165 +157,458 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
     }
 
     return (
-        <div className="flex flex-col h-full bg-transparent">
-            <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-12 pt-8 pb-6 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-transparent">
-                <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                <BookOpen size={24} weight="duotone" />
-                            </div>
-                            <h1 className="text-[28px] sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight m-0">
-                                Fiches de Cours
-                            </h1>
-                        </div>
-                        <p className="text-[15px] text-slate-500 dark:text-slate-400 m-0 pl-16">
-                            Centralisez et organisez vos connaissances.
+        <div style={{
+            padding: '3rem 3.5rem',
+            maxWidth: '900px',
+            width: '100%',
+            margin: '0 auto',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+        }}>
+            {/* ── Header ── */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', flexShrink: 0 }}>
+                {/* Left: icon + title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                    <div style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '14px',
+                        background: 'rgba(16,185,129,0.12)',
+                        border: '1px solid rgba(16,185,129,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#10b981',
+                        flexShrink: 0,
+                    }}>
+                        <BookOpen size={26} weight="duotone" />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--color-text)', margin: 0, lineHeight: 1.2, letterSpacing: '-0.3px' }}>
+                            Fiches de Cours
+                        </h1>
+                        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: '3px 0 0 0' }}>
+                            {courseCards.length > 0 ? `${courseCards.length} fiche${courseCards.length > 1 ? 's' : ''}` : 'Centralisez vos connaissances'}
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex shrink-0 items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                title="Vue en liste"
-                            >
-                                <ListDashes size={20} weight={viewMode === 'list' ? 'bold' : 'regular'} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                title="Vue en grille"
-                            >
-                                <SquaresFour size={20} weight={viewMode === 'grid' ? 'bold' : 'regular'} />
-                            </button>
-                        </div>
+                </div>
+
+                {/* Right: view toggle + CTA */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                    {/* View mode toggle */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '12px',
+                        padding: '4px',
+                        gap: '2px',
+                    }}>
                         <button
-                            onClick={handleCreate}
-                            className="group flex shrink-0 items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white rounded-lg text-[14px] font-medium shadow-sm transition-colors active:scale-95 cursor-pointer whitespace-nowrap"
+                            onClick={() => setViewMode('list')}
+                            title="Vue liste"
+                            style={{
+                                padding: '7px 10px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                background: viewMode === 'list' ? 'rgba(16,185,129,0.15)' : 'transparent',
+                                color: viewMode === 'list' ? '#10b981' : 'var(--color-text-muted)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease',
+                            }}
                         >
-                            <Plus size={16} weight="bold" className="shrink-0" />
-                            <span>Nouveau Cours</span>
+                            <ListDashes size={18} weight={viewMode === 'list' ? 'bold' : 'regular'} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            title="Vue grille"
+                            style={{
+                                padding: '7px 10px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                background: viewMode === 'grid' ? 'rgba(16,185,129,0.15)' : 'transparent',
+                                color: viewMode === 'grid' ? '#10b981' : 'var(--color-text-muted)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease',
+                            }}
+                        >
+                            <SquaresFour size={18} weight={viewMode === 'grid' ? 'bold' : 'regular'} />
                         </button>
                     </div>
-                </header>
+
+                    {/* CTA Button */}
+                    <button
+                        onClick={handleCreate}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#10b981',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '12px',
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: '0.1px',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#059669'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#10b981'; }}
+                    >
+                        <Plus size={16} weight="bold" />
+                        Nouveau Cours
+                    </button>
+                </div>
             </div>
 
-            <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-12 py-8 overflow-y-auto flex-1 custom-scrollbar">
-                {/* Search and Filters */}
-                {courseCards.length > 0 && (
-                    <div className="mb-8 flex flex-col gap-4">
+            {/* ── Divider ── */}
+            <div style={{ width: '100%', height: '1px', background: 'var(--color-border)', margin: '2rem 0', flexShrink: 0, opacity: 0.5 }} />
 
-                        {allTags.length > 0 && (
-                            <div className="flex gap-3 flex-wrap">
+            {/* ── Search + Filters ── */}
+            {courseCards.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '2rem', flexShrink: 0 }}>
+                    {/* Search bar */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '12px',
+                        padding: '0 14px',
+                        height: '42px',
+                    }}>
+                        <MagnifyingGlass size={16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Rechercher un cours…"
+                            style={{
+                                flex: 1,
+                                border: 'none',
+                                background: 'transparent',
+                                outline: 'none',
+                                fontSize: '14px',
+                                color: 'var(--color-text)',
+                            }}
+                        />
+                    </div>
+
+                    {/* Tag filters */}
+                    {allTags.length > 0 && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={() => setSelectedTag(null)}
+                                style={{
+                                    padding: '5px 14px',
+                                    borderRadius: '20px',
+                                    border: `1px solid ${selectedTag === null ? 'var(--color-border)' : 'transparent'}`,
+                                    background: selectedTag === null ? 'var(--color-surface)' : 'transparent',
+                                    color: selectedTag === null ? 'var(--color-text)' : 'var(--color-text-muted)',
+                                    fontSize: '13px',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                Tous
+                            </button>
+                            {allTags.map(tag => (
                                 <button
-                                    onClick={() => setSelectedTag(null)}
-                                    className={`px-5 py-2 rounded-xl cursor-pointer text-sm font-semibold transition-all ${selectedTag === null ? 'bg-slate-800 text-white dark:bg-[#253D42] dark:text-white border-transparent shadow-md' : 'bg-white dark:bg-[#1A2235] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:bg-[#1E3035]'}`}
+                                    key={tag}
+                                    onClick={() => setSelectedTag(tag)}
+                                    style={{
+                                        padding: '5px 14px',
+                                        borderRadius: '20px',
+                                        border: `1px solid ${selectedTag === tag ? 'rgba(16,185,129,0.4)' : 'transparent'}`,
+                                        background: selectedTag === tag ? 'rgba(16,185,129,0.1)' : 'transparent',
+                                        color: selectedTag === tag ? '#10b981' : 'var(--color-text-muted)',
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s',
+                                    }}
                                 >
-                                    Tous les cours
+                                    #{tag}
                                 </button>
-                                {allTags.map(tag => (
-                                    <button
-                                        key={tag}
-                                        onClick={() => setSelectedTag(tag)}
-                                        className={`px-5 py-2 rounded-xl cursor-pointer text-sm font-semibold transition-all ${selectedTag === tag ? 'bg-emerald-600 text-white border-transparent shadow-md shadow-emerald-900/20' : 'bg-white dark:bg-[#1A2235] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:bg-[#1E3035]'}`}
-                                    >
-                                        #{tag}
-                                    </button>
-                                ))}
-                            </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── Content ── */}
+            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '3rem' }} className="custom-scrollbar">
+                {filteredCourses.length === 0 ? (
+                    /* Empty state */
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '45vh', gap: '16px' }}>
+                        <div style={{
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '16px',
+                            background: 'var(--color-surface)',
+                            border: '1px solid var(--color-border)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-text-muted)',
+                        }}>
+                            <BookOpen size={26} weight="duotone" />
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', margin: '0 0 4px 0' }}>
+                                {courseCards.length === 0 ? 'Aucun cours pour l\'instant' : 'Aucun résultat'}
+                            </p>
+                            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0, maxWidth: '280px' }}>
+                                {courseCards.length === 0
+                                    ? 'Créez votre première fiche de cours pour commencer.'
+                                    : 'Essayez une autre recherche ou filtre.'}
+                            </p>
+                        </div>
+                        {courseCards.length === 0 && (
+                            <button
+                                onClick={handleCreate}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: 'rgba(16,185,129,0.12)',
+                                    color: '#10b981',
+                                    border: '1px solid rgba(16,185,129,0.25)',
+                                    borderRadius: '10px',
+                                    padding: '9px 18px',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    marginTop: '4px',
+                                    transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.2)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.12)'; }}
+                            >
+                                <Plus size={15} weight="bold" />
+                                Créer un cours
+                            </button>
                         )}
                     </div>
-                )}
-
-                {filteredCourses.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center h-[50vh] text-slate-500 dark:text-slate-400">
-                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
-                            <BookOpen size={32} className="text-slate-400 dark:text-slate-500" weight="duotone" />
-                        </div>
-                        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                            {courseCards.length === 0 ? "Aucun cours" : "Aucun résultat"}
-                        </h2>
-                        <p className="max-w-sm text-sm">
-                            {courseCards.length === 0 
-                                ? "Créez votre première fiche de cours pour commencer à organiser vos connaissances." 
-                                : "Aucun cours ne correspond à votre recherche."}
-                        </p>
-                    </div>
                 ) : viewMode === 'grid' ? (
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
-                        {filteredCourses.map(course => (
-                            <div key={course.id} 
-                                className="group bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 flex flex-col gap-3 cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all"
-                                onClick={() => handleView(course)}
-                            >
-                                <div className="flex justify-between items-start gap-3">
-                                    <h3 className="m-0 text-base font-semibold text-slate-800 dark:text-slate-200 leading-tight line-clamp-2">{course.title || 'Sans titre'}</h3>
-                                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                                        <button 
-                                            onClick={() => onDeleteCourse(course)}
-                                            className="p-1.5 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                    /* Grid view */
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+                        {filteredCourses.map((course, i) => {
+                            const colorIdx = i % GROUP_COLORS.length;
+                            const col = GROUP_COLORS[colorIdx];
+                            const preview = stripMarkdown(course.details || course.content || '');
+                            return (
+                                <div
+                                    key={course.id}
+                                    onClick={() => handleView(course)}
+                                    className="group"
+                                    style={{
+                                        background: 'var(--color-surface)',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: '16px',
+                                        padding: '20px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px',
+                                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                                        position: 'relative',
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.borderColor = col.bar;
+                                        e.currentTarget.style.boxShadow = `0 0 0 1px ${col.bar}22`;
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                        <div style={{
+                                            width: '36px', height: '36px', borderRadius: '10px',
+                                            background: `${col.bar}1a`, flexShrink: 0,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        }}>
+                                            <FileText size={18} color={col.icon} weight="regular" />
+                                        </div>
+                                        <button
+                                            onClick={e => { e.stopPropagation(); onDeleteCourse(course); }}
+                                            style={{
+                                                padding: '4px', border: 'none', background: 'transparent',
+                                                color: 'var(--color-text-muted)', cursor: 'pointer',
+                                                borderRadius: '6px', opacity: 0, transition: 'opacity 0.15s, color 0.15s',
+                                            }}
+                                            className="group-hover:opacity-100"
+                                            onMouseEnter={e => { e.currentTarget.style.color = '#f43f5e'; e.currentTarget.style.opacity = '1'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.opacity = '0'; }}
                                         >
-                                            <Trash size={16} />
+                                            <Trash size={14} />
                                         </button>
                                     </div>
+                                    <div>
+                                        <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.3 }}>
+                                            {course.title || 'Sans titre'}
+                                        </h3>
+                                        {course.subject && (
+                                            <span style={{ fontSize: '12px', color: col.icon, fontWeight: 500 }}>
+                                                {course.subject}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {preview && (
+                                        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                            {preview}
+                                        </p>
+                                    )}
+                                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'auto' }}>
+                                        {new Date(course.updatedAt || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    </div>
                                 </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400">
-                                    Modifié le {new Date(course.updatedAt || Date.now()).toLocaleDateString()}
-                                </div>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 m-0 line-clamp-3">
-                                    {stripMarkdown(course.details || course.content || '')}
-                                </p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-8 max-w-[900px] mx-auto">
-                        {groupedCourses.sortedKeys.map(subject => (
-                            <div key={subject}>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <h2 className="m-0 text-xl font-bold text-slate-800 dark:text-slate-100">{subject}</h2>
-                                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    {groupedCourses.groups[subject].map(course => {
-                                        const linkedCardsCount = (course.details?.match(/href="card:\/\//g) || []).length;
-                                        return (
-                                            <div key={course.id} 
-                                                className="group flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg p-3 px-4 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-                                                onClick={() => handleView(course)}
-                                            >
-                                                <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                                                    <BookOpen size={18} className="text-slate-400 shrink-0" weight="duotone" />
-                                                    <div className="flex-1 overflow-hidden">
-                                                        <h3 className="m-0 text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                                                            {course.title || 'Sans titre'}
-                                                        </h3>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex items-center gap-6 shrink-0">
-                                                    {linkedCardsCount > 0 && (
-                                                        <div className="text-slate-400 text-xs">
-                                                            {linkedCardsCount} liée{linkedCardsCount > 1 ? 's' : ''}
+                    /* List view — grouped by subject */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                        {groupedCourses.sortedKeys.map((subject, groupIdx) => {
+                            const colorIdx = groupIdx % GROUP_COLORS.length;
+                            const col = GROUP_COLORS[colorIdx];
+
+                            return (
+                                <div key={subject}>
+                                    {/* Subject header */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px' }}>
+                                        <h2 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                                            {subject}
+                                        </h2>
+                                        <div style={{ flex: 1, height: '1px', background: 'var(--color-border)', opacity: 0.6 }} />
+                                        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                            {groupedCourses.groups[subject].length} fiche{groupedCourses.groups[subject].length > 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+
+                                    {/* Course rows */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {groupedCourses.groups[subject].map((course) => {
+                                            // Compute real progress from checkboxes
+                                            const text = course.details || course.content || '';
+                                            const total = (text.match(/\[[ x]\]/gi) || []).length;
+                                            const checked = (text.match(/\[[xX]\]/g) || []).length;
+                                            const progress = total > 0 ? Math.round((checked / total) * 100) : 0;
+                                            const hasProgress = total > 0;
+
+                                            return (
+                                                <div
+                                                    key={course.id}
+                                                    onClick={() => handleView(course)}
+                                                    className="course-list-row"
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        gap: '16px',
+                                                        padding: '14px 18px',
+                                                        borderRadius: '14px',
+                                                        background: 'var(--color-surface)',
+                                                        border: '1px solid var(--color-border)',
+                                                        cursor: 'pointer',
+                                                        transition: 'border-color 0.15s, background 0.15s',
+                                                        position: 'relative',
+                                                    }}
+                                                    onMouseEnter={e => {
+                                                        e.currentTarget.style.borderColor = `${col.bar}55`;
+                                                        e.currentTarget.style.background = `color-mix(in srgb, var(--color-surface) 90%, ${col.bar})`;
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                                                        e.currentTarget.style.background = 'var(--color-surface)';
+                                                    }}
+                                                >
+                                                    {/* Left: icon + title */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, overflow: 'hidden' }}>
+                                                        <div style={{
+                                                            width: '34px', height: '34px', borderRadius: '10px',
+                                                            background: `${col.bar}18`, flexShrink: 0,
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        }}>
+                                                            <FileText size={17} color={col.icon} weight="regular" />
                                                         </div>
-                                                    )}
-                                                    <div className="text-slate-400 text-xs w-20 text-right">
-                                                        {new Date(course.updatedAt || Date.now()).toLocaleDateString()}
+                                                        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {course.title || 'Sans titre'}
+                                                        </span>
                                                     </div>
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); onDeleteCourse(course); }}
-                                                        className="p-1.5 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 rounded-md transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
+
+                                                    {/* Right: progress + date + delete */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
+                                                        {/* Progress */}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <span style={{ fontSize: '13px', fontWeight: 600, color: hasProgress ? 'var(--color-text)' : 'var(--color-text-muted)', width: '36px', textAlign: 'right' }}>
+                                                                {progress}%
+                                                            </span>
+                                                            <div style={{
+                                                                width: '72px', height: '5px',
+                                                                borderRadius: '99px',
+                                                                background: 'var(--color-border)',
+                                                                overflow: 'hidden',
+                                                            }}>
+                                                                <div style={{
+                                                                    height: '100%',
+                                                                    width: `${progress}%`,
+                                                                    background: col.bar,
+                                                                    borderRadius: '99px',
+                                                                    transition: 'width 0.4s ease',
+                                                                }} />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Date */}
+                                                        <span style={{ fontSize: '13px', color: 'var(--color-text-muted)', width: '80px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                                            {new Date(course.updatedAt || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                        </span>
+
+                                                        {/* Delete */}
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); onDeleteCourse(course); }}
+                                                            style={{
+                                                                padding: '5px',
+                                                                border: 'none',
+                                                                background: 'transparent',
+                                                                color: 'var(--color-text-muted)',
+                                                                cursor: 'pointer',
+                                                                borderRadius: '7px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                opacity: 0,
+                                                                transition: 'opacity 0.15s, color 0.15s',
+                                                            }}
+                                                            onMouseEnter={e => { e.currentTarget.style.color = '#f43f5e'; e.currentTarget.style.opacity = '1'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.opacity = '0'; }}
+                                                            onFocus={e => { e.currentTarget.style.opacity = '1'; }}
+                                                        >
+                                                            <Trash size={15} />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

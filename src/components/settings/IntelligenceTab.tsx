@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Lightning, ShieldWarning, Trash } from '@phosphor-icons/react';
 import { getDashboardStats, resetFeedback, type DashboardStats } from '../../linkFeedback';
+import { S, SettingsCard, CardSection, CardBody, StatCard, DangerButton } from './SettingsUI';
 
 export const IntelligenceTab: React.FC = () => {
     const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
@@ -11,147 +12,159 @@ export const IntelligenceTab: React.FC = () => {
 
     if (!dashStats) return null;
 
-    const cardStyle = {
-        backgroundColor: '#0f1420',
-        borderRadius: 16,
-        border: '1px solid #1e293b',
-        padding: 24,
-    };
+    const score = dashStats.learningScore;
+    const scoreColor = score >= 75 ? S.primary : score >= 40 ? S.warning : S.danger;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-            {/* Header */}
-            <div>
-                <h2 style={{ fontSize: 24, fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px 0' }}>Intelligence</h2>
-                <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>Tableau de bord de qualité de l'algorithme d'apprentissage automatique.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Score card */}
+            <SettingsCard>
+                <CardBody style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                    {/* Circle gauge */}
+                    <div style={{ flexShrink: 0, position: 'relative', width: 88, height: 88 }}>
+                        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" style={{ transform: 'rotate(-90deg)' }}>
+                            <circle cx="44" cy="44" r="36" stroke={S.border} strokeWidth="8" fill="none" />
+                            <circle
+                                cx="44" cy="44" r="36"
+                                stroke={scoreColor}
+                                strokeWidth="8"
+                                fill="none"
+                                strokeDasharray={`${2 * Math.PI * 36}`}
+                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - score / 100)}`}
+                                strokeLinecap="round"
+                                style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+                            />
+                        </svg>
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <span style={{ fontSize: 20, fontWeight: 800, color: scoreColor }}>{score}</span>
+                            <span style={{ fontSize: 9, color: S.muted, fontWeight: 600, textTransform: 'uppercase' }}>/100</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: S.text }}>Score d'apprentissage</div>
+                        <div style={{ fontSize: 13, color: S.muted, marginTop: 4, lineHeight: 1.5 }}>
+                            Évaluation de la qualité de l'algorithme de liens sémantiques basée sur vos retours.
+                        </div>
+                    </div>
+                </CardBody>
+            </SettingsCard>
+
+            {/* KPI grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                <StatCard label="Liens générés" value={dashStats.totalLinksGenerated} color="#a855f7" />
+                <StatCard label="Supprimés" value={dashStats.totalSuppressed} color={S.danger} />
+                <StatCard label="Manuels" value={dashStats.totalManual} color={S.primary} />
+                <StatCard label="Taux d'acceptation" value={`${dashStats.acceptanceRate}%`} color="#8b5cf6" />
             </div>
 
-            {/* Learning Score Gauge */}
-            <div style={{
-                background: 'linear-gradient(to bottom right, #667eea, #764ba2)',
-                borderRadius: 20, padding: 32, textAlign: 'center', color: 'white',
-                border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-                <div style={{ fontSize: 48, fontWeight: 800 }}>
-                    {dashStats.learningScore}<span style={{ fontSize: 20, opacity: 0.8 }}>/100</span>
-                </div>
-                <div style={{ fontSize: 15, opacity: 0.9, marginTop: 4 }}>Score d'apprentissage</div>
-                <div style={{ marginTop: 16, height: 8, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: `${dashStats.learningScore}%`, height: '100%', backgroundColor: '#0f1420', borderRadius: 4, transition: 'width 0.5s ease' }} />
-                </div>
+            {/* Patterns + type-pair */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <SettingsCard>
+                    <CardSection title="Patterns appris" icon={<Brain size={16} />} />
+                    <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        {[
+                            { label: 'Positifs (boosts)', value: dashStats.positivePatternCount, color: S.primary },
+                            { label: 'Négatifs (pénalités)', value: dashStats.negativePatternCount, color: S.danger },
+                            { label: 'Vetos (hard)', value: dashStats.vetoCount, color: S.warning },
+                        ].map((row, i, arr) => (
+                            <div key={row.label} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '10px 0',
+                                borderBottom: i < arr.length - 1 ? `1px solid ${S.border}` : 'none',
+                            }}>
+                                <span style={{ fontSize: 13, color: S.muted }}>{row.label}</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: row.color }}>{row.value}</span>
+                            </div>
+                        ))}
+                    </CardBody>
+                </SettingsCard>
+
+                <SettingsCard>
+                    <CardSection title="Scores type-pair" icon={<Lightning size={16} />} />
+                    <CardBody>
+                        {Object.entries(dashStats.typePairScores).length === 0 ? (
+                            <div style={{ fontSize: 13, color: S.muted, fontStyle: 'italic', padding: '12px 0' }}>
+                                Aucune donnée enregistrée pour l'instant.
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {Object.entries(dashStats.typePairScores).map(([pair, score]) => (
+                                    <div key={pair} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: 13, color: S.muted }}>{pair.replace('|', ' ↔ ')}</span>
+                                        <span style={{
+                                            fontWeight: 700, fontSize: 13,
+                                            color: score > 0 ? S.primary : score < 0 ? S.danger : S.muted,
+                                        }}>
+                                            {score > 0 ? '+' : ''}{(score * 100).toFixed(0)}%
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardBody>
+                </SettingsCard>
             </div>
 
-            {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-                {[
-                    { label: 'Liens générés', value: dashStats.totalLinksGenerated, color: '#a855f7' },
-                    { label: 'Supprimés', value: dashStats.totalSuppressed, color: '#ef4444' },
-                    { label: 'Manuels', value: dashStats.totalManual, color: '#22c55e' },
-                    { label: 'Taux acceptation', value: `${dashStats.acceptanceRate}%`, color: '#8b5cf6' }
-                ].map(stat => (
-                    <div key={stat.label} style={{ ...cardStyle, padding: 16, textAlign: 'center' }}>
-                        <div style={{ fontSize: 24, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{stat.label}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Patterns & Vetoes */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                <div style={cardStyle}>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Brain color="#a855f7" size={16} /> Patterns appris
-                    </h3>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Positifs (boosts)</span>
-                        <span style={{ fontWeight: 600, color: '#22c55e' }}>{dashStats.positivePatternCount}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Négatifs (pénalités)</span>
-                        <span style={{ fontWeight: 600, color: '#ef4444' }}>{dashStats.negativePatternCount}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#94a3b8', fontSize: 14 }}>Vetoes (hard)</span>
-                        <span style={{ fontWeight: 600, color: '#f59e0b' }}>{dashStats.vetoCount}</span>
-                    </div>
-                </div>
-
-                {/* Type Pair Scores */}
-                <div style={cardStyle}>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Lightning color="#f59e0b" size={16} /> Scores type-pair appris
-                    </h3>
-                    {Object.entries(dashStats.typePairScores).length === 0 ? (
-                        <div style={{ color: '#94a3b8', fontSize: 14, fontStyle: 'italic' }}>Pas encore de données</div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {Object.entries(dashStats.typePairScores).map(([pair, score]) => (
-                                <div key={pair} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#94a3b8', fontSize: 14 }}>{pair.replace('|', ' ↔ ')}</span>
-                                    <span style={{ 
-                                        fontWeight: 600, fontSize: 14, 
-                                        color: score > 0 ? '#22c55e' : score < 0 ? '#ef4444' : '#94a3b8' 
-                                    }}>
-                                        {score > 0 ? '+' : ''}{(score * 100).toFixed(0)}%
-                                    </span>
-                                </div>
+            {/* Toxic keywords */}
+            {dashStats.topToxicKeywords.length > 0 && (
+                <SettingsCard>
+                    <CardSection title="Mots-clés toxiques" subtitle="Ces termes génèrent souvent des faux positifs et sont automatiquement pénalisés." icon={<ShieldWarning size={16} />} />
+                    <CardBody>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {dashStats.topToxicKeywords.map(tw => (
+                                <span key={tw.word} style={{
+                                    padding: '4px 12px',
+                                    borderRadius: 99,
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                    border: `1px solid ${tw.count >= 3 ? S.danger + '66' : S.warning + '66'}`,
+                                    background: tw.count >= 3 ? S.dangerDim : S.warningDim,
+                                    color: tw.count >= 3 ? S.danger : S.warning,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                }}>
+                                    {tw.word} <span style={{ opacity: 0.65 }}>×{tw.count}</span>
+                                </span>
                             ))}
                         </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Toxic Keywords */}
-            {dashStats.topToxicKeywords.length > 0 && (
-                <div style={cardStyle}>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <ShieldWarning color="#ef4444" size={16} /> Mots-clés toxiques
-                    </h3>
-                    <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 16px 0' }}>
-                        Ces mots génèrent souvent des faux positifs. L'algo les pénalise automatiquement.
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {dashStats.topToxicKeywords.map(tw => (
-                            <span key={tw.word} style={{
-                                padding: '4px 12px', borderRadius: 9999, fontSize: 13, fontWeight: 500,
-                                border: tw.count >= 3 ? '1px solid #ef4444' : '1px solid #f59e0b',
-                                backgroundColor: tw.count >= 3 ? 'rgba(239, 68, 68, 0.1)' : '#0b0f17',
-                                color: tw.count >= 3 ? '#ef4444' : '#f59e0b',
-                                display: 'flex', alignItems: 'center', gap: 4
-                            }}>
-                                {tw.word} <span style={{ opacity: 0.7 }}>×{tw.count}</span>
-                            </span>
-                        ))}
-                    </div>
-                </div>
+                    </CardBody>
+                </SettingsCard>
             )}
 
-            {/* Reset Button */}
-            <div style={{ ...cardStyle, border: '1px solid rgba(239, 68, 68, 0.3)', backgroundColor: '#0f1420' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ padding: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 12, color: '#ef4444', display: 'flex' }}>
-                        <Trash size={24} />
+            {/* Reset */}
+            <SettingsCard danger>
+                <CardBody style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                        width: 40, height: 40, borderRadius: 12,
+                        background: S.dangerDim, color: S.danger,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                    }}>
+                        <Trash size={20} />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, color: '#f1f5f9', marginBottom: 4 }}>Réinitialiser l'intelligence</div>
-                        <div style={{ fontSize: 13, color: '#94a3b8' }}>Supprime tous les patterns appris, vetoes et mots toxiques.</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: S.text, marginBottom: 2 }}>Réinitialiser l'intelligence</div>
+                        <div style={{ fontSize: 12, color: S.muted, lineHeight: 1.5 }}>
+                            Supprime tous les patterns, vetos et mots toxiques appris. L'algorithme repartira de zéro.
+                        </div>
                     </div>
-                    <button
-                        onClick={() => {
-                            if (confirm('Réinitialiser toute l\'intelligence apprise ? L\'algo repartira de zéro.')) {
-                                resetFeedback();
-                                setDashStats(getDashboardStats());
-                            }
-                        }}
-                        style={{
-                            padding: '10px 20px', backgroundColor: 'transparent', border: '1px solid #ef4444',
-                            color: '#ef4444', fontWeight: 600, borderRadius: 12, cursor: 'pointer', fontSize: 14
-                        }}
-                    >
+                    <DangerButton onClick={() => {
+                        if (confirm("Réinitialiser toute l'intelligence apprise ?")) {
+                            resetFeedback();
+                            setDashStats(getDashboardStats());
+                        }
+                    }}>
                         Réinitialiser
-                    </button>
-                </div>
-            </div>
+                    </DangerButton>
+                </CardBody>
+            </SettingsCard>
         </div>
     );
 };

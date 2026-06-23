@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { 
     MagnifyingGlass, 
     Command, 
-    PencilSimple, 
     GearSix, 
     Moon, 
     Sun, 
@@ -15,7 +14,6 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useUI } from '../context/UIContext';
 import { exportAllData } from '../storage';
-import { saveSettingAsync } from '../persistentSettings';
 
 interface GlobalHeaderProps {
     isHomeSection: boolean;
@@ -39,12 +37,9 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
         setProfileMenuOpen, 
         setOmniboxOpen, 
         userName, 
-        setUserName, 
         setActiveSection
     } = useUI();
 
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [tempName, setTempName] = useState('');
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
     useEffect(() => {
@@ -148,51 +143,21 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                 }}
                             >
                                 <div style={{ padding: '24px', borderBottom: '1px solid #1e293b', backgroundColor: 'rgba(15, 23, 42, 0.4)' }}>
-                                    {isEditingName ? (
-                                        <input 
-                                            autoFocus
-                                            value={tempName}
-                                            onChange={(e) => setTempName(e.target.value)}
-                                            onBlur={() => {
-                                                const newName = tempName.trim() || 'Utilisateur';
-                                                setUserName(newName);
-                                                saveSettingAsync('pharmabrain_username_v1', newName);
-                                                setIsEditingName(false);
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    const newName = tempName.trim() || 'Utilisateur';
-                                                    setUserName(newName);
-                                                    saveSettingAsync('pharmabrain_username_v1', newName);
-                                                    setIsEditingName(false);
-                                                }
-                                            }}
-                                            style={{
-                                                width: '100%', backgroundColor: '#1e293b', border: '1px solid #10b981', borderRadius: 12, color: '#f1f5f9', outline: 'none', fontSize: 14, fontWeight: 500, padding: '12px 16px', boxShadow: '0 0 0 4px rgba(16, 185, 129, 0.1)'
-                                            }}
-                                        />
-                                    ) : (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                            <div style={{
-                                                width: 56, height: 56, borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 'bold', flexShrink: 0, border: '1px solid rgba(16, 185, 129, 0.3)'
-                                            }}>
-                                                {userName.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0, paddingLeft: 4 }}>
-                                                <button 
-                                                    style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
-                                                    onClick={() => { setIsEditingName(true); setTempName(userName); }} 
-                                                    title="Modifier mon nom"
-                                                >
-                                                    <span style={{ color: '#f8fafc', fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userName}</span>
-                                                    <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <PencilSimple size={12} weight="bold" color="#94a3b8" />
-                                                    </div>
-                                                </button>
-                                                <p style={{ color: '#94a3b8', fontSize: 14, margin: '4px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>pierrick@extnd.app</p>
-                                            </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                        <div style={{
+                                            width: 56, height: 56, borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 'bold', flexShrink: 0, border: '1px solid rgba(16, 185, 129, 0.3)'
+                                        }}>
+                                            {userName.charAt(0).toUpperCase()}
                                         </div>
-                                    )}
+                                        <div style={{ flex: 1, minWidth: 0, paddingLeft: 4 }}>
+                                            <span style={{ color: '#f8fafc', fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                                {userName}
+                                            </span>
+                                            <p style={{ color: '#94a3b8', fontSize: 14, margin: '4px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                                                pierrick@extnd.app
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                                     <button 

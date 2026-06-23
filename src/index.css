@@ -3358,3 +3358,8 @@ html.dark .glass-panel {
 .profile-menu-item:hover {
   background-color: rgba(30, 41, 59, 0.6) !important;
 }
+
+/* ── CoursesPage list row hover reveal delete button ── */
+.course-list-row:hover button {
+  opacity: 1 !important;
+}

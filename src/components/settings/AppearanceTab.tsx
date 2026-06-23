@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { MagnifyingGlass, ArrowCounterClockwise, Monitor, Moon, Sun } from '@phosphor-icons/react';
 import { DynamicIcon, AVAILABLE_ICONS } from '../DynamicIcon';
 import { useTheme } from '../../context/ThemeContext';
 import { COURSE_TYPE } from '../../types';
 import { useCards } from '../../context/CardContext';
+import { S, SettingsCard, CardSection, CardBody, SectionHeading, GhostButton, PrimaryButton } from './SettingsUI';
 
 interface AppearanceTabProps {
     onCloseSettings: () => void;
@@ -12,203 +13,199 @@ interface AppearanceTabProps {
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings }) => {
     const { cards } = useCards();
     const availableCategories = Array.from(new Set(cards.map(c => c.type))).filter(t => t !== COURSE_TYPE).sort();
-    
+
     const {
-        categoryColors,
-        categoryIcons,
-        setCategoryColor,
-        setCategoryIcon,
-        resetCategoryColors,
-        resetCategoryIcons,
-        getCategoryColor,
-        getCategoryIcon,
-        themeMode,
-        setThemeMode
+        categoryColors, categoryIcons,
+        setCategoryColor, setCategoryIcon,
+        resetCategoryColors, resetCategoryIcons,
+        getCategoryColor, getCategoryIcon,
+        themeMode, setThemeMode,
     } = useTheme();
 
     const categoryLabels: Record<string, string> = {
-        drug: 'Médicaments',
-        patho: 'Pathologies',
-        physio: 'Physiologie',
-        data: 'Données'
+        drug: 'Médicaments', patho: 'Pathologies',
+        physio: 'Physiologie', data: 'Données',
     };
 
-    const categoriesToDisplay = useMemo(() => {
-        return Array.from(new Set([
-            ...Object.keys(categoryColors),
-            ...availableCategories
-        ])).sort();
-    }, [categoryColors, availableCategories]);
+    const categoriesToDisplay = Array.from(new Set([
+        ...Object.keys(categoryColors),
+        ...availableCategories,
+    ])).sort();
 
-    const cardStyle = {
-        backgroundColor: '#0f1420',
-        borderRadius: 16,
-        border: '1px solid #1e293b',
-        padding: 24,
+    // Theme option button
+    const ThemeOption: React.FC<{ mode: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }> = ({ mode, label, icon }) => {
+        const active = themeMode === mode;
+        return (
+            <button
+                onClick={() => setThemeMode(mode)}
+                style={{
+                    flex: 1,
+                    minWidth: 100,
+                    padding: '14px 12px',
+                    borderRadius: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    background: active ? S.primaryDim : 'transparent',
+                    border: `1.5px solid ${active ? S.primary : S.border}`,
+                    color: active ? S.primary : S.muted,
+                }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = S.muted; e.currentTarget.style.color = S.text; } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted; } }}
+            >
+                {icon}
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+            </button>
+        );
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-            {/* Theme Section */}
-            <div>
-                <div style={{ marginBottom: 16 }}>
-                    <h2 style={{ fontSize: 24, fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px 0' }}>Apparence</h2>
-                    <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>Choisissez l'apparence générale d'Extnd.</p>
-                </div>
-                
-                <div style={{ ...cardStyle, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <button 
-                        onClick={() => setThemeMode('light')}
-                        style={{
-                            flex: 1, minWidth: 120, padding: 16, borderRadius: 12,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: themeMode === 'light' ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
-                            border: themeMode === 'light' ? '2px solid #10b981' : '2px solid #1e293b',
-                            color: themeMode === 'light' ? '#34d399' : '#94a3b8'
-                        }}
-                    >
-                        <Sun size={28} />
-                        <span style={{ fontWeight: 600 }}>Clair</span>
-                    </button>
-                    <button 
-                        onClick={() => setThemeMode('dark')}
-                        style={{
-                            flex: 1, minWidth: 120, padding: 16, borderRadius: 12,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: themeMode === 'dark' ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
-                            border: themeMode === 'dark' ? '2px solid #10b981' : '2px solid #1e293b',
-                            color: themeMode === 'dark' ? '#34d399' : '#94a3b8'
-                        }}
-                    >
-                        <Moon size={28} />
-                        <span style={{ fontWeight: 600 }}>Sombre</span>
-                    </button>
-                    <button 
-                        onClick={() => setThemeMode('system')}
-                        style={{
-                            flex: 1, minWidth: 120, padding: 16, borderRadius: 12,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: themeMode === 'system' ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
-                            border: themeMode === 'system' ? '2px solid #10b981' : '2px solid #1e293b',
-                            color: themeMode === 'system' ? '#34d399' : '#94a3b8'
-                        }}
-                    >
-                        <Monitor size={28} />
-                        <span style={{ fontWeight: 600 }}>Système</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Categories & Colors Section */}
-            <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                    <div>
-                        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px 0' }}>Catégories & Couleurs</h2>
-                        <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>Personnalisez les couleurs et icônes des types de fiches.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* Theme */}
+            <SettingsCard>
+                <CardSection title="Thème" subtitle="Apparence globale de l'interface." />
+                <CardBody>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        <ThemeOption mode="light" label="Clair" icon={<Sun size={24} />} />
+                        <ThemeOption mode="dark" label="Sombre" icon={<Moon size={24} />} />
+                        <ThemeOption mode="system" label="Système" icon={<Monitor size={24} />} />
                     </div>
-                    <button
-                        onClick={() => {
-                            if (confirm('Réinitialiser les couleurs et icônes par défaut ?')) {
-                                resetCategoryColors();
-                                resetCategoryIcons();
-                            }
-                        }}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 8, backgroundColor: 'transparent',
-                            border: '1px solid #1e293b', padding: '6px 12px', borderRadius: 8, color: '#94a3b8',
-                            cursor: 'pointer', fontSize: 13, fontWeight: 600
-                        }}
-                    >
+                </CardBody>
+            </SettingsCard>
+
+            {/* Categories & Colors */}
+            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                    <SectionHeading
+                        title="Catégories & Couleurs"
+                        subtitle="Personnalisez l'apparence de chaque type de fiche."
+                    />
+                    <GhostButton small onClick={() => {
+                        if (confirm('Restaurer les couleurs et icônes par défaut ?')) {
+                            resetCategoryColors();
+                            resetCategoryIcons();
+                        }
+                    }}>
                         <ArrowCounterClockwise size={14} /> Restaurer
-                    </button>
+                    </GhostButton>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                     {categoriesToDisplay.map(type => (
-                        <div key={type} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                            {/* Header with Preview */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ backgroundColor: getCategoryColor(type), width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                                    <DynamicIcon name={categoryIcons[type]} size={20} />
-                                </div>
-                                <span style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 16 }}>{categoryLabels[type] || type}</span>
-                            </div>
-
-                            {/* Color Picker */}
-                            <div>
-                                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    Couleur
-                                </label>
-                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                    <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
-                                        <input
-                                            type="color"
-                                            value={getCategoryColor(type)}
-                                            onChange={(e) => setCategoryColor(type, e.target.value)}
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', borderRadius: 8, cursor: 'pointer', padding: 0, background: 'transparent', opacity: 0 }}
-                                        />
-                                        <div style={{ backgroundColor: getCategoryColor(type), width: '100%', height: '100%', borderRadius: 8, border: '2px solid #1e293b', boxSizing: 'border-box' }} />
+                        <SettingsCard key={type}>
+                            <CardBody>
+                                {/* Preview header */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                                    <div style={{
+                                        width: 40, height: 40, borderRadius: 12,
+                                        background: getCategoryColor(type),
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#fff', flexShrink: 0,
+                                    }}>
+                                        <DynamicIcon name={categoryIcons[type]} size={20} />
                                     </div>
-                                    <input
-                                        type="text"
-                                        value={getCategoryColor(type)}
-                                        onChange={(e) => setCategoryColor(type, e.target.value)}
-                                        style={{ flex: 1, padding: '8px 12px', border: '1px solid #1e293b', borderRadius: 8, fontSize: 14, color: '#f1f5f9', fontFamily: 'monospace', backgroundColor: '#0b0f17', outline: 'none' }}
-                                    />
+                                    <span style={{ fontWeight: 600, color: S.text, fontSize: 15 }}>
+                                        {categoryLabels[type] || type}
+                                    </span>
                                 </div>
-                            </div>
 
-                            {/* Icon Picker */}
-                            <div>
-                                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    Icône
-                                </label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                    {AVAILABLE_ICONS.map(iconName => (
-                                        <button
-                                            key={iconName}
-                                            onClick={() => setCategoryIcon(type, iconName)}
-                                            title={iconName}
+                                {/* Color */}
+                                <div style={{ marginBottom: 16 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                                        Couleur
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                        <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
+                                            <input
+                                                type="color"
+                                                value={getCategoryColor(type)}
+                                                onChange={e => setCategoryColor(type, e.target.value)}
+                                                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                                            />
+                                            <div style={{
+                                                width: '100%', height: '100%',
+                                                background: getCategoryColor(type),
+                                                borderRadius: 8,
+                                                border: `2px solid ${S.border}`,
+                                                boxSizing: 'border-box',
+                                                cursor: 'pointer',
+                                            }} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={getCategoryColor(type)}
+                                            onChange={e => setCategoryColor(type, e.target.value)}
                                             style={{
-                                                border: getCategoryIcon(type) === iconName ? `2px solid ${getCategoryColor(type)}` : '1px solid #1e293b',
-                                                background: getCategoryIcon(type) === iconName ? `${getCategoryColor(type)}15` : '#0b0f17',
-                                                color: getCategoryIcon(type) === iconName ? getCategoryColor(type) : '#94a3b8',
-                                                width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', boxSizing: 'border-box'
+                                                flex: 1, padding: '7px 12px',
+                                                border: `1px solid ${S.border}`,
+                                                borderRadius: 8, fontSize: 13,
+                                                color: S.text, fontFamily: 'monospace',
+                                                background: S.bg, outline: 'none',
                                             }}
-                                        >
-                                            <DynamicIcon name={iconName} size={18} />
-                                        </button>
-                                    ))}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+
+                                {/* Icons */}
+                                <div>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                                        Icône
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                        {AVAILABLE_ICONS.map(iconName => {
+                                            const active = getCategoryIcon(type) === iconName;
+                                            const color = getCategoryColor(type);
+                                            return (
+                                                <button
+                                                    key={iconName}
+                                                    onClick={() => setCategoryIcon(type, iconName)}
+                                                    title={iconName}
+                                                    style={{
+                                                        border: active ? `1.5px solid ${color}` : `1px solid ${S.border}`,
+                                                        background: active ? `${color}18` : 'transparent',
+                                                        color: active ? color : S.muted,
+                                                        width: 34, height: 34,
+                                                        borderRadius: 8,
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s',
+                                                        boxSizing: 'border-box',
+                                                    }}
+                                                >
+                                                    <DynamicIcon name={iconName} size={17} />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </SettingsCard>
                     ))}
                 </div>
             </div>
 
-            {/* Tutoriel Section */}
-            <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px 0' }}>Tutoriel & Aide</h3>
-                    <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>Revoyez le guide interactif pour redécouvrir les fonctionnalités d'Extnd.</p>
-                </div>
-                <button
-                    onClick={() => {
+            {/* Tutorial */}
+            <SettingsCard>
+                <CardBody style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
+                    <div>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: S.text, marginBottom: 4 }}>Tutoriel interactif</div>
+                        <div style={{ fontSize: 13, color: S.muted, lineHeight: 1.5 }}>
+                            Redécouvrez les fonctionnalités principales d'Extnd pas à pas.
+                        </div>
+                    </div>
+                    <PrimaryButton onClick={() => {
                         onCloseSettings();
                         setTimeout(() => {
                             import('../../tutorial').then(({ startTutorial }) => startTutorial(true));
                         }, 150);
-                    }}
-                    style={{
-                        backgroundColor: '#10b981', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap'
-                    }}
-                >
-                    <MagnifyingGlass size={16} /> Rejouer
-                </button>
-            </div>
+                    }}>
+                        <MagnifyingGlass size={15} /> Rejouer
+                    </PrimaryButton>
+                </CardBody>
+            </SettingsCard>
         </div>
     );
 };

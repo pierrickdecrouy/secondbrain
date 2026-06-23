@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXTND. - Second Brain Minimaliste</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    .dark body {
+      background-color: #0b0f19;
+    }
+    /* Scrollbar minimaliste */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .light ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    /* Transitions fluides de l'interface */
+    * {
+      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease-out;
+    }
+    /* Arrière-plan pour le mode Réseau */
+    .network-grid-bg {
+      background-size: 24px 24px;
+      background-image: radial-gradient(circle, rgba(16, 185, 129, 0.07) 1px, transparent 1px);
+    }
+    .dark .network-grid-bg {
+      background-image: radial-gradient(circle, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+    }
+
+    /* Styles pour la Flashcard 3D */
+    .flashcard-perspective {
+      perspective: 1000px;
+    }
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .flashcard-inner.is-flipped {
+      transform: rotateY(180deg);
+    }
+    .flashcard-front, .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .flashcard-back {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body class="h-full antialiased text-slate-800 dark:text-slate-100 overflow-hidden">
+
+  <div class="flex h-full overflow-hidden">
+    
+    <!-- ================= MENU LATÉRAL / SIDEBAR ================= -->
+    <aside id="sidebar" class="w-60 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col z-20 shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
+      
+      <!-- En-tête Sidebar (reprend fidèlement les proportions de la capture) -->
+      <div class="h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-6 h-6 rounded-md bg-emerald-600/10 text-emerald-600 flex items-center justify-center font-bold text-xs">
+            <span>{·}</span>
+          </div>
+          <span class="font-extrabold text-xs text-slate-900 dark:text-white tracking-widest">EXTND.</span>
+        </div>
+        
+        <!-- Toggle Dark/Light Mode -->
+        <button onclick="toggleTheme()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <svg id="theme-sun" class="w-3.5 h-3.5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m2.828 0l-.707-.707m12.728-12.728l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path></svg>
+          <svg id="theme-moon" class="w-3.5 h-3.5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+      </div>
+
+      <!-- Navigation Simplifiée (Sans IA, très pragmatique) -->
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto text-xs">
+        <p class="px-2 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Espaces</p>
+        
+        <!-- Toutes les fiches (Équivalent de la page d'accueil / Fiches de cours) -->
+        <button onclick="switchPage('courses'); filterByFolder('all')" id="nav-btn-courses" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/20 font-bold">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+            <span>Fiches de Cours</span>
+          </div>
+          <span id="badge-all" class="text-[10px] bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-bold">0</span>
+        </button>
+
+        <!-- Mode Graphe Réseau -->
+        <button onclick="switchPage('network')" id="nav-btn-network" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
+            <span>Graphe Réseau</span>
+          </div>
+        </button>
+
+        <!-- Mode Révision Active (SRS) -->
+        <button onclick="switchPage('review')" id="nav-btn-review" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Révisions Actives</span>
+          </div>
+          <span id="badge-reviews-ready" class="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold">0</span>
+        </button>
+
+        <div class="pt-4">
+          <p class="px-2.5 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Dossiers</p>
+          <div id="folders-list" class="space-y-0.5">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </div>
+      </nav>
+
+      <!-- Sidebar Footer (Statut global de mémorisation) -->
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-[11px]">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-slate-500">Rétention globale</span>
+          <span id="global-progress-value" class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">0%</span>
+        </div>
+        <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
+          <div id="global-progress-bar" class="bg-emerald-500 h-full" style="width: 0%"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay sidebar mobile -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-10 hidden md:hidden"></div>
+
+    <!-- ================= CONTENU PRINCIPAL ================= -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto h-full bg-slate-50 dark:bg-slate-950">
+      
+      <!-- TOPBAR / BANDEAU SUPÉRIEUR (Proportions et design conformes à la capture d'écran) -->
+      <header class="h-16 bg-transparent border-b border-transparent flex items-center justify-between px-6 shrink-0 z-10">
+        <!-- Hamburger menu mobile -->
+        <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+
+        <!-- Recherche centrale style Capture d'Écran -->
+        <div class="flex-1 flex justify-center max-w-lg mx-auto">
+          <div class="relative w-full group">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 group-focus-within:text-emerald-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
+            <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Retrouver une fiche, une note, un cours..." class="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 pl-10 pr-16 py-2 rounded-full text-xs border border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:bg-white outline-none shadow-sm transition-all">
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none">
+              <span class="bg-slate-50 dark:bg-slate-800 text-slate-400 px-2 py-0.5 text-[10px] rounded-md border border-slate-200 dark:border-slate-700 shadow-sm font-semibold">⌘ K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profil simple -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-xs shadow-sm">
+            <span>P</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ================= COMMUTATION DES PAGES ================= -->
+      <div class="flex-1 flex flex-col h-full overflow-y-auto">
+        
+        <!-- PAGE 1: FICHES DE COURS (Rendu principal de votre Capture d'Écran) -->
+        <div id="page-courses" class="p-6 md:p-8 space-y-6 max-w-6xl w-full mx-auto flex-1 flex flex-col">
+          
+          <!-- Header Fiche de Cours -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-4">
+              <!-- Icône verte conforme à la capture -->
+              <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+              </div>
+              <div>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Fiches de Cours</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Centralisez et organisez vos connaissances.</p>
+              </div>
+            </div>
+
+            <!-- Boutons actions / Vues -->
+            <div class="flex items-center gap-3 self-end sm:self-auto">
+              <!-- Mode Grille / Liste -->
+              <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 rounded-lg flex items-center shadow-sm">
+                <button onclick="changeViewMode('list')" id="btn-view-list" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all bg-slate-50 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400" title="Vue Liste">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <button onclick="changeViewMode('grid')" id="btn-view-grid" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all" title="Vue Grille">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                </button>
+              </div>
+
+              <!-- CTA Nouveau Cours -->
+              <button onclick="openCreateModal()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2 rounded-full shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                <span>Nouveau Cours</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Séparateur horizontal -->
+          <div class="h-px bg-slate-200 dark:bg-slate-800 w-full"></div>
+
+          <!-- Affichage dynamique des sections (Dossiers) -->
+          <div id="folders-courses-container" class="space-y-8 flex-1">
+            <!-- Rendu dynamique par JS -->
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
