@@ -1,73 +1,60 @@
-# React + TypeScript + Vite
+# Extnd. Second Brain 🧠
+**Le Second Cerveau optimisé pour l'Internat de Pharmacie.**
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)]()
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)]()
+[![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=white)]()
+[![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?logo=vite&logoColor=white)]()
 
-Currently, two official plugins are available:
+Extnd. (PharmaBrain) est une application open-source conçue spécifiquement pour la mémorisation et l'organisation des connaissances médicales, avec un accent particulier sur la pharmacie.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Fonctionnalités
+- **Répétition Espacée (FSRS)** : Algorithme de pointe pour optimiser vos révisions.
+- **Graphe de Connaissances** : Visualisez les liens (Physiopathologie -> Traitements -> Médicaments) grâce à une carte mentale 2D/3D dynamique.
+- **Éditeur Rich Text Intégré** : Support du Markdown, des équations mathématiques (KaTeX) et des tags médicaux (TipTap).
+- **Recherche Sémantique Hors-Ligne** : Le moteur FlexSearch et une IA d'embedding (Transformers.js) tournent directement dans le navigateur. Vos données ne quittent **jamais** votre appareil.
+- **Application PWA / Desktop** : Installable sur Mac/Windows via Electron, ou accessible hors-ligne sur le web.
 
-## React Compiler
+## 📸 Captures d'écran
+*(À venir)*
+- Mode Révision
+- Graphe Mental
+- Éditeur de Cours
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Installation
 
-## Expanding the ESLint configuration
+### Prérequis
+- Node.js (v20+)
+- npm (v10+)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Démarrage local
+```bash
+# 1. Cloner le repo
+git clone https://github.com/pierrickdcc/secondbrain.git
+cd secondbrain
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# 2. Installer les dépendances
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 3. Lancer le serveur de développement
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Compiler l'application de bureau (Electron)
+```bash
+npm run electron:build
 ```
+
+## 🗺️ Roadmap
+- [x] Implémentation du mode "Cluster" pour les révisions liées.
+- [x] Nettoyage et optimisation des imports (Zustand).
+- [ ] Application mobile native.
+- [ ] Outil d'import de base de connaissances (Anki, Notion).
+- [ ] Synchronisation cloud chiffrée de bout en bout (optionnelle).
+
+## 🛡️ Sécurité & Données
+- Aucune donnée personnelle ou médicale n'est envoyée sur un serveur tiers. L'application est fully-local par défaut.
+- IndexedDB (Dexie.js) gère le stockage structuré.
+
+## 🤝 Contribuer
+Les Pull Requests sont les bienvenues ! Pensez à vérifier l'accessibilité (`npm run lint`) avant toute soumission.

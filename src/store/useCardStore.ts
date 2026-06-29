@@ -3,6 +3,9 @@ import type { Card } from '../types';
 import { saveCardsAsync } from '../storage';
 import { recordPositiveFeedback, recordNegativeFeedback } from '../linkFeedback';
 import { buildCardEmbeddings } from '../semanticSearch';
+import { CardSchema } from '../schema';
+import { auth, db } from '../lib/firebase';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 interface CardState {
   cards: Card[];
@@ -45,29 +48,41 @@ export const useCardStore = create<CardState>((set, get) => ({
     let newCards = [...state.cards];
     const existsIndex = newCards.findIndex(c => c.id === card.id);
 
-    if (card.manualConnections && card.manualConnections.length > 0) {
+    // Stamp ownerUid: current user uid, or null if offline
+    const stampedCard: Card = {
+      ...card,
+      ownerUid: auth.currentUser?.uid ?? null,
+    };
+
+    if (stampedCard.manualConnections && stampedCard.manualConnections.length > 0) {
       const oldCard = existsIndex >= 0 ? newCards[existsIndex] : null;
       const oldManual = new Set(oldCard?.manualConnections || []);
-      card.manualConnections.forEach(targetId => {
+      stampedCard.manualConnections.forEach(targetId => {
         if (!oldManual.has(targetId)) {
           const targetCard = newCards.find(c => c.id === targetId);
           if (targetCard) {
-            recordPositiveFeedback(card, targetCard);
+            recordPositiveFeedback(stampedCard, targetCard);
           }
         }
       });
     }
 
     if (existsIndex >= 0) {
-      newCards[existsIndex] = card;
+      newCards[existsIndex] = stampedCard;
     } else {
-      newCards.push(card);
+      newCards.push(stampedCard);
     }
 
     set({ cards: newCards, editingCard: null });
     saveCardsAsync(newCards).catch(console.error);
 
-    buildCardEmbeddings([card], true);
+    // Synchronisation Firebase
+    if (auth.currentUser) {
+      const cardRef = doc(db, `users/${auth.currentUser.uid}/cards`, stampedCard.id);
+      setDoc(cardRef, stampedCard).catch(err => console.error("Firebase save error:", err));
+    }
+
+    buildCardEmbeddings([stampedCard], true);
   },
 
   handleDeleteCard: (card: Card) => {
@@ -77,16 +92,33 @@ export const useCardStore = create<CardState>((set, get) => ({
   confirmDelete: () => {
     const state = get();
     if (state.cardToDelete) {
-      const newCards = state.cards.filter(c => c.id !== state.cardToDelete!.id);
+      const cardId = state.cardToDelete.id;
+      const newCards = state.cards.filter(c => c.id !== cardId);
       set({ cards: newCards, cardToDelete: null });
       saveCardsAsync(newCards).catch(console.error);
+
+      // Synchronisation Firebase
+      if (auth.currentUser) {
+        const cardRef = doc(db, `users/${auth.currentUser.uid}/cards`, cardId);
+        deleteDoc(cardRef).catch(err => console.error("Firebase delete error:", err));
+      }
     }
   },
 
   handleBatchImport: async (newCards: Card[]) => {
+    const validCards: Card[] = [];
+    newCards.forEach(card => {
+      const result = CardSchema.safeParse(card);
+      if (result.success) {
+        validCards.push(result.data as Card);
+      } else {
+        console.warn("Invalid card skipped during batch import:", card.id, result.error);
+      }
+    });
+
     const state = get();
     const merged = [...state.cards];
-    newCards.forEach(nc => {
+    validCards.forEach(nc => {
       const index = merged.findIndex(c => c.id === nc.id);
       if (index >= 0) {
         merged[index] = nc;
@@ -99,17 +131,17 @@ export const useCardStore = create<CardState>((set, get) => ({
     saveCardsAsync(merged).catch(console.error);
 
     // Call electron API if available
-    // @ts-ignore
+    // @ts-expect-error
     if (window.electronAPI?.importCards) {
-      // @ts-ignore
-      const result = await window.electronAPI.importCards(newCards);
+      // @ts-expect-error
+      const result = await window.electronAPI.importCards(validCards);
       if (!result.success) {
         // Show toast should be done via toast store
         console.error("Erreur lors de la sauvegarde: " + result.error);
       }
     }
 
-    buildCardEmbeddings(newCards, true);
+    buildCardEmbeddings(validCards, true);
   },
 
   handleSuppressConnections: (pairs: { sourceId: string; targetId: string }[]) => {

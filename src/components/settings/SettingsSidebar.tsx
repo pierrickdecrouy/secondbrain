@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SettingsTab } from '../SettingsPage';
 import { S } from './SettingsUI';
-import { useUI } from '../../context/UIContext';
+import { useUIStore as useUI } from '../../store/useUIStore';
 
 interface SettingsSidebarProps {
     activeTab: SettingsTab;

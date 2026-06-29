@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UploadSimple, DownloadSimple, Warning } from '@phosphor-icons/react';
-import { useCards } from '../../context/CardContext';
+import { useCardStore as useCards } from '../../store/useCardStore';
 import { useToast } from '../../context/ToastContext';
 import { importAnkiPackage } from '../../ankiImport';
 import { saveCardsAsync, exportAllData, importAllData, resetToDefaults } from '../../storage';

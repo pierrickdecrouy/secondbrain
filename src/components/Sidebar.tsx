@@ -4,7 +4,7 @@ import {
   Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar,
   ArrowLeft, List, Pause, Play, Trash, Tag, PencilSimple,
 } from '@phosphor-icons/react';
-import { useUI } from '../context/UIContext';
+import { useUIStore as useUI } from '../store/useUIStore';
 import type { PausedTask } from '../types';
 import { TagManagerModal } from './TagManagerModal';
 

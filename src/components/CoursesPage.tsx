@@ -6,7 +6,8 @@ import { COURSE_TYPE, generateId } from '../types';
 import { stripMarkdown } from '../utils';
 import { FullCourseEditor } from './FullCourseEditor';
 import { CourseViewer } from './CourseViewer';
-import { useCards } from '../context/CardContext';
+import { AddDataModal } from './AddDataModal';
+import { useCardStore as useCards } from '../store/useCardStore';
 
 interface CoursesPageProps {
     onPause?: (draft: Partial<Card>) => void;
@@ -31,14 +32,16 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
 }) => {
     const { cards, handleSaveCard: onSaveCourse, handleDeleteCard: onDeleteCourse } = useCards();
     const existingCards = cards;
-    const courseCards = useMemo(() => cards.filter(c => c.type === COURSE_TYPE).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), [cards]);
+    const courseCards = useMemo(() => cards.filter(c => c.nodeType === 'course').sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), [cards]);
     const [editingCourse, setEditingCourse] = useState<Card | null>(null);
     const [viewingCourse, setViewingCourse] = useState<Card | null>(null);
+    const [editingFlashcard, setEditingFlashcard] = useState<Card | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+    const [now] = useState(() => Date.now());
 
     // Resume draft
     React.useEffect(() => {
@@ -94,7 +97,8 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
         setIsCreating(true);
         setEditingCourse({
             id: `course-${Date.now()}`,
-            type: COURSE_TYPE,
+            type: COURSE_TYPE, // Maintained for backward compat, but nodeType is the source of truth
+            nodeType: 'course',
             title: '',
             subtitle: '',
             content: '',
@@ -128,9 +132,10 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                 course={editingCourse}
                 onSave={handleSave}
                 onCancel={() => {
+                    const wasCourse = viewingCourse && editingCourse.id === viewingCourse.id;
                     setEditingCourse(null);
                     setIsCreating(false);
-                    if (!isCreating && editingCourse) {
+                    if (!isCreating && wasCourse) {
                         setViewingCourse(editingCourse);
                     }
                 }}
@@ -144,6 +149,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
 
     if (viewingCourse) {
         return (
+            <>
             <CourseViewer
                 course={viewingCourse}
                 onBack={() => setViewingCourse(null)}
@@ -152,7 +158,63 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                     onDeleteCourse(viewingCourse);
                     setViewingCourse(null);
                 }}
+                onAddConcept={() => {
+                    setIsCreating(true);
+                    setEditingCourse({
+                        id: `concept-${Date.now()}`,
+                        type: viewingCourse.type || 'drug', // inherit subject or default
+                        nodeType: 'concept',
+                        parentId: viewingCourse.id,
+                        title: '',
+                        content: '',
+                        details: '',
+                        tags: viewingCourse.tags || [],
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    });
+                }}
+                onEditConcept={(conceptId) => {
+                    const concept = cards.find(c => c.id === conceptId);
+                    if (concept) {
+                        setIsCreating(false);
+                        setEditingCourse(concept);
+                    }
+                }}
+                onAddFlashcard={() => {
+                    setEditingFlashcard({
+                        id: `flashcard-${Date.now()}`,
+                        type: viewingCourse.type || 'drug', // inherit category
+                        nodeType: 'flashcard',
+                        parentId: viewingCourse.id,
+                        title: '',
+                        content: '',
+                        details: '',
+                        format: 'q&a',
+                        tags: viewingCourse.tags || [],
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    });
+                }}
+                onEditFlashcard={(flashcardId) => {
+                    const fc = cards.find(c => c.id === flashcardId);
+                    if (fc) setEditingFlashcard(fc);
+                }}
             />
+            
+            {editingFlashcard && (
+                <AddDataModal
+                    mode={editingFlashcard.id.startsWith('flashcard-') && !editingFlashcard.title ? 'create' : 'edit'}
+                    card={editingFlashcard}
+                    existingCards={existingCards}
+                    onSave={(c) => {
+                        onSaveCourse(c);
+                        setEditingFlashcard(null);
+                    }}
+                    onClose={() => setEditingFlashcard(null)}
+                    layout="modal"
+                />
+            )}
+            </>
         );
     }
 
@@ -415,6 +477,11 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                 <div
                                     key={course.id}
                                     onClick={() => handleView(course)}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') handleView(course);
+                                    }}
                                     className="group"
                                     style={{
                                         background: 'var(--color-surface)',
@@ -475,7 +542,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                         </p>
                                     )}
                                     <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'auto' }}>
-                                        {new Date(course.updatedAt || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        {new Date(course.updatedAt || now).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                     </div>
                                 </div>
                             );
@@ -515,6 +582,11 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                                 <div
                                                     key={course.id}
                                                     onClick={() => handleView(course)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') handleView(course);
+                                                    }}
                                                     className="course-list-row"
                                                     style={{
                                                         display: 'flex',

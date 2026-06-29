@@ -1,45 +1,61 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
-import type { Card } from './types';
-import { COURSE_TYPE } from './types';
-import { hybridSearch } from './searchIndex';
-import { calculateQualityScore } from './algorithms/qualityScoring';
-import { calculateFsrsProgress } from './algorithms/fsrs';
-import { getLinkFeedback } from './linkFeedback';
-import { useAppInitialization } from './hooks/useAppInitialization';
-import { AppLayout } from './components/AppLayout';
-import { DetailModal } from './components/DetailModal';
-import { AddDataModal } from './components/AddDataModal';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { HomePage } from './components/HomePage';
-import { CoursesPage } from './components/CoursesPage';
-import { StatsPage } from './components/StatsPage';
-import { ReviewSessionModal } from './components/ReviewSessionModal';
-import { ReviewHubPage } from './components/ReviewHubPage';
-import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
-import { PencilSimple, Trash, CircleNotch } from '@phosphor-icons/react';
-import { ThemeProvider } from './context/ThemeContext';
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  lazy,
+  Suspense,
+} from "react";
+import { useNavigation } from "./hooks/useNavigation";
+import { useReviewSession } from "./hooks/useReviewSession";
+import { useFilteredCards } from "./hooks/useFilteredCards";
+import { useGlobalShortcuts } from "./hooks/useGlobalShortcuts";
+import type { Card } from "./types";
+import { COURSE_TYPE } from "./types";
+import { calculateFsrsProgress } from "./algorithms/fsrs";
+import { getLinkFeedback } from "./linkFeedback";
+import { useAppInitialization } from "./hooks/useAppInitialization";
+import { useFirebaseSync } from './hooks/useFirebaseSync';
+import { useAuth } from "./context/AuthContext";
+import { AppLayout } from "./components/AppLayout";
+import { DetailModal } from "./components/DetailModal";
+import { AddDataModal } from "./components/AddDataModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { LoginPage } from "./components/LoginPage";
+import { UpsellModal } from "./components/UpsellModal";
+import { OnboardingWizard } from "./components/OnboardingWizard";
+import { useTier } from "./lib/useTier";
+import { scheduleLocalNotification } from "./lib/notifications";
+import { HomePage } from "./components/HomePage";
+import { CoursesPage } from "./components/CoursesPage";
+import { StatsPage } from "./components/StatsPage";
+import { ReviewSessionModal } from "./components/ReviewSessionModal";
+import { ReviewHubPage } from "./components/ReviewHubPage";
+import { ConfirmDeleteModal } from "./components/ConfirmDeleteModal";
+import { PencilSimple, Trash, CircleNotch } from "@phosphor-icons/react";
+import { ThemeProvider } from "./context/ThemeContext";
 
 // Lazy load heavy components
-const NetworkView = lazy(() => import('./components/NetworkView').then(module => ({ default: module.NetworkView })));
-const SettingsPage = lazy(() => import('./components/SettingsPage'));
-const BrowsePage = lazy(() => import('./components/BrowsePage').then(module => ({ default: module.BrowsePage })));
+const NetworkView = lazy(() =>
+  import("./components/NetworkView").then((module) => ({
+    default: module.NetworkView,
+  })),
+);
+const SettingsPage = lazy(() => import("./components/SettingsPage"));
+const BrowsePage = lazy(() =>
+  import("./components/BrowsePage").then((module) => ({
+    default: module.BrowsePage,
+  })),
+);
 
-
-type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
-
-// Simple debounce hook
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-  return debouncedValue;
-}
+type AppSection =
+  | "dashboard"
+  | "cards"
+  | "courses"
+  | "network"
+  | "review"
+  | "settings"
+  | "stats";
 
 function LoadingFallback() {
   return (
@@ -48,61 +64,113 @@ function LoadingFallback() {
         <CircleNotch className="animate-spin" size={48} />
         <p className="text-sm font-medium">Chargement...</p>
       </div>
-
     </div>
   );
 }
 
-import { useCardStore } from './store/useCardStore';
-import { useUIStore } from './store/useUIStore';
+import { useCardStore } from "./store/useCardStore";
+import { useUIStore } from "./store/useUIStore";
 
 function AppContent() {
-  const { 
-    cards, 
-    handleSaveCard, 
-    handleDeleteCard, 
-    confirmDelete, 
-    handleBatchImport, 
+  const { user } = useAuth();
+  const [bypassLogin, setBypassLogin] = useState(false);
+  const { canAccess } = useTier();
+  const [upsellFeature, setUpsellFeature] = useState<string | null>(null);
+  const { hasCompletedOnboarding } = useUIStore();
+
+  const {
+    cards,
+    handleSaveCard,
+    handleDeleteCard,
+    confirmDelete,
+    handleBatchImport,
     handleSuppressConnections,
     editingCard,
     setEditingCard,
     cardToDelete,
-    setCardToDelete 
+    setCardToDelete,
   } = useCardStore();
 
-  const { 
-    activeFilters, 
-    searchQuery, 
-    viewMode, 
-    setViewMode, 
-    addDataMode, 
-    setAddDataMode, 
-    sidebarOpen, 
-    setSidebarOpen,
+  const {
+    activeFilters,
+    searchQuery,
+    viewMode,
+    addDataMode,
+    setAddDataMode,
     activeSection,
-    setActiveSection
+    setActiveSection,
   } = useUIStore();
 
   const { embeddingsReady } = useAppInitialization();
 
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [pendingClusterReview, setPendingClusterReview] = useState(false);
-  const [reviewSession, setReviewSession] = useState<{ cardIds: string[]; title: string } | null>(null);
+  // Activer la synchronisation Firebase en temps réel
+  useFirebaseSync();
 
-  const [networkPanelPinned, setNetworkPanelPinned] = useState(false);
-  const [pinnedCardId, setPinnedCardId] = useState<string | null>(null);
+  // Auto-complete onboarding if the user already has cards (e.g. connected on a new device)
+  useEffect(() => {
+    if (!hasCompletedOnboarding && cards.length > 0) {
+      useUIStore.getState().completeOnboarding();
+    }
+  }, [cards.length, hasCompletedOnboarding]);
 
-  const handleEditCard = useCallback((card: Card) => {
-    setEditingCard(card);
-    setAddDataMode('edit');
-    setSelectedCardId(null);
-  }, []);
+  // Check due cards for local notification
+  useEffect(() => {
+    if (!hasCompletedOnboarding) return;
+    
+    const dueCount = cards.filter(
+      (c) =>
+        c.progress?.status === "review" &&
+        c.progress.dueDate &&
+        new Date(c.progress.dueDate) <= new Date()
+    ).length;
 
-  const handleSaveCardWrapped = useCallback((card: Card) => {
-    handleSaveCard(card);
-    setAddDataMode('none');
-    setEditingCard(null);
-  }, [handleSaveCard, setAddDataMode, setEditingCard]);
+    if (dueCount > 0) {
+      scheduleLocalNotification(
+        "Extnd. — Révisions FSRS",
+        `Vous avez ${dueCount} fiche${dueCount > 1 ? 's' : ''} à réviser aujourd'hui. Ne perdez pas le fil !`,
+        '/review'
+      );
+    }
+  }, [cards, hasCompletedOnboarding]);
+
+  const {
+    selectedCardId,
+    setSelectedCardId,
+    pendingClusterReview,
+    setPendingClusterReview,
+    networkPanelPinned,
+    setNetworkPanelPinned,
+    pinnedCardId,
+    setPinnedCardId,
+    navigateSection,
+    startClusterReviewMode,
+  } = useNavigation();
+
+  const {
+    reviewSession,
+    setReviewSession,
+    reviewSessionCards,
+    startFSRSReview,
+    startIntensiveReview,
+  } = useReviewSession(cards);
+
+  const handleEditCard = useCallback(
+    (card: Card) => {
+      setEditingCard(card);
+      setAddDataMode("edit");
+      setSelectedCardId(null);
+    },
+    [setEditingCard, setAddDataMode, setSelectedCardId],
+  );
+
+  const handleSaveCardWrapped = useCallback(
+    (card: Card) => {
+      handleSaveCard(card);
+      setAddDataMode("none");
+      setEditingCard(null);
+    },
+    [handleSaveCard, setAddDataMode, setEditingCard],
+  );
 
   const confirmDeleteWrapped = useCallback(() => {
     if (cardToDelete) {
@@ -111,112 +179,197 @@ function AppContent() {
       }
       confirmDelete();
     }
-  }, [cardToDelete, selectedCardId, confirmDelete]);
+  }, [cardToDelete, selectedCardId, confirmDelete, setSelectedCardId]);
 
-  const handleBatchImportWrapped = useCallback(async (newCards: Card[]) => {
-    await handleBatchImport(newCards);
-    setActiveSection('cards');
-  }, [handleBatchImport, setActiveSection]);
-
-
-
-
-
-
-
-  const workspaceCards = useMemo(
-    () => cards,
-    [cards]
+  const handleBatchImportWrapped = useCallback(
+    async (newCards: Card[]) => {
+      await handleBatchImport(newCards);
+      setActiveSection("cards");
+    },
+    [handleBatchImport, setActiveSection],
   );
 
   const selectedCard = useMemo(() => {
-    const panelCardId = networkPanelPinned && pinnedCardId ? pinnedCardId : selectedCardId;
+    const panelCardId =
+      networkPanelPinned && pinnedCardId ? pinnedCardId : selectedCardId;
     if (!panelCardId) return null;
-    return workspaceCards.find(c => c.id === panelCardId) ?? null;
-  }, [workspaceCards, selectedCardId, networkPanelPinned, pinnedCardId]);
+    return cards.find((c) => c.id === panelCardId) ?? null;
+  }, [cards, selectedCardId, networkPanelPinned, pinnedCardId]);
 
-  const reviewSessionCards = useMemo(() => {
-    if (!reviewSession) return [];
-    const idSet = new Set(reviewSession.cardIds);
-    return workspaceCards.filter(card => idSet.has(card.id));
-  }, [workspaceCards, reviewSession]);
+  const handleRateCard = useCallback(
+    (cardId: string, rating: 1 | 2 | 3) => {
+      const card = cards.find((c) => c.id === cardId);
+      if (!card) return;
+      const nextProgress = calculateFsrsProgress(card.progress, rating, card.type === COURSE_TYPE);
+      handleSaveCardWrapped({
+        ...card,
+        progress: nextProgress,
+        updatedAt: Date.now(),
+      });
+    },
+    [cards, handleSaveCardWrapped],
+  );
+
+  const isNetworkContext =
+    activeSection === "network" ||
+    (activeSection === "cards" &&
+      (viewMode === "network" || viewMode === "split"));
+
+  const { filteredCards, searchResultIds } = useFilteredCards(cards, searchQuery, activeFilters);
+
+  useGlobalShortcuts({
+    isNetworkContext,
+    networkPanelPinned,
+    setSelectedCardId,
+    navigateSection,
+  });
 
 
+  const renderMainContent = () => {
+    if (activeSection === "dashboard") {
+      return (
+        <HomePage
+          onNavigate={(section) => navigateSection(section as AppSection)}
+          onAddCard={() => setAddDataMode("create")}
+        />
+      );
+    }
 
-  const startFSRSReview = useCallback(() => {
-    const now = Date.now();
-    const dueCards = workspaceCards.filter(card => {
-      const dueDate = card.progress?.dueDate ? new Date(card.progress.dueDate).getTime() : 0;
-      if (!card.progress) return false;
-      if (card.progress.status === 'learning' || card.progress.status === 'review') {
-        return dueDate <= now;
+    if (activeSection === "settings") {
+      if (!canAccess('settings')) {
+        setUpsellFeature('settings');
+        return <HomePage onNavigate={(s) => navigateSection(s as any)} onAddCard={() => setAddDataMode("create")} />;
       }
-      return false;
-    });
-    const fallback = dueCards.length > 0 ? dueCards : workspaceCards.slice(0, 20);
-    setReviewSession({
-      cardIds: fallback.map(c => c.id),
-      title: dueCards.length > 0 ? 'Révision planifiée (FSRS)' : 'Session découverte'
-    });
-    setActiveSection('cards');
-  }, [workspaceCards]);
+      return <SettingsPage onClose={() => navigateSection("dashboard")} />;
+    }
+    if (activeSection === "stats") {
+      if (!canAccess('stats')) {
+        setUpsellFeature('stats');
+        return <HomePage onNavigate={(s) => navigateSection(s as any)} onAddCard={() => setAddDataMode("create")} />;
+      }
+      return <StatsPage />;
+    }
 
-  const startClusterReviewMode = useCallback(() => {
-    setActiveSection('network');
-    setViewMode('network');
-    setPendingClusterReview(true);
-  }, []);
+    if (activeSection === "review") {
+      return (
+        <ReviewHubPage
+          onSelectFSRS={startFSRSReview}
+          onSelectCluster={startClusterReviewMode}
+          onSelectIntensive={startIntensiveReview}
+          totalDue={
+            cards.filter(
+              (c) =>
+                c.progress?.status === "review" &&
+                c.progress.dueDate &&
+                new Date(c.progress.dueDate) <= new Date(),
+            ).length
+          }
+          hasEnoughCardsForCluster={
+            cards.filter(
+              (c) => c.manualConnections && c.manualConnections.length > 0,
+            ).length >= 1
+          }
+        />
+      );
+    }
 
-  const startIntensiveReview = useCallback(() => {
-    // Shuffle all workspace cards
-    const shuffled = [...workspaceCards].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, Math.min(30, shuffled.length));
-    setReviewSession({
-      cardIds: selected.map(c => c.id),
-      title: 'Bachotage Intensif'
-    });
-    setActiveSection('cards');
-  }, [workspaceCards]);
+    if (activeSection === "courses") {
+      return <CoursesPage />;
+    }
 
-  const handleRateCard = useCallback((cardId: string, rating: 1 | 2 | 3) => {
-    const card = workspaceCards.find(c => c.id === cardId);
-    if (!card) return;
-    const nextProgress = calculateFsrsProgress(card.progress, rating);
-    handleSaveCardWrapped({
-      ...card,
-      progress: nextProgress,
-      updatedAt: Date.now()
-    });
-  }, [workspaceCards, handleSaveCardWrapped]);
-
-  const isNetworkContext = activeSection === 'network' || (activeSection === 'cards' && (viewMode === 'network' || viewMode === 'split'));
+    return (
+      <BrowsePage
+        isNetworkOnly={activeSection === "network"}
+        networkPanelCard={isNetworkContext ? selectedCard : null}
+        networkPanelPinned={networkPanelPinned}
+        onNetworkPanelClose={() => {
+          setSelectedCardId(null);
+          if (!networkPanelPinned) {
+            setPinnedCardId(null);
+          }
+        }}
+        onNetworkPanelPinToggle={() => {
+          setNetworkPanelPinned((prev) => {
+            const next = !prev;
+            if (next && selectedCard) {
+              setPinnedCardId(selectedCard.id);
+            }
+            if (!next) {
+              setPinnedCardId(null);
+            }
+            return next;
+          });
+        }}
+        renderNetworkView={() => (
+          <Suspense fallback={<LoadingFallback />}>
+            <NetworkView
+              cards={filteredCards}
+              onNodeClick={(id) => {
+                if (networkPanelPinned) {
+                  setPinnedCardId(id);
+                }
+                setSelectedCardId(id);
+              }}
+              searchQuery={searchQuery}
+              highlightedIds={
+                searchResultIds ? new Set(searchResultIds) : undefined
+              }
+              activeFilters={activeFilters}
+              onSuppressConnections={handleSuppressConnections}
+              semanticReady={embeddingsReady}
+              vetoPairs={getLinkFeedback().vetoPairs}
+              typeCompat={getLinkFeedback().typePairScores}
+              activeNodeId={selectedCard?.id}
+              pendingClusterReview={pendingClusterReview}
+              onStartClusterReview={(clusterNodeIds) => {
+                setPendingClusterReview(false);
+                if (clusterNodeIds.length === 0) return;
+                setReviewSession({
+                  cardIds: clusterNodeIds,
+                  title: "Révision par Cluster",
+                });
+              }}
+            />
+          </Suspense>
+        )}
+      />
+    );
+  };
 
   const modals = (
     <>
       {selectedCard && !isNetworkContext && (
         <DetailModal
           card={selectedCard}
-          allCards={workspaceCards}
+          allCards={cards}
           onClose={() => setSelectedCardId(null)}
           onLinkClick={(id) => setSelectedCardId(id)}
           actions={
             <div className="modal-actions">
-              <button className="btn-icon" onClick={() => handleEditCard(selectedCard)} title="Modifier">
+              <button
+                className="btn-icon"
+                onClick={() => handleEditCard(selectedCard)}
+                title="Modifier"
+              >
                 <PencilSimple size={18} />
               </button>
-              <button className="btn-icon" onClick={() => handleDeleteCard(selectedCard)} title="Supprimer">
+              <button
+                className="btn-icon"
+                onClick={() => handleDeleteCard(selectedCard)}
+                title="Supprimer"
+              >
                 <Trash size={18} />
               </button>
             </div>
           }
           onNext={() => {
-            const idx = filteredCards.findIndex(c => c.id === selectedCardId);
+            const idx = filteredCards.findIndex((c) => c.id === selectedCardId);
             if (idx >= 0 && idx < filteredCards.length - 1) {
               setSelectedCardId(filteredCards[idx + 1].id);
             }
           }}
           onPrev={() => {
-            const idx = filteredCards.findIndex(c => c.id === selectedCardId);
+            const idx = filteredCards.findIndex((c) => c.id === selectedCardId);
             if (idx > 0) {
               setSelectedCardId(filteredCards[idx - 1].id);
             }
@@ -224,15 +377,19 @@ function AppContent() {
         />
       )}
 
-      {addDataMode !== 'none' && (
+      {addDataMode !== "none" && (
         <AddDataModal
-          mode={addDataMode === 'create' || addDataMode === 'import' ? addDataMode : 'edit'}
+          mode={
+            addDataMode === "create" || addDataMode === "import"
+              ? addDataMode
+              : "edit"
+          }
           card={editingCard}
           existingCards={cards}
           onSave={handleSaveCardWrapped}
           onImport={handleBatchImportWrapped}
           onClose={() => {
-            setAddDataMode('none');
+            setAddDataMode("none");
             setEditingCard(null);
           }}
         />
@@ -259,212 +416,40 @@ function AppContent() {
     </>
   );
 
-
-
-
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
-  // Search results - async for hybrid search
-  const [searchResultIds, setSearchResultIds] = useState<string[] | null>(null);
-
-  // Perform search when query changes
-  useEffect(() => {
-    if (!debouncedSearchQuery) {
-      setSearchResultIds(null);
-      return;
-    }
-
-    // Use hybrid search (keyword + semantic)
-    hybridSearch(debouncedSearchQuery).then(setSearchResultIds);
-  }, [debouncedSearchQuery]);
-
-  const filteredCards = useMemo(() => {
-    // 1. Type filter / Quality Filter
-    let result = workspaceCards;
-    if (activeFilters.length > 0) {
-      if (activeFilters.includes('needs-review')) {
-        // Quality Filter
-        result = result.filter(card => {
-          const score = calculateQualityScore(card, card.manualConnections?.length || 0);
-          return score.score < 50;
-        });
-      } else {
-        // Standard Type Filter
-        result = result.filter(card => activeFilters.includes(card.type) && card.type !== COURSE_TYPE);
-      }
-    } else {
-      // Exclude courses from the main cards view by default
-      result = result.filter(card => card.type !== COURSE_TYPE);
-    }
-
-    // 2. Search filter using hybrid (FlexSearch + semantic)
-    if (searchResultIds !== null) {
-      const idSet = new Set(searchResultIds);
-
-      // Filter to only matching IDs and maintain search order (relevance)
-      const idToCard = new Map(result.map(c => [c.id, c]));
-      result = searchResultIds
-        .filter(id => idSet.has(id) && idToCard.has(id))
-        .map(id => idToCard.get(id)!)
-        .filter(c => (activeFilters.length === 0 || activeFilters.includes(c.type)) && c.type !== COURSE_TYPE);
-    }
-
-    return result;
-  }, [workspaceCards, searchResultIds, activeFilters]);
-
-
-
-  const navigateSection = useCallback((section: AppSection) => {
-    setActiveSection(section);
-    setSidebarOpen(false);
-    setSelectedCardId(null); // Clear selected card when switching sections
-    if (section === 'network') {
-      setViewMode('network');
-    }
-    if (section === 'cards' && viewMode === 'network') {
-      setViewMode('grid');
-    }
-    // Always clear pinned cards when changing tabs to prevent unwanted foreground cards
-    setNetworkPanelPinned(false);
-    setPinnedCardId(null);
-  }, [viewMode]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        window.dispatchEvent(new CustomEvent('app-focus-search'));
-      }
-      if (event.key === 'Escape' && sidebarOpen) {
-        setSidebarOpen(false);
-        return;
-      }
-      if (event.key === 'Escape' && isNetworkContext && !networkPanelPinned) {
-        setSelectedCardId(null);
-      }
-      if (event.altKey && ['1', '2', '3', '4', '5'].includes(event.key)) {
-        event.preventDefault();
-        const mapping: Record<string, AppSection> = {
-          '1': 'dashboard',
-          '2': 'cards',
-          '3': 'network',
-          '4': 'review',
-          '5': 'settings'
-        };
-        navigateSection(mapping[event.key]);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isNetworkContext, networkPanelPinned, navigateSection, sidebarOpen]);
-
-  const renderMainContent = () => {
-    if (activeSection === 'dashboard') {
-      return (
-        <HomePage 
-          onNavigate={(section) => navigateSection(section as AppSection)}
-          onAddCard={() => setAddDataMode('create')}
-        />
-      );
-    }
-
-    if (activeSection === 'settings') {
-      return (
-        <SettingsPage onClose={() => navigateSection('dashboard')} />
-      );
-    }
-    if (activeSection === 'stats') {
-      return (
-        <StatsPage />
-      );
-    }
-    
-    if (activeSection === 'review') {
-      return (
-        <ReviewHubPage 
-          onSelectFSRS={startFSRSReview}
-          onSelectCluster={startClusterReviewMode}
-          onSelectIntensive={startIntensiveReview}
-          totalDue={workspaceCards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= new Date()).length}
-          hasEnoughCardsForCluster={workspaceCards.filter(c => c.manualConnections && c.manualConnections.length > 0).length >= 1}
-        />
-      );
-    }
-    
-    if (activeSection === 'courses') {
-      return (
-        <CoursesPage />
-      );
-    }
-
-    return (
-      <BrowsePage
-        isNetworkOnly={activeSection === 'network'}
-        networkPanelCard={isNetworkContext ? selectedCard : null}
-        networkPanelPinned={networkPanelPinned}
-        onNetworkPanelClose={() => {
-          setSelectedCardId(null);
-          if (!networkPanelPinned) {
-            setPinnedCardId(null);
-          }
-        }}
-        onNetworkPanelPinToggle={() => {
-          setNetworkPanelPinned(prev => {
-            const next = !prev;
-            if (next && selectedCard) {
-              setPinnedCardId(selectedCard.id);
-            }
-            if (!next) {
-              setPinnedCardId(null);
-            }
-            return next;
-          });
-        }}
-        renderNetworkView={() => (
-          <Suspense fallback={<LoadingFallback />}>
-            <NetworkView
-              cards={filteredCards}
-              onNodeClick={(id) => {
-                if (networkPanelPinned) {
-                  setPinnedCardId(id);
-                }
-                setSelectedCardId(id);
-              }}
-              searchQuery={searchQuery}
-              highlightedIds={searchResultIds ? new Set(searchResultIds) : undefined}
-              activeFilters={activeFilters}
-              onSuppressConnections={handleSuppressConnections}
-              semanticReady={embeddingsReady}
-              vetoPairs={getLinkFeedback().vetoPairs}
-              typeCompat={getLinkFeedback().typePairScores}
-              activeNodeId={selectedCard?.id}
-              pendingClusterReview={pendingClusterReview}
-              onStartClusterReview={(clusterNodeIds) => {
-                  setPendingClusterReview(false);
-                  if (clusterNodeIds.length === 0) return;
-                  setReviewSession({
-                      cardIds: clusterNodeIds,
-                      title: 'Révision par Cluster'
-                  });
-              }}
-            />
-          </Suspense>
-        )}
-      />
-    );
-  };
+  if (!user && !bypassLogin) {
+    return <LoginPage onBypass={() => setBypassLogin(true)} />;
+  }
 
   return (
-    <AppLayout 
-      onNavigate={navigateSection}
-      onNavigateSettings={() => navigateSection('settings')}
+    <AppLayout
+      onNavigate={(section) => {
+        if (!canAccess(section)) {
+          setUpsellFeature(section);
+          return;
+        }
+        navigateSection(section);
+      }}
+      onNavigateSettings={() => {
+        if (!canAccess('settings')) {
+          setUpsellFeature('settings');
+          return;
+        }
+        navigateSection("settings");
+      }}
       pendingClusterReview={pendingClusterReview}
       onCancelClusterReview={() => setPendingClusterReview(false)}
     >
-      <Suspense fallback={<LoadingFallback />}>
-        {renderMainContent()}
-      </Suspense>
+      <Suspense fallback={<LoadingFallback />}>{renderMainContent()}</Suspense>
       {modals}
+      {!hasCompletedOnboarding && user && (
+        <OnboardingWizard />
+      )}
+      <UpsellModal
+        isOpen={!!upsellFeature}
+        onClose={() => setUpsellFeature(null)}
+        onSignIn={() => { setUpsellFeature(null); setBypassLogin(false); }}
+        feature={upsellFeature ?? 'default'}
+      />
     </AppLayout>
   );
 }
@@ -473,10 +458,11 @@ function App() {
   // Global Indexing Progress State
   const [indexingProgress, setIndexingProgress] = useState<number | null>(null);
 
+
   useEffect(() => {
     // Bind the progress callback from semanticSearch to global App state
     // This allows AppContent to trigger indexing, and App to show the progress
-    import('./semanticSearch').then(({ setIndexingProgressCallback }) => {
+    import("./semanticSearch").then(({ setIndexingProgressCallback }) => {
       setIndexingProgressCallback(setIndexingProgress);
     });
   }, []);

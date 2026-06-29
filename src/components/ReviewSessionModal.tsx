@@ -19,6 +19,11 @@ const REVIEW_ACTIONS: Array<{ rating: 1 | 2 | 3; label: string; className: strin
     { rating: 3, label: 'Je connais', className: 'review-btn-3' }
 ];
 
+const COURSE_REVIEW_ACTIONS: Array<{ rating: 1 | 2 | 3; label: string; className: string }> = [
+    { rating: 1, label: 'À revoir', className: 'review-btn-1' },
+    { rating: 3, label: 'Maîtrisé', className: 'review-btn-3' }
+];
+
 const getLinkedCardIds = (card: Card, allCards: Card[]): string[] => {
     const ids = new Set<string>(card.manualConnections || []);
     const text = `${card.content} ${card.details}`.toLowerCase();
@@ -111,17 +116,21 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
     const nextIntervals = useMemo(() => {
         if (!card) return { 1: '', 2: '', 3: '' };
+        const isCourseType = card.nodeType === 'course' || card.nodeType === 'concept';
         return {
-            1: formatInterval(calculateFsrsProgress(card.progress, 1).dueDate),
-            2: formatInterval(calculateFsrsProgress(card.progress, 2).dueDate),
-            3: formatInterval(calculateFsrsProgress(card.progress, 3).dueDate),
+            1: formatInterval(calculateFsrsProgress(card.progress, 1, isCourseType).dueDate),
+            2: formatInterval(calculateFsrsProgress(card.progress, 2, isCourseType).dueDate),
+            3: formatInterval(calculateFsrsProgress(card.progress, 3, isCourseType).dueDate),
         };
     }, [card]);
+
+    const isCourseType = card?.nodeType === 'course' || card?.nodeType === 'concept';
+    const shouldReveal = isAnswerRevealed || isCourseType;
 
     if (!card) return null;
 
     const handleRate = useCallback((rating: 1 | 2 | 3) => {
-        if (!isAnswerRevealed) return; // Prevent rating before revealing
+        if (!shouldReveal) return; // Prevent rating before revealing
         onRate(card.id, rating);
         if (index < cards.length - 1) {
             setIndex(prev => prev + 1);
@@ -129,7 +138,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
             // Close if it's the last card
             handleClose();
         }
-    }, [card.id, index, cards.length, onRate, isAnswerRevealed, handleClose]);
+    }, [card.id, index, cards.length, onRate, shouldReveal, handleClose]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -141,11 +150,11 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                 }
                 e.stopPropagation();
             } else if (e.key === ' ' || e.key === 'Enter') {
-                if (!isAnswerRevealed) {
+                if (!shouldReveal) {
                     setIsAnswerRevealed(true);
                     e.preventDefault();
                 }
-            } else if (isAnswerRevealed) {
+            } else if (shouldReveal) {
                 if (e.key === '1') handleRate(1);
                 else if (e.key === '2') handleRate(2);
                 else if (e.key === '3') handleRate(3);
@@ -153,7 +162,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleRate, isAnswerRevealed, handleClose]);
+    }, [handleRate, shouldReveal, handleClose]);
 
     const qualityScore = card.progress?.difficulty ? (10 - card.progress.difficulty) * 10 : 50;
 
@@ -224,12 +233,34 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
                     <div style={{ background: 'var(--color-surface)', borderRadius: '16px', padding: '32px', boxShadow: 'none', border: 'none', flex: 1, display: 'flex', flexDirection: 'column' }}>
                         
-                        <div style={{ textAlign: 'center', marginBottom: isAnswerRevealed ? '32px' : '0', flex: isAnswerRevealed ? 'none' : 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.75rem', color: 'var(--color-text)', fontWeight: 700 }}>{card.title}</h3>
-                            {card.subtitle && <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '1.1rem', fontFamily: 'monospace' }}>{card.subtitle}</p>}
+                        <div style={{ textAlign: 'center', marginBottom: shouldReveal ? '32px' : '0', flex: shouldReveal ? 'none' : 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            {card.format === 'cloze' ? (
+                                <div style={{ margin: '0 0 8px 0', fontSize: '1.5rem', color: 'var(--color-text)', fontWeight: 500, lineHeight: 1.6 }}>
+                                    {(card.content || '').split(/(\{.*?\})/).map((part, i) => {
+                                        if (part.startsWith('{') && part.endsWith('}')) {
+                                            const word = part.slice(1, -1);
+                                            return shouldReveal ? (
+                                                <span key={i} style={{ color: 'var(--color-drug)', fontWeight: 800, borderBottom: '2px dashed var(--color-drug)', padding: '0 4px', borderRadius: '4px', background: 'var(--color-surface)' }}>
+                                                    {word}
+                                                </span>
+                                            ) : (
+                                                <span key={i} style={{ color: 'var(--color-text-muted)', fontWeight: 800, borderBottom: '2px dashed var(--color-border)', padding: '0 4px', borderRadius: '4px', background: 'var(--color-bg)' }}>
+                                                    [...]
+                                                </span>
+                                            );
+                                        }
+                                        return <span key={i}>{part}</span>;
+                                    })}
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.75rem', color: 'var(--color-text)', fontWeight: 700 }}>{card.title}</h3>
+                                    {card.subtitle && <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '1.1rem', fontFamily: 'monospace' }}>{card.subtitle}</p>}
+                                </>
+                            )}
                         </div>
                         
-                            <div style={{ display: !isAnswerRevealed ? 'flex' : 'none', marginTop: 'auto', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                            <div style={{ display: !shouldReveal ? 'flex' : 'none', marginTop: 'auto', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                                 <button 
                                     onClick={() => setIsAnswerRevealed(true)}
                                     style={{ background: 'var(--color-drug)', color: 'white', border: 'none', padding: '16px 32px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-lg)', transition: 'transform 0.2s, background 0.2s', width: '100%', maxWidth: '400px' }}
@@ -243,8 +274,8 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                 </div>
                             </div>
 
-                            <div className="markdown-content" style={{ display: isAnswerRevealed ? 'block' : 'none', flex: 1, animation: 'fadeIn 0.3s ease-out' }}>
-                                {card.content && (
+                            <div className="markdown-content" style={{ display: shouldReveal ? 'block' : 'none', flex: 1, animation: 'fadeIn 0.3s ease-out' }}>
+                                {card.content && card.format !== 'cloze' && (
                                     <div style={{ marginBottom: card.details ? '24px' : '0' }}>
                                         <MarkdownRenderer content={card.content} />
                                     </div>
@@ -275,10 +306,10 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     </div>
                 </div>
 
-                {isAnswerRevealed && (
+                {shouldReveal && (
                     <div style={{ padding: '20px 24px', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', animation: 'slideUp 0.3s ease-out' }}>
                         <div className="review-actions-container" style={{ display: 'flex', gap: '12px', justifyContent: 'center', maxWidth: '800px', margin: '0 auto' }}>
-                            {REVIEW_ACTIONS.map(action => (
+                            {(isCourseType ? COURSE_REVIEW_ACTIONS : REVIEW_ACTIONS).map(action => (
                                 <button
                                     key={action.rating}
                                     className={`review-action-btn ${action.className}`}

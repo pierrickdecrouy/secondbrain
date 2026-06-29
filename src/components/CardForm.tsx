@@ -32,6 +32,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
     // Form State
     const [formData, setFormData] = useState<Partial<Card>>({
         type: 'drug',
+        nodeType: 'concept',
         title: '',
         subtitle: '',
         content: '', // Summary
@@ -94,6 +95,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
     useEffect(() => {
         if (card) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setFormData({ ...card });
             if (!CARD_TYPES.includes(card.type as any)) {
                 setIsCustomTypeActive(true);
@@ -125,14 +127,19 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
     // Handlers
     const handleSave = useCallback(() => {
-        if (!formData.title || !formData.type) return;
+        const isCloze = formData.nodeType === 'flashcard' && formData.format === 'cloze';
+        if ((!formData.title && !isCloze) || !formData.type) return;
 
         isExplicitlyClosedRef.current = true;
         const now = Date.now();
+        const finalTitle = isCloze && !formData.title ? "Texte à trou" : formData.title;
         const newCard: Card = {
             id: card?.id || now.toString(),
             type: formData.type as CardType,
-            title: formData.title,
+            nodeType: formData.nodeType || 'concept',
+            format: formData.format || 'q&a',
+            parentId: formData.parentId,
+            title: finalTitle,
             subtitle: formData.subtitle || '',
             content: formData.content || '',
             tags: formData.tags || [],
@@ -236,131 +243,195 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
             <div className="card-form-scroll-area vertical-stack">
 
-                {/* 1. Identity Box */}
-                <div className="form-box app-style">
-                    <div className="box-header app-header-style">
-                        <h3>Identité & Catégorie</h3>
-                    </div>
-                    <div className="box-content app-content-style">
-                        <div className="input-group">
-                            <label className="field-label">Titre</label>
-                            <input
-                                type="text"
-                                value={formData.title}
-                                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                placeholder="Titre de la fiche..."
-                                className="app-input title-input"
-                            />
-                        </div>
-
-                        <div className="input-group">
-                            <label className="field-label">Catégorie</label>
-
-                            <div className="category-wrapper">
+                {formData.nodeType === 'flashcard' ? (
+                    <>
+                        <div className="form-box app-style">
+                            <div className="box-header app-header-style">
+                                <h3>Type de Flashcard</h3>
+                            </div>
+                            <div className="box-content app-content-style">
                                 <select
                                     className="app-select full-width"
-                                    value={isCustomTypeActive ? '__custom__' : formData.type}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        if (val === '__custom__') {
-                                            setIsCustomTypeActive(true);
-                                            setFormData({ ...formData, type: customTypeInput || '' });
-                                        } else {
-                                            setIsCustomTypeActive(false);
-                                            setFormData({ ...formData, type: val });
-                                        }
-                                    }}
+                                    value={formData.format || 'q&a'}
+                                    onChange={(e) => setFormData({ ...formData, format: e.target.value as any })}
                                 >
-                                    {CARD_TYPES.map((t) => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                    <option value="__custom__">Autre / Nouveau...</option>
+                                    <option value="q&a">Question / Réponse</option>
+                                    <option value="cloze">Texte à trous</option>
                                 </select>
-
-                                {isCustomTypeActive && (
-                                    <input
-                                        type="text"
-                                        className="app-input mt-2"
-                                        value={customTypeInput}
-                                        onChange={handleCustomTypeChange}
-                                        placeholder="Nom de la catégorie..."
-                                        autoFocus
-                                    />
-                                )}
                             </div>
                         </div>
 
-                        <div className="input-group">
-                            <label className="field-label">Sous-titre / DCI</label>
-                            <input
-                                type="text"
-                                value={formData.subtitle}
-                                onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
-                                placeholder="Optionnel..."
-                                className="app-input"
-                            />
+                        <div className="form-box app-style">
+                            <div className="box-header app-header-style">
+                                <h3>Contenu</h3>
+                            </div>
+                            <div className="box-content app-content-style">
+                                {formData.format === 'cloze' ? (
+                                    <div className="input-group">
+                                        <div className="field-label">Texte avec trous (utilisez les accolades {'{mot}'})</div>
+                                        <textarea
+                                            value={formData.content || ''}
+                                            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                                            className="app-input"
+                                            rows={4}
+                                            placeholder="Exemple: L'enzyme {Troponine} s'élève lors d'un IDM."
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="input-group">
+                                            <div className="field-label">Question (Recto)</div>
+                                            <textarea
+                                                value={formData.title || ''}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                className="app-input"
+                                                rows={2}
+                                                placeholder="Quelle est la question ?"
+                                            />
+                                        </div>
+                                        <div className="input-group mt-4" style={{ marginTop: 16 }}>
+                                            <div className="field-label">Réponse (Verso)</div>
+                                            <textarea
+                                                value={formData.details || ''}
+                                                onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                                                className="app-input"
+                                                rows={4}
+                                                placeholder="Quelle est la réponse ?"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                ) : (
+                    <>
+                        {/* 1. Identity Box */}
+                        <div className="form-box app-style">
+                            <div className="box-header app-header-style">
+                                <h3>Identité & Catégorie</h3>
+                            </div>
+                            <div className="box-content app-content-style">
+                                <div className="input-group">
+                                    <div className="field-label">Titre</div>
+                                    <input
+                                        type="text"
+                                        value={formData.title}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                        placeholder="Titre de la fiche..."
+                                        className="app-input title-input"
+                                    />
+                                </div>
 
-                {/* 2. Content Box */}
-                <div className="form-box app-style">
-                    <div className="box-header app-header-style flex-between">
-                        <h3>Contenu</h3>
-                        <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                className={`icon-btn ${showMarkdownInfo ? 'active' : ''}`}
-                                onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
-                                title="Aide Markdown"
-                            >
-                                <Info size={16} />
-                            </button>
-                            {showMarkdownInfo && (
-                                <div className="markdown-tooltip-popover app-popover">
-                                    <h4>Guide Markdown</h4>
-                                    <div className="md-guide-grid">
-                                        <div className="md-col">
-                                            <h5>Style</h5>
-                                            <ul>
-                                                <li><b>**Gras**</b></li>
-                                                <li><i>*Italique*</i></li>
-                                                <li>~Barré~</li>
-                                                <li>{'`Code`'}</li>
-                                            </ul>
-                                        </div>
-                                        <div className="md-col">
-                                            <h5>Structure</h5>
-                                            <ul>
-                                                <li># H1 Heading</li>
-                                                <li>## H2 Heading</li>
-                                                <li>- Liste</li>
-                                                <li>1. Liste num.</li>
-                                            </ul>
-                                        </div>
-                                        <div className="md-col">
-                                            <h5>Avancé</h5>
-                                            <ul>
-                                                <li>[[Lien]]</li>
-                                                <li>||Caché||</li>
-                                                <li>$$Math$$</li>
-                                                <li>![Alt](url)</li>
-                                                <li>==Surligné==</li>
-                                            </ul>
-                                        </div>
+                                <div className="input-group">
+                                    <div className="field-label">Catégorie</div>
+
+                                    <div className="category-wrapper">
+                                        <select
+                                            className="app-select full-width"
+                                            value={isCustomTypeActive ? '__custom__' : formData.type}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '__custom__') {
+                                                    setIsCustomTypeActive(true);
+                                                    setFormData({ ...formData, type: customTypeInput || '' });
+                                                } else {
+                                                    setIsCustomTypeActive(false);
+                                                    setFormData({ ...formData, type: val });
+                                                }
+                                            }}
+                                        >
+                                            {CARD_TYPES.map((t) => (
+                                                <option key={t} value={t}>{t}</option>
+                                            ))}
+                                            <option value="__custom__">Autre / Nouveau...</option>
+                                        </select>
+
+                                        {isCustomTypeActive && (
+                                            <input
+                                                type="text"
+                                                className="app-input mt-2"
+                                                value={customTypeInput}
+                                                onChange={handleCustomTypeChange}
+                                                placeholder="Nom de la catégorie..."
+                                            />
+                                        )}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="box-content no-padding">
 
-                        <CourseEditor
-                            value={formData.details || ''}
-                            onChange={(val) => setFormData({ ...formData, details: val })}
-                            existingCards={existingCards}
-                        />
-                    </div>
-                </div>
+                                <div className="input-group">
+                                    <div className="field-label">Sous-titre / DCI</div>
+                                    <input
+                                        type="text"
+                                        value={formData.subtitle}
+                                        onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                                        placeholder="Optionnel..."
+                                        className="app-input"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. Content Box */}
+                        <div className="form-box app-style">
+                            <div className="box-header app-header-style flex-between">
+                                <h3>Contenu</h3>
+                                <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                        className={`icon-btn ${showMarkdownInfo ? 'active' : ''}`}
+                                        onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
+                                        title="Aide Markdown"
+                                    >
+                                        <Info size={16} />
+                                    </button>
+                                    {showMarkdownInfo && (
+                                        <div className="markdown-tooltip-popover app-popover">
+                                            <h4>Guide Markdown</h4>
+                                            <div className="md-guide-grid">
+                                                <div className="md-col">
+                                                    <h5>Style</h5>
+                                                    <ul>
+                                                        <li><b>**Gras**</b></li>
+                                                        <li><i>*Italique*</i></li>
+                                                        <li>~Barré~</li>
+                                                        <li>{'`Code`'}</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="md-col">
+                                                    <h5>Structure</h5>
+                                                    <ul>
+                                                        <li># H1 Heading</li>
+                                                        <li>## H2 Heading</li>
+                                                        <li>- Liste</li>
+                                                        <li>1. Liste num.</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="md-col">
+                                                    <h5>Avancé</h5>
+                                                    <ul>
+                                                        <li>[[Lien]]</li>
+                                                        <li>||Caché||</li>
+                                                        <li>$$Math$$</li>
+                                                        <li>![Alt](url)</li>
+                                                        <li>==Surligné==</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="box-content no-padding">
+
+                                <CourseEditor
+                                    value={formData.details || ''}
+                                    onChange={(val) => setFormData({ ...formData, details: val })}
+                                    existingCards={existingCards}
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {/* 3. Tags Box */}
                 <div className="form-box app-style">
@@ -416,7 +487,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     <div className="box-content app-content-style vertical-connections">
                         {/* Manual Links */}
                         <div className="connection-block">
-                            <label className="field-label">Lier à d'autres fiches</label>
+                            <div className="field-label">Lier à d'autres fiches</div>
                             <div className="search-row app-input-row">
                                 <MagnifyingGlass size={14} className="search-icon-input" />
                                 <input
@@ -431,7 +502,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                             {connectionCandidates.length > 0 && (
                                 <div className="candidates-dropdown app-dropdown">
                                     {connectionCandidates.map(c => (
-                                        <div key={c.id} className="candidate-row" onClick={() => toggleConnection(c.id)}>
+                                        <div key={c.id} className="candidate-row" onClick={() => toggleConnection(c.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleConnection(c.id); }}>
                                             <div className="dot" style={{ background: getCategoryColor(c.type) }} />
                                             <span>{c.title}</span>
                                         </div>
@@ -454,7 +525,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
                         {/* Exclusions */}
                         <div className="connection-block mt-4">
-                            <label className="field-label warning">Exclusions (Masquer liens)</label>
+                            <div className="field-label warning">Exclusions (Masquer liens)</div>
                             <div className="search-row app-input-row warning">
                                 <EyeSlash size={14} className="search-icon-input warning-icon" />
                                 <input
@@ -469,7 +540,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                             {suppressionCandidates.length > 0 && (
                                 <div className="candidates-dropdown app-dropdown">
                                     {suppressionCandidates.map(c => (
-                                        <div key={c.id} className="candidate-row warning" onClick={() => toggleSuppression(c.id)}>
+                                        <div key={c.id} className="candidate-row warning" onClick={() => toggleSuppression(c.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSuppression(c.id); }}>
                                             <EyeSlash size={14} /> <span>{c.title}</span>
                                         </div>
                                     ))}
@@ -498,7 +569,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     </div>
                     <div className="box-content app-content-style">
                         <div className="input-group">
-                            <label className="field-label">Image Principale</label>
+                            <div className="field-label">Image Principale</div>
                             <div className="input-with-action app-input-row">
                                 <input
                                     type="text"
@@ -507,9 +578,9 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                     className="app-input flex-1 border-0"
                                     placeholder="URL ou Upload..."
                                 />
-                                <label className="action-btn-secondary">
+                                <label htmlFor="image-upload" className="action-btn-secondary">
                                     <UploadSimple size={14} />
-                                    <input type="file" hidden onChange={handleImageUpload} />
+                                    <input id="image-upload" type="file" hidden onChange={handleImageUpload} />
                                 </label>
                             </div>
                             {formData.imageUrl && (
@@ -520,7 +591,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         </div>
 
                         <div className="input-group mt-4">
-                            <label className="field-label">Résumé Court</label>
+                            <div className="field-label">Résumé Court</div>
                             <textarea
                                 id="md-textarea"
                                 rows={2}

@@ -4,8 +4,8 @@ import {
     MagnifyingGlass, Plus,
     BookOpen, Brain, Command
 } from '@phosphor-icons/react';
-import { useCards } from '../context/CardContext';
-import { useUI } from '../context/UIContext';
+import { useCardStore as useCards } from '../store/useCardStore';
+import { useUIStore as useUI } from '../store/useUIStore';
 
 interface HomePageProps {
     onNavigate: (section: string) => void;
@@ -56,7 +56,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
 
     return (
         <div className="home-page">
-            <div className="home-animated-bg" />
+            <div className="home-aurora-bg">
+                <div className="aurora-blob aurora-blob-1" />
+                <div className="aurora-blob aurora-blob-2" />
+                <div className="aurora-blob aurora-blob-3" />
+            </div>
 
             {/* Main Center Content */}
             <div className="home-content app-no-drag" style={{ paddingTop: '2rem' }}>

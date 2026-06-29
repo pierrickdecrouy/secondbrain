@@ -1,4 +1,5 @@
 import type { Card } from './types';
+import { COURSE_TYPE } from './types';
 import { initialCards } from './data';
 import { MEDICAL_ABBREVIATIONS } from './medicalAbbreviations';
 
@@ -49,13 +50,20 @@ function convertHtmlToText(html: string): string {
 }
 
 function cleanCards(cards: Card[]): Card[] {
-    return cards.map(card => ({
-        ...card,
-        details: convertHtmlToText(card.details),
-        content: convertHtmlToText(card.content),
-        createdAt: card.createdAt || 0,
-        updatedAt: card.updatedAt || 0
-    }));
+    return cards.map(card => {
+        let nodeType = card.nodeType;
+        if (!nodeType) {
+            nodeType = card.type === COURSE_TYPE ? 'course' : 'concept';
+        }
+        return {
+            ...card,
+            nodeType,
+            details: convertHtmlToText(card.details),
+            content: convertHtmlToText(card.content),
+            createdAt: card.createdAt || 0,
+            updatedAt: card.updatedAt || 0
+        };
+    });
 }
 
 export async function loadCardsAsync(): Promise<Card[]> {
@@ -138,14 +146,6 @@ export async function saveSettingAsync<T>(key: string, value: T): Promise<void> 
     }
 }
 
-export function generateId(title: string): string {
-    return title
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-}
 
 // Abbreviation Storage Logic
 

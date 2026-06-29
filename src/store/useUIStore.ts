@@ -37,6 +37,9 @@ interface UIState {
 
   isZenMode: boolean;
   setZenMode: (isZen: boolean) => void;
+
+  hasCompletedOnboarding: boolean;
+  completeOnboarding: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -75,4 +78,10 @@ export const useUIStore = create<UIState>((set) => ({
 
   isZenMode: false,
   setZenMode: (isZen) => set({ isZenMode: isZen }),
+
+  hasCompletedOnboarding: localStorage.getItem('extnd_onboarding_v1') === 'true',
+  completeOnboarding: () => {
+    localStorage.setItem('extnd_onboarding_v1', 'true');
+    set({ hasCompletedOnboarding: true });
+  },
 }));

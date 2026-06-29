@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Tag, PencilSimple, Trash } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
-import { useCards } from '../context/CardContext';
+import { useCardStore as useCards } from '../store/useCardStore';
 
 export const TagManagerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { cards, setCards } = useCards();

@@ -5,9 +5,12 @@ import { DictionaryTab } from './settings/DictionaryTab';
 import { AppearanceTab } from './settings/AppearanceTab';
 import { IntelligenceTab } from './settings/IntelligenceTab';
 import { RevisionTab } from './settings/RevisionTab';
-import { S, SettingsCard, CardSection, CardBody, FieldLabel, SettingsInput, SettingsSelect, PrimaryButton, Badge, StatCard } from './settings/SettingsUI';
-import { useUI } from '../context/UIContext';
+import { S, SettingsCard, CardSection, CardBody, FieldLabel, SettingsInput, PrimaryButton, Badge, StatCard } from './settings/SettingsUI';
+import { useUIStore as useUI } from '../store/useUIStore';
 import { saveSettingAsync } from '../persistentSettings';
+import { useAuth } from '../context/AuthContext';
+import { updateProfile } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 export type SettingsTab = 'dictionary' | 'advanced' | 'stats' | 'appearance' | 'data' | 'intelligence' | 'profile' | 'subscription';
 
@@ -24,21 +27,42 @@ const TAB_LABELS: Record<SettingsTab, string> = {
     intelligence: 'Intelligence IA',
     profile: 'Profil',
     subscription: 'Abonnement',
-};
-
-/* ── Profile Tab ──────────────────────────────────────────────────────────── */
+}/* ── Profile Tab ─────────────────────────────────────────────────────────── */
 const ProfileTab: React.FC = () => {
+    const { user } = useAuth();
     const { userName, setUserName } = useUI();
-    const [tempName, setTempName] = useState(userName);
-    const [saved, setSaved] = useState(false);
 
-    const handleSave = () => {
+    // Source of truth: Firebase user if connected, localStorage otherwise
+    const initialName = user?.displayName || userName || '';
+    const [tempName, setTempName] = useState(initialName);
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
         const newName = tempName.trim() || 'Utilisateur';
-        setUserName(newName);
-        saveSettingAsync('pharmabrain_username_v1', newName);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        setSaving(true);
+        try {
+            if (user && auth.currentUser) {
+                // Update Firebase Auth profile
+                await updateProfile(auth.currentUser, { displayName: newName });
+            }
+            // Also keep localStorage in sync for offline fallback
+            setUserName(newName);
+            saveSettingAsync('pharmabrain_username_v1', newName);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (err) {
+            console.error('Erreur mise à jour profil:', err);
+        } finally {
+            setSaving(false);
+        }
     };
+
+    // Avatar: photo Google si dispo, sinon initiale
+    const displayName = user?.displayName || userName || 'Utilisateur';
+    const email = user?.email || '—';
+    const photoURL = user?.photoURL;
+    const initial = displayName.charAt(0).toUpperCase();
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -50,54 +74,60 @@ const ProfileTab: React.FC = () => {
                 />
                 <CardBody>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-                        <div style={{
-                            width: 60, height: 60, borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #10b981, #2dd4bf)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontWeight: 800, fontSize: 24, flexShrink: 0,
-                        }}>{userName.charAt(0).toUpperCase()}</div>
+                        {photoURL ? (
+                            <img
+                                src={photoURL}
+                                alt={displayName}
+                                style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                            />
+                        ) : (
+                            <div style={{
+                                width: 60, height: 60, borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #10b981, #2dd4bf)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#fff', fontWeight: 800, fontSize: 24, flexShrink: 0,
+                            }}>{initial}</div>
+                        )}
                         <div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: S.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 300 }}>
-                                {userName}
+                                {displayName}
                             </div>
-                            <div style={{ fontSize: 13, color: S.muted, marginTop: 2 }}>Étudiant en pharmacie</div>
+                            <div style={{ fontSize: 13, color: S.muted, marginTop: 2 }}>{email}</div>
                             <div style={{ marginTop: 6 }}>
-                                <Badge>Compte actif</Badge>
+                                {user ? <Badge>Compte connecté</Badge> : <Badge>Mode hors-ligne</Badge>}
                             </div>
                         </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div>
-                            <FieldLabel>Nom d'utilisateur</FieldLabel>
-                            <SettingsInput type="text" value={tempName} onChange={(e) => setTempName(e.target.value)} />
+                            <FieldLabel>Nom d'affichage</FieldLabel>
+                            <SettingsInput
+                                type="text"
+                                value={tempName}
+                                onChange={(e) => setTempName(e.target.value)}
+                                placeholder="Votre prénom"
+                            />
                         </div>
                         <div>
                             <FieldLabel>Email</FieldLabel>
-                            <SettingsInput type="email" defaultValue="admin@extnd.app" disabled style={{ opacity: 0.6 }} />
-                        </div>
-                        <div>
-                            <FieldLabel>Spécialité</FieldLabel>
-                            <SettingsInput type="text" defaultValue="Pharmacie" disabled style={{ opacity: 0.6 }} />
-                        </div>
-                        <div>
-                            <FieldLabel>Année d'études</FieldLabel>
-                            <SettingsSelect defaultValue="4" disabled style={{ opacity: 0.6 }}>
-                                {['1ère','2ème','3ème','4ème','5ème','6ème','Internat'].map((y, i) => (
-                                    <option key={i} value={i+1}>{y} année</option>
-                                ))}
-                            </SettingsSelect>
+                            <SettingsInput
+                                type="email"
+                                value={email}
+                                disabled
+                                style={{ opacity: 0.6 }}
+                            />
                         </div>
                     </div>
 
                     <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
-                        {saved && <span style={{ fontSize: 13, color: S.primary, fontWeight: 500 }}>Enregistré !</span>}
-                        <PrimaryButton 
-                            onClick={handleSave} 
-                            disabled={!tempName.trim() || tempName === userName}
-                            style={{ opacity: (!tempName.trim() || tempName === userName) ? 0.5 : 1, cursor: (!tempName.trim() || tempName === userName) ? 'not-allowed' : 'pointer' }}
+                        {saved && <span style={{ fontSize: 13, color: S.primary, fontWeight: 500 }}>Enregistré ✓</span>}
+                        <PrimaryButton
+                            onClick={handleSave}
+                            disabled={saving || !tempName.trim() || tempName === displayName}
+                            style={{ opacity: (saving || !tempName.trim() || tempName === displayName) ? 0.5 : 1, cursor: (saving || !tempName.trim() || tempName === displayName) ? 'not-allowed' : 'pointer' }}
                         >
-                            Enregistrer
+                            {saving ? 'Sauvegarde...' : 'Enregistrer'}
                         </PrimaryButton>
                     </div>
                 </CardBody>
@@ -108,7 +138,7 @@ const ProfileTab: React.FC = () => {
                 <CardSection title="Stockage local" subtitle="Données enregistrées dans votre navigateur." />
                 <CardBody>
                     <p style={{ fontSize: 13, color: S.muted, margin: '0 0 16px 0', lineHeight: 1.6 }}>
-                        Vos données restent sur votre appareil. Aucune information n'est transmise à un serveur externe.
+                        Vos données sont synchronisées avec Firebase si vous êtes connecté, et sauvegardées localement via IndexedDB.
                     </p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <span style={{ fontSize: 13, color: S.muted }}>Espace utilisé</span>

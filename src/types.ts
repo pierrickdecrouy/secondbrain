@@ -1,12 +1,19 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export type CardType = string;
+export type NodeType = 'course' | 'concept' | 'flashcard';
+export type FlashcardFormat = 'q&a' | 'cloze' | 'basic';
 
 export interface Card {
     id: string;
-    type: CardType;
-    title: string;
+    type: CardType; // Used as category (drug, patho, physio, data, etc.)
+    nodeType?: NodeType; // New 3-tier hierarchy
+    format?: FlashcardFormat; // Only for flashcards
+    parentId?: string; // Links flashcard to concept, concept to course
+    title: string; // Question for flashcards
     subtitle: string;
-    content: string; // Plain text summary
-    details: string; // Markdown content (supports rich text)
+    content: string; // Plain text summary or front of flashcard/cloze text
+    details: string; // Markdown content or back of flashcard
     tags: string[];
     imageUrl?: string; // Optional image URL or local path
     manualConnections?: string[]; // IDs of manually connected cards
@@ -16,17 +23,15 @@ export interface Card {
     progress?: UserCardProgress;
     subject?: string; // Matière / Subject category
     workspaceId?: string; // Identifier for the workspace
+    ownerUid?: string | null; // null = created offline (no account), string = Firebase uid
 }
 
 // Export a value to ensure this file is treated as a module at runtime
 export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;
 export const COURSE_TYPE = 'course';
 
-export const generateId = (text: string): string => {
-    return text
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+export const generateId = (): string => {
+    return uuidv4();
 };
 
 export interface Node {

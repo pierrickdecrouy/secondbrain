@@ -10,8 +10,11 @@ export type ReviewFeedback = 1 | 2 | 3 | 4;
 // 1 -> Again, 2 -> Good, 3 -> Easy. The UI says: 1=Je ne connais pas, 2=Moyen, 3=Je connais.
 // "Moyen" = Good or Hard. Let's map 1->Again, 2->Hard, 3->Good, or just handle 1,2,3,4 natively.
 
-const f = fsrs(generatorParameters({ enable_fuzz: true }));
-
+// FSRS Instances with distinct retention targets
+// Flashcards aim for strong memory retention (90%)
+const fFlashcard = fsrs(generatorParameters({ enable_fuzz: true, request_retention: 0.9 }));
+// Courses aim for spaced reading/verification, so a lower target generates much longer intervals
+const fCourse = fsrs(generatorParameters({ enable_fuzz: true, request_retention: 0.7 }));
 const stateToStatus = (state: State): UserCardProgress['status'] => {
     switch(state) {
         case State.New: return 'new';
@@ -52,12 +55,14 @@ const progressToFsrsCard = (progress?: Partial<UserCardProgress> | null): FSRSCa
 
 export function calculateFsrsProgress(
     current: Partial<UserCardProgress> | null | undefined,
-    feedback: ReviewFeedback
+    feedback: ReviewFeedback,
+    isCourse: boolean = false
 ): UserCardProgress {
     const card = progressToFsrsCard(current);
     const now = new Date();
     
-    const scheduling_cards = f.repeat(card, now);
+    const fInstance = isCourse ? fCourse : fFlashcard;
+    const scheduling_cards = fInstance.repeat(card, now);
     
     // Map our feedback to FSRS Rating
     // 1 = ne connaît pas -> Again

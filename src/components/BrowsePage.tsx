@@ -7,14 +7,16 @@ import {
     Trash,
     ArrowsDownUp,
     SquaresFour,
-    Rows
+    Rows,
+    DownloadSimple
 } from '@phosphor-icons/react';
+import { exportToAnki } from '../utils/ankiExport';
 import type { Card } from '../types';
 import { COURSE_TYPE } from '../types';
 import SearchSynthesis from './SearchSynthesis';
 import { useTheme } from '../context/ThemeContext';
-import { useCards } from '../context/CardContext';
-import { useUI } from '../context/UIContext';
+import { useCardStore as useCards } from '../store/useCardStore';
+import { useUIStore as useUI } from '../store/useUIStore';
 import { useFilteredCards } from '../hooks/useFilteredCards';
 import { stripMarkdown } from '../utils';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
@@ -157,7 +159,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     <button
                         className={`browse-filter-pill ${activeFilters.length === 0 || activeFilters.includes('all') ? 'active' : ''}`}
                         onClick={() => handleFilterToggle('all')}
-                        style={{ margin: 0, border: 'none', background: (activeFilters.length === 0 || activeFilters.includes('all')) ? '#059669' : 'transparent', color: (activeFilters.length === 0 || activeFilters.includes('all')) ? '#0f172a' : '#cbd5e1', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                        style={{ margin: 0, border: 'none', background: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-text)' : 'transparent', color: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-bg)' : 'var(--color-text-muted)', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
                     >
                         Tous
                     </button>
@@ -168,7 +170,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             key={type}
                             className={`browse-filter-pill ${isActive ? 'active' : ''}`}
                             onClick={() => handleFilterToggle(type)}
-                            style={{ margin: 0, border: 'none', background: isActive ? getCategoryColor(type) : 'transparent', color: isActive ? '#0f172a' : '#cbd5e1', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                            style={{ margin: 0, border: 'none', background: isActive ? getCategoryColor(type) : 'transparent', color: isActive ? '#ffffff' : 'var(--color-text-muted)', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
                         >
                             {getFilterLabel(type)}
                         </button>
@@ -186,6 +188,16 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 </div>
 
                 <div className="browse-toolbar-right" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* Add Button */}
+                    <button
+                        onClick={() => setAddDataMode('create')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-text)', color: 'var(--color-bg)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)' }}
+                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                        + Nouvelle Fiche
+                    </button>
+
                     {/* Sort Options */}
                     {!isNetworkOnly && viewMode !== 'network' && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -245,6 +257,18 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             </button>
                         </div>
                     )}
+                    
+                    {/* Export Anki */}
+                    <button
+                        onClick={() => exportToAnki('My_Deck', sortedCards).catch(err => console.error("Anki export error:", err))}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 16px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                        onMouseOver={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                        title="Exporter ces cartes vers Anki"
+                    >
+                        <DownloadSimple size={16} weight="bold" />
+                        Anki (.apkg)
+                    </button>
                 </div>
             </div >
 
@@ -277,8 +301,17 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                 <motion.div
                                     layoutId={`card-${card.id}`}
                                     key={card.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Ouvrir la carte ${card.title}`}
                                     className={`browse-card ${selectedCardId === card.id ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0B1120]' : ''}`}
                                     onClick={() => setSelectedCardId(card.id)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setSelectedCardId(card.id);
+                                        }
+                                    }}
                                     // Inline animation delay for first few items
                                     style={{ animationDelay: `${Math.min(index * 0.05, 0.5)}s`, background: darkMode ? '#1e293b' : '#ffffff', borderColor: darkMode ? '#334155' : '#e2e8f0', boxShadow: darkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.05)' }}
                                 >
@@ -315,9 +348,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                                 À réviser
                                             </span>
                                         )}
-                                        <div className="browse-card-actions" onClick={(e) => e.stopPropagation()}>
-                                            <button className="browse-action-btn" onClick={() => { setEditingCard(card); setAddDataMode('edit'); }}><PencilSimple size={16} /></button>
-                                            <button className="browse-action-btn" onClick={() => setCardToDelete(card)}><Trash size={16} /></button>
+                                        <div className="browse-card-actions" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
+                                            <button className="browse-action-btn" aria-label={`Modifier ${card.title}`} title="Modifier" onClick={() => { setEditingCard(card); setAddDataMode('edit'); }}><PencilSimple size={16} /></button>
+                                            <button className="browse-action-btn" aria-label={`Supprimer ${card.title}`} title="Supprimer" onClick={() => setCardToDelete(card)}><Trash size={16} /></button>
                                         </div>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -361,8 +394,17 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                         <motion.tr 
                                             layoutId={`card-${card.id}`} 
                                             key={card.id} 
+                                            role="button"
+                                            tabIndex={0}
+                                            aria-label={`Ouvrir la carte ${card.title}`}
                                             onClick={() => setSelectedCardId(card.id)} 
                                             onDoubleClick={() => setExpandedCardId(card.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setSelectedCardId(card.id);
+                                                }
+                                            }}
                                             style={{ cursor: 'pointer', backgroundColor: selectedCardId === card.id ? 'rgba(16, 185, 129, 0.05)' : 'transparent', transition: 'background-color 0.2s' }}
                                         >
                                             <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}` }}>
@@ -413,11 +455,12 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                                 </div>
                                             </td>
                                             <td style={{ padding: '16px 24px', borderBottom: index === sortedCards.length - 1 ? 'none' : `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+                                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); setEditingCard(card); setAddDataMode('edit'); }}
                                                         style={{ background: 'transparent', border: 'none', color: darkMode ? '#94a3b8' : '#64748b', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex' }}
                                                         title="Modifier"
+                                                        aria-label={`Modifier ${card.title}`}
                                                     >
                                                         <PencilSimple size={18} />
                                                     </button>
@@ -425,6 +468,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                                                         onClick={(e) => { e.stopPropagation(); setCardToDelete(card); }}
                                                         style={{ background: 'transparent', border: 'none', color: darkMode ? '#94a3b8' : '#64748b', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex' }}
                                                         title="Supprimer"
+                                                        aria-label={`Supprimer ${card.title}`}
                                                     >
                                                         <Trash size={18} />
                                                     </button>

@@ -4,7 +4,7 @@ import 'react-calendar-heatmap/dist/styles.css';
 import { BookOpen, Brain, ChartBar, ClockCounterClockwise, Lightning, X, Timer, CheckCircle } from '@phosphor-icons/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-import { useCards } from '../context/CardContext';
+import { useCardStore as useCards } from '../store/useCardStore';
 
 interface HeatmapValue {
     count?: number;

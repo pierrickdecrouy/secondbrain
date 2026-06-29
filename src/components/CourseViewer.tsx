@@ -1,23 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Card } from '../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { ArrowLeft, PencilSimple, Printer, Trash, CalendarBlank, Hash } from '@phosphor-icons/react';
+import { ArrowLeft, PencilSimple, Printer, Trash, CalendarBlank, Hash, Plus, PresentationChart } from '@phosphor-icons/react';
+import { useCardStore } from '../store/useCardStore';
 
 interface CourseViewerProps {
     course: Card;
     onBack: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onAddConcept?: () => void;
+    onEditConcept?: (conceptId: string) => void;
+    onAddFlashcard?: () => void;
+    onEditFlashcard?: (flashcardId: string) => void;
 }
 
 export const CourseViewer: React.FC<CourseViewerProps> = ({
     course,
     onBack,
     onEdit,
-    onDelete
+    onDelete,
+    onAddConcept,
+    onEditConcept,
+    onAddFlashcard,
+    onEditFlashcard
 }) => {
     const [scrollY, setScrollY] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const { cards } = useCardStore();
+
+    const conceptCards = cards.filter(c => c.nodeType === 'concept' && c.parentId === course.id);
 
     useEffect(() => {
         const el = scrollRef.current;
@@ -29,7 +41,8 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
     const handlePrint = () => window.print();
 
-    const updatedDate = new Date(course.updatedAt || Date.now()).toLocaleDateString('fr-FR', {
+    const [now] = useState(() => Date.now());
+    const updatedDate = new Date(course.updatedAt || now).toLocaleDateString('fr-FR', {
         day: 'numeric', month: 'long', year: 'numeric'
     });
 
@@ -49,10 +62,10 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0 28px',
-                height: 56,
+                padding: '0 24px',
+                height: 64,
                 flexShrink: 0,
-                background: 'var(--color-surface)',
+                background: 'var(--color-bg)',
                 borderBottom: `1px solid ${headerElevated ? 'var(--color-border)' : 'transparent'}`,
                 transition: 'border-color 0.2s ease',
                 zIndex: 20,
@@ -64,8 +77,8 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         display: 'flex', alignItems: 'center', gap: 8,
                         background: 'none', border: 'none', cursor: 'pointer',
                         color: 'var(--color-text-muted)',
-                        fontSize: 13, fontWeight: 600,
-                        padding: '6px 10px', borderRadius: 8,
+                        fontSize: 14, fontWeight: 500,
+                        padding: '8px 12px', borderRadius: 6,
                         transition: 'all 0.15s ease',
                     }}
                     onMouseEnter={e => {
@@ -77,19 +90,19 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         e.currentTarget.style.color = 'var(--color-text-muted)';
                     }}
                 >
-                    <ArrowLeft size={16} weight="bold" />
-                    Cours
+                    <ArrowLeft size={18} />
+                    Retour
                 </button>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button
                         onClick={handlePrint}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 6,
-                            background: 'none', border: '1px solid var(--color-border)',
-                            borderRadius: 8, padding: '6px 14px',
-                            fontSize: 13, fontWeight: 500,
+                            background: 'none', border: 'none',
+                            borderRadius: 6, padding: '8px 14px',
+                            fontSize: 14, fontWeight: 500,
                             color: 'var(--color-text-muted)',
                             cursor: 'pointer', transition: 'all 0.15s ease',
                         }}
@@ -102,7 +115,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             e.currentTarget.style.color = 'var(--color-text-muted)';
                         }}
                     >
-                        <Printer size={15} />
+                        <Printer size={18} />
                         Exporter PDF
                     </button>
 
@@ -111,38 +124,40 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         style={{
                             display: 'flex', alignItems: 'center', gap: 6,
                             background: 'none', border: 'none',
-                            borderRadius: 8, padding: '6px 14px',
-                            fontSize: 13, fontWeight: 500,
-                            color: '#ef4444', cursor: 'pointer',
+                            borderRadius: 6, padding: '8px 14px',
+                            fontSize: 14, fontWeight: 500,
+                            color: 'var(--color-text-muted)', cursor: 'pointer',
                             transition: 'all 0.15s ease',
                         }}
                         onMouseEnter={e => {
-                            e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
+                            e.currentTarget.style.background = 'rgba(239,68,68,0.1)';
+                            e.currentTarget.style.color = '#ef4444';
                         }}
                         onMouseLeave={e => {
                             e.currentTarget.style.background = 'none';
+                            e.currentTarget.style.color = 'var(--color-text-muted)';
                         }}
                     >
-                        <Trash size={15} />
+                        <Trash size={18} />
                         Supprimer
                     </button>
 
                     <button
                         onClick={onEdit}
                         style={{
-                            display: 'flex', alignItems: 'center', gap: 7,
-                            background: '#10b981',
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            background: 'var(--color-primary)',
                             border: 'none',
-                            borderRadius: 8, padding: '7px 16px',
-                            fontSize: 13, fontWeight: 600,
+                            borderRadius: 6, padding: '8px 16px',
+                            fontSize: 14, fontWeight: 500,
                             color: '#fff', cursor: 'pointer',
-                            transition: 'background 0.15s ease',
-                            boxShadow: '0 1px 4px rgba(16,185,129,0.3)',
+                            transition: 'opacity 0.15s ease',
+                            marginLeft: 4,
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#059669'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#10b981'; }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                     >
-                        <PencilSimple size={15} weight="bold" />
+                        <PencilSimple size={18} weight="fill" />
                         Modifier
                     </button>
                 </div>
@@ -155,85 +170,215 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                     flex: 1,
                     overflowY: 'auto',
                     display: 'flex',
-                    justifyContent: 'center',
-                    padding: '48px 40px 80px',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                 }}
             >
-                {/* Document card */}
+                {/* Cover Banner spans the whole width */}
+                <div style={{
+                    width: '100%',
+                    height: 180,
+                    background: course.tags && course.tags.length > 0
+                        ? 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(45,212,191,0.05) 100%)'
+                        : 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.05) 100%)',
+                    flexShrink: 0,
+                    position: 'relative',
+                }}>
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(0deg, var(--color-bg) 0%, transparent 100%)'
+                    }} />
+                </div>
+
+                {/* Document Container */}
                 <article style={{
                     width: '100%',
-                    maxWidth: 880,
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 20,
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+                    maxWidth: 960, // slightly widened as requested
+                    padding: '0 64px 100px',
+                    marginTop: -60, // overlap with banner
+                    position: 'relative',
+                    zIndex: 10,
                 }}>
-                    {/* Cover band — accent line at top */}
-                    <div style={{
-                        height: 4,
-                        background: course.tags && course.tags.length > 0
-                            ? 'linear-gradient(90deg, #10b981, #2dd4bf)'
-                            : 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                    }} />
 
                     {/* Document header */}
-                    <div style={{ padding: '40px 56px 32px' }}>
+                    <div style={{ marginBottom: 40 }}>
+                        {/* Title */}
+                        <h1 style={{
+                            fontSize: 48,
+                            fontWeight: 800,
+                            letterSpacing: '-1.2px',
+                            lineHeight: 1.1,
+                            color: 'var(--color-text)',
+                            margin: '0 0 24px 0',
+                        }}>
+                            {course.title}
+                        </h1>
 
                         {/* Tags */}
                         {course.tags && course.tags.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
                                 {course.tags.map(t => (
                                     <span key={t} style={{
                                         display: 'inline-flex', alignItems: 'center', gap: 4,
-                                        fontSize: 11, fontWeight: 600,
-                                        color: '#10b981',
-                                        background: 'rgba(16,185,129,0.1)',
-                                        border: '1px solid rgba(16,185,129,0.2)',
-                                        borderRadius: 6, padding: '3px 9px',
-                                        letterSpacing: '0.05em', textTransform: 'uppercase',
+                                        fontSize: 13, fontWeight: 500,
+                                        color: 'var(--color-text-muted)',
+                                        background: 'var(--color-surface)',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: 6, padding: '4px 10px',
                                     }}>
-                                        <Hash size={9} weight="bold" />
+                                        <Hash size={12} weight="bold" />
                                         {t}
                                     </span>
                                 ))}
                             </div>
                         )}
 
-                        {/* Title */}
-                        <h1 style={{
-                            fontSize: 34,
-                            fontWeight: 800,
-                            letterSpacing: '-0.8px',
-                            lineHeight: 1.2,
-                            color: 'var(--color-text)',
-                            margin: '0 0 20px 0',
-                        }}>
-                            {course.title}
-                        </h1>
-
                         {/* Meta row */}
                         <div style={{
                             display: 'flex', alignItems: 'center', gap: 16,
-                            paddingTop: 16,
-                            borderTop: '1px solid var(--color-border)',
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                <CalendarBlank size={14} />
-                                Mise à jour le {updatedDate}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                <CalendarBlank size={16} />
+                                Dernière modification le {updatedDate}
                             </div>
                         </div>
                     </div>
 
                     {/* ── Content ── */}
-                    <div style={{
-                        padding: '0 56px 56px',
-                        borderTop: '1px solid var(--color-border)',
-                        paddingTop: 36,
-                    }}>
-                        <div style={{ fontSize: 15.5, lineHeight: 1.8, color: 'var(--color-text)' }}>
-                            <MarkdownRenderer content={course.details || course.content || ''} />
+                    {(course.details || course.content) && (
+                        <div style={{
+                            borderTop: '1px solid var(--color-border)',
+                            paddingTop: 48,
+                        }}>
+                            <div style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--color-text)' }}>
+                                <MarkdownRenderer content={course.details || course.content || ''} />
+                            </div>
                         </div>
+                    )}
+
+                    {/* ── Concepts ou Flashcards Associés ── */}
+                    <div style={{ marginTop: 64 }}>
+                        {course.nodeType === 'course' ? (
+                            <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                    <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Concepts Clés</h2>
+                                    <button
+                                        onClick={onAddConcept}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                                            borderRadius: 8, padding: '8px 16px', fontSize: 14, fontWeight: 600,
+                                            color: 'var(--color-text)', cursor: 'pointer',
+                                            transition: 'background 0.2s'
+                                        }}
+                                    >
+                                        <Plus size={16} /> Ajouter un Concept
+                                    </button>
+                                </div>
+
+                                {conceptCards.length === 0 ? (
+                                    <div style={{
+                                        padding: 40, textAlign: 'center', background: 'var(--color-surface)',
+                                        borderRadius: 12, border: '1px dashed var(--color-border)',
+                                        color: 'var(--color-text-muted)'
+                                    }}>
+                                        Aucun concept clé rattaché à ce cours. <br/>
+                                        Ajoutez des concepts (ex: Définitions, Traitements, Symptômes) pour mieux structurer la connaissance.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {conceptCards.map(concept => (
+                                            <div key={concept.id} 
+                                                onClick={() => onEditConcept?.(concept.id)}
+                                                style={{
+                                                display: 'flex', alignItems: 'center', gap: 16,
+                                                padding: 16, background: 'var(--color-surface)',
+                                                borderRadius: 12, border: '1px solid var(--color-border)',
+                                                cursor: 'pointer', transition: 'all 0.2s',
+                                                boxShadow: 'var(--shadow)'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                                            >
+                                                <div style={{
+                                                    width: 40, height: 40, borderRadius: 8,
+                                                    background: 'rgba(99,102,241,0.1)', color: '#6366f1',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                    <PresentationChart size={20} weight="fill" />
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{concept.title}</h3>
+                                                    <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                                                        Dernière modif : {new Date(concept.updatedAt || 0).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                    <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Flashcards</h2>
+                                    <button
+                                        onClick={onAddFlashcard}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                                            borderRadius: 8, padding: '8px 16px', fontSize: 14, fontWeight: 600,
+                                            color: 'var(--color-text)', cursor: 'pointer',
+                                            transition: 'background 0.2s'
+                                        }}
+                                    >
+                                        <Plus size={16} /> Créer une Flashcard
+                                    </button>
+                                </div>
+
+                                {cards.filter(c => c.nodeType === 'flashcard' && c.parentId === course.id).length === 0 ? (
+                                    <div style={{
+                                        padding: 40, textAlign: 'center', background: 'var(--color-surface)',
+                                        borderRadius: 12, border: '1px dashed var(--color-border)',
+                                        color: 'var(--color-text-muted)'
+                                    }}>
+                                        Aucune flashcard rattachée à ce concept. <br/>
+                                        Ajoutez des questions ou des textes à trous pour réviser plus tard.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {cards.filter(c => c.nodeType === 'flashcard' && c.parentId === course.id).map(fc => (
+                                            <div key={fc.id} 
+                                                onClick={() => onEditFlashcard?.(fc.id)}
+                                                style={{
+                                                display: 'flex', alignItems: 'center', gap: 16,
+                                                padding: 16, background: 'var(--color-surface)',
+                                                borderRadius: 12, border: '1px solid var(--color-border)',
+                                                cursor: 'pointer', transition: 'all 0.2s',
+                                                boxShadow: 'var(--shadow)'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                                            >
+                                                <div style={{
+                                                    width: 40, height: 40, borderRadius: 8,
+                                                    background: 'rgba(16,185,129,0.1)', color: '#10b981',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                    <Hash size={20} weight="fill" />
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{fc.format === 'cloze' ? 'Texte à trou' : fc.title}</h3>
+                                                    <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                                                        {fc.format === 'cloze' ? fc.content?.substring(0, 50) + '...' : fc.details?.substring(0, 50) + '...'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </article>
             </div>

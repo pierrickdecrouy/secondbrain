@@ -13,10 +13,8 @@ registerSW({ immediate: true });
 import { BrowserRouter } from 'react-router-dom';
 
 import { ThemeProvider } from './context/ThemeContext';
-import { CardProvider } from './context/CardContext';
-import { UIProvider } from './context/UIContext';
 import { ToastProvider } from './context/ToastContext';
-import { TaskProvider } from './context/TaskContext';
+import { AuthProvider } from './context/AuthContext';
 
 
 createRoot(document.getElementById('root')!).render(
@@ -25,13 +23,9 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <ThemeProvider>
           <ToastProvider>
-            <CardProvider>
-              <UIProvider>
-                <TaskProvider>
-                  <App />
-                </TaskProvider>
-              </UIProvider>
-            </CardProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </BrowserRouter>

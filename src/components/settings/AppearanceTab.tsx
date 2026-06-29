@@ -3,7 +3,7 @@ import { MagnifyingGlass, ArrowCounterClockwise, Monitor, Moon, Sun } from '@pho
 import { DynamicIcon, AVAILABLE_ICONS } from '../DynamicIcon';
 import { useTheme } from '../../context/ThemeContext';
 import { COURSE_TYPE } from '../../types';
-import { useCards } from '../../context/CardContext';
+import { useCardStore as useCards } from '../../store/useCardStore';
 import { S, SettingsCard, CardSection, CardBody, SectionHeading, GhostButton, PrimaryButton } from './SettingsUI';
 
 interface AppearanceTabProps {

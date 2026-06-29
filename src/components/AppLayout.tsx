@@ -33,7 +33,7 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
           <div className={`workspace-sidebar-header ${sidebarOpen ? 'open' : 'collapsed'}`}>
             {sidebarOpen && (
               <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px', color: 'var(--color-primary)' }}>
-                <img src="/Logo-linear.svg" alt="Extnd" className="brand-logo-img" style={{ height: '32px' }} />
+                <img src="/Logo-linear.svg" alt="Extnd" className="brand-logo-img" style={{ height: '48px' }} />
               </div>
             )}
             <div className="workspace-sidebar-actions">
@@ -74,6 +74,8 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
               </button>
             ))}
           </div>
+          
+
         </aside>
       </div>
 

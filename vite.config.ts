@@ -6,9 +6,30 @@ import wasm from 'vite-plugin-wasm'
 import topLevelAwait from 'vite-plugin-top-level-await'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const cspPlugin = () => {
+  return {
+    name: 'html-transform',
+    transformIndexHtml(html: string, { server }: any) {
+      const isDev = !!server;
+      const csp = isDev 
+        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: https: safe-file: blob:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://apis.google.com;"
+        : "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: https: safe-file: blob:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://apis.google.com;";
+      
+      return html.replace(
+        '<meta name="csp-placeholder" content="">',
+        `<meta http-equiv="Content-Security-Policy" content="${csp}">`
+      );
+    }
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    'process.env': {}
+  },
   plugins: [
+    cspPlugin(),
     react(), 
     tailwindcss(), 
     wasm(), 
@@ -49,13 +70,10 @@ export default defineConfig({
   ],
   server: {
     port: 5174,
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
   },
   base: './', // Important for Electron file:// protocol
   optimizeDeps: {
+    force: true, // Forcer Vite à recompiler les dépendances comme anki-apkg-export
     exclude: ['voy-search', '@huggingface/transformers'],
   },
   build: {

@@ -494,6 +494,15 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
     cards.forEach(card => {
         if (changedSet && !changedSet.has(card.id)) return;
 
+        // Hierarchy Links (Parent / Child)
+        if (card.parentId) {
+            const parentCard = cardMap.get(card.parentId);
+            if (parentCard) {
+                // Max confidence for direct parent/child link
+                addLink(card.id, card.parentId, 1.0, `Appartient à: ${parentCard.title}`);
+            }
+        }
+
         // --- Unigram matching (existing) ---
         let contentTokens = tokenize(card.content + ' ' + card.details)
             .filter(w => !DYNAMIC_STOPWORDS.has(w));

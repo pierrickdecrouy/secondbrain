@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MagnifyingGlass, X, ArrowRight, Moon, Sun, Plus, GraduationCap, ChartBar, Brain, TerminalWindow } from '@phosphor-icons/react';
-import { useUI } from '../context/UIContext';
-import { useCards } from '../context/CardContext';
+import { useUIStore as useUI } from '../store/useUIStore';
+import { useCardStore as useCards } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
 import { stripMarkdown } from '../utils';
 import { DynamicIcon } from './DynamicIcon';
@@ -36,6 +36,7 @@ export const GlobalOmnibox: React.FC = () => {
     // Sync local query when opening
     useEffect(() => {
         if (isOmniboxOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocalQuery(searchQuery);
             setTimeout(() => inputRef.current?.focus(), 100);
         }
@@ -44,7 +45,9 @@ export const GlobalOmnibox: React.FC = () => {
     // Live search
     useEffect(() => {
         if (!localQuery.trim()) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setResults([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCommandResults([]);
             return;
         }
@@ -126,6 +129,10 @@ export const GlobalOmnibox: React.FC = () => {
             <div 
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
                 onClick={() => setOmniboxOpen(false)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOmniboxOpen(false); }}
+                role="button"
+                tabIndex={-1}
+                aria-label="Fermer la recherche"
             />
             
             <div 
@@ -181,6 +188,15 @@ export const GlobalOmnibox: React.FC = () => {
                                                 cmd.action();
                                                 setOmniboxOpen(false);
                                             }}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    cmd.action();
+                                                    setOmniboxOpen(false);
+                                                }
+                                            }}
                                         >
                                             <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-[var(--color-surface)] shadow-sm' : 'bg-transparent'}`}>
                                                 {cmd.icon}
@@ -213,6 +229,16 @@ export const GlobalOmnibox: React.FC = () => {
                                             setSearchQuery(localQuery);
                                             setOmniboxOpen(false);
                                             navigate('/browse');
+                                        }}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                setSearchQuery(localQuery);
+                                                setOmniboxOpen(false);
+                                                navigate('/browse');
+                                            }
                                         }}
                                     >
                                         <div 
@@ -250,6 +276,16 @@ export const GlobalOmnibox: React.FC = () => {
                                     setSearchQuery(localQuery);
                                     setOmniboxOpen(false);
                                     navigate('/browse');
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setSearchQuery(localQuery);
+                                        setOmniboxOpen(false);
+                                        navigate('/browse');
+                                    }
                                 }}
                             >
                                 <span className="text-[var(--color-text)] font-medium">

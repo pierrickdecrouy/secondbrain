@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useUI } from '../context/UIContext';
+import { useUIStore as useUI } from '../store/useUIStore';
 
 export type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
 

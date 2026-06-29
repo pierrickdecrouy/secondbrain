@@ -6,15 +6,7 @@
   <link rel="icon" type="image/svg+xml" href="/extnd.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Extnd.</title>
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
-    font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:;
-    img-src 'self' data: https: safe-file:;
-    connect-src 'self' https:;
-    worker-src 'self' blob:;
-  ">
+  <meta name="csp-placeholder" content="">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -27,37 +19,12 @@
       if (typeof message === 'string' && (message.includes('Script error.') || message.includes('View Name for the webview'))) {
         return true;
       }
-      const errorDiv = document.createElement('div');
-      errorDiv.style.position = 'fixed';
-      errorDiv.style.top = '0';
-      errorDiv.style.left = '0';
-      errorDiv.style.width = '100%';
-      errorDiv.style.backgroundColor = '#fee2e2';
-      errorDiv.style.color = '#b91c1c';
-      errorDiv.style.padding = '20px';
-      errorDiv.style.zIndex = '999999';
-      errorDiv.style.fontFamily = 'monospace';
-      errorDiv.style.whiteSpace = 'pre-wrap';
-      errorDiv.innerHTML = `<strong>Error:</strong> ${message}<br>
-                            <small>${source}:${lineno}:${colno}</small><br>
-                            <pre>${error ? error.stack : ''}</pre>`;
-      document.body.appendChild(errorDiv);
+      console.error('Global error:', message, { source, lineno, colno, error });
+      return false;
     };
 
     window.addEventListener('unhandledrejection', function (event) {
-      const errorDiv = document.createElement('div');
-      errorDiv.style.position = 'fixed';
-      errorDiv.style.top = '50%';
-      errorDiv.style.left = '0';
-      errorDiv.style.width = '100%';
-      errorDiv.style.backgroundColor = '#fef3c7';
-      errorDiv.style.color = '#b45309';
-      errorDiv.style.padding = '20px';
-      errorDiv.style.zIndex = '999999';
-      errorDiv.style.fontFamily = 'monospace';
-      errorDiv.style.whiteSpace = 'pre-wrap';
-      errorDiv.innerHTML = `<strong>Unhandled Promise Rejection:</strong> ${event.reason}`;
-      document.body.appendChild(errorDiv);
+      console.error('Unhandled Promise Rejection:', event.reason);
     });
   </script>
 </head>
