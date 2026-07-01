@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { UploadSimple, DownloadSimple, Warning } from '@phosphor-icons/react';
-import { useCardStore as useCards } from '../../store/useCardStore';
-import { useToast } from '../../context/ToastContext';
+import { useCardStore } from '../../store/useCardStore';
+import { toast } from '../../store/useToastStore';
 import { importAnkiPackage } from '../../ankiImport';
 import { saveCardsAsync, exportAllData, importAllData, resetToDefaults } from '../../storage';
 import { S, SettingsCard, CardSection, CardBody, SettingsRow, GhostButton, DangerButton } from './SettingsUI';
 
 export const DataTab: React.FC = () => {
-    const { cards } = useCards();
-    const { showToast } = useToast();
+    const { cards, deleteCards } = useCardStore();
     const [isImportingAnki, setIsImportingAnki] = useState(false);
     const [ankiImportProgress, setAnkiImportProgress] = useState('');
 
@@ -16,6 +15,21 @@ export const DataTab: React.FC = () => {
         if (window.confirm('Voulez-vous vraiment restaurer le dictionnaire par défaut ?')) {
             resetToDefaults();
             window.location.reload();
+        }
+    };
+
+    const handleCleanOrphans = () => {
+        const cardsSet = new Set(cards.map(c => c.id));
+        const toDelete = cards.filter(c => c.parentId && !cardsSet.has(c.parentId));
+        
+        if (toDelete.length === 0) {
+            toast.success("Aucune carte orpheline trouvée.");
+            return;
+        }
+
+        if (window.confirm(`Voulez-vous supprimer ${toDelete.length} cartes orphelines (cartes dont le parent n'existe plus) ?`)) {
+            deleteCards(toDelete.map(c => c.id));
+            toast.success(`${toDelete.length} cartes orphelines supprimées.`);
         }
     };
 
@@ -57,10 +71,10 @@ export const DataTab: React.FC = () => {
                                     const imported = await importAnkiPackage(file, setAnkiImportProgress);
                                     const newCards = [...cards, ...imported];
                                     await saveCardsAsync(newCards);
-                                    showToast(`${imported.length} fiches importées !`, 'success');
+                                    toast.success(`${imported.length} fiches importées !`);
                                     setTimeout(() => window.location.reload(), 1500);
                                 } catch (err: any) {
-                                    showToast(err.message || "Erreur lors de l'import Anki", 'error');
+                                    toast.error(err.message || "Erreur lors de l'import Anki");
                                     setIsImportingAnki(false);
                                 }
                             }}
@@ -119,7 +133,7 @@ export const DataTab: React.FC = () => {
                                         window.location.reload();
                                     }
                                 } catch {
-                                    showToast('Erreur lors de la restauration. Fichier invalide ?', 'error');
+                                    toast.error('Erreur lors de la restauration. Fichier invalide ?');
                                 }
                             };
                             reader.readAsText(file);
@@ -166,6 +180,12 @@ export const DataTab: React.FC = () => {
                     description="Réinitialise les abréviations intégrées. Vos abréviations personnelles sont conservées."
                 >
                     <GhostButton small onClick={handleReset}>Restaurer</GhostButton>
+                </SettingsRow>
+                <SettingsRow
+                    label="Nettoyer les cartes orphelines"
+                    description="Détecte et supprime les cartes dont le parent a été supprimé."
+                >
+                    <GhostButton small onClick={handleCleanOrphans}>Nettoyer</GhostButton>
                 </SettingsRow>
                 <SettingsRow
                     label="Vider toute la base"

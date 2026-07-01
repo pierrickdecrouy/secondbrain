@@ -3,6 +3,7 @@ import { X, FilePlus, UploadSimple } from '@phosphor-icons/react';
 import { CardFormContent } from './CardForm';
 import { BatchImportContent } from './BatchImportModal';
 import type { Card } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface AddDataModalProps {
     mode: 'create' | 'edit' | 'import';
@@ -19,10 +20,13 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
     const isEditMode = mode === 'edit' && !!card;
     const [activeTab, setActiveTab] = useState<'single' | 'batch'>(mode === 'import' ? 'batch' : 'single');
 
+    const modalRef = useFocusTrap(true);
+
     return (
         <div className={`modal-overlay ${layout === 'drawer' ? 'drawer-overlay' : ''}`} onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div 
-                className={`modal-content form-modal ${layout === 'drawer' ? 'fixed right-0 top-0 h-full max-h-none rounded-none w-full max-w-2xl animate-in slide-in-from-right-full duration-300 shadow-2xl border-l border-slate-200 dark:border-slate-800' : ''}`} 
+                ref={modalRef}
+                className={`modal-content glass-modal form-modal ${layout === 'drawer' ? 'fixed right-0 top-0 h-full max-h-none rounded-none w-full max-w-2xl animate-in slide-in-from-right-full duration-300 shadow-2xl border-l border-slate-200 dark:border-slate-800' : ''}`} 
                 style={layout === 'modal' ? { maxWidth: '1200px', width: '95vw', height: '85vh', maxHeight: '1000px', display: 'flex', flexDirection: 'column' } : { display: 'flex', flexDirection: 'column' }}
             >
                 <div className="modal-header">
@@ -35,41 +39,49 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                 </div>
 
                 {!isEditMode && (
-                    <div style={{ padding: '0 2.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '24px' }}>
-                        <button
-                            onClick={() => setActiveTab('single')}
-                            style={{
-                                padding: '12px 0',
-                                borderBottom: activeTab === 'single' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                color: activeTab === 'single' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                                fontWeight: activeTab === 'single' ? 600 : 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                background: 'none',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <FilePlus size={18} />
-                            Nouvelle Fiche
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('batch')}
-                            style={{
-                                padding: '12px 0',
-                                borderBottom: activeTab === 'batch' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                                color: activeTab === 'batch' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                                fontWeight: activeTab === 'batch' ? 600 : 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                background: 'none',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <UploadSimple size={18} />
-                            Import en Masse
-                        </button>
+                    <div style={{ padding: '24px 32px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '16px' }}>
+                        <div style={{ display: 'flex', background: 'var(--color-surface)', padding: '4px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                            <button
+                                onClick={() => setActiveTab('single')}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    color: activeTab === 'single' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                    fontWeight: activeTab === 'single' ? 600 : 500,
+                                    background: activeTab === 'single' ? 'var(--color-bg)' : 'transparent',
+                                    boxShadow: activeTab === 'single' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <FilePlus size={18} />
+                                Nouvelle Fiche
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('batch')}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    color: activeTab === 'batch' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                    fontWeight: activeTab === 'batch' ? 600 : 500,
+                                    background: activeTab === 'batch' ? 'var(--color-bg)' : 'transparent',
+                                    boxShadow: activeTab === 'batch' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <UploadSimple size={18} />
+                                Import en Masse
+                            </button>
+                        </div>
                     </div>
                 )}
 

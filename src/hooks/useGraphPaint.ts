@@ -113,7 +113,7 @@ export function useGraphPaint({
                 showText = true;
             }
         } else {
-            if (globalScale > 1.5 && !isDimmed) {
+            if (globalScale > 2.0 && !isDimmed) {
                 showText = true;
             }
         }

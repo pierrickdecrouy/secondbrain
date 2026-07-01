@@ -5,6 +5,7 @@ import { BookOpen, Brain, ChartBar, ClockCounterClockwise, Lightning, X, Timer, 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 import { useCardStore as useCards } from '../store/useCardStore';
+import { useDueCards } from '../hooks/useDueCards';
 
 interface HeatmapValue {
     count?: number;
@@ -19,58 +20,67 @@ const COLORS = ['#4fb286', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'
 
 export const StatsPage: React.FC = () => {
     const { cards } = useCards();
-    const now = Date.now();
+    const { dueCards, learningCards, newCards } = useDueCards(cards);
 
-    const heatmapDataMap = new Map<string, number>();
-    cards.forEach((card) => {
-        const createDay = card.createdAt ? new Date(card.createdAt).toISOString().split('T')[0] : null;
-        if (createDay) {
-            heatmapDataMap.set(createDay, (heatmapDataMap.get(createDay) || 0) + 1);
-        }
-
-        if (!card.progress?.history?.length && card.updatedAt) {
-            const updateDay = new Date(card.updatedAt).toISOString().split('T')[0];
-            if (updateDay !== createDay) {
-                heatmapDataMap.set(updateDay, (heatmapDataMap.get(updateDay) || 0) + 1);
-            }
-        }
-
-        if (card.progress?.history) {
-            card.progress.history.forEach(reviewDateIso => {
-                const day = new Date(reviewDateIso).toISOString().split('T')[0];
-                heatmapDataMap.set(day, (heatmapDataMap.get(day) || 0) + 1);
+    const {
+        heatmapValues,
+        retentionRate,
+        leechCards,
+        matureCards,
+        estimatedReviewTimeMin,
+        avgStability,
+    } = useMemo(() => {
+        const { heatmapValues } = (() => {
+            const heatmapDataMap = new Map<string, number>();
+            cards.forEach((card) => {
+                // M-4 fix: for old cards with createdAt=0 or missing, fall back to updatedAt
+                const effectiveCreate = (card.createdAt && card.createdAt > 0) ? card.createdAt : card.updatedAt;
+                const createDay = effectiveCreate ? new Date(effectiveCreate).toISOString().split('T')[0] : null;
+                if (createDay) {
+                    heatmapDataMap.set(createDay, (heatmapDataMap.get(createDay) || 0) + 1);
+                }
+                if (card.progress?.history) {
+                    card.progress.history.forEach(reviewDateIso => {
+                        const day = new Date(reviewDateIso).toISOString().split('T')[0];
+                        heatmapDataMap.set(day, (heatmapDataMap.get(day) || 0) + 1);
+                    });
+                }
             });
-        }
-    });
+            const heatmapValues = Array.from(heatmapDataMap.entries()).map(([date, count]) => ({ date, count }));
+            return { heatmapValues };
+        })();
 
-    const heatmapValues = Array.from(heatmapDataMap.entries()).map(([date, count]) => ({ date, count }));
-    const dueCards = cards.filter((c) =>
-        (c.progress?.status === 'review' || c.progress?.status === 'learning' || c.progress?.status === 'relearning') &&
-        c.progress.dueDate &&
-        new Date(c.progress.dueDate).getTime() <= now
-    );
-    const learningCards = cards.filter((c) => c.progress?.status === 'learning' || c.progress?.status === 'relearning');
-    const newCards = cards.filter((c) => !c.progress || c.progress.status === 'new');
-    const totalReviewsDone = cards.reduce((acc, c) => acc + (c.progress?.reps ?? 0), 0);
+        const leechCards = cards.filter(c => c.progress?.isLeech || c.progress?.status === 'suspended').length;
+        const matureCards = cards.filter(c => (c.progress?.interval || 0) >= 21).length;
+        const estimatedReviewTimeMin = Math.ceil((dueCards.length * 15) / 60);
 
-    const totalLapses = cards.reduce((acc, c) => acc + (c.progress?.lapses ?? 0), 0);
-    const retentionRate = totalReviewsDone > 0 ? ((totalReviewsDone - totalLapses) / totalReviewsDone) : 0;
+        let sumRetrievability = 0;
+        let cardsWithRetrievability = 0;
+        const nowMs = Date.now();
 
-    const leechCards = cards.filter(c => c.progress?.isLeech || c.progress?.status === 'suspended').length;
-    
-    const matureCards = cards.filter(c => (c.progress?.interval || 0) >= 21).length;
-    
-    const estimatedReviewTimeMin = Math.ceil((dueCards.length * 15) / 60);
-    
-    let sumStability = 0;
-    let cardsWithStability = 0;
-    cards.forEach(c => {
-        if (c.progress?.stability) {
-            sumStability += c.progress.stability;
-            cardsWithStability++;
-        }
-    });
-    const avgStability = cardsWithStability > 0 ? (sumStability / cardsWithStability).toFixed(1) : 'N/A';
+        let sumStability = 0;
+        let cardsWithStability = 0;
+        
+        cards.forEach(c => {
+            if (c.progress?.stability) {
+                sumStability += c.progress.stability;
+                cardsWithStability++;
+                
+                if (c.progress.lastReview) {
+                    const elapsedDays = Math.max(0, (nowMs - new Date(c.progress.lastReview).getTime()) / (1000 * 60 * 60 * 24));
+                    // FSRS Retrievability formula: 90% retention at elapsed == stability
+                    const R = Math.exp(Math.log(0.9) * elapsedDays / c.progress.stability);
+                    sumRetrievability += Math.max(0, Math.min(1, R));
+                    cardsWithRetrievability++;
+                }
+            }
+        });
+        
+        const retentionRate = cardsWithRetrievability > 0 ? sumRetrievability / cardsWithRetrievability : 0;
+        const avgStability = cardsWithStability > 0 ? (sumStability / cardsWithStability).toFixed(1) : 'N/A';
+
+        return { heatmapValues, retentionRate, leechCards, matureCards, estimatedReviewTimeMin, avgStability };
+    }, [cards, dueCards.length]);
 
     const byType = useMemo(() => {
         const counts: Record<string, number> = {};

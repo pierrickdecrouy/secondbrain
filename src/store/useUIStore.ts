@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 
-type AddDataMode = 'none' | 'create' | 'edit' | 'import';
+export type AddDataMode = 'none' | 'create' | 'edit' | 'import';
 type ViewMode = 'grid' | 'list' | 'network' | 'split';
 type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
+type SyncStatus = 'synced' | 'pending' | 'error';
 
 interface UIState {
   sidebarOpen: boolean;
@@ -40,6 +41,9 @@ interface UIState {
 
   hasCompletedOnboarding: boolean;
   completeOnboarding: () => void;
+
+  syncStatus: SyncStatus;
+  setSyncStatus: (status: SyncStatus) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -84,4 +88,7 @@ export const useUIStore = create<UIState>((set) => ({
     localStorage.setItem('extnd_onboarding_v1', 'true');
     set({ hasCompletedOnboarding: true });
   },
+
+  syncStatus: 'synced',
+  setSyncStatus: (status) => set({ syncStatus: status }),
 }));

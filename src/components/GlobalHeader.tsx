@@ -9,12 +9,16 @@ import {
     Monitor, 
     DownloadSimple, 
     SignOut,
-    List
+    List,
+    CloudCheck,
+    CloudArrowUp,
+    WarningCircle
 } from '@phosphor-icons/react';
 import { useTheme } from '../context/ThemeContext';
 import { useUIStore as useUI } from '../store/useUIStore';
 import { useAuth } from '../context/AuthContext';
 import { exportAllData } from '../storage';
+import { PomodoroTimer } from './PomodoroTimer';
 
 interface GlobalHeaderProps {
     isHomeSection: boolean;
@@ -38,7 +42,8 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
         setProfileMenuOpen, 
         setOmniboxOpen, 
         userName, 
-        setActiveSection
+        setActiveSection,
+        syncStatus
     } = useUI();
     const { user, signInWithGoogle, logout } = useAuth();
 
@@ -53,7 +58,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
     }, [isHomeSection]);
 
     return (
-        <header className={`app-drag-region flex items-center justify-center py-6 min-h-[88px] z-50 shrink-0 w-full ${isHomeSection ? 'absolute top-0 left-0 border-none' : 'relative border-b border-slate-200/50 dark:border-slate-800/50'}`}>
+        <header className={`app-drag-region flex items-center justify-center py-4 min-h-[72px] z-50 shrink-0 w-full ${isHomeSection ? 'absolute top-0 left-0 border-none' : 'relative border-b border-slate-200/50 dark:border-slate-800/50'}`}>
             {!isHomeSection && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pointer-events-none" style={{ zIndex: -1 }} />
             )}
@@ -61,12 +66,12 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
             <div className="flex items-center gap-6">
                 {!isHomeSection && (
                     <button 
-                        className="app-no-drag flex items-center justify-center w-12 h-12 rounded-full bg-transparent border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800/80 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer transition-colors shadow-sm" 
+                        className="app-no-drag flex items-center justify-center w-10 h-10 rounded-full bg-transparent border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800/80 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer transition-colors shadow-sm" 
                         onClick={() => setSidebarOpen(true)}
                         aria-label="Ouvrir le menu"
                         title="Menu"
                     >
-                        <List size={22} weight="bold" />
+                        <List size={20} weight="bold" />
                     </button>
                 )}
                 <button
@@ -87,7 +92,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         src="/Logo-vertical.svg" 
                         alt="Extnd" 
                         className="transition-all duration-300 hover:opacity-80"
-                        style={isHomeSection ? { height: '80px', marginLeft: '24px', marginTop: '24px' } : { height: '72px', marginLeft: '4px' }}
+                        style={isHomeSection ? { height: '80px', marginLeft: '24px', marginTop: '24px' } : { height: '56px', marginLeft: '4px' }}
                     />
                 </button>
             </div>
@@ -102,11 +107,11 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         tabIndex={0}
                         aria-label="Rechercher"
                     >
-                        <MagnifyingGlass size={22} className="absolute left-5 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" weight="bold" />
+                        <MagnifyingGlass size={20} className="absolute left-4 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" weight="bold" />
                         <input 
                             type="text" 
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-full text-[16px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none"
-                            style={{ padding: '14px 80px 14px 54px' }}
+                            style={{ padding: '12px 80px 12px 50px' }}
                             placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]} 
                             readOnly
                         />
@@ -119,9 +124,25 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
 
             <div className="app-no-drag flex items-center gap-5 ml-auto">
                 
+                {user && (
+                    <div 
+                        className="flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        title={syncStatus === 'synced' ? 'Synchronisé avec le cloud' : syncStatus === 'pending' ? 'Synchronisation en cours...' : 'Erreur de synchronisation'}
+                        style={isHomeSection ? { marginTop: '24px' } : {}}
+                    >
+                        {syncStatus === 'synced' && <CloudCheck size={18} weight="bold" className="text-emerald-500" />}
+                        {syncStatus === 'pending' && <CloudArrowUp size={18} weight="bold" className="animate-pulse text-blue-500" />}
+                        {syncStatus === 'error' && <WarningCircle size={18} weight="bold" className="text-red-500" />}
+                    </div>
+                )}
+
+                <div style={isHomeSection ? { marginTop: '24px', marginLeft: '12px' } : { marginLeft: '8px' }}>
+                    <PomodoroTimer />
+                </div>
+
                 <div 
                     className="relative transition-all duration-300"
-                    style={isHomeSection ? { marginRight: '24px', marginTop: '24px' } : { marginLeft: '12px' }}
+                    style={isHomeSection ? { marginRight: '24px', marginTop: '24px' } : { marginLeft: '8px' }}
                 >
                     <button 
                         className="p-0 bg-transparent cursor-pointer rounded-full" 
@@ -136,7 +157,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     >
                         <div 
                             className="rounded-full flex items-center justify-center text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-900/30 transition-all duration-300"
-                            style={isHomeSection ? { width: '48px', height: '48px', fontSize: '20px' } : { width: '44px', height: '44px', fontSize: '18px' }}
+                            style={isHomeSection ? { width: '48px', height: '48px', fontSize: '20px' } : { width: '40px', height: '40px', fontSize: '16px' }}
                         >
                             {user?.photoURL ? (
                                 <img src={user.photoURL} alt="Profile" className="w-full h-full rounded-full object-cover" />

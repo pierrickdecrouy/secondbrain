@@ -1,3 +1,16 @@
+/**
+ * @deprecated Legacy SRS scheduler — DO NOT use for new review logic.
+ *
+ * The active scheduler is FSRS (`fsrs.ts`). This file is kept because:
+ *  - `SRSConfig` / `DEFAULT_SRS_CONFIG` are read by SettingsPage to render
+ *    exam-mode configuration.
+ *  - `isExamModeActive` is a pure utility still referenced for interval capping.
+ *  - `calculateSrsData` is NOT called anywhere in the production app; it is
+ *    preserved only for historical reference.
+ *
+ * To add a new scheduling algorithm, implement the `IScheduler` interface
+ * defined in `./IScheduler.ts`.
+ */
 import type { UserCardProgress } from '../types';
 
 export interface SRSConfig {
@@ -68,6 +81,12 @@ export interface SRSResult {
     isLeech?: boolean;
 }
 
+/**
+ * @deprecated Use `calculateFsrsProgress` from `./fsrs.ts` instead.
+ *
+ * Legacy SM-2-inspired scheduler. Kept for reference only.
+ * NOT called anywhere in the production codebase.
+ */
 export const calculateSrsData = (
     progress: Partial<UserCardProgress> | null | undefined,
     rating: number, // 1: Again/Oubli, 2: Hard/Difficile, 3: Good/Bien, 4: Easy/Facile
@@ -78,6 +97,8 @@ export const calculateSrsData = (
 
     let {
         interval = 0,
+    } = progress || {};
+    const {
         easeFactor = defaultEaseFactor,
         status = 'new',
         step = 0,
@@ -116,7 +137,7 @@ export const calculateSrsData = (
                     lapses: lapses
                 };
                 break;
-            case 3: // Bien / Good
+            case 3: { // Bien / Good
                 const nextStep = step + 1;
                 if (nextStep >= learningSteps.length) {
                     result = {
@@ -138,6 +159,7 @@ export const calculateSrsData = (
                     };
                 }
                 break;
+            }
             case 4: // Facile / Easy
                 result = {
                     status: 'review',

@@ -1,5 +1,6 @@
 import type { Card } from './types';
 import { COURSE_TYPE } from './types';
+import { CardSchema } from './schema';
 import { initialCards } from './data';
 import { MEDICAL_ABBREVIATIONS } from './medicalAbbreviations';
 
@@ -17,35 +18,87 @@ class PharmaBrainDB extends Dexie {
     cards!: Table<Card, string>;
     settings!: Table<{ key: string; value: unknown }, string>;
 
-    constructor() {
-        super('PharmaBrainDB');
+    constructor(dbName: string) {
+        super(dbName);
         this.version(1).stores({
             cards: 'id, type', // Primary key and indexed props
             settings: 'key'
         });
     }
 }
-const db = new PharmaBrainDB();
+let dbInstance: PharmaBrainDB | null = null;
+
+export function getDB(): PharmaBrainDB {
+    if (!dbInstance) {
+        dbInstance = new PharmaBrainDB('PharmaBrainDB_offline');
+    }
+    return dbInstance;
+}
+
+export function setStorageUid(uid: string | null) {
+    if (dbInstance && dbInstance.isOpen()) {
+        dbInstance.close();
+    }
+    const dbName = uid ? `PharmaBrainDB_${uid}` : 'PharmaBrainDB_offline';
+    dbInstance = new PharmaBrainDB(dbName);
+    dbInstance.open().catch(e => console.error('Failed to open DB after uid switch:', e));
+}
 
 // Convert HTML to plain text/Markdown
 function convertHtmlToText(html: string): string {
     if (!html) return '';
     if (!/<[^>]+>/.test(html)) return html;
-    let text = html;
-    text = text.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
-    text = text.replace(/<b>(.*?)<\/b>/gi, '**$1**');
-    text = text.replace(/<em>(.*?)<\/em>/gi, '*$1*');
-    text = text.replace(/<i>(.*?)<\/i>/gi, '*$1*');
-    text = text.replace(/<br\s*\/?>/gi, '\n');
-    text = text.replace(/<\/p>\s*<p>/gi, '\n\n');
-    text = text.replace(/<p>(.*?)<\/p>/gi, '$1\n\n');
-    text = text.replace(/<li>(.*?)<\/li>/gi, '- $1\n');
-    text = text.replace(/<\/?ul>/gi, '\n');
-    text = text.replace(/<\/?ol>/gi, '\n');
-    text = text.replace(/<h(\d)>(.*?)<\/h\1>/gi, (_, level, content) => '#'.repeat(parseInt(level)) + ' ' + content + '\n\n');
-    text = text.replace(/<[^>]+>/g, '');
-    text = text.replace(/\n{3,}/g, '\n\n');
-    text = text.trim();
+    
+    if (typeof window === 'undefined' || !window.DOMParser) {
+        return html.replace(/<[^>]+>/g, '').trim();
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    function parseNode(node: Node): string {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent || '';
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        
+        const el = node as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        
+        let content = '';
+        for (const child of Array.from(el.childNodes)) {
+            content += parseNode(child);
+        }
+        
+        switch (tag) {
+            case 'strong':
+            case 'b':
+                return `**${content}**`;
+            case 'em':
+            case 'i':
+                return `*${content}*`;
+            case 'br':
+                return '\n';
+            case 'p':
+                return `${content}\n\n`;
+            case 'li':
+                return `- ${content}\n`;
+            case 'ul':
+            case 'ol':
+                return `${content}\n`;
+            case 'h1': return `# ${content}\n\n`;
+            case 'h2': return `## ${content}\n\n`;
+            case 'h3': return `### ${content}\n\n`;
+            case 'h4': return `#### ${content}\n\n`;
+            case 'h5': return `##### ${content}\n\n`;
+            case 'h6': return `###### ${content}\n\n`;
+            default:
+                return content;
+        }
+    }
+    
+    let text = parseNode(doc.body);
+    text = text.replace(/\n{3,}/g, '\n\n').trim();
     return text;
 }
 
@@ -86,6 +139,7 @@ export async function loadCardsAsync(): Promise<Card[]> {
 
     // Dexie Fallback
     try {
+        const db = getDB();
         const stored = await db.cards.toArray();
         if (!isInitialized && (!stored || stored.length === 0)) {
             await db.cards.bulkAdd(initialCards);
@@ -109,11 +163,18 @@ export async function saveCardsAsync(cards: Card[]): Promise<void> {
         return;
     }
 
-    // Dexie Fallback
+    // C-5 fix: use bulkPut (upsert) instead of clear+bulkAdd to prevent data loss on write failure
+    // Additionally, remove cards that are no longer in the array
     try {
+        const db = getDB();
         await db.transaction('rw', db.cards, async () => {
-            await db.cards.clear();
-            await db.cards.bulkAdd(cards);
+            const currentIds = new Set(cards.map(c => c.id));
+            const existingIds = await db.cards.toCollection().primaryKeys();
+            const toDelete = (existingIds as string[]).filter(id => !currentIds.has(id));
+            if (toDelete.length > 0) {
+                await db.cards.bulkDelete(toDelete);
+            }
+            await db.cards.bulkPut(cards);
         });
     } catch (e) {
         console.error('Error saving cards to Dexie:', e);
@@ -126,6 +187,7 @@ export async function loadSettingAsync<T>(key: string, defaultValue: T): Promise
         return value !== undefined ? value : defaultValue;
     }
     try {
+        const db = getDB();
         const setting = await db.settings.get(key);
         return setting ? (setting.value as T) : defaultValue;
     } catch (e) {
@@ -140,6 +202,7 @@ export async function saveSettingAsync<T>(key: string, value: T): Promise<void> 
         return;
     }
     try {
+        const db = getDB();
         await db.settings.put({ key, value });
     } catch (e) {
         console.error('Dexie write setting error', e);
@@ -208,6 +271,7 @@ export async function exportAllData(): Promise<string> {
         // Note: Full settings export in Electron would need a new API, but for now we'll do web-first
         // Assuming web fallback for settings if electron API lacks it.
     } else {
+        const db = getDB();
         backup.cards = await db.cards.toArray();
         backup.settings = await db.settings.toArray();
     }
@@ -215,7 +279,7 @@ export async function exportAllData(): Promise<string> {
     try {
         const storedAbbr = localStorage.getItem(CUSTOM_ABBREVIATIONS_KEY);
         if (storedAbbr) backup.abbreviations = JSON.parse(storedAbbr);
-    } catch(e) {}
+    } catch (e) { console.warn('Failed to load custom abbreviations from localStorage:', e); }
 
     return JSON.stringify(backup, null, 2);
 }
@@ -226,15 +290,31 @@ export async function importAllData(jsonString: string): Promise<void> {
         if (!data.cards || !Array.isArray(data.cards)) {
             throw new Error("Invalid backup file: Missing cards array");
         }
+        
+        // Zod validation for malformed cards
+        const validCards: Card[] = [];
+        data.cards.forEach(card => {
+            const res = CardSchema.safeParse(card);
+            if (res.success) {
+                validCards.push(res.data as Card);
+            } else {
+                console.warn(`Card skipped during restore due to invalid schema (ID: ${card.id}):`, res.error);
+            }
+        });
+        
+        if (validCards.length === 0) {
+            throw new Error("Invalid backup file: No valid cards found.");
+        }
 
         if (isElectron() && window.electronAPI) {
-            await window.electronAPI.saveCards(data.cards);
+            await window.electronAPI.saveCards(validCards);
         } else {
+            const db = getDB();
             await db.transaction('rw', db.cards, db.settings, async () => {
                 await db.cards.clear();
                 await db.settings.clear();
                 
-                await db.cards.bulkAdd(cleanCards(data.cards));
+                await db.cards.bulkAdd(cleanCards(validCards));
                 if (data.settings && Array.isArray(data.settings)) {
                     await db.settings.bulkAdd(data.settings);
                 }

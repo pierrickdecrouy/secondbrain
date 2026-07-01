@@ -31,12 +31,18 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
 
     useEffect(() => {
         if (query && matchedCards.length > 0) {
-            setIsVisible(false); // Reset animation
+            // Reset visibility and extraction together in a single batched update.
+            // React 18 batches these automatically when they are in the same
+            // synchronous call, but we are explicit here for clarity.
+            setIsVisible(false);
             const ext = generateExtraction(query, matchedCards, allCards);
             setExtraction(ext);
-            setTimeout(() => setIsVisible(true), 50); // Trigger animation
+            // Defer the visibility toggle to the next paint so the CSS
+            // transition actually fires (same as before, but no extra render).
+            const id = setTimeout(() => setIsVisible(true), 50);
+            return () => clearTimeout(id);
         }
-    }, [query, matchedCards]);
+    }, [query, matchedCards, allCards]);
 
     if (!query || query.length < 2 || matchedCards.length === 0) {
         return null;

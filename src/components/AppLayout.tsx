@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react';
 import { useUIStore } from '../store/useUIStore';
+import { useCardStore } from '../store/useCardStore';
 import { GlobalHeader } from './GlobalHeader';
-import { Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar, List, Graph, X } from '@phosphor-icons/react';
+import { Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar, List, Graph, X, Pause, PencilSimple } from '@phosphor-icons/react';
+import { useTaskStore } from '../store/useTaskStore';
+import { LicenseBanner } from './LicenseBanner';
+import { useLicense } from '../lib/useLicense';
+import { useMemo } from 'react';
 
 type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
 
@@ -11,11 +16,22 @@ interface AppLayoutProps {
   onNavigateSettings: () => void;
   pendingClusterReview?: boolean;
   onCancelClusterReview?: () => void;
+  onResumeTask?: (id: string) => void;
 }
 
-export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClusterReview, onCancelClusterReview }: AppLayoutProps) {
+export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClusterReview, onCancelClusterReview, onResumeTask }: AppLayoutProps) {
   const { activeSection, sidebarOpen, setSidebarOpen } = useUIStore();
+  const { pausedTasks, handleRemoveTask } = useTaskStore();
+  const { licenseInfo } = useLicense();
+  const { cards } = useCardStore();
   const isHomeSection = activeSection === 'dashboard';
+
+  // U-8: Count due cards for the review badge
+  const dueCount = useMemo(() => cards.filter(c => {
+    if (!c.progress?.dueDate) return false;
+    return new Date(c.progress.dueDate).getTime() <= Date.now() &&
+      (c.progress.status === 'review' || c.progress.status === 'learning');
+  }).length, [cards]);
 
   const navItems = [
     { id: 'cards', label: 'Base de connaissances', icon: <Stack size={20} weight="fill" /> },
@@ -52,12 +68,70 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
                   onNavigate(item.id as AppSection);
                   if (window.innerWidth <= 980) setSidebarOpen(false);
                 }}
+                style={{ position: 'relative' }}
               >
                 {item.icon}
                 <span>{item.label}</span>
+                {/* U-8: due badge on review item */}
+                {item.id === 'review' && dueCount > 0 && (
+                  <span style={{
+                    position: sidebarOpen ? 'static' : 'absolute',
+                    top: sidebarOpen ? undefined : 4,
+                    right: sidebarOpen ? undefined : 4,
+                    minWidth: 18, height: 18,
+                    borderRadius: 9,
+                    background: '#8b5cf6',
+                    color: '#fff',
+                    fontSize: '0.6rem',
+                    fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '0 4px',
+                    marginLeft: sidebarOpen ? 'auto' : undefined,
+                    lineHeight: 1,
+                    boxShadow: '0 1px 4px rgba(139,92,246,0.4)',
+                  }}>
+                    {dueCount > 99 ? '99+' : dueCount}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
+
+          {sidebarOpen && pausedTasks.length > 0 && (
+            <div className="mt-8 px-4">
+              <div className="text-[0.7rem] font-extrabold uppercase tracking-widest text-slate-400 mb-2 px-2">
+                Tâches en cours
+              </div>
+              <div className="flex flex-col gap-2">
+                {pausedTasks.map(task => {
+                  let TaskIcon = Pause;
+                  if (task.type === 'card_edit') TaskIcon = PencilSimple;
+                  else if (task.type === 'course_edit') TaskIcon = BookOpen;
+                  else if (task.type === 'review_session') TaskIcon = ClockCounterClockwise;
+
+                  return (
+                    <div key={task.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer" onClick={() => onResumeTask && onResumeTask(task.id)}>
+                        <div className="w-7 h-7 rounded-md bg-white dark:bg-slate-900 flex items-center justify-center shrink-0">
+                          <TaskIcon size={14} className="text-emerald-500" />
+                        </div>
+                        <span className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap overflow-hidden text-ellipsis font-medium" title={task.title}>
+                          {task.title}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleRemoveTask(task.id)} 
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors shrink-0" 
+                        title="Supprimer"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           
           <div className="workspace-nav-bottom" style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginBottom: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {navItems.filter(i => i.id === 'stats').map(item => (
@@ -79,10 +153,14 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
         </aside>
       </div>
 
-      <main className="workspace-main">
+      <main className="workspace-main" style={{ display: 'flex', flexDirection: 'column' }}>
         <GlobalHeader 
           isHomeSection={isHomeSection} 
           onNavigateSettings={onNavigateSettings} 
+        />
+        <LicenseBanner 
+          licenseInfo={licenseInfo} 
+          onUpgrade={() => onNavigateSettings()} 
         />
 
         <div className="workspace-content-scroll" style={isHomeSection ? { padding: 0 } : {}}>

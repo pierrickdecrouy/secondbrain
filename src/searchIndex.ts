@@ -67,6 +67,22 @@ export function addToIndex(card: Card): void {
     indexedCardIds.add(card.id);
 }
 
+export function updateIndex(card: Card): void {
+    try {
+        index.remove(card.id);
+    } catch {
+        // Ignore if not exists
+    }
+    index.add({
+        id: card.id,
+        title: card.title,
+        subtitle: card.subtitle,
+        content: card.content,
+        details: card.details,
+    });
+    indexedCardIds.add(card.id);
+}
+
 // Remove a card from the index
 export function removeFromIndex(cardId: string): void {
     try {

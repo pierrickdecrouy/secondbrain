@@ -1,15 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB7xL4k8T8tily6Ia8WtcHtdQmyPIoN8BY",
-  authDomain: "xtnd-a77a5.firebaseapp.com",
-  projectId: "xtnd-a77a5",
-  storageBucket: "xtnd-a77a5.firebasestorage.app",
-  messagingSenderId: "642704687075",
-  appId: "1:642704687075:web:e6b69274011223d0e02ad6",
-  measurementId: "G-3EQFZ0YBLH"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
@@ -18,18 +18,23 @@ export const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
 
-// Initialize Cloud Firestore and get a reference to the service
-export const db = getFirestore(app);
-
-// Enable offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled
-        // in one tab at a a time.
-        console.warn("Firebase persistence: Multiple tabs open.");
-    } else if (err.code == 'unimplemented') {
-        // The current browser does not support all of the
-        // features required to enable persistence
-        console.warn("Firebase persistence: Browser not supported.");
-    }
+// Initialize Cloud Firestore with offline persistence
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache()
 });
+
+// Helper to remove undefined values before saving to Firestore
+export const sanitizeForFirebase = <T extends Record<string, any>>(obj: T): T => {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (value === undefined) {
+            continue;
+        }
+        if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+            sanitized[key] = sanitizeForFirebase(value);
+        } else {
+            sanitized[key] = value;
+        }
+    }
+    return sanitized;
+};

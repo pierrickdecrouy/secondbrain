@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
   <meta charset="UTF-8" />
@@ -14,19 +14,8 @@
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
     integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
-  <script>
-    window.onerror = function (message, source, lineno, colno, error) {
-      if (typeof message === 'string' && (message.includes('Script error.') || message.includes('View Name for the webview'))) {
-        return true;
-      }
-      console.error('Global error:', message, { source, lineno, colno, error });
-      return false;
-    };
-
-    window.addEventListener('unhandledrejection', function (event) {
-      console.error('Unhandled Promise Rejection:', event.reason);
-    });
-  </script>
+  <!-- Error handler loaded externally so CSP does not need 'unsafe-inline' in script-src -->
+  <script src="/error-handler.js"></script>
 </head>
 
 <body>

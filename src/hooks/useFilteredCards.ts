@@ -8,15 +8,33 @@ export function useFilteredCards(cards: Card[], searchQuery: string, activeFilte
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [searchResultIds, setSearchResultIds] = useState<string[] | null>(null);
 
-  // Perform search when query changes
-  useEffect(() => {
-    if (!debouncedSearchQuery) {
-      setSearchResultIds(null);
-      return;
-    }
+  const [isSearching, setIsSearching] = useState(false);
 
-    // Use hybrid search (keyword + semantic)
-    hybridSearch(debouncedSearchQuery).then(setSearchResultIds);
+  // Reset results immediately when the query changes (replaces the illegal
+  // synchronous setState-during-render pattern that was here before).
+  useEffect(() => {
+    setSearchResultIds(null);
+    if (debouncedSearchQuery) {
+        setIsSearching(true);
+    }
+  }, [debouncedSearchQuery]);
+
+  // Async search: runs after the reset above has committed.
+  useEffect(() => {
+    if (!debouncedSearchQuery) return;
+
+    let isActive = true;
+    setIsSearching(true);
+    hybridSearch(debouncedSearchQuery).then(res => {
+        if (isActive) {
+            setSearchResultIds(res);
+            setIsSearching(false);
+        }
+    });
+
+    return () => {
+        isActive = false;
+    };
   }, [debouncedSearchQuery]);
 
   const filteredCards = useMemo(() => {
@@ -54,5 +72,5 @@ export function useFilteredCards(cards: Card[], searchQuery: string, activeFilte
     return result;
   }, [cards, searchResultIds, activeFilters]);
 
-  return { filteredCards, searchResultIds };
+  return { filteredCards, searchResultIds, isSearching };
 }

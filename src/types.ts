@@ -1,8 +1,21 @@
-import { v4 as uuidv4 } from 'uuid';
+// UUID generation natively with fallback
 
-export type CardType = string;
+export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;
+export type CardType = typeof CARD_TYPES[number] | (string & {});
 export type NodeType = 'course' | 'concept' | 'flashcard';
 export type FlashcardFormat = 'q&a' | 'cloze' | 'basic';
+
+export interface CardHistory {
+    timestamp: number;
+    userId: string | null;
+    action: 'create' | 'update';
+    diff?: {
+        title?: { old: string; new: string };
+        subtitle?: { old: string; new: string };
+        content?: { old: string; new: string };
+        details?: { old: string; new: string };
+    };
+}
 
 export interface Card {
     id: string;
@@ -24,14 +37,13 @@ export interface Card {
     subject?: string; // Matière / Subject category
     workspaceId?: string; // Identifier for the workspace
     ownerUid?: string | null; // null = created offline (no account), string = Firebase uid
+    history?: CardHistory[]; // Full history of modifications
 }
 
-// Export a value to ensure this file is treated as a module at runtime
-export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;
 export const COURSE_TYPE = 'course';
 
 export const generateId = (): string => {
-    return uuidv4();
+    return crypto.randomUUID();
 };
 
 export interface Node {
@@ -82,8 +94,8 @@ declare global {
   interface Window {
     electronAPI?: {
       isElectron: boolean;
-      loadCards: () => Promise<any[]>;
-      saveCards: (cards: any[]) => Promise<void>;
+      loadCards: () => Promise<Card[]>;
+      saveCards: (cards: Card[]) => Promise<void>;
       loadSetting: <T>(key: string) => Promise<T | undefined>;
       saveSetting: <T>(key: string, value: T) => Promise<void>;
       removeSetting: (key: string) => Promise<void>;

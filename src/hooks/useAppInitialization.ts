@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCardStore } from '../store/useCardStore';
 import { loadCardsAsync, saveCardsAsync } from '../storage';
 import { initialCards } from '../data';
@@ -33,7 +33,7 @@ function buildWorkspaceSeedCards(workspaceId: string, limit: number): Card[] {
 }
 
 export function useAppInitialization() {
-    const { cards, isLoading, setIsLoading, setCards } = useCardStore();
+    const { cards, setIsLoading, setCards } = useCardStore();
     const [semanticReady, setSemanticReady] = useState(false);
     const [embeddingsReady, setEmbeddingsReady] = useState(false);
 
@@ -111,15 +111,23 @@ export function useAppInitialization() {
         loadData();
     }, [setIsLoading, setCards]);
 
+    // Use a ref to ensure this only runs once
+    const hasInitializedSearchRef = useRef(false);
+
     // Build embeddings & learn abbreviations
     useEffect(() => {
-        if (cards.length > 0) {
+        if (cards.length > 0 && !hasInitializedSearchRef.current) {
+            hasInitializedSearchRef.current = true;
+
             import('../learnedAbbreviations').then(({ learnFromCards, getLearnedAbbreviations }) => {
                 learnFromCards(cards);
                 if (window.electronAPI?.saveAbbreviations) {
                     window.electronAPI.saveAbbreviations(getLearnedAbbreviations());
                 }
             });
+
+            // Rebuild FlexSearch index on initial load
+            rebuildIndex(cards);
 
             if (semanticReady) {
                 setEmbeddingsReady(false);
@@ -130,19 +138,8 @@ export function useAppInitialization() {
         }
     }, [cards, semanticReady]);
 
-    // Save cards
-    useEffect(() => {
-        if (!isLoading) {
-            saveCardsAsync(cards);
-        }
-    }, [cards, isLoading]);
-
-    // Rebuild FlexSearch index when cards change
-    useEffect(() => {
-        if (cards.length > 0) {
-            rebuildIndex(cards);
-        }
-    }, [cards]);
+    // Note: saveCardsAsync is called explicitly in each store action (handleSaveCard,
+    // confirmDelete, handleBatchImport, handleSuppressConnections). No effect needed here.
 
     return { semanticReady, embeddingsReady };
 }

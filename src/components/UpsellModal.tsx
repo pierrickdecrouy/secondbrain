@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface UpsellModalProps {
     isOpen: boolean;
@@ -25,13 +26,14 @@ const FEATURE_LABELS: Record<string, { title: string; desc: string; icon: string
         icon: '⚙️',
     },
     default: {
-        title: 'Fonctionnalité premium',
-        desc: 'Créez un compte gratuit pour accéder à toutes les fonctionnalités d\'Extnd.',
-        icon: '✦',
+        title: 'Fonctionnalité Premium',
+        desc: 'Connectez-vous pour profiter de cette fonctionnalité et bien plus encore.',
+        icon: '✨',
     },
 };
 
 export const UpsellModal: React.FC<UpsellModalProps> = ({ isOpen, onClose, onSignIn, feature = 'default' }) => {
+    const modalRef = useFocusTrap(isOpen);
     const info = FEATURE_LABELS[feature] ?? FEATURE_LABELS.default;
 
     return (
@@ -54,6 +56,7 @@ export const UpsellModal: React.FC<UpsellModalProps> = ({ isOpen, onClose, onSig
 
                     {/* Modal */}
                     <motion.div
+                        ref={modalRef}
                         key="modal"
                         initial={{ opacity: 0, scale: 0.94, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}

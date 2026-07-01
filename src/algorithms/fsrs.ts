@@ -1,6 +1,8 @@
 import { fsrs, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs';
 import type { Card as FSRSCard } from 'ts-fsrs';
 import type { UserCardProgress } from '../types';
+import { loadSrsSettings } from '../components/settings/RevisionTab';
+import { isExamModeActive, EXAM_MODE_MAX_INTERVAL } from './srs';
 
 export type ReviewFeedback = 1 | 2 | 3 | 4; 
 // UI maps: 1 = Again, 2 = Hard, 3 = Good, 4 = Easy
@@ -44,14 +46,21 @@ const progressToFsrsCard = (progress?: Partial<UserCardProgress> | null): FSRSCa
         due: progress.dueDate ? new Date(progress.dueDate) : new Date(),
         stability: progress.stability ?? 0,
         difficulty: progress.difficulty ?? 0,
-        elapsed_days: 0, 
+        elapsed_days: progress.lastReview ? Math.max(0, Math.floor((Date.now() - new Date(progress.lastReview).getTime()) / 86400000)) : 0, 
         scheduled_days: progress.interval ?? 0,
         reps: progress.reps ?? 0,
         lapses: progress.lapses ?? 0,
+        learning_steps: progress.step ?? 0,
         state: statusToState(progress.status),
         last_review: progress.lastReview ? new Date(progress.lastReview) : new Date(),
     } as unknown as FSRSCard;
 };
+
+let cachedSrsSettings: ReturnType<typeof loadSrsSettings> | null = null;
+
+export function clearSrsSettingsCache() {
+    cachedSrsSettings = null;
+}
 
 export function calculateFsrsProgress(
     current: Partial<UserCardProgress> | null | undefined,
@@ -80,11 +89,39 @@ export function calculateFsrsProgress(
 
     const history = [...(current?.history || []), now.toISOString()];
 
+    if (!cachedSrsSettings) {
+        cachedSrsSettings = loadSrsSettings();
+    }
+    const srsSettings = cachedSrsSettings;
+    
+    const isExam = isExamModeActive({
+        learningSteps: [1, 10],
+        defaultEaseFactor: 2.5,
+        minEaseFactor: 1.3,
+        fuzzEnabled: true,
+        examModeEnabled: srsSettings.examModeEnabled,
+        examDate: srsSettings.examDate || null,
+    });
+    
+    // Si le mode examen est actif, on bride l'intervalle au maximum autorisé (ex: 14 jours)
+    let finalInterval = nextCard.scheduled_days;
+    if (isExam && finalInterval > EXAM_MODE_MAX_INTERVAL) {
+        finalInterval = EXAM_MODE_MAX_INTERVAL;
+        // On force la dueDate à correspondre au nouvel intervalle
+        const newDue = new Date(now);
+        newDue.setDate(newDue.getDate() + finalInterval);
+        nextCard.due = newDue;
+    }
+
+    // ts-fsrs types do not explicitly expose learning_steps on the public interface depending on version
+    // but it is on the card object.
+    const learningSteps = (nextCard as any).learning_steps ?? 0;
+
     return {
         status: stateToStatus(nextCard.state),
-        step: 0,
+        step: learningSteps,
         dueDate: nextCard.due.toISOString(),
-        interval: nextCard.scheduled_days,
+        interval: finalInterval,
         easeFactor: current?.easeFactor ?? 2.5, // Not used by FSRS, but kept for compatibility
         lapses: nextCard.lapses,
         isLeech: nextCard.lapses >= 8,

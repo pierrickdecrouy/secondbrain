@@ -72,11 +72,8 @@ export function initSemanticSearch(
     { type: "module" },
   );
 
-  // Try to load existing index
-  vectorStore.load().then((loaded) => {
-    if (loaded) {
-    }
-  });
+  // Try to load existing index (result is not used; the load is fire-and-forget).
+  vectorStore.load();
 
   embeddingWorker.onmessage = (e) => {
     const { type, id, embedding, embeddings, progress, error } = e.data;

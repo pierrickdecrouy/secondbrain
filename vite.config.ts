@@ -12,8 +12,12 @@ const cspPlugin = () => {
     transformIndexHtml(html: string, { server }: any) {
       const isDev = !!server;
       const csp = isDev 
-        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: https: safe-file: blob:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://apis.google.com;"
-        : "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: https: safe-file: blob:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://apis.google.com;";
+        // Dev: 'unsafe-eval' is required by Vite HMR; 'unsafe-inline' for hot-reloaded styles.
+        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: blob: safe-file: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://apis.google.com;"
+        // Prod: 'unsafe-inline' removed from script-src (error-handler.js is now an external file).
+        // connect-src https: is intentionally kept broad — the HuggingFace embedding models are
+        // loaded from dynamic CDN URLs that cannot be statically enumerated.
+        : "default-src 'self'; script-src 'self' https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: blob: safe-file: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self' https://*.firebaseapp.com https://*.firebaseio.com https://apis.google.com;";
       
       return html.replace(
         '<meta name="csp-placeholder" content="">',

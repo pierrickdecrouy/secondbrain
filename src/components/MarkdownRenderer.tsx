@@ -1,11 +1,13 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import 'katex/dist/katex.min.css';
+import { InteractiveCardLink } from './ui/InteractiveCardLink';
 
 interface MarkdownRendererProps {
     content: string;
@@ -38,7 +40,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     // with '  \n' which ensures a hard break in Markdown.
     const processedContent = React.useMemo(() => {
         if (!content) return '';
-        let processed = content.replace(/(?<!\\)\\(?=\s|$)/g, '  \n');
+        // Sanitize the raw content first (prevent XSS before processing)
+        let processed = DOMPurify.sanitize(content, {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'span', 'mark', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'img'],
+            ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target']
+        });
+        
+        // Handle custom line breaks using '\'
+        processed = processed.replace(/(?<!\\)\\(?=\s|$)/g, '  \n');
         // Handle highlight syntax: ==text== -> <mark>text</mark>
         processed = processed.replace(/==([^=]+)==/g, '<mark>$1</mark>');
         // Handle wiki links: [[text]] -> <a href="#internal:text" class="wiki-link">text</a>
@@ -50,7 +59,23 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         <div className={`prose dark:prose-invert prose-indigo max-w-none ${className}`}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeRaw, rehypeSanitize, rehypeKatex]}
+                rehypePlugins={[
+                    rehypeRaw, 
+                    [rehypeSanitize, {
+                        ...defaultSchema,
+                        attributes: {
+                            ...defaultSchema.attributes,
+                            // Ensure class names and specific attributes are kept
+                            '*': [...(defaultSchema.attributes?.['*'] || []), 'className', 'style'],
+                            a: [...(defaultSchema.attributes?.a || []), 'target', 'rel'],
+                            // Support for mark tags
+                            mark: ['className'],
+                        },
+                        // Explicitly deny scripts and event handlers (already default, but good practice to assert)
+                        tagNames: defaultSchema.tagNames?.filter(t => t !== 'script' && t !== 'style' && t !== 'iframe'),
+                    }], 
+                    rehypeKatex
+                ]}
                 components={{
                     // Cloze Deletion Support
                     p: ({ node, children, ...props }) => (
@@ -69,17 +94,12 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                         if (href?.startsWith('#internal:')) {
                             const target = decodeURIComponent(href.replace('#internal:', ''));
                             return (
-                                <a 
-                                    {...props} 
-                                    href={href}
-                                    className="text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 font-semibold cursor-pointer border-b border-teal-200 dark:border-teal-800 hover:border-teal-600 dark:hover:border-teal-500 transition-colors no-underline" 
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        if (onInternalLinkClick) onInternalLinkClick(target);
-                                    }}
+                                <InteractiveCardLink 
+                                    target={target}
+                                    onClick={onInternalLinkClick}
                                 >
                                     {props.children}
-                                </a>
+                                </InteractiveCardLink>
                             );
                         }
                         return <a {...props} href={href} target="_blank" rel="noopener noreferrer" />;

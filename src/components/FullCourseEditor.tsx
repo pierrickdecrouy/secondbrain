@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
@@ -33,15 +32,13 @@ interface FullCourseEditorProps {
     onSave: (course: Card) => void;
     onCancel: () => void;
     existingCards: Card[];
-    onPause?: (draftCourse: Card) => void;
 }
 
 export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
     course,
     onSave,
     onCancel,
-    existingCards,
-    onPause
+    existingCards
 }) => {
     const [title, setTitle] = useState(course.title);
     const [subject, setSubject] = useState(course.subject || '');
@@ -418,6 +415,8 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                         style={{ padding: '6px 8px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text)' }}
                                         onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
                                         onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        onFocus={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
+                                        onBlur={(e) => e.currentTarget.style.background = 'transparent'}
                                     >
                                         {c.title}
                                     </button>
@@ -427,7 +426,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                     )}
 
                     {editor && (
-                        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="course-editor-toolbar bubble-menu" style={{ padding: '8px', border: '1px solid var(--color-border)', borderRadius: '8px', backgroundColor: 'var(--color-surface)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                        <BubbleMenu editor={editor} className="course-editor-toolbar bubble-menu" style={{ padding: '8px', border: '1px solid var(--color-border)', borderRadius: '8px', backgroundColor: 'var(--color-surface)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
                             <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
                                 <TextB size={18} />
                             </button>

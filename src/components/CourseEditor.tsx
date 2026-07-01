@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
@@ -20,11 +19,13 @@ import {
     Table as TableIcon, Link as LinkIcon, Info, Warning, GraduationCap, Brain, Cards, EyeSlash
 } from '@phosphor-icons/react';
 import { ClozeExtension } from './editor/ClozeExtension';
+import type { NodeViewProps } from '@tiptap/core';
+import type { Card } from '../types';
 
 // --- Custom Node for Medical Alerts ---
 
-const MedicalAlertComponent = ({ node }: { node: { attrs: { type: string } } }) => {
-    const type = node.attrs.type;
+const MedicalAlertComponent = ({ node }: NodeViewProps) => {
+    const type = node.attrs.type as string;
     
     const getTypeConfig = (t: string) => {
         switch (t) {
@@ -58,14 +59,19 @@ export const MedicalAlert = Node.create({
     addAttributes() {
         return {
             type: {
-                default: 'definition',
+                default: 'note',
             },
         };
     },
 
     parseHTML() {
         return [
-            { tag: 'div.medical-alert' },
+            { 
+                tag: 'div.medical-alert',
+                getAttrs: element => ({
+                    type: (element as HTMLElement).getAttribute('data-type') || 'note',
+                }),
+            },
         ];
     },
 
@@ -84,7 +90,7 @@ export const MedicalAlert = Node.create({
 interface CourseEditorProps {
     value: string;
     onChange: (value: string) => void;
-    existingCards?: { id: string; title: string; type: string }[];
+    existingCards?: Card[];
 }
 
 export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, existingCards = [] }) => {
@@ -145,10 +151,8 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
         editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     }, [editor]);
 
-    if (!editor) return null;
-
     const addAlert = (type: string) => {
-        editor.chain().focus().insertContent({
+        editor?.chain().focus().insertContent({
             type: 'medicalAlert',
             attrs: { type },
             content: [{ type: 'paragraph' }]
@@ -171,6 +175,8 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
         if (showCardSelector) document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showCardSelector]);
+
+    if (!editor) return null;
 
     const filteredCards = existingCards.filter(c => c.title.toLowerCase().includes(cardSearch.toLowerCase())).slice(0, 10);
 
@@ -265,6 +271,8 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
                                 style={{ padding: '6px 8px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
                                 onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
                                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                onFocus={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
+                                onBlur={(e) => e.currentTarget.style.background = 'transparent'}
                             >
                                 {c.title}
                             </button>
@@ -274,7 +282,7 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
             )}
 
             {editor && (
-                <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-1 shadow-md dark:bg-[var(--color-surface)]">
+                <BubbleMenu editor={editor} className="flex bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-1 shadow-md dark:bg-[var(--color-surface)]">
                     <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`bg-transparent border-none rounded p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('bold') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} title="Gras">
                         <TextB size={18} />
                     </button>

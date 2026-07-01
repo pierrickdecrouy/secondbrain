@@ -2,9 +2,11 @@ import React from 'react';
 import { X, Tag, PencilSimple, Trash } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { useCardStore as useCards } from '../store/useCardStore';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export const TagManagerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { cards, setCards } = useCards();
+    const modalRef = useFocusTrap(true);
 
     const allTags = Array.from(new Set(
         cards.flatMap(c => c.tags || [])
@@ -36,7 +38,7 @@ export const TagManagerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
 
     return createPortal(
         <div className="card-form-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{ zIndex: 10000, position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="card-form app-card-form" style={{ maxWidth: '500px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-surface)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <div ref={modalRef} className="card-form app-card-form" style={{ maxWidth: '500px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-surface)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
                 <div className="card-form-header app-header" style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}><Tag size={20} /> Gestion des Étiquettes</h2>
                     <button className="close-btn app-close-btn" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>

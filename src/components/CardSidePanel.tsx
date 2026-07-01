@@ -1,6 +1,5 @@
-// @ts-nocheck
 import React, { useMemo, useState, useEffect } from 'react';
-import { X, PushPin, PushPinSlash, CaretLeft, CaretRight, Link, CornersOut, CornersIn, EyeSlash, Eye } from '@phosphor-icons/react';
+import { X, PushPin, PushPinSlash, CaretLeft, CaretRight, Link, CornersOut, EyeSlash, Eye } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { Badge } from './Badge';
 import { MarkdownRenderer } from './MarkdownRenderer';

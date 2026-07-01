@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToggleSwitch } from '../ui/ToggleSwitch';
 import { isExamModeActive, EXAM_MODE_WINDOW_DAYS } from '../../algorithms/srs';
+import { clearSrsSettingsCache } from '../../algorithms/fsrs';
 import { loadSettingAsync, loadSettingSync, saveSettingAsync } from '../../persistentSettings';
 import { S, SettingsCard, CardSection, CardBody, SettingsRow, FieldLabel } from './SettingsUI';
 
@@ -9,24 +10,31 @@ export const SRS_SETTINGS_KEY = 'pharmabrain_srs_settings';
 export interface SrsSettings {
     examModeEnabled: boolean;
     examDate: string;
+    showEasyButton: boolean;
+    autoFullscreen: boolean;
+    maxNewCardsPerSession: number;
 }
 
 export function loadSrsSettings(): SrsSettings {
     return loadSettingSync<SrsSettings>(SRS_SETTINGS_KEY, {
         examModeEnabled: false,
         examDate: new Date().toISOString().split('T')[0],
+        showEasyButton: false,
+        autoFullscreen: false,
+        maxNewCardsPerSession: 10,
     });
 }
 
 export function saveSrsSettings(settings: SrsSettings): void {
     saveSettingAsync(SRS_SETTINGS_KEY, settings);
+    clearSrsSettingsCache();
 }
 
 export const RevisionTab: React.FC = () => {
     const [srsSettings, setSrsSettings] = useState<SrsSettings>(() => loadSrsSettings());
 
     useEffect(() => {
-        loadSettingAsync<SrsSettings>(SRS_SETTINGS_KEY, { examModeEnabled: false, examDate: '' }).then(setSrsSettings);
+        loadSettingAsync<SrsSettings>(SRS_SETTINGS_KEY, { examModeEnabled: false, examDate: '', showEasyButton: false, autoFullscreen: false, maxNewCardsPerSession: 10 }).then(setSrsSettings);
     }, []);
 
     const handleChange = (patch: Partial<SrsSettings>) => {
@@ -128,6 +136,46 @@ export const RevisionTab: React.FC = () => {
                         </div>
                     )}
                 </div>
+            </SettingsCard>
+
+            <SettingsCard>
+                <CardSection
+                    title="Options de Révision"
+                    subtitle="Personnalisez votre interface et vos outils de révision."
+                />
+                <SettingsRow
+                    label="Plein écran automatique"
+                    description="Passer en plein écran au lancement d'une session."
+                >
+                    <ToggleSwitch
+                        checked={srsSettings.autoFullscreen}
+                        onChange={checked => handleChange({ autoFullscreen: checked })}
+                        aria-label="Plein écran automatique"
+                    />
+                </SettingsRow>
+                <SettingsRow
+                    label="Nouvelles cartes par session"
+                    description="Nombre maximum de nouvelles cartes à découvrir par session."
+                >
+                    <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={srsSettings.maxNewCardsPerSession}
+                        onChange={e => handleChange({ maxNewCardsPerSession: parseInt(e.target.value) || 10 })}
+                        style={{ width: '80px', padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', textAlign: 'center' }}
+                    />
+                </SettingsRow>
+                <SettingsRow
+                    label="Activer le bouton Facile"
+                    description="Ajoute un quatrième bouton lors des révisions pour les cartes parfaitement maîtrisées."
+                >
+                    <ToggleSwitch
+                        checked={srsSettings.showEasyButton}
+                        onChange={checked => handleChange({ showEasyButton: checked })}
+                        aria-label="Activer le bouton facile"
+                    />
+                </SettingsRow>
             </SettingsCard>
 
             {/* How it works */}

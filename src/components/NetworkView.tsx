@@ -94,6 +94,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     useEffect(() => {
         if (!containerRef.current) return;
+        
+        // Auto-resize
         const resizeObserver = new ResizeObserver(entries => {
             for (const entry of entries) {
                 if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
@@ -105,7 +107,37 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             }
         });
         resizeObserver.observe(containerRef.current);
-        return () => resizeObserver.disconnect();
+
+        // Visibility / intersection for performance (P-4)
+        const intersectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (fgRef.current) {
+                    if (entry.isIntersecting && document.visibilityState === 'visible') {
+                        fgRef.current.resumeAnimation?.();
+                    } else {
+                        fgRef.current.pauseAnimation?.();
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+        intersectionObserver.observe(containerRef.current);
+
+        const handleVisibilityChange = () => {
+            if (fgRef.current) {
+                if (document.visibilityState === 'visible') {
+                    fgRef.current.resumeAnimation?.();
+                } else {
+                    fgRef.current.pauseAnimation?.();
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            resizeObserver.disconnect();
+            intersectionObserver.disconnect();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -400,7 +432,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
 
 
-    const handleGraphNodeClick = (node: any, event?: MouseEvent) => {
+    const handleGraphNodeClick = (node: GraphNode | null, event?: MouseEvent) => {
+        if (!node) return;
         const now = Date.now();
         const isDoubleClick = lastClickNodeIdRef.current === node.id && (now - lastClickTimeRef.current) < 300;
 
@@ -544,7 +577,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                             setHoverNode(node || null);
                             document.body.style.cursor = node ? 'pointer' : 'default';
                         }}
-                        onNodeClick={handleGraphNodeClick}
+                        onNodeClick={handleGraphNodeClick as any}
                         onBackgroundClick={() => {
                             setSelectedNodes(new Set());
                             setPathLinks(new Set());
@@ -554,6 +587,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         d3VelocityDecay={0.3}
                         warmupTicks={50}
                         cooldownTicks={100}
+                        cooldownTime={3000}
                     />
                 </Suspense>
             ) : (
@@ -567,6 +601,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     linkCanvasObject={linkPaint}
 
                     cooldownTicks={100}
+                    cooldownTime={3000}
                     d3AlphaDecay={0.02}
                     d3VelocityDecay={0.3}
                     warmupTicks={50}
@@ -576,9 +611,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         setHoverNode(node || null);
                         document.body.style.cursor = node ? 'pointer' : 'default';
                     }}
-                    onLinkHover={handleLinkHover}
+                    onLinkHover={handleLinkHover as any}
 
-                    onNodeClick={handleGraphNodeClick}
+                    onNodeClick={handleGraphNodeClick as any}
 
                     onBackgroundClick={() => {
                         setSelectedNodes(new Set());

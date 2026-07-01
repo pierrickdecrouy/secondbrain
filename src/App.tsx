@@ -11,7 +11,6 @@ import { useReviewSession } from "./hooks/useReviewSession";
 import { useFilteredCards } from "./hooks/useFilteredCards";
 import { useGlobalShortcuts } from "./hooks/useGlobalShortcuts";
 import type { Card } from "./types";
-import { COURSE_TYPE } from "./types";
 import { calculateFsrsProgress } from "./algorithms/fsrs";
 import { getLinkFeedback } from "./linkFeedback";
 import { useAppInitialization } from "./hooks/useAppInitialization";
@@ -27,7 +26,7 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useTier } from "./lib/useTier";
 import { scheduleLocalNotification } from "./lib/notifications";
 import { HomePage } from "./components/HomePage";
-import { CoursesPage } from "./components/CoursesPage";
+const CoursesPage = lazy(() => import("./components/CoursesPage").then(m => ({ default: m.CoursesPage })));
 import { StatsPage } from "./components/StatsPage";
 import { ReviewSessionModal } from "./components/ReviewSessionModal";
 import { ReviewHubPage } from "./components/ReviewHubPage";
@@ -48,7 +47,7 @@ const BrowsePage = lazy(() =>
   })),
 );
 
-type AppSection =
+export type AppSection =
   | "dashboard"
   | "cards"
   | "courses"
@@ -70,6 +69,7 @@ function LoadingFallback() {
 
 import { useCardStore } from "./store/useCardStore";
 import { useUIStore } from "./store/useUIStore";
+import { useTaskStore } from "./store/useTaskStore";
 
 function AppContent() {
   const { user } = useAuth();
@@ -152,6 +152,9 @@ function AppContent() {
     reviewSessionCards,
     startFSRSReview,
     startIntensiveReview,
+    startCourseReview,
+    startQuizReview,
+    startCustomReview,
   } = useReviewSession(cards);
 
   const handleEditCard = useCallback(
@@ -170,6 +173,14 @@ function AppContent() {
       setEditingCard(null);
     },
     [handleSaveCard, setAddDataMode, setEditingCard],
+  );
+
+  // Silent variant used for review ratings: does NOT close the edit modal or reset addDataMode.
+  const handleSaveCardSilent = useCallback(
+    (card: Card) => {
+      handleSaveCard(card);
+    },
+    [handleSaveCard],
   );
 
   const confirmDeleteWrapped = useCallback(() => {
@@ -197,17 +208,19 @@ function AppContent() {
   }, [cards, selectedCardId, networkPanelPinned, pinnedCardId]);
 
   const handleRateCard = useCallback(
-    (cardId: string, rating: 1 | 2 | 3) => {
+    (cardId: string, rating: 1 | 2 | 3 | 4) => {
       const card = cards.find((c) => c.id === cardId);
       if (!card) return;
-      const nextProgress = calculateFsrsProgress(card.progress, rating, card.type === COURSE_TYPE);
-      handleSaveCardWrapped({
+      const isCourseType = card.nodeType === 'course' || card.nodeType === 'concept';
+      const nextProgress = calculateFsrsProgress(card.progress, rating, isCourseType);
+      // Use silent save to avoid closing an open edit form during a concurrent review session.
+      handleSaveCardSilent({
         ...card,
         progress: nextProgress,
         updatedAt: Date.now(),
       });
     },
-    [cards, handleSaveCardWrapped],
+    [cards, handleSaveCardSilent],
   );
 
   const isNetworkContext =
@@ -224,57 +237,75 @@ function AppContent() {
     navigateSection,
   });
 
+  const onResumeTask = useCallback((taskId: string) => {
+    const taskStore = useTaskStore.getState();
+    const task = taskStore.pausedTasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    if (task.type === 'review_session') {
+      const state = task.state as { cardIds: string[], currentIndex: number, title?: string };
+      if (!state.cardIds) return;
+      
+      const sessionCards = state.cardIds.map(id => cards.find(c => c.id === id)).filter((c): c is Card => !!c);
+      
+      if (sessionCards.length > 0) {
+        setReviewSession({
+          title: state.title || 'Session de révision',
+          cardIds: state.cardIds,
+          initialIndex: state.currentIndex || 0
+        });
+      }
+      taskStore.handleRemoveTask(taskId);
+    }
+  }, [cards, setReviewSession]);
 
   const renderMainContent = () => {
     if (activeSection === "dashboard") {
       return (
         <HomePage
-          onNavigate={(section) => navigateSection(section as AppSection)}
+          onNavigate={navigateSection}
           onAddCard={() => setAddDataMode("create")}
         />
       );
     }
 
     if (activeSection === "settings") {
-      if (!canAccess('settings')) {
-        setUpsellFeature('settings');
-        return <HomePage onNavigate={(s) => navigateSection(s as any)} onAddCard={() => setAddDataMode("create")} />;
-      }
       return <SettingsPage onClose={() => navigateSection("dashboard")} />;
     }
     if (activeSection === "stats") {
-      if (!canAccess('stats')) {
-        setUpsellFeature('stats');
-        return <HomePage onNavigate={(s) => navigateSection(s as any)} onAddCard={() => setAddDataMode("create")} />;
-      }
       return <StatsPage />;
     }
 
     if (activeSection === "review") {
+      const courseCards = cards.filter(c => c.nodeType === 'course');
       return (
         <ReviewHubPage
           onSelectFSRS={startFSRSReview}
           onSelectCluster={startClusterReviewMode}
           onSelectIntensive={startIntensiveReview}
-          totalDue={
-            cards.filter(
-              (c) =>
-                c.progress?.status === "review" &&
-                c.progress.dueDate &&
-                new Date(c.progress.dueDate) <= new Date(),
-            ).length
-          }
+          onSelectCourse={(courseId) => {
+            const course = cards.find(c => c.id === courseId);
+            startCourseReview(courseId, `Révision — ${course?.title || 'Cours'}`);
+          }}
+          onSelectQuiz={startQuizReview}
+          onSelectCustom={startCustomReview}
           hasEnoughCardsForCluster={
             cards.filter(
               (c) => c.manualConnections && c.manualConnections.length > 0,
             ).length >= 1
           }
+          courses={courseCards}
+          allCards={cards}
         />
       );
     }
 
     if (activeSection === "courses") {
-      return <CoursesPage />;
+      return (
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircleNotch size={32} className="animate-spin text-blue-500" /></div>}>
+          <CoursesPage onStartReview={(cardIds, title) => setReviewSession({ cardIds, title })} />
+        </Suspense>
+      );
     }
 
     return (
@@ -408,6 +439,7 @@ function AppContent() {
           cards={reviewSessionCards}
           allCards={cards}
           title={reviewSession.title}
+          initialIndex={reviewSession.initialIndex}
           onClose={() => setReviewSession(null)}
           onRate={handleRateCard}
           onJumpToCard={(id) => setSelectedCardId(id)}
@@ -429,15 +461,10 @@ function AppContent() {
         }
         navigateSection(section);
       }}
-      onNavigateSettings={() => {
-        if (!canAccess('settings')) {
-          setUpsellFeature('settings');
-          return;
-        }
-        navigateSection("settings");
-      }}
+      onNavigateSettings={() => navigateSection("settings")}
       pendingClusterReview={pendingClusterReview}
       onCancelClusterReview={() => setPendingClusterReview(false)}
+      onResumeTask={onResumeTask}
     >
       <Suspense fallback={<LoadingFallback />}>{renderMainContent()}</Suspense>
       {modals}

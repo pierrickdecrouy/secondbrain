@@ -1,5 +1,4 @@
-// @ts-nocheck
-import type { Node, Link } from '../types';
+import type { Node, Link, Card } from '../types';
 
 export interface ClusterInfo {
     id: string;
@@ -10,7 +9,7 @@ export interface ClusterInfo {
 
 // Helper to handle D3 link objects which can mutate source/target into objects
 const linkEndpointId = (endpoint: Record<string, unknown> | string): string => {
-    return typeof endpoint === 'object' ? endpoint.id : endpoint;
+    return typeof endpoint === 'object' ? endpoint.id as string : endpoint;
 };
 
 export function detectClusters(nodes: Node[], links: Link[], minClusterSize = 2): ClusterInfo[] {
@@ -27,8 +26,8 @@ export function detectClusters(nodes: Node[], links: Link[], minClusterSize = 2)
 
     links.forEach(l => {
         if ((l.value || 0) >= threshold) {
-            const source = linkEndpointId(l.source);
-            const target = linkEndpointId(l.target);
+            const source = linkEndpointId(l.source as Record<string, unknown> | string);
+            const target = linkEndpointId(l.target as Record<string, unknown> | string);
             
             if (adjacency.has(source) && adjacency.has(target)) {
                 adjacency.get(source)!.add(target);
@@ -77,7 +76,7 @@ export function detectClusters(nodes: Node[], links: Link[], minClusterSize = 2)
         const subjectCounts = new Map<string, number>();
 
         component.forEach(nodeId => {
-            const node = nodeMap.get(nodeId) as any;
+            const node = nodeMap.get(nodeId) as Node & Partial<Card> | undefined;
             if (node) {
                 // Count subjects
                 if (node.subtitle) {

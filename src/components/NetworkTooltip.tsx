@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { Brain, Link as LinkIcon, ArrowsLeftRight, Hand, Trash, ArrowsMerge } from '@phosphor-icons/react';
 import './NetworkTooltip.css';
@@ -24,11 +23,11 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
         }
     };
 
-    const typeDetails = getTypeDetails(link.type || 'semantic');
+    const typeDetails = getTypeDetails((link.type as string) || 'semantic');
     const TypeIcon = typeDetails.icon;
 
     // 2. Score Calculation
-    const score = Math.round((link.value || 0) * 100);
+    const score = Math.round(((link.value as number) || 0) * 100);
 
     // Color scale for progress bar
     const getScoreColor = (s: number) => {

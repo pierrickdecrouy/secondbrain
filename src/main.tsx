@@ -13,7 +13,7 @@ registerSW({ immediate: true });
 import { BrowserRouter } from 'react-router-dom';
 
 import { ThemeProvider } from './context/ThemeContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastContainer } from './components/ui/ToastContainer';
 import { AuthProvider } from './context/AuthContext';
 
 
@@ -22,11 +22,10 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <BrowserRouter>
         <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          </ToastProvider>
+          <AuthProvider>
+            <App />
+            <ToastContainer />
+          </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>

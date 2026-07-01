@@ -10,7 +10,8 @@ export type GraphNode = Node & {
     index?: number;
     val?: number;
     manualConnections?: string[];
-    [key: string]: any;
+    // ForceGraph2D/3D attaches internal simulation properties at runtime.
+    [key: string]: unknown;
 };
 
 export type GraphLink = Link & {
@@ -19,7 +20,8 @@ export type GraphLink = Link & {
     isSemantic?: boolean;
     semanticScore?: number;
     color?: string;
-    [key: string]: any;
+    // ForceGraph2D/3D attaches internal simulation properties at runtime.
+    [key: string]: unknown;
 };
 
 export const linkEndpointId = (endpoint: GraphLink['source']): string =>

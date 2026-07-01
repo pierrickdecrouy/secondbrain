@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, UploadSimple, Warning, FileText, FileCode, Info } from '@phosphor-icons/react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { Card, CardType } from '../types';
 import { validateImportData } from '../utils/importValidation';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
@@ -305,9 +306,10 @@ Inhibe irréversiblement les COX.`}
 };
 
 export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
+    const modalRef = useFocusTrap(true);
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
-            <div className="relative w-full max-w-[1000px] shadow-2xl rounded-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-[1000px] shadow-2xl rounded-xl animate-in fade-in zoom-in-95 duration-200" ref={modalRef as any}>
                 <button 
                     onClick={props.onClose}
                     className="absolute top-3 right-3 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors z-10"

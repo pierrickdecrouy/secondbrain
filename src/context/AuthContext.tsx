@@ -11,6 +11,8 @@ import {
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { setStorageUid } from '../storage';
+import { useCardStore } from '../store/useCardStore';
 
 interface AuthContextType {
     user: User | null;
@@ -39,7 +41,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        let prevUid = user?.uid;
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            const currentUid = currentUser?.uid;
+            
+            if (currentUid !== prevUid) {
+                prevUid = currentUid;
+                setStorageUid(currentUid || null);
+                if (currentUid) {
+                    await useCardStore.getState().reloadFromStorage();
+                } else {
+                    useCardStore.getState().clearStore();
+                }
+            }
+
             setUser(currentUser);
             setLoading(false);
         });

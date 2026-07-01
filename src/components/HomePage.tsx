@@ -4,50 +4,52 @@ import {
     MagnifyingGlass, Plus,
     BookOpen, Brain, Command
 } from '@phosphor-icons/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useCardStore as useCards } from '../store/useCardStore';
 import { useUIStore as useUI } from '../store/useUIStore';
+import { useDueCards } from '../hooks/useDueCards';
+import type { AppSection } from '../App';
 
 interface HomePageProps {
-    onNavigate: (section: string) => void;
+    onNavigate: (section: AppSection) => void;
     onAddCard: () => void;
 }
+
+// Defined at module level: allocated once, never causes a re-render.
+const SEARCH_PLACEHOLDERS = [
+    "Que souhaitez-vous explorer aujourd'hui ?",
+    "Rechercher une notion, un concept clé...",
+    "Encore en train de repousser vos révisions ?",
+    "Tapez un mot-clé (ex: Thermodynamique, Platon...)",
+    "Retrouver une fiche avant l'examen...",
+    "La réponse est probablement ici (pas sur Google)...",
+    "Le mystère des chaussettes disparues...",
+    "N'oubliez pas de boire de l'eau (et beaucoup de café)...",
+    "Courage, les partiels approchent ! (ou pas)",
+    "Explorer vos connaissances...",
+    "Quelle est la définition exacte de...",
+    "C'est l'heure de muscler son cerveau !",
+    "Chercher une excuse pour faire une pause...",
+    "Reprendre vos révisions en cours..."
+];
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => {
     const { cards } = useCards();
     const { userName, setOmniboxOpen } = useUI();
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-    const placeholders = [
-        "Que souhaitez-vous explorer aujourd'hui ?",
-        "Rechercher une notion, un concept clé...",
-        "Encore en train de repousser vos révisions ?",
-        "Tapez un mot-clé (ex: Thermodynamique, Platon...)",
-        "Retrouver une fiche avant l'examen...",
-        "La réponse est probablement ici (pas sur Google)...",
-        "Le mystère des chaussettes disparues...",
-        "N'oubliez pas de boire de l'eau (et beaucoup de café)...",
-        "Courage, les partiels approchent ! (ou pas)",
-        "Explorer vos connaissances...",
-        "Quelle est la définition exacte de...",
-        "C'est l'heure de muscler son cerveau !",
-        "Chercher une excuse pour faire une pause...",
-        "Reprendre vos révisions en cours..."
-    ];
-
     useEffect(() => {
         const interval = setInterval(() => {
-            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+            setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
         }, 4000);
         return () => clearInterval(interval);
     }, []);
 
+    const { totalToReview } = useDueCards(cards);
     const now = new Date();
-    const dueCards = cards.filter(c => c.progress?.status === 'review' && c.progress.dueDate && new Date(c.progress.dueDate) <= now);
-    const learningCards = cards.filter(c => c.progress?.status === 'learning' && c.progress.dueDate && new Date(c.progress.dueDate) <= now);
-    const totalToReview = dueCards.length + learningCards.length;
 
     const getGreeting = () => {
-        const hour = new Date().getHours();
+        const hour = now.getHours();
         if (hour >= 22 || hour < 5) return 'Bonne nuit';
         if (hour < 12) return 'Bonjour';
         if (hour < 18) return 'Bon après-midi';
@@ -55,7 +57,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
     };
 
     return (
-        <div className="home-page">
+        <div className="home-page w-full h-full flex flex-col overflow-hidden relative">
             <div className="home-aurora-bg">
                 <div className="aurora-blob aurora-blob-1" />
                 <div className="aurora-blob aurora-blob-2" />
@@ -63,16 +65,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
             </div>
 
             {/* Main Center Content */}
-            <div className="home-content app-no-drag" style={{ paddingTop: '2rem' }}>
-                <h1 className="home-greeting" style={{ width: '100%', textAlign: 'left' }}>
+            <div className="home-content app-no-drag flex flex-col flex-1 overflow-hidden" style={{ paddingTop: '2rem' }}>
+                <h1 className="home-greeting flex-shrink-0" style={{ width: '100%', textAlign: 'left' }}>
                     {getGreeting()}, <span style={{ marginLeft: '12px' }}>{userName}</span>
                 </h1>
-                <p className="home-subtitle" style={{ minHeight: '1.5rem', transition: 'opacity 0.5s ease-in-out', width: '100%', textAlign: 'left', paddingLeft: '0' }}>
-                    {placeholders[placeholderIndex]}
-                </p>
+                <div className="home-subtitle-container" style={{ minHeight: '1.5rem', position: 'relative', width: '100%', paddingLeft: '0', marginBottom: '1rem' }}>
+                    <AnimatePresence mode="wait">
+                        <motion.p 
+                            key={placeholderIndex}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.3 }}
+                            className="home-subtitle" 
+                            style={{ margin: 0, position: 'absolute', width: '100%', textAlign: 'left' }}
+                        >
+                            {SEARCH_PLACEHOLDERS[placeholderIndex]}
+                        </motion.p>
+                    </AnimatePresence>
+                </div>
 
                 {/* Search Bar (Omnibox) */}
-                <form className="home-search w-full max-w-3xl" onSubmit={(e) => {
+                <form className="home-search w-full max-w-3xl flex-shrink-0" onSubmit={(e) => {
                     e.preventDefault();
                     setOmniboxOpen(true);
                 }}>
@@ -96,7 +110,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 </form>
 
                 {/* Quick Actions & Review Status */}
-                <div className="home-quick-actions" style={{ margin: '3rem auto 0', display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '600px' }}>
+                <div className="home-quick-actions flex-1 overflow-y-auto custom-scrollbar" style={{ margin: '3rem auto 0', display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '600px', paddingBottom: '2rem' }}>
                     {/* Review Status Card */}
                     <button 
                         className={`review-status-card ${totalToReview > 0 ? 'has-reviews' : 'all-done'}`} 

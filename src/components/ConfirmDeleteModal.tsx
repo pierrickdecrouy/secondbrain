@@ -1,6 +1,8 @@
 import React from 'react';
 import { Warning } from '@phosphor-icons/react';
 
+import { useFocusTrap } from '../hooks/useFocusTrap';
+
 interface ConfirmDeleteModalProps {
     title: string;
     onConfirm: () => void;
@@ -22,6 +24,8 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
     cancelLabel = 'Annuler',
     confirmClassName = 'btn-danger'
 }) => {
+    const modalRef = useFocusTrap(true);
+
     const handleOverlayClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
             onCancel();
@@ -30,7 +34,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
     return (
         <div className="modal-overlay" onClick={handleOverlayClick}>
-            <div className="confirm-modal">
+            <div ref={modalRef} className="confirm-modal">
                 <div className="confirm-icon">
                     <Warning size={32} />
                 </div>

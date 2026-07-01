@@ -64,6 +64,7 @@ export async function exportToAnki(deckName: string, cards: Card[]): Promise<voi
 
     // .export() returns Uint8Array or ArrayBuffer depending on jszip config in genanki-js
     // but typically it's an ArrayBuffer/Blob compatible
+    // @ts-expect-error genanki-js typings are incomplete
     const zipBuffer = await p.export();
     const blob = new Blob([zipBuffer], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);

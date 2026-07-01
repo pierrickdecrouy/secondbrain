@@ -1,18 +1,21 @@
-// @ts-nocheck
 import React, { useState, useMemo } from 'react';
-import { BookOpen, Plus, Trash, ListDashes, SquaresFour, FileText, MagnifyingGlass } from '@phosphor-icons/react';
+import { BookOpen, Plus, Trash, ListDashes, SquaresFour, FileText, MagnifyingGlass, DownloadSimple, PencilSimple } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { COURSE_TYPE, generateId } from '../types';
 import { stripMarkdown } from '../utils';
 import { FullCourseEditor } from './FullCourseEditor';
 import { CourseViewer } from './CourseViewer';
 import { AddDataModal } from './AddDataModal';
+import { DetailModal } from './DetailModal';
 import { useCardStore as useCards } from '../store/useCardStore';
+import { exportDeckToJson } from '../utils/deckExport';
+import { importDeckFromJson } from '../utils/deckImport';
 
 interface CoursesPageProps {
     onPause?: (draft: Partial<Card>) => void;
     initialDraft?: Card | null;
     onDraftConsumed?: () => void;
+    onStartReview?: (cardIds: string[], title: string) => void;
 }
 
 // Color palette per subject group (bg bar color, text color for icon)
@@ -26,22 +29,39 @@ const GROUP_COLORS = [
 ];
 
 export const CoursesPage: React.FC<CoursesPageProps> = ({
-    onPause,
     initialDraft,
-    onDraftConsumed
+    onDraftConsumed,
+    onStartReview,
 }) => {
     const { cards, handleSaveCard: onSaveCourse, handleDeleteCard: onDeleteCourse } = useCards();
     const existingCards = cards;
     const courseCards = useMemo(() => cards.filter(c => c.nodeType === 'course').sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)), [cards]);
     const [editingCourse, setEditingCourse] = useState<Card | null>(null);
     const [viewingCourse, setViewingCourse] = useState<Card | null>(null);
+    const [viewingConcept, setViewingConcept] = useState<Card | null>(null);
     const [editingFlashcard, setEditingFlashcard] = useState<Card | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [now] = useState(() => Date.now());
+    const now = Date.now();
+    
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleImportDeck = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const importedCards = await importDeckFromJson(file);
+            // handleBatchImport already updates the store and Firebase
+            useCards.getState().handleBatchImport(importedCards);
+            // Reset input
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     // Resume draft
     React.useEffect(() => {
@@ -60,6 +80,17 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
         });
         return Array.from(tags).sort();
     }, [courseCards]);
+
+    const getCourseProgress = (courseId: string) => {
+        const courseFlashcards = cards.filter(c => c.nodeType === 'flashcard' && c.parentId === courseId);
+        if (courseFlashcards.length === 0) return null;
+        const reviewed = courseFlashcards.filter(c => c.progress && c.progress.status !== 'new').length;
+        return {
+            total: courseFlashcards.length,
+            reviewed,
+            percentage: Math.round((reviewed / courseFlashcards.length) * 100)
+        };
+    };
 
     // Filter courses by tag + search
     const filteredCourses = useMemo(() => {
@@ -96,7 +127,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
     const handleCreate = () => {
         setIsCreating(true);
         setEditingCourse({
-            id: `course-${Date.now()}`,
+            id: generateId(),
             type: COURSE_TYPE, // Maintained for backward compat, but nodeType is the source of truth
             nodeType: 'course',
             title: '',
@@ -140,9 +171,6 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                     }
                 }}
                 existingCards={existingCards}
-                onPause={(draft) => {
-                    onPause?.(draft);
-                }}
             />
         );
     }
@@ -161,17 +189,24 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                 onAddConcept={() => {
                     setIsCreating(true);
                     setEditingCourse({
-                        id: `concept-${Date.now()}`,
+                        id: generateId(),
                         type: viewingCourse.type || 'drug', // inherit subject or default
                         nodeType: 'concept',
                         parentId: viewingCourse.id,
                         title: '',
+                        subtitle: '',
                         content: '',
                         details: '',
                         tags: viewingCourse.tags || [],
                         createdAt: Date.now(),
                         updatedAt: Date.now()
                     });
+                }}
+                onViewConcept={(conceptId) => {
+                    const concept = cards.find(c => c.id === conceptId);
+                    if (concept) {
+                        setViewingConcept(concept);
+                    }
                 }}
                 onEditConcept={(conceptId) => {
                     const concept = cards.find(c => c.id === conceptId);
@@ -182,11 +217,12 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                 }}
                 onAddFlashcard={() => {
                     setEditingFlashcard({
-                        id: `flashcard-${Date.now()}`,
+                        id: generateId(),
                         type: viewingCourse.type || 'drug', // inherit category
                         nodeType: 'flashcard',
                         parentId: viewingCourse.id,
                         title: '',
+                        subtitle: '',
                         content: '',
                         details: '',
                         format: 'q&a',
@@ -199,6 +235,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                     const fc = cards.find(c => c.id === flashcardId);
                     if (fc) setEditingFlashcard(fc);
                 }}
+                onStartReview={onStartReview}
             />
             
             {editingFlashcard && (
@@ -211,7 +248,32 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                         setEditingFlashcard(null);
                     }}
                     onClose={() => setEditingFlashcard(null)}
+                    onImport={() => {}}
                     layout="modal"
+                />
+            )}
+            
+            {viewingConcept && (
+                <DetailModal
+                    card={viewingConcept}
+                    allCards={cards}
+                    onClose={() => setViewingConcept(null)}
+                    onLinkClick={() => {}} // Navigation to other concepts from here not needed in this view, but could be added
+                    actions={
+                        <div className="modal-actions">
+                            <button
+                                className="btn-icon"
+                                onClick={() => {
+                                    setViewingConcept(null);
+                                    setIsCreating(false);
+                                    setEditingCourse(viewingConcept);
+                                }}
+                                title="Modifier"
+                            >
+                                <PencilSimple size={18} />
+                            </button>
+                        </div>
+                    }
                 />
             )}
             </>
@@ -307,6 +369,37 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                         </button>
                     </div>
 
+                    {/* Import CTA Button */}
+                    <input
+                        type="file"
+                        accept=".json"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        onChange={handleImportDeck}
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        title="Importer un deck (.json)"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'var(--color-surface)',
+                            color: 'var(--color-text)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '12px',
+                            padding: '10px 14px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface)'; }}
+                    >
+                        <DownloadSimple size={16} weight="bold" style={{ transform: 'rotate(180deg)' }} />
+                    </button>
                     {/* CTA Button */}
                     <button
                         onClick={handleCreate}
@@ -415,64 +508,86 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
             {/* ── Content ── */}
             <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '3rem' }} className="custom-scrollbar">
                 {filteredCourses.length === 0 ? (
-                    /* Empty state */
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '45vh', gap: '16px' }}>
-                        <div style={{
-                            width: '56px',
-                            height: '56px',
-                            borderRadius: '16px',
-                            background: 'var(--color-surface)',
-                            border: '1px solid var(--color-border)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--color-text-muted)',
-                        }}>
-                            <BookOpen size={26} weight="duotone" />
-                        </div>
-                        <div>
-                            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', margin: '0 0 4px 0' }}>
-                                {courseCards.length === 0 ? 'Aucun cours pour l\'instant' : 'Aucun résultat'}
-                            </p>
-                            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0, maxWidth: '280px' }}>
-                                {courseCards.length === 0
-                                    ? 'Créez votre première fiche de cours pour commencer.'
-                                    : 'Essayez une autre recherche ou filtre.'}
-                            </p>
-                        </div>
-                        {courseCards.length === 0 && (
-                            <button
-                                onClick={handleCreate}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    background: 'rgba(16,185,129,0.12)',
-                                    color: '#10b981',
-                                    border: '1px solid rgba(16,185,129,0.25)',
-                                    borderRadius: '10px',
-                                    padding: '9px 18px',
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    marginTop: '4px',
-                                    transition: 'all 0.15s ease',
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.2)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.12)'; }}
-                            >
-                                <Plus size={15} weight="bold" />
-                                Créer un cours
+                    /* Empty state with placeholders and banner */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                        {/* Placeholders Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+                            <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Découvrez nos exemples de cours</h4>
+                            <button onClick={handleCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', background: 'none', border: 'none', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>
+                                <Plus size={14} weight="bold" /> Créer un cours
                             </button>
-                        )}
+                        </div>
+
+                        {/* Ghost / Placeholder Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                            {[
+                                { id: 'demo1', title: 'Cardiologie : Insuffisance Cardiaque', subject: 'Cardiologie', details: 'Introduction à l\'insuffisance cardiaque, physiopathologie et traitements...' },
+                                { id: 'demo2', title: 'Pharmacologie des Antalgiques', subject: 'Pharmaco', details: 'Les différents paliers de l\'OMS, mode d\'action et effets indésirables.' },
+                                { id: 'demo3', title: 'Infectiologie : Antibiotiques', subject: 'Infectio', details: 'Classes d\'antibiotiques, spectres d\'action et résistances bactériennes.' },
+                                { id: 'demo4', title: 'Neurologie : Épilepsie', subject: 'Neuro', details: 'Diagnostic, classification des crises et prise en charge thérapeutique.' }
+                            ].map((course, i) => {
+                                const colorIdx = i % GROUP_COLORS.length;
+                                const col = GROUP_COLORS[colorIdx];
+                                return (
+                                    <div
+                                        key={course.id}
+                                        onClick={() => useCards.getState().loadDemoData()}
+                                        style={{
+                                            background: 'var(--color-surface)',
+                                            border: '1px dashed var(--color-border)',
+                                            borderRadius: '16px',
+                                            padding: '20px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '12px',
+                                            opacity: 0.6,
+                                            transition: 'opacity 0.2s, border-color 0.2s'
+                                        }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.opacity = '1';
+                                            e.currentTarget.style.borderColor = col.bar;
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.opacity = '0.6';
+                                            e.currentTarget.style.borderColor = 'var(--color-border)';
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                            <div style={{
+                                                width: '36px', height: '36px', borderRadius: '10px',
+                                                background: `${col.bar}1a`, flexShrink: 0,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            }}>
+                                                <FileText size={18} color={col.icon} weight="regular" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.3 }}>
+                                                {course.title}
+                                            </h3>
+                                            <span style={{ fontSize: '12px', color: col.icon, fontWeight: 500 }}>
+                                                {course.subject}
+                                            </span>
+                                        </div>
+                                        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>
+                                            {course.details}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
                     </div>
                 ) : viewMode === 'grid' ? (
                     /* Grid view */
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
                         {filteredCourses.map((course, i) => {
                             const colorIdx = i % GROUP_COLORS.length;
                             const col = GROUP_COLORS[colorIdx];
                             const preview = stripMarkdown(course.details || course.content || '');
+                            const prog = getCourseProgress(course.id);
                             return (
                                 <div
                                     key={course.id}
@@ -512,19 +627,36 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                         }}>
                                             <FileText size={18} color={col.icon} weight="regular" />
                                         </div>
-                                        <button
-                                            onClick={e => { e.stopPropagation(); onDeleteCourse(course); }}
-                                            style={{
-                                                padding: '4px', border: 'none', background: 'transparent',
-                                                color: 'var(--color-text-muted)', cursor: 'pointer',
-                                                borderRadius: '6px', opacity: 0, transition: 'opacity 0.15s, color 0.15s',
-                                            }}
-                                            className="group-hover:opacity-100"
-                                            onMouseEnter={e => { e.currentTarget.style.color = '#f43f5e'; e.currentTarget.style.opacity = '1'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.opacity = '0'; }}
-                                        >
-                                            <Trash size={14} />
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button
+                                                onClick={e => { e.stopPropagation(); exportDeckToJson(course, cards); }}
+                                                style={{
+                                                    padding: '4px', border: 'none', background: 'transparent',
+                                                    color: 'var(--color-text-muted)', cursor: 'pointer',
+                                                    borderRadius: '6px', opacity: 0, transition: 'opacity 0.15s, color 0.15s',
+                                                }}
+                                                className="group-hover:opacity-100"
+                                                title="Exporter le cours (JSON)"
+                                                onMouseEnter={e => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.opacity = '1'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.opacity = '0'; }}
+                                            >
+                                                <DownloadSimple size={15} />
+                                            </button>
+                                            <button
+                                                onClick={e => { e.stopPropagation(); onDeleteCourse(course); }}
+                                                style={{
+                                                    padding: '4px', border: 'none', background: 'transparent',
+                                                    color: 'var(--color-text-muted)', cursor: 'pointer',
+                                                    borderRadius: '6px', opacity: 0, transition: 'opacity 0.15s, color 0.15s',
+                                                }}
+                                                className="group-hover:opacity-100"
+                                                title="Supprimer le cours"
+                                                onMouseEnter={e => { e.currentTarget.style.color = '#f43f5e'; e.currentTarget.style.opacity = '1'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.opacity = '0'; }}
+                                            >
+                                                <Trash size={15} />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div>
                                         <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.3 }}>
@@ -541,8 +673,18 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                             {preview}
                                         </p>
                                     )}
-                                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 'auto' }}>
-                                        {new Date(course.updatedAt || now).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                                        {prog ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--color-border)', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${prog.percentage}%`, height: '100%', background: col.icon, borderRadius: 2 }} />
+                                                </div>
+                                                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)' }}>{prog.percentage}%</span>
+                                            </div>
+                                        ) : <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Aucune carte</div>}
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                                            {new Date(course.updatedAt || now).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -571,12 +713,9 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                     {/* Course rows */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                         {groupedCourses.groups[subject].map((course) => {
-                                            // Compute real progress from checkboxes
-                                            const text = course.details || course.content || '';
-                                            const total = (text.match(/\[[ x]\]/gi) || []).length;
-                                            const checked = (text.match(/\[[xX]\]/g) || []).length;
-                                            const progress = total > 0 ? Math.round((checked / total) * 100) : 0;
-                                            const hasProgress = total > 0;
+                                            const prog = getCourseProgress(course.id);
+                                            const progress = prog ? prog.percentage : 0;
+                                            const hasProgress = prog !== null;
 
                                             return (
                                                 <div
@@ -627,29 +766,24 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                                     {/* Right: progress + date + delete */}
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
                                                         {/* Progress */}
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <span style={{ fontSize: '13px', fontWeight: 600, color: hasProgress ? 'var(--color-text)' : 'var(--color-text-muted)', width: '36px', textAlign: 'right' }}>
-                                                                {progress}%
-                                                            </span>
-                                                            <div style={{
-                                                                width: '72px', height: '5px',
-                                                                borderRadius: '99px',
-                                                                background: 'var(--color-border)',
-                                                                overflow: 'hidden',
-                                                            }}>
-                                                                <div style={{
-                                                                    height: '100%',
-                                                                    width: `${progress}%`,
-                                                                    background: col.bar,
-                                                                    borderRadius: '99px',
-                                                                    transition: 'width 0.4s ease',
-                                                                }} />
+                                                        {hasProgress ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text)', width: '36px', textAlign: 'right' }}>
+                                                                    {progress}%
+                                                                </span>
+                                                                <div style={{ width: '72px', height: '5px', borderRadius: '99px', background: 'var(--color-border)', overflow: 'hidden' }}>
+                                                                    <div style={{ height: '100%', width: `${progress}%`, background: col.bar, borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        ) : (
+                                                            <div style={{ width: '118px', fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'right', fontStyle: 'italic', opacity: 0.5 }}>
+                                                                Aucune carte
+                                                            </div>
+                                                        )}
 
                                                         {/* Date */}
                                                         <span style={{ fontSize: '13px', color: 'var(--color-text-muted)', width: '80px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                                            {new Date(course.updatedAt || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                            {new Date(course.updatedAt || 0).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                                         </span>
 
                                                         {/* Delete */}
