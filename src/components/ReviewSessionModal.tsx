@@ -142,11 +142,13 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
         setShowStats(false);
     }, [index]);
 
+    const allCardsMap = useMemo(() => new Map(allCards.map(c => [c.id, c])), [allCards]);
+
     const linkedRecommendations = useMemo(() => {
         if (!card) return [];
         const ids = getLinkedCardIds(card, allCards);
         return ids
-            .map(id => allCards.find(c => c.id === id))
+            .map(id => allCardsMap.get(id))
             .filter((c): c is Card => Boolean(c))
             .sort((a, b) => {
                 const dueA = a.progress?.dueDate ? new Date(a.progress.dueDate).getTime() : 0;
@@ -154,7 +156,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                 return dueA - dueB;
             })
             .slice(0, 3);
-    }, [card, allCards]);
+    }, [card, allCardsMap, allCards]);
 
     const nextIntervals = useMemo(() => {
         if (!card) return { 1: '', 2: '', 3: '', 4: '' };

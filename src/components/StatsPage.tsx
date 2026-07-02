@@ -194,12 +194,12 @@ export const StatsPage: React.FC = () => {
                         <h3>Prévisions de révision (7 jours)</h3>
                         <div style={{ flex: 1, minHeight: 0, width: '100%', marginTop: '1rem' }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={forecastData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                                <BarChart data={forecastData} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                                     <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
-                                    <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-bg)' }} />
-                                    <Bar dataKey="count" fill="var(--color-drug)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} allowDecimals={false} />
+                                    <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+                                    <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={24} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

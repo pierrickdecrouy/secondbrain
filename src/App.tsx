@@ -31,6 +31,8 @@ import { StatsPage } from "./components/StatsPage";
 import { ReviewSessionModal } from "./components/ReviewSessionModal";
 import { ReviewHubPage } from "./components/ReviewHubPage";
 import { ConfirmDeleteModal } from "./components/ConfirmDeleteModal";
+import { PomodoroModal } from "./components/PomodoroModal";
+import { GlobalOmnibox } from "./components/GlobalOmnibox";
 import { PencilSimple, Trash, CircleNotch } from "@phosphor-icons/react";
 import { ThemeProvider } from "./context/ThemeContext";
 
@@ -246,7 +248,8 @@ function AppContent() {
       const state = task.state as { cardIds: string[], currentIndex: number, title?: string };
       if (!state.cardIds) return;
       
-      const sessionCards = state.cardIds.map(id => cards.find(c => c.id === id)).filter((c): c is Card => !!c);
+      const cardMap = new Map(cards.map(c => [c.id, c]));
+      const sessionCards = state.cardIds.map(id => cardMap.get(id)).filter((c): c is Card => !!c);
       
       if (sessionCards.length > 0) {
         setReviewSession({
@@ -445,6 +448,9 @@ function AppContent() {
           onJumpToCard={(id) => setSelectedCardId(id)}
         />
       )}
+
+      <PomodoroModal />
+      <GlobalOmnibox />
     </>
   );
 

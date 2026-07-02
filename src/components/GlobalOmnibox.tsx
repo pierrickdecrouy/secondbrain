@@ -192,17 +192,20 @@ export const GlobalOmnibox: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOmniboxOpen]);
 
+    // Memoize card map for faster O(1) lookups instead of O(N*M)
+    const allCardsMap = useMemo(() => new Map(cards.map(c => [c.id, c])), [cards]);
+
     // Live search
     useEffect(() => {
         if (!localQuery.trim() || isSlash || isSystem) { setResults([]); return; }
         let cancelled = false;
         hybridSearch(localQuery).then(ids => {
             if (cancelled) return;
-            setResults(ids.map(id => cards.find(c => c.id === id)).filter((c): c is Card => c !== undefined && c.type !== 'course').slice(0, 6));
+            setResults(ids.map(id => allCardsMap.get(id)).filter((c): c is Card => c !== undefined && c.type !== 'course').slice(0, 6));
             setSelectedIndex(0);
         });
         return () => { cancelled = true; };
-    }, [localQuery, cards, isSlash, isSystem]);
+    }, [localQuery, allCardsMap, isSlash, isSystem]);
 
     // Keyboard nav
     useEffect(() => {

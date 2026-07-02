@@ -25,8 +25,7 @@ interface DynamicIconProps extends React.SVGProps<SVGSVGElement> {
 }
 
 export const DynamicIcon: React.FC<DynamicIconProps> = ({ name, size = 24, className, ...props }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const PhosphorIcon = (PhosphorIcons as any)[name];
+    const PhosphorIcon = (PhosphorIcons as unknown as Record<string, React.ElementType>)[name];
 
     if (!PhosphorIcon) {
         return (

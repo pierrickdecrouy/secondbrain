@@ -239,6 +239,9 @@ async function processCardEmbeddings(
     chunks.push(cardsToProcess.slice(i, i + CHUNK_SIZE));
   }
 
+  // Create a Map for O(1) card lookups during batch resolution
+  const cardMap = new Map(cards.map((c) => [c.id, c]));
+
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
 
@@ -261,7 +264,7 @@ async function processCardEmbeddings(
       pendingBatches.set(batchId, {
         resolve: (embeddings) => {
           const entries = embeddings.map(({ cardId, embedding }) => {
-            const card = cards.find((c) => c.id === cardId);
+            const card = cardMap.get(cardId);
             return {
               id: cardId,
               title: card ? card.title : "Unknown",

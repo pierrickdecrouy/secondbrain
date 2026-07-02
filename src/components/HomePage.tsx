@@ -1,42 +1,31 @@
 import { useState, useEffect } from 'react';
-
-import {
-    MagnifyingGlass, Plus,
-    BookOpen, Brain, Command
-} from '@phosphor-icons/react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useCardStore as useCards } from '../store/useCardStore';
 import { useUIStore as useUI } from '../store/useUIStore';
 import { useDueCards } from '../hooks/useDueCards';
 import type { AppSection } from '../App';
+import { useTheme } from '../context/ThemeContext';
+import { Plus, Command, MagnifyingGlass, Brain, ShareNetwork, BookOpen } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HomePageProps {
     onNavigate: (section: AppSection) => void;
     onAddCard: () => void;
 }
 
-// Defined at module level: allocated once, never causes a re-render.
 const SEARCH_PLACEHOLDERS = [
     "Que souhaitez-vous explorer aujourd'hui ?",
     "Rechercher une notion, un concept clé...",
-    "Encore en train de repousser vos révisions ?",
-    "Tapez un mot-clé (ex: Thermodynamique, Platon...)",
-    "Retrouver une fiche avant l'examen...",
-    "La réponse est probablement ici (pas sur Google)...",
-    "Le mystère des chaussettes disparues...",
-    "N'oubliez pas de boire de l'eau (et beaucoup de café)...",
-    "Courage, les partiels approchent ! (ou pas)",
-    "Explorer vos connaissances...",
-    "Quelle est la définition exacte de...",
-    "C'est l'heure de muscler son cerveau !",
-    "Chercher une excuse pour faire une pause...",
-    "Reprendre vos révisions en cours..."
+    "Tapez un mot-clé (ex: Diabète, Metformine...)",
+    "La réponse est probablement ici...",
 ];
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => {
     const { cards } = useCards();
     const { userName, setOmniboxOpen } = useUI();
+    const { totalToReview } = useDueCards(cards);
+    const { getCategoryColor } = useTheme();
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const now = new Date();
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -44,9 +33,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
         }, 4000);
         return () => clearInterval(interval);
     }, []);
-
-    const { totalToReview } = useDueCards(cards);
-    const now = new Date();
 
     const getGreeting = () => {
         const hour = now.getHours();
@@ -56,126 +42,277 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
         return 'Bonsoir';
     };
 
-    return (
-        <div className="home-page w-full h-full flex flex-col overflow-hidden relative">
-            <div className="home-aurora-bg">
-                <div className="aurora-blob aurora-blob-1" />
-                <div className="aurora-blob aurora-blob-2" />
-                <div className="aurora-blob aurora-blob-3" />
-            </div>
+    // Prends les 2 cartes les plus récentes pour l'affichage avec le bouton "Nouveau" en 3ème position
+    const recentCards = [...cards].sort((a, b) => {
+      const dateA = a.createdAt || 0;
+      const dateB = b.createdAt || 0;
+      return dateB - dateA;
+    }).slice(0, 2);
 
-            {/* Main Center Content */}
-            <div className="home-content app-no-drag flex flex-col flex-1 overflow-hidden" style={{ paddingTop: '2rem' }}>
-                <h1 className="home-greeting flex-shrink-0" style={{ width: '100%', textAlign: 'left' }}>
-                    {getGreeting()}, <span style={{ marginLeft: '12px' }}>{userName}</span>
-                </h1>
-                <div className="home-subtitle-container" style={{ minHeight: '1.5rem', position: 'relative', width: '100%', paddingLeft: '0', marginBottom: '1rem' }}>
-                    <AnimatePresence mode="wait">
-                        <motion.p 
-                            key={placeholderIndex}
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                            transition={{ duration: 0.3 }}
-                            className="home-subtitle" 
-                            style={{ margin: 0, position: 'absolute', width: '100%', textAlign: 'left' }}
-                        >
-                            {SEARCH_PLACEHOLDERS[placeholderIndex]}
-                        </motion.p>
-                    </AnimatePresence>
+    return (
+        <div 
+            style={{ 
+                width: '100%',
+                height: '100%',
+                overflowY: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'var(--color-bg)', 
+                backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                backgroundSize: '40px 40px' 
+            }}
+        >
+            <main style={{ 
+                flex: 1, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                maxWidth: '900px', 
+                margin: '0 auto', 
+                width: '100%', 
+                padding: '32px 32px',
+                justifyContent: 'center'
+            }}>
+                
+                {/* Welcome Message */}
+                <div style={{ marginBottom: '24px', paddingLeft: '16px' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+                        {getGreeting()}, <span style={{ color: '#4f46e5' }}>{userName}</span>
+                    </h1>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem' }}>
+                        Que souhaitez-vous explorer ou réviser aujourd'hui ?
+                    </p>
                 </div>
 
-                {/* Search Bar (Omnibox) */}
-                <form className="home-search w-full max-w-3xl flex-shrink-0" onSubmit={(e) => {
-                    e.preventDefault();
-                    setOmniboxOpen(true);
-                }}>
-                    <div 
-                        className="relative flex items-center w-full group cursor-text"
-                        onClick={() => setOmniboxOpen(true)}
-                    >
-                        <MagnifyingGlass size={26} className="absolute left-6 text-emerald-500/70 group-hover:text-emerald-500 transition-colors z-10" weight="bold" />
-                        <input
-                            type="text"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-full text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-md group-hover:shadow-lg group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none"
-                            style={{ padding: '18px 80px 18px 64px' }}
-                            placeholder="Rechercher..."
-                            value=""
-                            readOnly
-                        />
-                        <span className="absolute right-6 flex items-center gap-1.5 text-[13px] font-medium text-slate-500 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm z-10">
-                            <Command size={16} weight="bold" /> K
+                {/* Omnibox (Search) */}
+                <div 
+                    style={{ width: '100%', position: 'relative', marginBottom: '32px', cursor: 'text' }}
+                    onClick={() => setOmniboxOpen(true)}
+                >
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: '20px', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                        <MagnifyingGlass size={20} color="#14b8a6" weight="bold" />
+                    </div>
+                    
+                    {/* Placeholder Animé */}
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: '56px', right: '80px', display: 'flex', alignItems: 'center', pointerEvents: 'none', overflow: 'hidden' }}>
+                        <AnimatePresence mode="wait">
+                            <motion.span 
+                                key={placeholderIndex}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                                style={{ color: '#94a3b8', fontSize: '1rem', whiteSpace: 'nowrap' }}
+                            >
+                                {SEARCH_PLACEHOLDERS[placeholderIndex]}
+                            </motion.span>
+                        </AnimatePresence>
+                    </div>
+
+                    <input type="text"
+                           style={{
+                               width: '100%', padding: '16px 80px 16px 56px', 
+                               backgroundColor: 'var(--color-surface)',
+                               border: '1px solid var(--color-border)', 
+                               borderRadius: '9999px',
+                               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                               fontSize: '1rem', color: '#0f172a',
+                               outline: 'none', pointerEvents: 'none'
+                           }}
+                           readOnly
+                    />
+                    <div style={{ position: 'absolute', right: '16px', top: 0, bottom: 0, display: 'flex', alignItems: 'center' }}>
+                        <span style={{ 
+                            display: 'flex', alignItems: 'center', gap: '6px', 
+                            fontSize: '12px', fontWeight: 700, color: '#94a3b8', 
+                            backgroundColor: '#f8fafc', padding: '4px 10px', 
+                            borderRadius: '6px', border: '1px solid #e2e8f0' 
+                        }}>
+                            <Command size={14} weight="bold" /> K
                         </span>
                     </div>
-                </form>
+                </div>
 
-                {/* Quick Actions & Review Status */}
-                <div className="home-quick-actions flex-1 overflow-y-auto custom-scrollbar" style={{ margin: '3rem auto 0', display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '600px', paddingBottom: '2rem' }}>
-                    {/* Review Status Card */}
-                    <button 
-                        className={`review-status-card ${totalToReview > 0 ? 'has-reviews' : 'all-done'}`} 
+                {/* BIFURCATION : Apprentissage vs Base de connaissances */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' }}>
+                    
+                    {/* SRS / Active Recall */}
+                    <div 
                         onClick={() => onNavigate('review')}
-                        style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '1.5rem 2rem', borderRadius: '16px',
-                            
-                            
-                            
-                            cursor: 'pointer', transition: 'all 0.3s ease', width: '100%'
+                        style={{ 
+                            backgroundColor: 'var(--color-surface)', 
+                            borderRadius: '20px', padding: '20px', 
+                            border: '1px solid var(--color-border)', 
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', 
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            minHeight: '160px'
                         }}
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div style={{ 
-                                width: '48px', height: '48px', borderRadius: '12px', 
-                                background: totalToReview > 0 ? 'rgba(99, 102, 241, 0.1)' : 'var(--color-bg)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: totalToReview > 0 ? 'var(--color-physio)' : 'var(--color-text-muted)'
-                            }}>
-                                <Brain size={28} weight={totalToReview > 0 ? "fill" : "duotone"} />
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Brain size={24} weight="duotone" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Sessions</h2>
+                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#4f46e5', margin: '2px 0 0 0' }}>
+                                        {totalToReview > 0 ? `${totalToReview} attente` : 'À jour'}
+                                    </p>
+                                </div>
                             </div>
-                            <div style={{ textAlign: 'left' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)' }}>Sessions de Révision</h3>
-                                <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem', color: totalToReview > 0 ? 'var(--color-physio)' : 'var(--color-text-muted)', fontWeight: totalToReview > 0 ? 600 : 400 }}>
-                                    {totalToReview > 0 ? `${totalToReview} carte${totalToReview > 1 ? 's' : ''} en attente` : 'Aucune révision due pour le moment'}
-                                </p>
-                            </div>
+                            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8125rem', lineHeight: 1.5, margin: 0 }}>
+                                L'algorithme a sélectionné les cartes optimales pour aujourd'hui.
+                            </p>
                         </div>
-                        {totalToReview > 0 && (
-                            <div style={{ background: 'var(--color-physio)', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 700 }}>
-                                Commencer
-                            </div>
-                        )}
-                    </button>
+                        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button style={{ 
+                                padding: '8px 20px', backgroundColor: '#6366f1', color: 'white', 
+                                fontSize: '0.8125rem', fontWeight: 600, borderRadius: '10px', border: 'none', cursor: 'pointer'
+                            }}>
+                                {totalToReview > 0 ? 'Commencer' : 'Explorer'}
+                            </button>
+                        </div>
+                    </div>
 
-                    {/* Secondary Actions */}
-                    <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
-                        <button 
-                            className="secondary-action-btn" 
-                            onClick={() => {
-                                onNavigate('cards');
-                            }}
-                            style={{
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-                                padding: '1rem', borderRadius: '12px', color: 'var(--color-text)'
-                            }}
-                        >
-                            <BookOpen size={20} weight="duotone" className="text-slate-500" />
-                            Parcourir
-                        </button>
-                        <button 
-                            className="secondary-action-btn" 
-                            onClick={onAddCard}
-                            style={{
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-                                padding: '1rem', borderRadius: '12px', color: 'var(--color-text)'
-                            }}
-                        >
-                            <Plus size={20} weight="bold" className="text-slate-500" />
-                            Nouvelle fiche
-                        </button>
+                    {/* Courses */}
+                    <div 
+                        onClick={() => onNavigate('courses')}
+                        style={{ 
+                            backgroundColor: 'var(--color-surface)', 
+                            borderRadius: '20px', padding: '20px', 
+                            border: '1px solid var(--color-border)', 
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', 
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            minHeight: '160px'
+                        }}
+                    >
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#fffbeb', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <BookOpen size={24} weight="duotone" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Cours</h2>
+                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#d97706', margin: '2px 0 0 0' }}>
+                                        Fiches structurées
+                                    </p>
+                                </div>
+                            </div>
+                            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8125rem', lineHeight: 1.5, margin: 0 }}>
+                                Naviguez dans vos fiches de cours et supports documentaires structurés.
+                            </p>
+                        </div>
+                        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button style={{ 
+                                padding: '8px 20px', backgroundColor: 'var(--color-surface)', color: '#334155', 
+                                border: '1px solid var(--color-border)', fontSize: '0.8125rem', fontWeight: 600, borderRadius: '10px', cursor: 'pointer'
+                            }}>
+                                Lire
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Second Brain / Knowledge Base */}
+                    <div 
+                        onClick={() => onNavigate('network')}
+                        style={{ 
+                            backgroundColor: 'var(--color-surface)', 
+                            borderRadius: '20px', padding: '20px', 
+                            border: '1px solid var(--color-border)', 
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', 
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                            minHeight: '160px'
+                        }}
+                    >
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#f0fdf4', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <ShareNetwork size={24} weight="duotone" />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Graphe</h2>
+                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#059669', margin: '2px 0 0 0' }}>
+                                        {cards.length} concept{cards.length > 1 ? 's' : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8125rem', lineHeight: 1.5, margin: 0 }}>
+                                Explorez visuellement les liens sémantiques entre vos différentes fiches.
+                            </p>
+                        </div>
+                        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button style={{ 
+                                padding: '8px 20px', backgroundColor: 'var(--color-surface)', color: '#334155', 
+                                border: '1px solid var(--color-border)', fontSize: '0.8125rem', fontWeight: 600, borderRadius: '10px', cursor: 'pointer'
+                            }}>
+                                Explorer
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                {/* RECENT ADDITIONS */}
+                <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
+                            Ajouts récents
+                        </h3>
+                        <button 
+                            onClick={() => onNavigate('cards')} 
+                            style={{ 
+                                fontSize: '0.8125rem', fontWeight: 600, color: '#4f46e5', 
+                                background: 'none', border: 'none', cursor: 'pointer', 
+                                display: 'flex', alignItems: 'center', gap: '4px' 
+                            }}
+                        >
+                            Tout parcourir &rarr;
+                        </button>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                        {recentCards.map(card => (
+                            <div 
+                                key={card.id} 
+                                onClick={() => onNavigate('cards')}
+                                style={{ 
+                                    backgroundColor: 'var(--color-surface)', padding: '16px', borderRadius: '16px', 
+                                    border: '1px solid var(--color-border)', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', 
+                                    cursor: 'pointer' 
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getCategoryColor(card.type) }}></span>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: getCategoryColor(card.type) }}>
+                                        {card.type}
+                                    </span>
+                                </div>
+                                <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {card.title}
+                                </h4>
+                                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {card.subtitle || 'Aucun sous-titre'}
+                                </p>
+                            </div>
+                        ))}
+                        
+                        {/* New Card Slot */}
+                        <div 
+                            onClick={onAddCard} 
+                            style={{ 
+                                backgroundColor: 'rgba(248, 250, 252, 0.5)', padding: '16px', borderRadius: '16px', 
+                                border: '2px dashed var(--color-border)', cursor: 'pointer', 
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                color: '#64748b', minHeight: '120px'
+                            }}
+                        >
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-surface)', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                                <Plus size={20} weight="bold" />
+                            </div>
+                            <span style={{ fontSize: '0.8125rem', fontWeight: 700 }}>Nouvelle fiche</span>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
     );
 };

@@ -115,10 +115,10 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
             background: 'var(--color-bg)',
             width: '100%', height: '100%',
             display: 'flex', flexDirection: 'column',
-            padding: '28px 40px 24px',
             boxSizing: 'border-box',
+            padding: '20px 32px 16px',
         }}>
-            <div style={{ maxWidth: 1100, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 20 }}>
+            <div style={{ maxWidth: 1100, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 16 }}>
 
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -165,94 +165,137 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                     </div>
                 </div>
 
-                {/* Modes Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: 12, flex: 1, minHeight: 0 }}>
-
-                    {/* ── Mode FSRS ── */}
-                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                        <ModeCard
-                            badge="FSRS · IA"
-                            badgeColor="#10b981"
-                            badgeBg="rgba(16,185,129,0.1)"
-                            icon={<Brain size={22} weight="duotone" />}
-                            iconColor="#10b981"
-                            title="Révisions Planifiées"
-                            subtitle="Quotidien"
-                            description="L'algorithme analyse votre courbe de l'oubli et sélectionne précisément les cartes à revoir aujourd'hui pour ancrer la mémoire à long terme."
-                            actionLabel={fsrsDueCount > 0 ? `Démarrer (${fsrsDueCount})` : 'Aucune carte due'}
-                            actionColor="#10b981"
-                            disabled={fsrsDueCount === 0}
-                            onClick={() => onSelectFSRS(fsrsTags)}
-                            pulsing={fsrsDueCount > 0}
-                        >
-                            {uniqueTags.length > 0 && (
-                                <div style={{ marginTop: 8 }}>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setFsrsTagPickerOpen(!fsrsTagPickerOpen); }}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 6,
-                                            background: fsrsTags.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
-                                            border: fsrsTags.length > 0 ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)',
-                                            color: fsrsTags.length > 0 ? '#10b981' : 'var(--color-text-muted)',
-                                            padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <Funnel size={12} weight={fsrsTags.length > 0 ? "fill" : "regular"} />
-                                        {fsrsTags.length > 0 ? `${fsrsTags.length} tag(s)` : 'Filtrer par tag'}
-                                    </button>
-                                </div>
-                            )}
-                        </ModeCard>
-                        {fsrsTagPickerOpen && (
-                            <div style={{
-                                position: 'absolute', top: '100%', left: 0, zIndex: 50,
-                                marginTop: 8, width: 220, background: 'var(--color-surface)',
-                                border: '1px solid var(--color-border)', borderRadius: 10,
-                                boxShadow: 'var(--shadow-lg)', padding: 12,
-                                display: 'flex', flexDirection: 'column', gap: 8
-                            }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tags</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                    {uniqueTags.map(tag => (
-                                        <button
-                                            key={tag}
-                                            onClick={() => setFsrsTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                                            style={{
-                                                padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-                                                border: fsrsTags.includes(tag) ? '1px solid #10b981' : '1px solid var(--color-border)',
-                                                background: fsrsTags.includes(tag) ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
-                                                color: fsrsTags.includes(tag) ? '#10b981' : 'var(--color-text-muted)',
-                                            }}
-                                        >
-                                            #{tag}
-                                        </button>
-                                    ))}
-                                </div>
-                                <button
-                                    onClick={() => setFsrsTagPickerOpen(false)}
-                                    style={{
-                                        marginTop: 4, padding: '6px', background: 'transparent', border: 'none',
-                                        color: 'var(--color-text-muted)', fontSize: 11, cursor: 'pointer', fontWeight: 600
-                                    }}
-                                >
-                                    Fermer
-                                </button>
-                            </div>
-                        )}
+                {/* ── LE QUOTIDIEN (FSRS Hero) ── */}
+                <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                        <div style={{ width: 4, height: 14, background: '#10b981', borderRadius: 4 }} />
+                        <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                            Le Quotidien
+                        </h2>
                     </div>
+                    
+                    <div style={{
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 16, padding: '20px',
+                        display: 'flex', flexDirection: 'column',
+                        position: 'relative', overflow: 'hidden'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, zIndex: 1, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                <div style={{
+                                    width: 52, height: 52, borderRadius: 14,
+                                    background: 'rgba(16,185,129,0.1)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#10b981', flexShrink: 0
+                                }}>
+                                    <Brain size={28} weight="duotone" />
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>Faire mes révisions</h3>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '3px 6px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>FSRS IA</span>
+                                    </div>
+                                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.4, margin: 0, maxWidth: 500 }}>
+                                        L'algorithme sélectionne les cartes exactes à revoir aujourd'hui pour optimiser votre mémoire à long terme.
+                                    </p>
+                                    
+                                    {uniqueTags.length > 0 && (
+                                        <div style={{ marginTop: 10, position: 'relative' }}>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setFsrsTagPickerOpen(!fsrsTagPickerOpen); }}
+                                                style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                                    background: fsrsTags.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
+                                                    border: fsrsTags.length > 0 ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)',
+                                                    color: fsrsTags.length > 0 ? '#10b981' : 'var(--color-text-muted)',
+                                                    padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <Funnel size={12} weight={fsrsTags.length > 0 ? "fill" : "regular"} />
+                                                {fsrsTags.length > 0 ? `${fsrsTags.length} tag(s) actif(s)` : 'Filtrer la session'}
+                                            </button>
+                                            
+                                            {fsrsTagPickerOpen && (
+                                                <div style={{
+                                                    position: 'absolute', top: '100%', left: 0, zIndex: 50,
+                                                    marginTop: 6, width: 220, background: 'var(--color-surface)',
+                                                    border: '1px solid var(--color-border)', borderRadius: 10,
+                                                    boxShadow: 'var(--shadow-lg)', padding: 10,
+                                                    display: 'flex', flexDirection: 'column', gap: 6
+                                                }}>
+                                                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tags</div>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                                        {uniqueTags.map(tag => (
+                                                            <button
+                                                                key={tag}
+                                                                onClick={() => setFsrsTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                                                                style={{
+                                                                    padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                                                                    border: fsrsTags.includes(tag) ? '1px solid #10b981' : '1px solid var(--color-border)',
+                                                                    background: fsrsTags.includes(tag) ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
+                                                                    color: fsrsTags.includes(tag) ? '#10b981' : 'var(--color-text-muted)',
+                                                                }}
+                                                            >
+                                                                #{tag}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <button onClick={() => setFsrsTagPickerOpen(false)} style={{ marginTop: 4, padding: '6px', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                                                        Fermer
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={() => onSelectFSRS(fsrsTags)}
+                                disabled={fsrsDueCount === 0}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '12px 24px', borderRadius: 12, border: 'none',
+                                    background: fsrsDueCount > 0 ? '#10b981' : 'var(--color-bg)',
+                                    color: fsrsDueCount > 0 ? '#fff' : 'var(--color-text-muted)',
+                                    fontWeight: 700, fontSize: 14, flexShrink: 0,
+                                    cursor: fsrsDueCount > 0 ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s',
+                                    boxShadow: fsrsDueCount > 0 ? '0 4px 10px rgba(16,185,129,0.2)' : 'none'
+                                }}
+                            >
+                                {fsrsDueCount > 0 ? (
+                                    <><Play size={16} weight="fill" /> Démarrer ({fsrsDueCount})</>
+                                ) : 'À jour'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── MODES DE DÉCOUVERTE ── */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                    <div style={{ width: 4, height: 14, background: 'var(--color-text-muted)', borderRadius: 4 }} />
+                    <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                        Modes de découverte
+                    </h2>
+                </div>
+                
+                {/* Secondary Modes Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, flex: 1, minHeight: 0 }}>
 
                     {/* ── Mode Par Cours ── */}
                     <div style={{
                         background: 'var(--color-surface)',
                         border: '1px solid var(--color-border)',
-                        borderRadius: 16, padding: '24px',
-                        display: 'flex', flexDirection: 'column', gap: 16,
+                        borderRadius: 14, padding: '16px 18px',
+                        display: 'flex', flexDirection: 'column', gap: 10,
                         opacity: coursesWithFlashcards.length > 0 ? 1 : 0.6,
                         transition: 'box-shadow 0.2s',
                     }}>
                         <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
                                         <BookOpen size={22} weight="duotone" />
@@ -588,7 +631,7 @@ interface ModeCardProps {
 const ModeCard: React.FC<ModeCardProps> = ({
     badge, badgeColor, badgeBg, icon, iconColor,
     title, description,
-    actionLabel, actionColor, disabled, onClick, pulsing, children
+    actionLabel, disabled, onClick, children
 }) => (
     <div
         role="button"
@@ -653,29 +696,25 @@ const ModeCard: React.FC<ModeCardProps> = ({
         </p>
 
         {children}
-
-        <button
-            onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
-            disabled={disabled}
-            style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                padding: '9px 14px', borderRadius: 9, border: 'none',
-                background: disabled ? 'var(--color-bg)' : actionColor,
-                color: disabled ? 'var(--color-text-muted)' : '#fff',
-                fontWeight: 700, fontSize: 13,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                transition: 'filter 0.2s', flexShrink: 0,
-            }}
-            onMouseEnter={e => { if (!disabled) e.currentTarget.style.filter = 'brightness(0.88)'; }}
-            onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
-        >
-            {pulsing && !disabled && (
-                <span style={{ position: 'relative', display: 'flex', width: 7, height: 7 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#fff', opacity: 0.7, animation: 'ping 1.2s infinite' }} />
-                    <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: '#fff', display: 'block' }} />
-                </span>
-            )}
-            {actionLabel}
-        </button>
+        
+        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <button
+                onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
+                disabled={disabled}
+                style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '8px 0', border: 'none', background: 'transparent',
+                    color: disabled ? 'var(--color-text-muted)' : 'var(--color-text)',
+                    fontWeight: 700, fontSize: 13,
+                    cursor: disabled ? 'not-allowed' : 'pointer',
+                    transition: 'color 0.2s', flexShrink: 0,
+                }}
+                onMouseEnter={e => { if (!disabled) e.currentTarget.style.color = iconColor; }}
+                onMouseLeave={e => { if (!disabled) e.currentTarget.style.color = 'var(--color-text)'; }}
+            >
+                {actionLabel}
+                {!disabled && <span style={{ marginLeft: 4 }}>→</span>}
+            </button>
+        </div>
     </div>
 );

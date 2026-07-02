@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { calculateFsrsProgress } from './fsrs';
+import { calculateFsrsProgress, clearSrsSettingsCache } from './fsrs';
 import type { UserCardProgress } from '../types';
 
 describe('FSRS Algorithm', () => {
@@ -80,6 +80,77 @@ describe('FSRS Algorithm', () => {
             
             expect(finalP.lapses).toBeGreaterThanOrEqual(8);
             expect(finalP.isLeech).toBe(true);
+        });
+
+        it('should generate a longer interval for Courses (isCourse=true) due to lower retention target', () => {
+            // First rep
+            const p1Flashcard = calculateFsrsProgress(dummyProgress, 3, false);
+            const p1Course = calculateFsrsProgress(dummyProgress, 3, true);
+
+            // Let's assume initial intervals might be similar, but let's push them to review state
+            vi.advanceTimersByTime(1 * 24 * 60 * 60 * 1000);
+            
+            const p2Flashcard = calculateFsrsProgress(p1Flashcard, 3, false);
+            const p2Course = calculateFsrsProgress(p1Course, 3, true);
+
+            // A course card should have a looser interval than a standard flashcard
+            expect(p2Course.interval).toBeGreaterThanOrEqual(p2Flashcard.interval!);
+            
+            // Advance by maximum of their intervals and review again
+            vi.advanceTimersByTime((p2Course.interval || 2) * 24 * 60 * 60 * 1000);
+            
+            const p3Flashcard = calculateFsrsProgress(p2Flashcard, 4, false); // Easy rating
+            const p3Course = calculateFsrsProgress(p2Course, 4, true); // Easy rating
+
+            // By the 3rd repetition with 'Easy' ratings, the difference is stark
+            expect(p3Course.interval).toBeGreaterThan(p3Flashcard.interval!);
+        });
+
+        it('should handle null or undefined current progress gracefully', () => {
+            const resultNull = calculateFsrsProgress(null, 3);
+            const resultUndefined = calculateFsrsProgress(undefined, 3);
+            
+            expect(resultNull.status).toBe('learning');
+            expect(resultUndefined.status).toBe('learning');
+            expect(resultNull.reps).toBe(1);
+            expect(resultUndefined.reps).toBe(1);
+        });
+
+        it('should cap the interval at EXAM_MODE_MAX_INTERVAL if exam mode is active', () => {
+            // Mock exam mode settings in localStorage
+            const examDate = new Date();
+            examDate.setDate(examDate.getDate() + 10); // 10 days from now (within the 15-day window)
+            
+            vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify({
+                examModeEnabled: true,
+                examDate: examDate.toISOString()
+            }));
+            
+            // Force the cache to reload settings
+            clearSrsSettingsCache();
+
+            // Create a highly mature progress to ensure normal interval > 14
+            let p: Partial<UserCardProgress> = {
+                status: 'review',
+                stability: 100, // Very high stability
+                difficulty: 5,
+                reps: 10,
+                lapses: 0,
+                interval: 30,
+                lastReview: new Date().toISOString()
+            };
+            
+            const result = calculateFsrsProgress(p, 4); // Easy rating
+            
+            // Interval should be exactly 14 (EXAM_MODE_MAX_INTERVAL)
+            expect(result.interval).toBe(14);
+            
+            // Check that the due date matches the capped interval
+            const now = new Date();
+            const expectedDue = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+            const actualDue = new Date(result.dueDate!);
+            // Allow small ms diff
+            expect(Math.abs(actualDue.getTime() - expectedDue.getTime())).toBeLessThan(1000);
         });
     });
 });

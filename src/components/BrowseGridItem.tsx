@@ -58,16 +58,6 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
                 }
             }}
             style={{ transition: 'transform 0.2s, box-shadow 0.2s', height: '100%' }}
-            onMouseEnter={e => {
-                if (!isSelected) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-                }
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.boxShadow = isSelected ? '0 0 0 2px var(--color-success)' : 'var(--shadow)';
-            }}
         >
             {/* Checkbox multi-sélection */}
             <div
@@ -121,26 +111,42 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
             </div>
 
             <div className="browse-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '2px', color: 'var(--color-text)', lineHeight: 1.3 }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '6px', color: 'var(--color-text)', lineHeight: 1.25, transition: 'color 0.2s' }}
+                    onMouseOver={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text)'}
+                >
                     {card.title}
                 </h3>
                 {card.subtitle && (
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: '8px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {card.subtitle}
                     </div>
                 )}
-                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45, flex: 1 }}>
-                    {card.details}
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5, flex: 1 }}>
+                    {(card.details || '').split(/(\*\*.*?\*\*|\*.*?\*)/g).map((part, index) => {
+                        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+                            return <strong key={index} style={{ fontWeight: 600, color: 'var(--color-text)' }}>{part.slice(2, -2)}</strong>;
+                        }
+                        if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                            return <em key={index} style={{ fontStyle: 'italic' }}>{part.slice(1, -1)}</em>;
+                        }
+                        return <span key={index}>{part}</span>;
+                    })}
                 </div>
             </div>
 
-            <div className="browse-card-footer" style={{ borderTop: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                    {card.tags?.slice(0, 2).map(tag => (
-                        <span key={tag} style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', padding: '2px 7px', borderRadius: '12px', fontWeight: 600 }}>#{tag}</span>
+            <div className="browse-card-footer" style={{ borderTop: `1px solid ${darkMode ? '#1e293b' : '#f1f5f9'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', marginTop: '12px' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {card.tags?.slice(0, 3).map(tag => (
+                        <span key={tag} style={{ fontSize: '0.75rem', color: darkMode ? '#94a3b8' : '#64748b', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', padding: '2px 8px', borderRadius: '6px', fontWeight: 500, transition: 'background-color 0.2s' }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = darkMode ? '#334155' : '#e2e8f0'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = darkMode ? '#1e293b' : '#f1f5f9'}
+                        >
+                            #{tag}
+                        </span>
                     ))}
-                    {(card.tags?.length || 0) > 2 && (
-                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>+{(card.tags?.length || 0) - 2}</span>
+                    {(card.tags?.length || 0) > 3 && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, padding: '2px 6px' }}>+{(card.tags?.length || 0) - 3}</span>
                     )}
                 </div>
                 <ArrowRight size={12} color="var(--color-text-muted)" style={{ opacity: 0.5, flexShrink: 0 }} />

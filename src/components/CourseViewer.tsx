@@ -3,9 +3,10 @@ import type { Card } from '../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import {
     ArrowLeft, PencilSimple, Printer, Trash, CalendarBlank, Hash, Plus,
-    PresentationChart, Brain,
+    PresentationChart, Brain, CaretDown
 } from '@phosphor-icons/react';
 import { useCardStore } from '../store/useCardStore';
+import { useTheme } from '../context/ThemeContext';
 
 interface CourseViewerProps {
     course: Card;
@@ -32,9 +33,10 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
     onEditFlashcard,
     onStartReview,
 }) => {
+    const { cards } = useCardStore();
+    const { getCategoryColor } = useTheme();
     const [scrollY, setScrollY] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const { cards } = useCardStore();
 
     const conceptCards = cards.filter(c => c.nodeType === 'concept' && c.parentId === course.id);
     const flashcardCards = cards.filter(c => c.nodeType === 'flashcard' && c.parentId === course.id);
@@ -95,6 +97,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             margin: '0 -2rem -2rem -1rem',
         }}>
             <div className="no-print" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            
             {/* ── Top Bar ─────────────────────────────────────────── */}
             <div style={{
                 display: 'flex',
@@ -134,7 +137,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                 {/* Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {/* Add concept — icône discrète */}
+                    {/* Add concept */}
                     {course.nodeType === 'course' && (
                         <button
                             onClick={onAddConcept}
@@ -156,12 +159,11 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                 e.currentTarget.style.color = 'var(--color-text-muted)';
                             }}
                         >
-                            <Plus size={16} />
-                            Concept
+                            <Plus size={16} /> Concept
                         </button>
                     )}
 
-                    {/* Add flashcard — icône discrète */}
+                    {/* Add flashcard */}
                     <button
                         onClick={onAddFlashcard}
                         title="Créer une flashcard"
@@ -182,8 +184,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             e.currentTarget.style.color = 'var(--color-text-muted)';
                         }}
                     >
-                        <Plus size={16} />
-                        Flashcard
+                        <Plus size={16} /> Flashcard
                     </button>
 
                     <div style={{ width: 1, height: 20, background: 'var(--color-border)', margin: '0 4px' }} />
@@ -195,8 +196,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             background: 'none', border: 'none',
                             borderRadius: 6, padding: '8px 12px',
                             fontSize: 13, fontWeight: 500,
-                            color: 'var(--color-text-muted)',
-                            cursor: 'pointer', transition: 'all 0.15s ease',
+                            color: 'var(--color-text-muted)', cursor: 'pointer', transition: 'all 0.15s ease',
                         }}
                         onMouseEnter={e => {
                             e.currentTarget.style.background = 'var(--color-surface-hover)';
@@ -207,8 +207,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             e.currentTarget.style.color = 'var(--color-text-muted)';
                         }}
                     >
-                        <Printer size={16} />
-                        PDF
+                        <Printer size={16} /> PDF
                     </button>
 
                     <button
@@ -218,8 +217,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             background: 'none', border: 'none',
                             borderRadius: 6, padding: '8px 12px',
                             fontSize: 13, fontWeight: 500,
-                            color: 'var(--color-text-muted)', cursor: 'pointer',
-                            transition: 'all 0.15s ease',
+                            color: 'var(--color-text-muted)', cursor: 'pointer', transition: 'all 0.15s ease',
                         }}
                         onMouseEnter={e => {
                             e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
@@ -237,346 +235,256 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         onClick={onEdit}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 6,
-                            background: 'var(--color-primary)',
-                            border: 'none',
+                            background: 'var(--color-primary)', border: 'none',
                             borderRadius: 8, padding: '9px 18px',
                             fontSize: 14, fontWeight: 600,
-                            color: '#fff', cursor: 'pointer',
-                            transition: 'opacity 0.15s ease',
-                            marginLeft: 4,
+                            color: '#fff', cursor: 'pointer', transition: 'opacity 0.15s ease', marginLeft: 4,
                         }}
                         onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
                         onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                     >
-                        <PencilSimple size={16} weight="fill" />
-                        Modifier
+                        <PencilSimple size={16} weight="fill" /> Modifier
                     </button>
                 </div>
             </div>
 
-            {/* ── Scrollable body ──────────────────────────────────── */}
-            <div
-                ref={scrollRef}
-                style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                }}
-            >
-                {/* Cover Banner */}
-                <div style={{
-                    width: '100%',
-                    height: 180,
-                    background: course.tags && course.tags.length > 0
-                        ? 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(45,212,191,0.05) 100%)'
-                        : 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.05) 100%)',
-                    flexShrink: 0,
-                    position: 'relative',
-                }}>
+            {/* ── Split Layout: Context vs Action ────────────────── */}
+            <div className="course-split-layout">
+                
+                {/* ── Left Pane (Prose & Concepts) ──────────────── */}
+                <div ref={scrollRef} className="course-left-pane">
+                    
+                    {/* Cover Banner */}
                     <div style={{
-                        position: 'absolute', inset: 0,
-                        background: 'linear-gradient(0deg, var(--color-bg) 0%, transparent 100%)'
-                    }} />
+                        width: '100%', height: 180, flexShrink: 0, position: 'relative',
+                        background: course.tags && course.tags.length > 0
+                            ? 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(45,212,191,0.05) 100%)'
+                            : 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.05) 100%)',
+                    }}>
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            background: 'linear-gradient(0deg, var(--color-bg) 0%, transparent 100%)'
+                        }} />
+                    </div>
+
+                    <article style={{
+                        width: '100%', maxWidth: 760, padding: '0 40px 80px',
+                        marginTop: -60, position: 'relative', zIndex: 10,
+                    }}>
+                        {/* Document header */}
+                        <div style={{ marginBottom: 40 }}>
+                            <h1 style={{
+                                fontSize: 48, fontWeight: 800, letterSpacing: '-1.2px', lineHeight: 1.1,
+                                color: 'var(--color-text)', margin: '0 0 20px 0',
+                            }}>
+                                {course.title}
+                            </h1>
+
+                            {/* Tags */}
+                            {course.tags && course.tags.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                                    {course.tags.map(t => (
+                                        <span key={t} style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                                            fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)',
+                                            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                                            borderRadius: 6, padding: '4px 10px',
+                                        }}>
+                                            <Hash size={12} weight="bold" /> {t}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Meta row */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                    <CalendarBlank size={15} /> Modifié le {updatedDate}
+                                </div>
+                                {conceptCards.length > 0 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                        <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--color-text-muted)' }} />
+                                        {conceptCards.length} concept{conceptCards.length > 1 ? 's' : ''}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Concepts Clés Accordion */}
+                        {course.nodeType === 'course' && conceptCards.length > 0 && (
+                            <details className="concepts-accordion" style={{ 
+                                marginBottom: 48, background: 'var(--color-surface)', 
+                                borderRadius: 16, border: '1px solid var(--color-border)', 
+                            }}>
+                                <summary style={{ 
+                                    padding: '16px 20px', fontSize: 16, fontWeight: 700, 
+                                    color: 'var(--color-text)', display: 'flex', alignItems: 'center', 
+                                    gap: 12, cursor: 'pointer', outline: 'none', listStyle: 'none' 
+                                }}>
+                                    <PresentationChart size={20} weight="duotone" className="text-indigo-500" />
+                                    Concepts Clés de ce cours
+                                    <div style={{ flex: 1 }} />
+                                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', background: 'var(--color-bg)', padding: '2px 8px', borderRadius: 12 }}>
+                                        {conceptCards.length}
+                                    </span>
+                                    <CaretDown size={16} color="var(--color-text-muted)" className="accordion-icon" />
+                                </summary>
+                                <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                    {conceptCards.map(concept => (
+                                        <details key={concept.id} style={{
+                                            background: 'var(--color-bg)',
+                                            borderRadius: 12, border: '1px solid var(--color-border)',
+                                            overflow: 'hidden'
+                                        }}>
+                                            <summary style={{
+                                                padding: '16px', fontWeight: 600, fontSize: 15, cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                outline: 'none', listStyle: 'none', color: 'var(--color-text)',
+                                                userSelect: 'none'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: getCategoryColor(concept.type) }} />
+                                                    {concept.title}
+                                                </div>
+                                                <CaretDown size={16} color="var(--color-text-muted)" className="accordion-icon" />
+                                            </summary>
+                                            <div className="prose-container" style={{ padding: '0 16px 16px 16px', borderTop: '1px solid var(--color-border)', paddingTop: 16, fontSize: 14, lineHeight: 1.7, color: 'var(--color-text)' }}>
+                                                <MarkdownRenderer content={concept.details || concept.content || ''} onInternalLinkClick={handleInternalLinkClick} />
+                                            </div>
+                                        </details>
+                                    ))}
+                                </div>
+                            </details>
+                        )}
+
+                        {/* Content Prose */}
+                        {(course.details || course.content) && (
+                            <div className="prose-container" style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--color-text)' }}>
+                                <MarkdownRenderer content={course.details || course.content || ''} onInternalLinkClick={handleInternalLinkClick} />
+                            </div>
+                        )}
+                    </article>
                 </div>
 
-                {/* Document Container */}
-                <article style={{
-                    width: '100%',
-                    maxWidth: 960,
-                    padding: '0 64px 80px',
-                    marginTop: -60,
-                    position: 'relative',
-                    zIndex: 10,
-                }}>
-
-                    {/* Document header */}
-                    <div style={{ marginBottom: 40 }}>
-                        <h1 style={{
-                            fontSize: 48,
-                            fontWeight: 800,
-                            letterSpacing: '-1.2px',
-                            lineHeight: 1.1,
-                            color: 'var(--color-text)',
-                            margin: '0 0 20px 0',
-                        }}>
-                            {course.title}
-                        </h1>
-
-                        {/* Tags */}
-                        {course.tags && course.tags.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                                {course.tags.map(t => (
-                                    <span key={t} style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                                        fontSize: 13, fontWeight: 500,
-                                        color: 'var(--color-text-muted)',
-                                        background: 'var(--color-surface)',
-                                        border: '1px solid var(--color-border)',
-                                        borderRadius: 6, padding: '4px 10px',
-                                    }}>
-                                        <Hash size={12} weight="bold" />
-                                        {t}
-                                    </span>
-                                ))}
+                {/* ── Right Pane (Sidebar / Action) ─────────────── */}
+                <div className="course-right-pane">
+                    <div style={{ padding: '24px' }}>
+                        
+                        {/* Sticky CTA Révision */}
+                        {flashcardCards.length > 0 && onStartReview && (
+                            <div className="sticky-cta">
+                                <div>
+                                    <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text)', marginBottom: 4 }}>
+                                        Prêt à vous tester ?
+                                    </div>
+                                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                                        {flashcardCards.length} flashcard{flashcardCards.length > 1 ? 's' : ''} disponible{flashcardCards.length > 1 ? 's' : ''}.
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => onStartReview(flashcardCards.map(f => f.id), `Révision — ${course.title}`)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                        width: '100%', padding: '12px', borderRadius: 10, marginTop: 16,
+                                        background: '#10b981', border: 'none',
+                                        color: '#fff', fontWeight: 700, fontSize: 14,
+                                        cursor: 'pointer', transition: 'all 0.2s ease',
+                                        boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(16,185,129,0.4)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.transform = 'none';
+                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)';
+                                    }}
+                                >
+                                    <Brain size={18} weight="fill" />
+                                    Réviser maintenant
+                                </button>
                             </div>
                         )}
 
-                        {/* Meta row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                <CalendarBlank size={15} />
-                                Modifié le {updatedDate}
-                            </div>
-                            {flashcardCards.length > 0 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                    <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--color-text-muted)' }} />
-                                    {flashcardCards.length} flashcard{flashcardCards.length > 1 ? 's' : ''}
-                                </div>
-                            )}
-                            {conceptCards.length > 0 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                    <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--color-text-muted)' }} />
-                                    {conceptCards.length} concept{conceptCards.length > 1 ? 's' : ''}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ── Concepts Clés (Premium Grid) ── */}
-                    {course.nodeType === 'course' && conceptCards.length > 0 && (
-                        <div style={{ marginBottom: 40 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <PresentationChart size={18} weight="duotone" className="text-indigo-500" />
-                                    Concepts Clés
-                                </h3>
-                                <button
-                                    onClick={onAddConcept}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 4,
-                                        background: 'none', border: 'none',
-                                        fontSize: 13, fontWeight: 600,
-                                        color: '#6366f1', cursor: 'pointer',
-                                    }}
-                                >
-                                    <Plus size={14} weight="bold" /> Ajouter
-                                </button>
-                            </div>
-                            <div style={{
-                                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16,
-                            }}>
-                                {conceptCards.map(concept => (
+                        {/* Flashcards List */}
+                        {flashcardCards.length > 0 && (
+                            <div style={{ marginTop: flashcardCards.length > 0 ? 0 : 24 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                                        Flashcards liées
+                                    </h3>
                                     <button
-                                        key={concept.id}
-                                        onClick={() => onViewConcept ? onViewConcept(concept.id) : onEditConcept?.(concept.id)}
-                                        className="glass-panel"
-                                        style={{
-                                            display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                                            padding: '16px', borderRadius: 16,
-                                            cursor: 'pointer',
-                                            textAlign: 'left',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                            e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.transform = 'none';
-                                            e.currentTarget.style.boxShadow = 'var(--shadow)';
-                                        }}
+                                        onClick={onAddFlashcard}
+                                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
                                     >
-                                        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)', marginBottom: 6, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {concept.title}
-                                        </div>
-                                        {concept.details && (
-                                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                {concept.details}
-                                            </div>
-                                        )}
+                                        <Plus size={16} weight="bold" />
                                     </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── Content ── */}
-                    {(course.details || course.content) && (
-                        <div style={{
-                            borderTop: '1px solid var(--color-border)',
-                            paddingTop: 48,
-                        }}>
-                            <div style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--color-text)' }}>
-                                <MarkdownRenderer content={course.details || course.content || ''} onInternalLinkClick={handleInternalLinkClick} />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── Flashcards rattachées (compact list) ── */}
-                    {flashcardCards.length > 0 && (
-                        <div style={{ marginTop: 64 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
-                                    Flashcards
-                                    <span style={{ marginLeft: 10, fontSize: 14, fontWeight: 500, color: 'var(--color-text-muted)' }}>
-                                        {flashcardCards.length}
-                                    </span>
-                                </h2>
-                                <button
-                                    onClick={onAddFlashcard}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 5,
-                                        background: 'none', border: '1px solid var(--color-border)',
-                                        borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 500,
-                                        color: 'var(--color-text-muted)', cursor: 'pointer',
-                                        transition: 'all 0.15s',
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.background = 'var(--color-surface)';
-                                        e.currentTarget.style.color = 'var(--color-text)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.background = 'none';
-                                        e.currentTarget.style.color = 'var(--color-text-muted)';
-                                    }}
-                                >
-                                    <Plus size={14} /> Ajouter
-                                </button>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {flashcardCards.map(fc => (
-                                    <div
-                                        key={fc.id}
-                                        onClick={() => onEditFlashcard?.(fc.id)}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 12,
-                                            padding: '12px 16px',
-                                            background: 'var(--color-surface)',
-                                            borderRadius: 10, border: '1px solid var(--color-border)',
-                                            cursor: 'pointer', transition: 'all 0.15s',
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.transform = 'translateY(-1px)';
-                                            e.currentTarget.style.boxShadow = 'var(--shadow)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.transform = 'none';
-                                            e.currentTarget.style.boxShadow = 'none';
-                                        }}
-                                    >
-                                        <div style={{
-                                            width: 32, height: 32, borderRadius: 8,
-                                            background: 'rgba(16,185,129,0.1)', color: '#10b981',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            flexShrink: 0,
-                                        }}>
-                                            <Hash size={16} weight="bold" />
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {fc.format === 'cloze' ? 'Texte à trou' : fc.title}
-                                            </div>
-                                            {(fc.format === 'cloze' ? fc.content : fc.details) && (
-                                                <div style={{ fontSize: 12, color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
-                                                    {(fc.format === 'cloze' ? fc.content : fc.details)?.substring(0, 80)}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {flashcardCards.map(fc => (
+                                        <div
+                                            key={fc.id}
+                                            onClick={() => onEditFlashcard?.(fc.id)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                padding: '12px',
+                                                background: 'var(--color-bg)',
+                                                borderRadius: 10, border: '1px solid var(--color-border)',
+                                                cursor: 'pointer', transition: 'all 0.15s',
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.borderColor = 'var(--color-border)';
+                                            }}
+                                        >
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {fc.format === 'cloze' ? 'Texte à trou' : fc.title}
                                                 </div>
-                                            )}
+                                                <div style={{ fontSize: 11, fontWeight: 600, marginTop: 4, color: fc.progress?.status === 'review' ? '#ef4444' : fc.progress?.status === 'learning' ? '#f59e0b' : '#6366f1' }}>
+                                                    {fc.progress?.status === 'review' ? 'À réviser' : fc.progress?.status === 'learning' ? 'En cours' : 'Nouvelle'}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <span style={{
-                                            fontSize: 11, fontWeight: 600, padding: '3px 8px',
-                                            borderRadius: 6,
-                                            background: fc.progress?.status === 'review' ? 'rgba(239,68,68,0.1)' : fc.progress?.status === 'learning' ? 'rgba(245,158,11,0.1)' : 'rgba(99,102,241,0.1)',
-                                            color: fc.progress?.status === 'review' ? '#ef4444' : fc.progress?.status === 'learning' ? '#f59e0b' : '#6366f1',
-                                        }}>
-                                            {fc.progress?.status === 'review' ? 'À réviser' : fc.progress?.status === 'learning' ? 'En cours' : 'Nouvelle'}
-                                        </span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* ── Empty State ── */}
-                    {course.nodeType === 'course' && conceptCards.length === 0 && flashcardCards.length === 0 && (
-                        <div className="glass-panel" style={{
-                            marginTop: 64, padding: '48px 32px', textAlign: 'center',
-                            borderRadius: 24,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center'
-                        }}>
-                            <div style={{ 
-                                width: 64, height: 64, borderRadius: '50%', background: 'rgba(99,102,241,0.05)', 
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 
+                        {/* Empty State Sidebar */}
+                        {course.nodeType === 'course' && conceptCards.length === 0 && flashcardCards.length === 0 && (
+                            <div style={{
+                                padding: '32px 24px', textAlign: 'center',
+                                borderRadius: 16, background: 'var(--color-bg)',
+                                border: '1px dashed var(--color-border)',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center'
                             }}>
-                                <PresentationChart size={32} weight="duotone" className="text-indigo-400" />
-                            </div>
-                            <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-text)', margin: '0 0 8px 0' }}>Aucun contenu rattaché</h3>
-                            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', maxWidth: 400, margin: '0 0 32px 0', lineHeight: 1.6 }}>
-                                Ce cours est encore vide. Créez des concepts clés pour l'enrichir ou ajoutez des flashcards pour vous tester.
-                            </p>
-                            <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-                                <button onClick={onAddConcept} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 12, background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white', fontWeight: 600, fontSize: 14, cursor: 'pointer', border: 'none', boxShadow: '0 4px 12px rgba(99,102,241,0.2)' }}>
-                                    <Plus size={18} weight="bold" /> Lier un concept
-                                </button>
-                                <button onClick={onAddFlashcard} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 12, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600, fontSize: 14, cursor: 'pointer', boxShadow: 'var(--shadow)' }}>
-                                    <Plus size={18} weight="bold" /> Créer une flashcard
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── CTA Révision ── */}
-                    {flashcardCards.length > 0 && onStartReview && (
-                        <div style={{
-                            marginTop: 56,
-                            padding: '28px 32px',
-                            background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(45,212,191,0.04) 100%)',
-                            border: '1px solid rgba(16,185,129,0.2)',
-                            borderRadius: 16,
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
-                        }}>
-                            <div>
-                                <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--color-text)', marginBottom: 6 }}>
-                                    Prêt à vous tester ?
-                                </div>
-                                <div style={{ fontSize: 14, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-                                    {flashcardCards.length} flashcard{flashcardCards.length > 1 ? 's' : ''} disponible{flashcardCards.length > 1 ? 's' : ''} pour réviser ce cours.
+                                <PresentationChart size={28} weight="duotone" className="text-indigo-400" style={{ marginBottom: 16 }} />
+                                <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text)', margin: '0 0 8px 0' }}>Aucune action</h3>
+                                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+                                    Divisez ce cours en créant des concepts clés ou des flashcards.
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                                    <button onClick={onAddConcept} style={{ padding: '10px', borderRadius: 8, background: '#e0e7ff', color: '#4f46e5', fontWeight: 600, fontSize: 13, cursor: 'pointer', border: 'none' }}>
+                                        Lier un concept
+                                    </button>
+                                    <button onClick={onAddFlashcard} style={{ padding: '10px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                                        Créer flashcard
+                                    </button>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => onStartReview(flashcardCards.map(f => f.id), `Révision — ${course.title}`)}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 10,
-                                    padding: '14px 28px', borderRadius: 12,
-                                    background: '#10b981', border: 'none',
-                                    color: '#fff', fontWeight: 700, fontSize: 15,
-                                    cursor: 'pointer', flexShrink: 0,
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(16,185,129,0.4)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.transform = 'none';
-                                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(16,185,129,0.3)';
-                                }}
-                            >
-                                <Brain size={20} weight="fill" />
-                                Réviser maintenant
-                            </button>
-                        </div>
-                    )}
-                </article>
+                        )}
+                    </div>
+                </div>
             </div>
             </div>
 
             {/* ── Print Only Layout ────────────────────────────────── */}
             <div className="print-only-course" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', lineHeight: 1.4, fontSize: '11pt' }}>
                 <div className="print-header">
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '4px', fontFamily: 'var(--font-sans)', color: 'black' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 4px 0', fontFamily: 'var(--font-sans)', color: 'black' }}>
                         {course.title}
                     </h1>
                     <div style={{ fontSize: '0.9rem', color: '#555', marginBottom: '16px' }}>
@@ -591,10 +499,10 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                 {conceptCards.length > 0 && (
                     <div className="print-concepts">
-                        <h2 style={{ fontSize: '1.5rem', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '16px' }}>Concepts Clés</h2>
+                        <h2 style={{ fontSize: '1.5rem', borderBottom: '1px solid #000', paddingBottom: '4px', margin: '0 0 16px 0' }}>Concepts Clés</h2>
                         {conceptCards.map(concept => (
                             <div key={concept.id} className="print-concept-item" style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
-                                <h3 style={{ fontSize: '1.2rem', color: 'black', marginBottom: '8px' }}>
+                                <h3 style={{ fontSize: '1.2rem', color: 'black', margin: '0 0 8px 0' }}>
                                     {concept.title}
                                 </h3>
                                 <div className="prose">
@@ -608,14 +516,14 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 {flashcardCards.length > 0 && (
                     <>
                         <div className="print-flashcards" style={{ marginTop: '24px', pageBreakBefore: 'always' }}>
-                            <h2 style={{ fontSize: '1.5rem', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '16px', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>Quiz (Questions)</h2>
+                            <h2 style={{ fontSize: '1.5rem', borderBottom: '1px solid #000', paddingBottom: '4px', margin: '0 0 16px 0', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>Quiz (Questions)</h2>
                             <ul style={{ listStyle: 'none', padding: 0 }}>
                                 {flashcardCards.map((fc, index) => (
                                     <li key={`q-${fc.id}`} style={{ marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px dashed #ccc', pageBreakInside: 'avoid' }}>
-                                        <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '1.05rem' }}>
+                                        <div style={{ fontWeight: 'bold', margin: '0 0 4px 0', fontSize: '1.05rem' }}>
                                             Question {index + 1}
                                         </div>
-                                        <div style={{ marginBottom: '8px', fontSize: '1.05rem' }}>
+                                        <div style={{ margin: '0 0 8px 0', fontSize: '1.05rem' }}>
                                             {fc.format === 'cloze' ? (
                                                 <span dangerouslySetInnerHTML={{ __html: (fc.content || '').replace(/\{([^}]+)\}/g, '<strong>___________</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong>___________</strong>') }} />
                                             ) : (
@@ -628,11 +536,11 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         </div>
                         
                         <div className="print-flashcards-answers" style={{ marginTop: '24px', pageBreakBefore: 'always' }}>
-                            <h2 style={{ fontSize: '1.5rem', borderBottom: '1px solid #000', paddingBottom: '4px', marginBottom: '16px', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>Corrigé du Quiz</h2>
+                            <h2 style={{ fontSize: '1.5rem', borderBottom: '1px solid #000', paddingBottom: '4px', margin: '0 0 16px 0', fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>Corrigé du Quiz</h2>
                             <ul style={{ listStyle: 'none', padding: 0 }}>
                                 {flashcardCards.map((fc, index) => (
                                     <li key={`a-${fc.id}`} style={{ marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #eee', pageBreakInside: 'avoid' }}>
-                                        <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#555' }}>
+                                        <div style={{ fontWeight: 'bold', margin: '0 0 4px 0', color: '#555' }}>
                                             Réponse {index + 1}
                                         </div>
                                         <div style={{ color: '#333', fontSize: '1.05rem' }}>
@@ -650,8 +558,80 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 )}
             </div>
 
-            {/* Print Styles */}
+            {/* Layout Styles */}
             <style dangerouslySetInnerHTML={{__html: `
+                .course-split-layout {
+                    display: flex;
+                    flex: 1;
+                    overflow: hidden;
+                    flex-direction: row;
+                }
+                .course-left-pane {
+                    flex: 1;
+                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    min-width: 0;
+                }
+                .course-right-pane {
+                    width: 350px;
+                    flex-shrink: 0;
+                    border-left: 1px solid var(--color-border);
+                    background: var(--color-surface);
+                    display: flex;
+                    flex-direction: column;
+                    overflow-y: auto;
+                }
+                .sticky-cta {
+                    position: sticky;
+                    top: 0;
+                    z-index: 20;
+                    margin-bottom: 32px;
+                    padding: 20px;
+                    background: rgba(255,255,255,0.7);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid rgba(16,185,129,0.2);
+                    border-radius: 16px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+                }
+                
+                /* HTML Details element styles */
+                details.concepts-accordion summary::-webkit-details-marker {
+                    display: none;
+                }
+                details[open] > summary .accordion-icon {
+                    transform: rotate(180deg);
+                }
+                
+                /* Dark mode adjustments */
+                @media (prefers-color-scheme: dark) {
+                    .sticky-cta {
+                        background: rgba(30,41,59,0.7);
+                    }
+                }
+
+                @media (max-width: 900px) {
+                    .course-split-layout {
+                        flex-direction: column;
+                        overflow-y: auto; /* main scroll */
+                    }
+                    .course-left-pane {
+                        overflow-y: visible;
+                        flex: none;
+                    }
+                    .course-right-pane {
+                        width: 100%;
+                        border-left: none;
+                        border-top: 1px solid var(--color-border);
+                        overflow-y: visible;
+                    }
+                    .sticky-cta {
+                        position: relative; /* remove sticky on mobile to save space */
+                    }
+                }
+
                 @media print {
                     @page { margin: 1cm; }
                     body { background: white !important; }

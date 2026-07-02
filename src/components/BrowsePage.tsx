@@ -142,14 +142,13 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
     return (
         <div className="browse-container" style={{ position: "relative", display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-            <div className="w-full max-w-[1600px] self-center flex flex-col flex-1 min-h-0 w-full" style={{ overflow: 'hidden' }}>
+            <div className="w-full self-center flex flex-col flex-1 min-h-0" style={{ overflow: 'hidden' }}>
             <BrowseToolbar
                 cards={cards}
                 sortedCards={sortedCards}
                 activeFilters={activeFilters}
                 handleFilterToggle={handleFilterToggle}
                 getFilterLabel={getFilterLabel}
-                getCategoryColor={getCategoryColor}
                 setAddDataMode={setAddDataMode}
                 isNetworkOnly={isNetworkOnly}
                 viewMode={viewMode}
@@ -159,9 +158,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 exportToAnki={exportToAnki}
                 darkMode={darkMode}
             />
-
-            {/* Main Content Area */}
-            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} px-10 pt-3 pb-6`} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} pt-5 pb-6`} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
 
                 {/* Search Synthesis */}
                 {/* Search Synthesis */}
@@ -172,7 +169,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.2 }}
-                        style={{ position: 'relative', overflow: 'hidden' }}
+                        style={{ position: 'relative', overflow: 'hidden', padding: '0 40px' }}
+                        className="w-full max-w-[1600px] mx-auto self-center"
                     >
                         <SearchSynthesis
                             query={searchQuery}
@@ -190,7 +188,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 )}
                 </AnimatePresence>
 
-                <div style={{ display: 'flex', flexDirection: (viewMode === 'split' && !isNetworkOnly) ? 'row' : 'column', gap: '2rem', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <div className={`w-full px-4 sm:px-8 self-center ${(viewMode === 'split' || viewMode === 'network' || isNetworkOnly) ? 'max-w-[1600px] mx-auto' : ''}`} style={{ display: 'flex', flexDirection: (viewMode === 'split' && !isNetworkOnly) ? 'row' : 'column', gap: (viewMode === 'split' && !isNetworkOnly) ? 0 : '2rem', flex: 1, minHeight: 0, overflow: 'hidden' }}>
                     
                     {!isNetworkOnly && (
                         <BrowseMainContent
@@ -208,14 +206,12 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             onToggleSelect={toggleCardSelect}
                             setSelectedCardId={setSelectedCardId}
                             setExpandedCardId={setExpandedCardId}
-                            setEditingCard={setEditingCard}
-                            setAddDataMode={setAddDataMode}
                             setCardToDelete={setCardToDelete}
                         />
                     )}
 
                     {(viewMode === 'split' || viewMode === 'network' || isNetworkOnly) && (
-                        <div className="flex-1 rounded-[16px] overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm">
+                        <div className="flex-1 rounded-[16px] overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm" style={{ marginRight: '40px', marginLeft: '40px' }}>
                             <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
                                 {renderNetworkView && renderNetworkView(selectedCardId)}
                             </div>

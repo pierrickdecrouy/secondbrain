@@ -1,7 +1,7 @@
 /**
  * Voy Vector Store - WASM-based high-performance vector search
  */
-import { Voy as VoySearch } from 'voy-search';
+import { Voy } from 'voy-search';
 
 export interface EmbeddingEntry {
     id: string;
@@ -17,7 +17,7 @@ export class VoyVectorStore {
      * Initialize the Voy index
      */
     constructor() {
-        this.index = new VoySearch();
+        this.index = new Voy();
     }
 
     /**
@@ -64,7 +64,7 @@ export class VoyVectorStore {
             if (e instanceof Error && (e.message.includes('recursive') || e.message.includes('unreachable'))) {
                 console.warn("Voy index corrupted, resetting...");
                 // Keep cache, reset index
-                this.index = new VoySearch();
+                this.index = new Voy();
                 // Re-add everything from cache? That might trigger it again if data is bad.
                 // For now, just reset to avoid app-wide freeze.
             }
@@ -151,7 +151,7 @@ export class VoyVectorStore {
                 const cacheData = data.subarray(headerV2.length + 4 + indexLength);
 
                 const indexString = new TextDecoder().decode(indexData);
-                this.index = VoySearch.deserialize(indexString);
+                this.index = Voy.deserialize(indexString);
 
                 const cacheJson = new TextDecoder().decode(cacheData);
                 const entries = JSON.parse(cacheJson);
@@ -169,7 +169,7 @@ export class VoyVectorStore {
             try {
                 const indexString = new TextDecoder().decode(data);
                 if (indexString && indexString.trim().length > 0 && indexString.trim().startsWith('{')) {
-                    this.index = VoySearch.deserialize(indexString);
+                    this.index = Voy.deserialize(indexString);
                 } else {
                     console.warn("[Voy] Legacy index empty or invalid, resetting");
                     this.clear();
@@ -185,7 +185,7 @@ export class VoyVectorStore {
      * Clear index
      */
     clear(): void {
-        this.index = new VoySearch();
+        this.index = new Voy();
         this.embeddingCache.clear();
     }
 

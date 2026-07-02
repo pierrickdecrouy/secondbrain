@@ -11,19 +11,21 @@ export const initialCards: Card[] = [
         content: 'Cours de référence complet sur le diabète de type 1 et 2.',
         details: `Bienvenue dans la visionneuse de cours d'Extnd !
 
-Ce cours de démonstration vous montre comment structurer vos connaissances médicales. Un cours est composé de **Concepts Clés** (fiches) et de **Flashcards** (pour la mémorisation).
+Ce cours de démonstration illustre la structuration de la base de connaissances médicale. Un cours est un assemblage de **Concepts Clés** fondamentaux et de **Flashcards** actives pour l'ancrage mémoriel.
 
 ### 📖 Introduction
-Le Diabète regroupe des maladies métaboliques caractérisées par une hyperglycémie chronique résultant d'un défaut de sécrétion de l'insuline ou d'une résistance à celle-ci.
 
-> **Important** : La prise en charge précoce est vitale pour éviter les complications micro et macrovasculaires.
+Le Diabète regroupe des maladies métaboliques caractérisées par une hyperglycémie chronique résultant d'un défaut de sécrétion de l'insuline ou d'une résistance à celle-ci. L'Organisation Mondiale de la Santé (OMS) considère cette pathologie comme une épidémie mondiale.
 
-### 🧠 Méthodologie
-Explorez les concepts ci-dessous (Insuline, Metformine, etc.) pour comprendre les briques fondamentales de ce cours. 
-Ensuite, testez-vous avec les **Flashcards** pour expérimenter notre algorithme de répétition espacée (FSRS).
+> **Important** : La prise en charge précoce, intensive et multidisciplinaire est vitale pour éviter les complications redoutables (rétinopathie, néphropathie, neuropathie, complications cardiovasculaires).
+
+### 🧠 Méthodologie d'apprentissage
+
+Explorez les concepts ci-dessous (Insuline, Metformine, GLP-1, etc.) pour assimiler les briques fondamentales du cours. Chaque concept déroulant contient les connaissances essentielles à maîtriser. 
+Une fois les concepts intégrés, testez-vous avec les **Flashcards** sur la droite pour initier votre algorithme de répétition espacée (FSRS).
 
 ---
-*(Cliquez sur les Concepts ou les Flashcards ci-dessous pour les afficher !)*`,
+*(Déroulez les Concepts ci-dessous pour afficher leur contenu intégral !)*`,
         tags: ['Endocrinologie', 'Métabolisme', 'Démo'],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -39,17 +41,20 @@ Ensuite, testez-vous avec les **Flashcards** pour expérimenter notre algorithme
         title: 'Diabète de Type 1 (DT1)',
         subtitle: 'Maladie auto-immune',
         content: 'Destruction des cellules bêta du pancréas conduisant à une carence absolue en insuline.',
-        details: `Le **Diabète Type 1** (5 à 10% des cas) survient généralement chez l'enfant ou le jeune adulte. Il est dû à une destruction auto-immune des cellules β des îlots de Langerhans du pancréas.
+        details: `Le **Diabète Type 1** (5 à 10% des cas de diabète) survient le plus souvent chez l'enfant, l'adolescent ou le jeune adulte. Il est la conséquence d'une destruction auto-immune des cellules β des îlots de Langerhans du pancréas.
 
-### Signes cliniques inauguraux (Syndrome cardinal)
-- Polyurie (urines abondantes)
-- Polydipsie (soif intense)
-- Amaigrissement paradoxal
-- Polyphagie
+### 🔍 Signes cliniques inauguraux (Syndrome cardinal)
+L'apparition est généralement brutale (quelques semaines) :
+- **Polyurie** : urines très abondantes, souvent accompagnées d'énurésie chez l'enfant.
+- **Polydipsie** : soif intense inextinguible pour compenser les pertes.
+- **Amaigrissement paradoxal** : fonte musculaire et adipeuse malgré une polyphagie (faim conservée ou augmentée).
 
-> **Urgence diagnostique** : Le risque majeur en l'absence de diagnostic est l'**Acidocétose diabétique** (coma, haleine pomme reinette, respiration de Kussmaul).
+### ⚠️ Complication aiguë révélatrice : L'Acidocétose
+> **Urgence diagnostique absolue** : Le risque majeur en l'absence de diagnostic est l'**Acidocétose diabétique**.
+Elle se manifeste par des troubles digestifs (nausées, vomissements, douleurs abdominales), une respiration ample de Kussmaul, une haleine caractéristique (pomme reinette) et des troubles de la conscience pouvant aller jusqu'au coma.
 
-Le seul traitement possible est l'insulinothérapie à vie.`,
+### 💊 Traitement
+Le seul traitement possible est l'**insulinothérapie à vie**. Elle doit mimer la sécrétion physiologique (schéma basal-bolus avec insulines lentes et rapides, ou pompe à insuline).`,
         tags: ['Auto-immun', 'Pancréas', 'Pédiatrie'],
         manualConnections: ['insuline'],
         createdAt: Date.now(),
@@ -63,15 +68,19 @@ Le seul traitement possible est l'insulinothérapie à vie.`,
         title: 'Diabète de Type 2 (DT2)',
         subtitle: 'Insulinorésistance et carence relative',
         content: 'Maladie métabolique évolutive (90% des cas) caractérisée par une résistance à l\'insuline.',
-        details: `Le **Diabète Type 2** est insidieux et souvent asymptomatique pendant des années. Il est fortement associé au surpoids, à la sédentarité et à l'âge.
+        details: `Le **Diabète Type 2** est une pathologie insidieuse, restant très souvent asymptomatique pendant des années (diagnostic souvent posé de façon fortuite sur un bilan sanguin de routine). Il représente 90% des cas de diabètes et est fortement corrélé au syndrome métabolique (surpoids, obésité abdominale, sédentarité, HTA).
 
-### Physiopathologie
-1. **Insulinorésistance** : Les muscles et le foie répondent mal à l'insuline.
-2. **Hyperinsulinisme compensateur** : Le pancréas produit plus d'insuline pour maintenir la glycémie.
-3. **Insulinopénie relative** : Épuisement des cellules β du pancréas.
+### ⚙️ Physiopathologie : La cascade métabolique
+1. **Insulinorésistance** : Sous l'effet de l'accumulation de graisses ectopiques (notamment viscérales), les tissus cibles (muscles striés, foie, tissu adipeux) répondent mal aux signaux de l'insuline.
+2. **Hyperinsulinisme compensateur** : Pour maintenir l'homéostasie glycémique, le pancréas sécrète massivement de l'insuline. À ce stade, la glycémie est normale mais l'insuline est très élevée.
+3. **Insulinopénie relative** : Après des années de surmenage, les cellules β s'épuisent. La sécrétion d'insuline décline et n'est plus capable de vaincre la résistance : c'est l'apparition de l'hyperglycémie et du diabète clinique.
 
-### Traitement
-Le traitement de 1ère intention repose toujours sur les **Mesures Hygiéno-Diététiques (MHD)** et la **Metformine**.`,
+### 💊 Stratégie thérapeutique
+La prise en charge est **graduelle** :
+1. **Mesures Hygiéno-Diététiques (MHD)** : Perte de poids (objectif 5 à 10%), activité physique régulière (150 min/semaine), rééquilibrage alimentaire.
+2. **Monothérapie** : La **Metformine** reste le traitement médicamenteux de 1ère intention.
+3. **Bithérapie / Trithérapie** : Ajout d'inhibiteurs de DPP-4, analogues du GLP-1, ou inhibiteurs de SGLT-2.
+4. **Insulinothérapie** : En stade d'insulinorequérence (épuisement pancréatique total).`,
         tags: ['Métabolisme', 'Obésité', 'CV'],
         manualConnections: ['metformine', 'hba1c'],
         createdAt: Date.now(),
@@ -130,16 +139,46 @@ Risque d'acidose lactique (rare mais gravissime).`,
         title: 'HbA1c (Hémoglobine glyquée)',
         subtitle: 'Marqueur de surveillance',
         content: 'Reflet de la glycémie moyenne sur les 2 à 3 derniers mois.',
-        details: `L'**HbA1c** (hémoglobine glyquée) se forme par fixation non enzymatique du glucose sur l'hémoglobine des globules rouges (dont la durée de vie est de 120 jours).
+        details: `L'**HbA1c** (hémoglobine glyquée) est le marqueur de référence absolu pour l'évaluation de l'équilibre glycémique. Elle se forme par glycation non enzymatique (fixation du glucose) sur l'hémoglobine des globules rouges. 
+La durée de vie d'un globule rouge étant de 120 jours, l'HbA1c reflète la **glycémie moyenne des 2 à 3 derniers mois**.
 
-| Catégorie | Valeur HbA1c |
-|-----------|--------------|
+### 📊 Interprétation des valeurs
+
+| Catégorie clinique | Valeur HbA1c |
+|--------------------|--------------|
 | Normale | < 5.7% |
-| Prédiabète | 5.7% - 6.4% |
-| Diabète | ≥ 6.5% |
+| Prédiabète (Intolérance) | 5.7% - 6.4% |
+| **Diabète avéré** | **≥ 6.5%** |
 
-**Objectif cible** : Généralement < 7% pour la plupart des diabétiques de type 2.`,
+> **Cible thérapeutique** : L'objectif standard pour la plupart des diabétiques de type 2 est **< 7%**. Cet objectif doit être individualisé (plus strict < 6.5% chez les sujets jeunes ou au diagnostic récent, plus souple < 8% voire 9% chez les sujets âgés polypathologiques).
+
+### 💡 Le saviez-vous ?
+Une baisse de **1%** de l'HbA1c entraîne une réduction de plus de **30%** du risque de complications microvasculaires (rétinopathie, néphropathie) !`,
         tags: ['Bioch', 'Surveillance', 'Sang'],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    },
+    {
+        id: 'ar-glp1',
+        type: 'drug',
+        nodeType: 'concept',
+        parentId: 'demo-course-diabete',
+        title: 'Analogues du GLP-1',
+        subtitle: 'Incrétino-mimétiques',
+        content: 'Classe thérapeutique récente très efficace sur la glycémie et la perte de poids.',
+        details: `Les **Analogues du GLP-1** (ex: Sémaglutide, Liraglutide, Dulaglutide) miment l'action de l'hormone intestinale GLP-1 (Glucagon-Like Peptide 1) avec une durée d'action très prolongée (résistance à la DPP-4).
+
+### ✨ Multiples mécanismes d'action
+- **Pancréas** : Stimulent la sécrétion d'insuline et inhibent la sécrétion de glucagon de manière *gluco-dépendante* (risque d'hypoglycémie quasi-nul).
+- **Estomac** : Ralentissent la vidange gastrique (diminution du pic glycémique post-prandial).
+- **Cerveau** : Action centrale sur les centres de la satiété (perte de poids souvent majeure).
+
+### 🛡️ Bénéfice majeur
+Ils ont démontré de manière éclatante leur capacité à **réduire le risque cardiovasculaire** (infarctus, AVC) et à protéger la fonction rénale chez les patients diabétiques à haut risque.
+
+> **Effets indésirables** : Essentiellement digestifs (nausées, vomissements) en début de traitement, nécessitant une titration progressive des doses.`,
+        tags: ['Diabète', 'Incrétines', 'Perte de poids'],
+        manualConnections: ['diabete-type-2'],
         createdAt: Date.now(),
         updatedAt: Date.now(),
     },

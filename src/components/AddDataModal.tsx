@@ -43,40 +43,14 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                         <div style={{ display: 'flex', background: 'var(--color-surface)', padding: '4px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                             <button
                                 onClick={() => setActiveTab('single')}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    color: activeTab === 'single' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                                    fontWeight: activeTab === 'single' ? 600 : 500,
-                                    background: activeTab === 'single' ? 'var(--color-bg)' : 'transparent',
-                                    boxShadow: activeTab === 'single' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
+                                className={activeTab === 'single' ? 'extnd-btn extnd-btn-primary' : 'extnd-btn extnd-btn-ghost'}
                             >
                                 <FilePlus size={18} />
                                 Nouvelle Fiche
                             </button>
                             <button
                                 onClick={() => setActiveTab('batch')}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    color: activeTab === 'batch' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                                    fontWeight: activeTab === 'batch' ? 600 : 500,
-                                    background: activeTab === 'batch' ? 'var(--color-bg)' : 'transparent',
-                                    boxShadow: activeTab === 'batch' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
+                                className={activeTab === 'batch' ? 'extnd-btn extnd-btn-primary' : 'extnd-btn extnd-btn-ghost'}
                             >
                                 <UploadSimple size={18} />
                                 Import en Masse
@@ -85,7 +59,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                     </div>
                 )}
 
-                <div className="modal-body" style={{ marginTop: 0, flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                <div className="modal-body" style={{ marginTop: 0, flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
                     {activeTab === 'single' ? (
                         <CardFormContent
                             card={card}

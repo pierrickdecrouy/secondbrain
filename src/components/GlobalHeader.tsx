@@ -58,7 +58,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
     }, [isHomeSection]);
 
     return (
-        <header className={`app-drag-region flex items-center justify-center py-4 min-h-[72px] z-50 shrink-0 w-full ${isHomeSection ? 'absolute top-0 left-0 border-none' : 'relative border-b border-slate-200/50 dark:border-slate-800/50'}`}>
+        <header className={`app-drag-region flex items-center justify-center py-5 min-h-[88px] z-50 shrink-0 w-full ${isHomeSection ? 'absolute top-0 left-0 border-none' : 'relative border-b border-slate-200/50 dark:border-slate-800/50'}`}>
             {!isHomeSection && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pointer-events-none" style={{ zIndex: -1 }} />
             )}
@@ -92,7 +92,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         src="/Logo-vertical.svg" 
                         alt="Extnd" 
                         className="transition-all duration-300 hover:opacity-80"
-                        style={isHomeSection ? { height: '80px', marginLeft: '24px', marginTop: '24px' } : { height: '56px', marginLeft: '4px' }}
+                        style={isHomeSection ? { height: '100px', marginLeft: '24px', marginTop: '24px' } : { height: '76px', marginLeft: '4px' }}
                     />
                 </button>
             </div>
@@ -107,11 +107,11 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         tabIndex={0}
                         aria-label="Rechercher"
                     >
-                        <MagnifyingGlass size={20} className="absolute left-4 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" weight="bold" />
+                        <MagnifyingGlass size={24} className="absolute left-4 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" weight="bold" />
                         <input 
                             type="text" 
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-full text-[16px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none"
-                            style={{ padding: '12px 80px 12px 50px' }}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-full text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none"
+                            style={{ padding: '14px 80px 14px 56px' }}
                             placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]} 
                             readOnly
                         />
@@ -157,7 +157,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     >
                         <div 
                             className="rounded-full flex items-center justify-center text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-900/30 transition-all duration-300"
-                            style={isHomeSection ? { width: '48px', height: '48px', fontSize: '20px' } : { width: '40px', height: '40px', fontSize: '16px' }}
+                            style={isHomeSection ? { width: '48px', height: '48px', fontSize: '20px' } : { width: '48px', height: '48px', fontSize: '18px' }}
                         >
                             {user?.photoURL ? (
                                 <img src={user.photoURL} alt="Profile" className="w-full h-full rounded-full object-cover" />

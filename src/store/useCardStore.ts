@@ -120,14 +120,17 @@ export const useCardStore = create<CardState>((set, get) => ({
     if (stampedCard.manualConnections && stampedCard.manualConnections.length > 0) {
       const oldCard = existsIndex >= 0 ? newCards[existsIndex] : null;
       const oldManual = new Set(oldCard?.manualConnections || []);
-      stampedCard.manualConnections.forEach(targetId => {
-        if (!oldManual.has(targetId)) {
-          const targetCard = newCards.find(c => c.id === targetId);
+      const newConnections = stampedCard.manualConnections.filter(id => !oldManual.has(id));
+      
+      if (newConnections.length > 0) {
+        const cardMap = new Map(newCards.map(c => [c.id, c]));
+        newConnections.forEach(targetId => {
+          const targetCard = cardMap.get(targetId);
           if (targetCard) {
             recordPositiveFeedback(stampedCard, targetCard);
           }
-        }
-      });
+        });
+      }
     }
 
     // Add history log

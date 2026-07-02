@@ -97,7 +97,6 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
     const [showCardSelector, setShowCardSelector] = useState(false);
     const [cardSearch, setCardSearch] = useState('');
     const selectorRef = useRef<HTMLDivElement>(null);
-
     const editor = useEditor({
         editorProps: {
             attributes: {
@@ -131,12 +130,11 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
 
     // Update editor content when external value changes completely (e.g. switching cards)
     useEffect(() => {
-        if (editor && value !== (editor.storage as any).markdown.getMarkdown()) {
-             // Avoid resetting cursor position
-             const currentMarkdown = (editor.storage as any).markdown.getMarkdown();
-             if (value !== currentMarkdown) {
-                 editor.commands.setContent(value);
-             }
+        if (editor && !editor.isFocused) {
+            const currentMarkdown = (editor.storage as any).markdown.getMarkdown();
+            if (value !== currentMarkdown) {
+                editor.commands.setContent(value);
+            }
         }
     }, [value, editor]);
 
@@ -301,8 +299,15 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
                 </BubbleMenu>
             )}
 
-            <div className="flex-1 overflow-y-auto p-6 cursor-text course-editor-content">
-                <EditorContent editor={editor} />
+            <div 
+                className="flex-1 overflow-y-auto p-6 cursor-text course-editor-content"
+                onClick={() => {
+                    if (editor && !editor.isFocused) {
+                        editor.commands.focus('end');
+                    }
+                }}
+            >
+                <EditorContent editor={editor} style={{ minHeight: '100%' }} />
             </div>
         </div>
     );

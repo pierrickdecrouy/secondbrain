@@ -1,6 +1,7 @@
 import { Model, Deck, Package } from 'genanki-js';
 import initSqlJs from 'sql.js';
 import { marked } from 'marked';
+import { saveAs } from 'file-saver';
 import type { Card } from '../types';
 
 export async function exportToAnki(deckName: string, cards: Card[]): Promise<void> {
@@ -9,8 +10,9 @@ export async function exportToAnki(deckName: string, cards: Card[]): Promise<voi
     }
 
     // Initialize SQL.js from the WASM file we placed in /public
+    // Use relative path so it works in Electron production (file:// protocol)
     const SQL = await initSqlJs({
-        locateFile: () => `/sql-wasm.wasm`
+        locateFile: file => `./${file}`
     });
 
     const m = new Model({
@@ -67,10 +69,6 @@ export async function exportToAnki(deckName: string, cards: Card[]): Promise<voi
     // @ts-expect-error genanki-js typings are incomplete
     const zipBuffer = await p.export();
     const blob = new Blob([zipBuffer], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${deckName.replace(/\s+/g, '_')}.apkg`;
-    a.click();
-    URL.revokeObjectURL(url);
+    
+    saveAs(blob, `${deckName.replace(/\s+/g, '_')}.apkg`);
 }

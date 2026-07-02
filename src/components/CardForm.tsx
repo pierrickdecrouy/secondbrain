@@ -256,6 +256,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             style={{
                 flex: 1, overflowY: 'auto',
                 display: 'flex', flexDirection: 'column',
+                minHeight: 0,
             }}
         >
             {formData.nodeType === 'flashcard' ? (
@@ -339,7 +340,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     </div>
 
                     {/* Editor (flex:1) */}
-                    <div style={{ flex: 1, minHeight: 280, margin: '16px 32px 0', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ flex: 1, minHeight: 280, margin: '16px 32px 0', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)', flexShrink: 0 }}>
                             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contenu</span>
                             <button onClick={() => setShowMarkdownInfo(!showMarkdownInfo)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', fontWeight: 500 }}>

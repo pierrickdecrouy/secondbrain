@@ -1,7 +1,8 @@
 import React from 'react';
-import { ArrowsDownUp, SquaresFour, Rows, Export } from '@phosphor-icons/react';
+import { ArrowsDownUp, SquaresFour, Rows, Export, Plus } from '@phosphor-icons/react';
 import type { Card } from '../../types';
 import { COURSE_TYPE } from '../../types';
+import { useTheme } from '../../context/ThemeContext';
 
 import type { AddDataMode } from '../../store/useUIStore';
 
@@ -13,7 +14,6 @@ interface BrowseToolbarProps {
     activeFilters: string[];
     handleFilterToggle: (type: string) => void;
     getFilterLabel: (type: string) => string;
-    getCategoryColor: (type: string) => string;
     setAddDataMode: (mode: AddDataMode) => void;
     isNetworkOnly: boolean;
     viewMode: 'grid' | 'list' | 'split' | 'network';
@@ -26,28 +26,31 @@ interface BrowseToolbarProps {
 
 export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
     cards, sortedCards, activeFilters, handleFilterToggle,
-    getFilterLabel, getCategoryColor, setAddDataMode,
+    getFilterLabel, setAddDataMode,
     isNetworkOnly, viewMode, setViewMode,
     sortOption, setSortOption, exportToAnki, darkMode
 }) => {
+    const { getCategoryColor } = useTheme();
+
     return (
-        <div className="browse-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '32px 48px 16px 48px' }}>
-            <div style={{ display: 'flex', gap: '6px' }}>
+        <div className="browse-toolbar w-full max-w-[1600px] mx-auto self-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '20px 40px 20px 40px' }}>
+            <div className="hover-scrollbar" style={{ display: 'flex', gap: '4px', background: darkMode ? '#1e293b' : '#f1f5f9', padding: '4px', borderRadius: '12px', border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`, overflowX: 'auto', flexWrap: 'nowrap', maxWidth: '600px' }}>
                 <button
                     className={`browse-filter-pill ${activeFilters.length === 0 || activeFilters.includes('all') ? 'active' : ''}`}
                     onClick={() => handleFilterToggle('all')}
-                    style={{ margin: 0, border: 'none', background: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-text)' : 'transparent', color: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-bg)' : 'var(--color-text-muted)', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                    style={{ margin: 0, border: 'none', background: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-surface)' : 'transparent', color: (activeFilters.length === 0 || activeFilters.includes('all')) ? 'var(--color-text)' : 'var(--color-text-muted)', fontWeight: 500, padding: '8px 16px', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: (activeFilters.length === 0 || activeFilters.includes('all')) ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', whiteSpace: 'nowrap' }}
                 >
                     Tous
                 </button>
                 {Array.from(new Set(cards.map(c => c.type))).filter(t => t !== COURSE_TYPE).sort().map(type => {
                     const isActive = activeFilters.includes(type);
+                    const typeColor = getCategoryColor(type);
                     return (
                         <button
                             key={type}
                             className={`browse-filter-pill ${isActive ? 'active' : ''}`}
                             onClick={() => handleFilterToggle(type)}
-                            style={{ margin: 0, border: 'none', background: isActive ? getCategoryColor(type) : 'transparent', color: isActive ? '#ffffff' : 'var(--color-text-muted)', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                            style={{ margin: 0, border: 'none', background: isActive ? `${typeColor}1A` : 'transparent', color: isActive ? typeColor : 'var(--color-text-muted)', fontWeight: isActive ? 600 : 500, padding: '8px 16px', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: isActive ? `0 0 0 1px ${typeColor}33` : 'none', whiteSpace: 'nowrap' }}
                         >
                             {getFilterLabel(type)}
                         </button>
@@ -58,7 +61,7 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                     <button
                         className="browse-filter-pill active"
                         onClick={() => handleFilterToggle('needs-review')}
-                        style={{ margin: 0, border: 'none', background: 'var(--color-warning)', color: 'var(--color-surface)', fontWeight: 600, padding: '8px 20px', borderRadius: '12px', fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                        style={{ margin: 0, border: 'none', background: 'var(--color-warning)', color: 'var(--color-surface)', fontWeight: 500, padding: '8px 16px', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                     >
                         À réviser
                     </button>
@@ -69,13 +72,11 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                 {/* Add Button */}
                 <button
                     onClick={() => setAddDataMode('create')}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-text)', color: 'var(--color-bg)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)' }}
-                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                    onFocus={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                    onBlur={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    className="extnd-btn extnd-btn-primary"
+                    style={{ borderRadius: '12px' }}
                 >
-                    + Nouvelle Fiche
+                    <Plus size={16} />
+                    Nouvelle Fiche
                 </button>
 
                 {/* Sort Options */}
