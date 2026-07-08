@@ -41,6 +41,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
     const [viewingConcept, setViewingConcept] = useState<Card | null>(null);
     const [editingFlashcard, setEditingFlashcard] = useState<Card | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [isBulkAddingFlashcards, setIsBulkAddingFlashcards] = useState(false);
     
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -231,6 +232,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                         updatedAt: Date.now()
                     });
                 }}
+                onBulkAddFlashcard={() => setIsBulkAddingFlashcards(true)}
                 onEditFlashcard={(flashcardId) => {
                     const fc = cards.find(c => c.id === flashcardId);
                     if (fc) setEditingFlashcard(fc);
@@ -249,6 +251,26 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                     }}
                     onClose={() => setEditingFlashcard(null)}
                     onImport={() => {}}
+                    layout="modal"
+                />
+            )}
+            
+            {isBulkAddingFlashcards && (
+                <AddDataModal
+                    mode="import"
+                    existingCards={existingCards}
+                    onSave={(c) => onSaveCourse(c)}
+                    onImport={(importedCards) => {
+                        importedCards.forEach(c => {
+                             if (!c.parentId && viewingCourse) {
+                                  c.parentId = viewingCourse.id;
+                                  c.nodeType = 'flashcard'; // ensure they are flashcards
+                             }
+                             onSaveCourse(c);
+                        });
+                        setIsBulkAddingFlashcards(false);
+                    }}
+                    onClose={() => setIsBulkAddingFlashcards(false)}
                     layout="modal"
                 />
             )}

@@ -395,25 +395,28 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         const titleTokens = tokenize(card.title).filter(w => !DYNAMIC_STOPWORDS.has(w));
         let infoSum = 0;
 
-        titleTokens.forEach(token => {
+        const uniqueTitleTokens = new Set(titleTokens);
+        uniqueTitleTokens.forEach(token => {
             if (!titleIndex.has(token)) titleIndex.set(token, []);
             titleIndex.get(token)!.push(card.id);
             infoSum += getWeight(token);
         });
 
         // Abbreviation expansion index
-        titleTokens.forEach(token => {
+        uniqueTitleTokens.forEach(token => {
             const abbrKeys = expansionToAbbr.get(token);
             if (abbrKeys) {
                 abbrKeys.forEach(abbrKey => {
                     if (!titleIndex.has(abbrKey)) titleIndex.set(abbrKey, []);
-                    titleIndex.get(abbrKey)!.push(card.id);
+                    if (!titleIndex.get(abbrKey)!.includes(card.id)) {
+                        titleIndex.get(abbrKey)!.push(card.id);
+                    }
                 });
             }
         });
 
         // N-gram index: index title n-grams
-        const titleNgrams = extractNgrams(card.title);
+        const titleNgrams = new Set(extractNgrams(card.title));
         titleNgrams.forEach(ng => {
             if (!ngramIndex.has(ng)) ngramIndex.set(ng, []);
             ngramIndex.get(ng)!.push(card.id);
@@ -521,7 +524,8 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
 
         const potentialMatches = new Map<string, { score: number; matchCount: number; keywords: string[] }>();
 
-        contentTokens.forEach(token => {
+        const uniqueSearchTokens = new Set(contentTokens);
+        uniqueSearchTokens.forEach(token => {
             const matchingCardIds = titleIndex.get(token);
             if (matchingCardIds) {
                 const weight = getWeight(token);
@@ -537,8 +541,8 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
         });
 
         // --- N-gram matching (NEW) ---
-        const contentNgrams = extractNgrams(card.content + ' ' + card.details);
-        contentNgrams.forEach(ng => {
+        const uniqueContentNgrams = new Set(extractNgrams(card.content + ' ' + card.details));
+        uniqueContentNgrams.forEach(ng => {
             const matchingCardIds = ngramIndex.get(ng);
             if (matchingCardIds) {
                 // N-gram IDF: log(N / df) * 1.5 bonus for multi-word specificity

@@ -3,7 +3,7 @@ import type { Card } from '../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import {
     ArrowLeft, PencilSimple, Printer, Trash, CalendarBlank, Hash, Plus,
-    PresentationChart, Brain, CaretDown
+    PresentationChart, Brain, CaretDown, ListPlus
 } from '@phosphor-icons/react';
 import { useCardStore } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
@@ -18,6 +18,7 @@ interface CourseViewerProps {
     onEditConcept?: (conceptId: string) => void;
     onAddFlashcard?: () => void;
     onEditFlashcard?: (flashcardId: string) => void;
+    onBulkAddFlashcard?: () => void;
     onStartReview?: (cardIds: string[], title: string) => void;
 }
 
@@ -30,6 +31,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
     onViewConcept,
     onEditConcept,
     onAddFlashcard,
+    onBulkAddFlashcard,
     onEditFlashcard,
     onStartReview,
 }) => {
@@ -310,57 +312,38 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             </div>
                         </div>
 
-                        {/* Concepts Clés Accordion */}
+                        {/* Content Prose */}
+                        {(course.details || course.content) && (
+                            <div className="prose-container" style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--color-text)' }}>
+                                <MarkdownRenderer content={course.details || course.content || ''} onInternalLinkClick={handleInternalLinkClick} />
+                            </div>
+                        )}
+
+                        {/* Concepts rendering inline */}
                         {course.nodeType === 'course' && conceptCards.length > 0 && (
-                            <details className="concepts-accordion" style={{ 
-                                marginBottom: 48, background: 'var(--color-surface)', 
-                                borderRadius: 16, border: '1px solid var(--color-border)', 
-                            }}>
-                                <summary style={{ 
-                                    padding: '16px 20px', fontSize: 16, fontWeight: 700, 
-                                    color: 'var(--color-text)', display: 'flex', alignItems: 'center', 
-                                    gap: 12, cursor: 'pointer', outline: 'none', listStyle: 'none' 
-                                }}>
-                                    <PresentationChart size={20} weight="duotone" className="text-indigo-500" />
-                                    Concepts Clés de ce cours
-                                    <div style={{ flex: 1 }} />
-                                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', background: 'var(--color-bg)', padding: '2px 8px', borderRadius: 12 }}>
-                                        {conceptCards.length}
-                                    </span>
-                                    <CaretDown size={16} color="var(--color-text-muted)" className="accordion-icon" />
-                                </summary>
-                                <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div style={{ marginTop: 48, borderTop: '2px dashed var(--color-border)', paddingTop: 40 }}>
+                                <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--color-text)', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <PresentationChart size={28} weight="duotone" className="text-indigo-500" />
+                                    Concepts Clés
+                                </h2>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                                     {conceptCards.map(concept => (
-                                        <details key={concept.id} style={{
-                                            background: 'var(--color-bg)',
-                                            borderRadius: 12, border: '1px solid var(--color-border)',
-                                            overflow: 'hidden'
-                                        }}>
+                                        <details key={concept.id} id={`concept-${concept.id}`} style={{ scrollMarginTop: 100 }} open>
                                             <summary style={{
-                                                padding: '16px', fontWeight: 600, fontSize: 15, cursor: 'pointer',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                outline: 'none', listStyle: 'none', color: 'var(--color-text)',
-                                                userSelect: 'none'
+                                                fontSize: 20, fontWeight: 700, color: 'var(--color-text)', marginBottom: 16,
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                cursor: 'pointer', outline: 'none', listStyle: 'none', userSelect: 'none'
                                             }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: getCategoryColor(concept.type) }} />
-                                                    {concept.title}
-                                                </div>
-                                                <CaretDown size={16} color="var(--color-text-muted)" className="accordion-icon" />
+                                                <div style={{ width: 12, height: 12, borderRadius: '50%', background: getCategoryColor(concept.type) }} />
+                                                <div style={{ flex: 1 }}>{concept.title}</div>
+                                                <CaretDown size={20} color="var(--color-text-muted)" className="accordion-icon" style={{ transition: 'transform 0.2s ease' }} />
                                             </summary>
-                                            <div className="prose-container" style={{ padding: '0 16px 16px 16px', borderTop: '1px solid var(--color-border)', paddingTop: 16, fontSize: 14, lineHeight: 1.7, color: 'var(--color-text)' }}>
+                                            <div className="prose-container" style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--color-text)' }}>
                                                 <MarkdownRenderer content={concept.details || concept.content || ''} onInternalLinkClick={handleInternalLinkClick} />
                                             </div>
                                         </details>
                                     ))}
                                 </div>
-                            </details>
-                        )}
-
-                        {/* Content Prose */}
-                        {(course.details || course.content) && (
-                            <div className="prose-container" style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--color-text)' }}>
-                                <MarkdownRenderer content={course.details || course.content || ''} onInternalLinkClick={handleInternalLinkClick} />
                             </div>
                         )}
                     </article>
@@ -406,6 +389,64 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             </div>
                         )}
 
+                        {/* Concepts List Sidebar */}
+                        {conceptCards.length > 0 && (
+                            <div style={{ marginBottom: 32 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                                        Concepts liés
+                                    </h3>
+                                    <button
+                                        onClick={onAddConcept}
+                                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
+                                    >
+                                        <Plus size={16} weight="bold" />
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {conceptCards.map(concept => (
+                                        <div
+                                            key={concept.id}
+                                            onClick={() => {
+                                                const el = document.getElementById(`concept-${concept.id}`);
+                                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                            }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                padding: '12px',
+                                                background: 'var(--color-bg)',
+                                                borderRadius: 10, border: '1px solid var(--color-border)',
+                                                cursor: 'pointer', transition: 'all 0.15s',
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.borderColor = 'var(--color-border)';
+                                            }}
+                                        >
+                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: getCategoryColor(concept.type) }} />
+                                            <div style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 13, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {concept.title}
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onEditConcept?.(concept.id); }}
+                                                style={{
+                                                    background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+                                                    color: 'var(--color-text-muted)', opacity: 0.6
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--color-primary)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.opacity = '0.6'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                                                title="Modifier le concept"
+                                            >
+                                                <PencilSimple size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Flashcards List */}
                         {flashcardCards.length > 0 && (
                             <div style={{ marginTop: flashcardCards.length > 0 ? 0 : 24 }}>
@@ -413,12 +454,24 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                     <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
                                         Flashcards liées
                                     </h3>
-                                    <button
-                                        onClick={onAddFlashcard}
-                                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
-                                    >
-                                        <Plus size={16} weight="bold" />
-                                    </button>
+                                    <div style={{ display: 'flex', gap: 4 }}>
+                                        {onBulkAddFlashcard && (
+                                            <button
+                                                onClick={onBulkAddFlashcard}
+                                                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
+                                                title="Ajout en masse"
+                                            >
+                                                <ListPlus size={16} weight="bold" />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={onAddFlashcard}
+                                            style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
+                                            title="Ajouter une flashcard"
+                                        >
+                                            <Plus size={16} weight="bold" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {flashcardCards.map(fc => (
@@ -470,9 +523,16 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                     <button onClick={onAddConcept} style={{ padding: '10px', borderRadius: 8, background: '#e0e7ff', color: '#4f46e5', fontWeight: 600, fontSize: 13, cursor: 'pointer', border: 'none' }}>
                                         Lier un concept
                                     </button>
-                                    <button onClick={onAddFlashcard} style={{ padding: '10px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
-                                        Créer flashcard
-                                    </button>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <button onClick={onAddFlashcard} style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                                            Flashcard
+                                        </button>
+                                        {onBulkAddFlashcard && (
+                                            <button onClick={onBulkAddFlashcard} style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                                                En masse
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -606,10 +666,8 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 }
                 
                 /* Dark mode adjustments */
-                @media (prefers-color-scheme: dark) {
-                    .sticky-cta {
-                        background: rgba(30,41,59,0.7);
-                    }
+                html.dark .sticky-cta {
+                    background: rgba(30,41,59,0.7);
                 }
 
                 @media (max-width: 900px) {

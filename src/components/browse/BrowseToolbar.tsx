@@ -1,8 +1,10 @@
-import React from 'react';
-import { ArrowsDownUp, SquaresFour, Rows, Export, Plus } from '@phosphor-icons/react';
+import React, { useState } from 'react';
+import { ArrowsDownUp, SquaresFour, Rows, Export, Plus, SpinnerGap } from '@phosphor-icons/react';
 import type { Card } from '../../types';
 import { COURSE_TYPE } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
+import { useTier } from '../../lib/useTier';
+import toast from 'react-hot-toast';
 
 import type { AddDataMode } from '../../store/useUIStore';
 
@@ -31,6 +33,44 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
     sortOption, setSortOption, exportToAnki, darkMode
 }) => {
     const { getCategoryColor } = useTheme();
+    const { canAccess } = useTier();
+    const canExportAnki = canAccess('anki_export');
+
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleAnkiExport = async () => {
+        if (!canExportAnki) {
+            toast.error('Export Anki réservé aux abonnés Pro. Activez votre licence dans les paramètres.', {
+                duration: 4000,
+                icon: '🔒',
+            });
+            return;
+        }
+        if (sortedCards.length === 0) {
+            toast.error('Aucune fiche à exporter.');
+            return;
+        }
+
+        setIsExporting(true);
+        const toastId = toast.loading(`Export de ${sortedCards.length} fiche${sortedCards.length > 1 ? 's' : ''}…`);
+
+        try {
+            await exportToAnki('SecondBrain', sortedCards);
+            toast.success(`${sortedCards.length} fiche${sortedCards.length > 1 ? 's' : ''} exportée${sortedCards.length > 1 ? 's' : ''} avec succès !`, {
+                id: toastId,
+                icon: '✅',
+                duration: 3000,
+            });
+        } catch (err: any) {
+            console.error('Anki export error:', err);
+            toast.error(err?.message ?? 'Erreur lors de l\'export Anki.', {
+                id: toastId,
+                duration: 4000,
+            });
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     return (
         <div className="browse-toolbar w-full max-w-[1600px] mx-auto self-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', padding: '20px 40px 20px 40px' }}>
@@ -84,8 +124,8 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <ArrowsDownUp size={16} color="var(--color-text-muted)" />
                         <div style={{ position: 'relative' }}>
-                            <select 
-                                value={sortOption} 
+                            <select
+                                value={sortOption}
                                 onChange={(e) => setSortOption(e.target.value as SortOption)}
                                 style={{
                                     appearance: 'none',
@@ -138,18 +178,47 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                         </button>
                     </div>
                 )}
-                
-                {/* Export Anki */}
+
+                {/* Export Anki — with tier check, loading state, and toast feedback */}
                 <button
-                    onClick={() => exportToAnki('My_Deck', sortedCards).catch(err => console.error("Anki export error:", err))}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 16px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
-                    onMouseOver={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
-                    onFocus={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.borderColor = 'var(--color-text-muted)'; }}
-                    onBlur={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
-                    title="Exporter ces cartes vers Anki"
+                    onClick={handleAnkiExport}
+                    disabled={isExporting}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: canExportAnki ? 'transparent' : (darkMode ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.06)'),
+                        color: canExportAnki ? 'var(--color-text-muted)' : '#818cf8',
+                        border: `1px solid ${canExportAnki ? 'var(--color-border)' : 'rgba(99,102,241,0.3)'}`,
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        cursor: isExporting ? 'wait' : 'pointer',
+                        transition: 'all 0.2s',
+                        opacity: isExporting ? 0.7 : 1,
+                    }}
+                    onMouseOver={(e) => {
+                        if (!isExporting) {
+                            e.currentTarget.style.color = canExportAnki ? 'var(--color-text)' : '#a5b4fc';
+                            e.currentTarget.style.borderColor = canExportAnki ? 'var(--color-text-muted)' : 'rgba(99,102,241,0.5)';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.color = canExportAnki ? 'var(--color-text-muted)' : '#818cf8';
+                        e.currentTarget.style.borderColor = canExportAnki ? 'var(--color-border)' : 'rgba(99,102,241,0.3)';
+                    }}
+                    title={canExportAnki ? `Exporter ${sortedCards.length} fiche${sortedCards.length > 1 ? 's' : ''} vers Anki` : 'Fonctionnalité Pro — Activez votre licence'}
                 >
-                    <Export size={16} /> Export Anki
+                    {isExporting ? (
+                        <SpinnerGap size={16} className="animate-spin" />
+                    ) : (
+                        <>
+                            {!canExportAnki && <span style={{ fontSize: '12px' }}>🔒</span>}
+                            <Export size={16} />
+                        </>
+                    )}
+                    {isExporting ? 'Export…' : 'Anki'}
                 </button>
             </div>
         </div>
