@@ -59,7 +59,6 @@ export function useReviewSession(cards: Card[]) {
             cardIds: fallback.map((c) => c.id),
             title: finalCards.length > 0 ? (tags && tags.length > 0 ? `Révision planifiée (${tags.join(', ')})` : 'Révision planifiée (FSRS)') : 'Session découverte',
         });
-        setActiveSection('cards');
     }, [cards, setActiveSection]);
 
     const startIntensiveReview = useCallback(() => {
@@ -70,7 +69,6 @@ export function useReviewSession(cards: Card[]) {
             cardIds: selected.map((c) => c.id),
             title: 'Bachotage Intensif',
         });
-        setActiveSection('cards');
     }, [cards, setActiveSection]);
 
     const startCourseReview = useCallback((courseId: string, title: string) => {
@@ -86,7 +84,6 @@ export function useReviewSession(cards: Card[]) {
             cardIds: shuffled.map(c => c.id),
             title,
         });
-        setActiveSection('cards');
     }, [cards, setActiveSection]);
 
     
@@ -126,7 +123,6 @@ export function useReviewSession(cards: Card[]) {
             cardIds: shuffled.map(c => c.id),
             title: 'Deck Personnalisé',
         });
-        setActiveSection('cards');
     }, [cards, setActiveSection]);
 
     const startQuizReview = useCallback(() => {
@@ -139,7 +135,6 @@ export function useReviewSession(cards: Card[]) {
             cardIds: shuffled.map(c => c.id),
             title: 'Quiz Express',
         });
-        setActiveSection('cards');
     }, [cards, setActiveSection]);
 
     return {
