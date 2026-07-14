@@ -47,18 +47,28 @@ export const useFirebaseSync = () => {
                     migrationToastShown = false;
                     lastMigrationUid = user.uid;
                 }
+                
+                const offlineCards = localCards.filter(c => c.ownerUid === null || c.ownerUid === undefined);
                 let migratedCount = 0;
-                for (const localCard of localCards) {
-                    if (localCard.ownerUid === null || localCard.ownerUid === undefined) {
-                        // Adopt this card: stamp the user's uid
-                        const adopted: Card = { ...localCard, ownerUid: user.uid };
-                        const idx = mergedCards.findIndex(c => c.id === adopted.id);
-                        if (idx >= 0) mergedCards[idx] = adopted;
-                        const cardRef = doc(db, `users/${user.uid}/cards`, adopted.id);
-                        batch.set(cardRef, sanitizeForFirebase(adopted));
-                        batchCount++;
-                        migratedCount++;
-                        hasLocalChanges = true;
+                
+                if (offlineCards.length > 0 && !sessionStorage.getItem('extnd_ignore_offline')) {
+                    const shouldAdopt = window.confirm(
+                        `Vous avez ${offlineCards.length} fiche(s) créée(s) hors-ligne.\n\nVoulez-vous les fusionner avec votre compte synchronisé ?`
+                    );
+                    
+                    if (shouldAdopt) {
+                        for (const localCard of offlineCards) {
+                            const adopted: Card = { ...localCard, ownerUid: user.uid };
+                            const idx = mergedCards.findIndex(c => c.id === adopted.id);
+                            if (idx >= 0) mergedCards[idx] = adopted;
+                            const cardRef = doc(db, `users/${user.uid}/cards`, adopted.id);
+                            batch.set(cardRef, sanitizeForFirebase(adopted));
+                            batchCount++;
+                            migratedCount++;
+                            hasLocalChanges = true;
+                        }
+                    } else {
+                        sessionStorage.setItem('extnd_ignore_offline', 'true');
                     }
                 }
 

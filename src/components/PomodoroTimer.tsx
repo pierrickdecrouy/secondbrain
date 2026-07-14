@@ -44,45 +44,50 @@ export const PomodoroTimer: React.FC = () => {
                     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.08);
                 }
                 .pomo-pill.idle {
-                    background-color: var(--color-surface);
-                    border-color: var(--color-border);
+                    background-color: var(--pomo-idle-bg);
+                    border-color: var(--pomo-idle-border);
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
                 }
 
                 /* Light mode */
                 :root {
+                    --pomo-idle-bg: rgba(15, 23, 42, 0.04);
+                    --pomo-idle-border: rgba(15, 23, 42, 0.1);
                     --pomo-bg-running: rgba(13, 148, 136, 0.04);
                     --pomo-border-running: rgba(13, 148, 136, 0.25);
-                    --pomo-time-idle: #475569;
+                    --pomo-time-idle: #334155;
                     --pomo-time-running: #0f766e;
                     --pomo-time-urgent: #e11d48;
-                    --pomo-dot-empty: #e2e8f0;
-                    --pomo-divider: #e2e8f0;
-                    --pomo-btn-muted: #94a3b8;
+                    --pomo-dot-empty: #cbd5e1;
+                    --pomo-divider: #cbd5e1;
+                    --pomo-btn-muted: #64748b;
                     --pomo-btn-hover: #0d9488;
                     --pomo-btn-hover-bg: rgba(13, 148, 136, 0.06);
-                    --pomo-reset-color: #cbd5e1;
+                    --pomo-reset-color: #94a3b8;
                 }
 
                 /* Dark mode */
                 html.dark {
+                    --pomo-idle-bg: rgba(255, 255, 255, 0.05);
+                    --pomo-idle-border: rgba(255, 255, 255, 0.1);
                     --pomo-bg-running: rgba(13, 148, 136, 0.06);
                     --pomo-border-running: rgba(13, 148, 136, 0.3);
-                    --pomo-time-idle: #94a3b8;
+                    --pomo-time-idle: #f1f5f9;
                     --pomo-time-running: #34d399;
                     --pomo-time-urgent: #fb7185;
-                    --pomo-dot-empty: #334155;
-                    --pomo-divider: #1e293b;
-                    --pomo-btn-muted: #64748b;
+                    --pomo-dot-empty: #475569;
+                    --pomo-divider: #334155;
+                    --pomo-btn-muted: #94a3b8;
                     --pomo-btn-hover: #34d399;
                     --pomo-btn-hover-bg: rgba(52, 211, 153, 0.08);
-                    --pomo-reset-color: #475569;
+                    --pomo-reset-color: #64748b;
                 }
 
                 .pomo-open-btn {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    padding: 6px 12px 6px 14px;
+                    gap: 12px;
+                    padding: 8px 16px 8px 18px;
                     border-radius: 999px;
                     background: transparent;
                     border: none;
@@ -91,13 +96,13 @@ export const PomodoroTimer: React.FC = () => {
                     transition: background 0.15s ease;
                 }
                 .pomo-open-btn:hover {
-                    background: var(--color-surface-hover);
+                    background: var(--pomo-bg-running);
                 }
                 .pomo-open-btn:focus { outline: none; }
 
                 .pomo-time {
                     font-family: var(--font-mono, 'JetBrains Mono', monospace);
-                    font-size: 13px;
+                    font-size: 16px;
                     font-weight: 700;
                     letter-spacing: -0.01em;
                     font-variant-numeric: tabular-nums;
@@ -109,14 +114,14 @@ export const PomodoroTimer: React.FC = () => {
 
                 .pomo-divider {
                     width: 1px;
-                    height: 14px;
+                    height: 18px;
                     background: var(--pomo-divider);
                     flex-shrink: 0;
                 }
 
                 .pomo-ctrl-btn {
-                    width: 28px;
-                    height: 28px;
+                    width: 32px;
+                    height: 32px;
                     border-radius: 50%;
                     border: none;
                     background: transparent;
@@ -133,7 +138,7 @@ export const PomodoroTimer: React.FC = () => {
                 }
                 .pomo-ctrl-btn.reset-btn { color: var(--pomo-reset-color); }
                 .pomo-ctrl-btn.reset-btn:hover {
-                    background: var(--color-surface-hover);
+                    background: var(--pomo-bg-running);
                     color: var(--pomo-btn-muted);
                 }
                 .pomo-ctrl-btn.urgent-play:hover {
@@ -196,12 +201,12 @@ export const PomodoroTimer: React.FC = () => {
                         title={isRunning ? 'Pause' : 'Démarrer'}
                     >
                         {isRunning ? (
-                            <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24">
+                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
                                 <rect x="5" y="4" width="5" height="16" rx="1.5" />
                                 <rect x="14" y="4" width="5" height="16" rx="1.5" />
                             </svg>
                         ) : (
-                            <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24" style={{ marginLeft: '1px' }}>
+                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" style={{ marginLeft: '1px' }}>
                                 <path d="M8 5v14l11-7z" />
                             </svg>
                         )}
@@ -212,7 +217,7 @@ export const PomodoroTimer: React.FC = () => {
                         onClick={reset}
                         title="Réinitialiser"
                     >
-                        <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115 0M20 15a9 9 0 01-15 0"/>
                         </svg>
                     </button>

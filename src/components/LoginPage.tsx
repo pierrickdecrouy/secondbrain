@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface LoginPageProps {
     onBypass: () => void;
@@ -9,6 +10,7 @@ interface LoginPageProps {
 type AuthMode = 'login' | 'signup' | 'reset';
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
+    const { t } = useTranslation();
     const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -60,7 +62,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
         try {
             if (mode === 'reset') {
                 await resetPassword(email);
-                setSuccess('Lien de réinitialisation envoyé.');
+                setSuccess(t('auth.reset_sent'));
             } else if (mode === 'signup') {
                 await signUpWithEmail(email, password, name);
             } else {
@@ -68,26 +70,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
             }
         } catch (err: any) {
             const c = err.code;
-            if (c === 'auth/email-already-in-use') setError('Cet email est déjà utilisé.');
-            else if (c === 'auth/invalid-email') setError('Adresse email invalide.');
-            else if (c === 'auth/wrong-password' || c === 'auth/invalid-credential') setError('Email ou mot de passe incorrect.');
-            else if (c === 'auth/weak-password') setError('Mot de passe trop court (6 car. min.).');
-            else if (c === 'auth/user-not-found') setError('Aucun compte pour cet email.');
-            else setError('Une erreur est survenue.');
+            if (c === 'auth/email-already-in-use') setError(t('auth.email_in_use'));
+            else if (c === 'auth/invalid-email') setError(t('auth.invalid_email'));
+            else if (c === 'auth/wrong-password' || c === 'auth/invalid-credential') setError(t('auth.wrong_password'));
+            else if (c === 'auth/weak-password') setError(t('auth.weak_password'));
+            else if (c === 'auth/user-not-found') setError(t('auth.user_not_found'));
+            else setError(t('auth.error_generic'));
         } finally { setLoading(false); }
     };
 
     const handleGoogle = async () => {
         setError(''); setLoading(true);
         try { await signInWithGoogle(); }
-        catch { setError('Connexion Google annulée.'); }
+        catch { setError(t('auth.google_cancelled')); }
         finally { setLoading(false); }
     };
 
     const subtitles: Record<AuthMode, string> = {
-        login: 'Connectez-vous pour accéder à votre espace.',
-        signup: 'Créez votre compte et commencez à apprendre.',
-        reset: 'Entrez votre email pour recevoir un lien.',
+        login: t('auth.login'),
+        signup: t('auth.signup'),
+        reset: t('auth.reset'),
     };
 
     const inp: React.CSSProperties = {
@@ -183,21 +185,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                         <AnimatePresence>
                             {mode === 'signup' && (
                                 <motion.div key="name" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} style={{ overflow: 'hidden' }}>
-                                    <input type="text" placeholder="Prénom" value={name} onChange={e => setName(e.target.value)} required style={inp}
+                                    <input type="text" placeholder={t('auth.name_placeholder')} value={name} onChange={e => setName(e.target.value)} required style={inp}
                                         onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
                                         onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.11)')} />
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        <input type="email" placeholder="Adresse email" value={email} onChange={e => setEmail(e.target.value)} required style={inp}
+                        <input type="email" placeholder={t('auth.email_placeholder')} value={email} onChange={e => setEmail(e.target.value)} required style={inp}
                             onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
                             onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.11)')} />
 
                         <AnimatePresence>
                             {mode !== 'reset' && (
                                 <motion.div key="pwd" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} style={{ overflow: 'hidden' }}>
-                                    <input type="password" placeholder={mode === 'signup' ? 'Mot de passe (6 car. min.)' : 'Mot de passe'} value={password} onChange={e => setPassword(e.target.value)} required style={inp}
+                                    <input type="password" placeholder={t('auth.password_placeholder')} value={password} onChange={e => setPassword(e.target.value)} required style={inp}
                                         onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
                                         onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.11)')} />
                                 </motion.div>
@@ -208,7 +210,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                             <div style={{ textAlign: 'right', marginTop: '-2px' }}>
                                 <button type="button" onClick={() => { setMode('reset'); setError(''); setSuccess(''); }}
                                     style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                                    Mot de passe oublié ?
+                                    {t('auth.switch_reset')}
                                 </button>
                             </div>
                         )}
@@ -224,7 +226,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
 
                         <motion.button type="submit" whileHover={{ scale: 1.02, boxShadow: '0 0 36px rgba(16,185,129,0.4)' }} whileTap={{ scale: 0.97 }} disabled={loading}
                             style={{ width: '100%', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', padding: '13px', fontSize: '0.9rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, fontFamily: 'inherit', marginTop: '2px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)', transition: 'opacity 0.2s' }}>
-                            {loading ? '…' : mode === 'login' ? 'Se connecter' : mode === 'signup' ? 'Créer mon compte' : 'Envoyer le lien'}
+                            {loading ? '…' : mode === 'login' ? t('auth.btn_login') : mode === 'signup' ? t('auth.btn_signup') : t('auth.btn_reset')}
                         </motion.button>
                     </form>
 
@@ -243,7 +245,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
                                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                                 </svg>
-                                Continuer avec Google
+                                {t('auth.btn_google')}
                             </motion.button>
                         </>
                     )}
@@ -252,31 +254,31 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                     <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                         {mode === 'login' && (
                             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', margin: 0 }}>
-                                Pas de compte ?{' '}
+                                {t('auth.no_account')}{' '}
                                 <button type="button" onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
                                     style={{ background: 'none', border: 'none', color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit' }}>
-                                    S'inscrire
+                                    {t('auth.btn_signup')}
                                 </button>
                             </p>
                         )}
                         {mode === 'signup' && (
                             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', margin: 0 }}>
-                                Déjà un compte ?{' '}
+                                {t('auth.has_account')}{' '}
                                 <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
                                     style={{ background: 'none', border: 'none', color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit' }}>
-                                    Se connecter
+                                    {t('auth.btn_login')}
                                 </button>
                             </p>
                         )}
                         {mode === 'reset' && (
                             <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
                                 style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                ← Retour
+                                ← {t('auth.back')}
                             </button>
                         )}
                         <button type="button" onClick={onBypass}
                             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.18)', fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.02em' }}>
-                            Continuer sans compte →
+                            {t('auth.bypass')} →
                         </button>
                     </div>
                 </motion.div>

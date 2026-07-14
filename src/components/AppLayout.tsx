@@ -8,7 +8,7 @@ import { LicenseBanner } from './LicenseBanner';
 import { useLicense } from '../lib/useLicense';
 import { useMemo } from 'react';
 
-type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
+type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -163,7 +163,7 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
           onUpgrade={() => onNavigateSettings()} 
         />
 
-        <div className="workspace-content-scroll" style={isHomeSection ? { padding: 0 } : {}}>
+        <div className="workspace-content-scroll" style={(isHomeSection || activeSection === 'add') ? { padding: 0 } : {}}>
           {pendingClusterReview && activeSection === 'network' && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300">
               <div className="bg-indigo-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-3">

@@ -40,7 +40,7 @@ export interface LicenseInfo {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const LEMONSQUEEZY_API = 'https://api.lemonsqueezy.com/v1';
+const LEMONSQUEEZY_API = import.meta.env.VITE_LEMONSQUEEZY_API_URL || 'https://api.lemonsqueezy.com/v1';
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;  // 24h
 const GRACE_PERIOD_MS   =  7 * 24 * 60 * 60 * 1000;  // 7 jours
 const TRIAL_DURATION_MS = 14 * 24 * 60 * 60 * 1000;  // 14 jours

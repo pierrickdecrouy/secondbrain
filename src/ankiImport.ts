@@ -16,7 +16,7 @@ export async function importAnkiPackage(file: File, onProgress: (msg: string) =>
     onProgress("Chargement du moteur SQLite...");
     // Load sql.js wasm from CDN to avoid build setup issues
     const SQL = await initSqlJs({
-        locateFile: () => 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm'
+        locateFile: () => import.meta.env.VITE_SQL_WASM_URL || 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm'
     });
 
     onProgress("Lecture de la base de données...");

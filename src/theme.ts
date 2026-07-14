@@ -1,9 +1,9 @@
 // Core colors for known types
 export const CARD_COLORS: Record<string, string> = {
-    drug: '#0d9488',   // teal-600
-    patho: '#dc2626',  // red-600
-    physio: '#7c3aed', // violet-600
-    data: '#d97706',   // amber-600
+    drug: '#059669',
+    patho: '#f43f5e',
+    physio: '#6366f1',
+    data: '#f59e0b',
 };
 
 export const DEFAULT_CARD_ICONS: Record<string, string> = {
@@ -30,3 +30,13 @@ export function getTypeColor(type: string): string {
     // Saturation 65%, Lightness 45% for good contrast/vibrancy
     return `hsl(${h}, 65%, 45%)`;
 }
+
+// Color palette per subject group (bg bar color, text color for icon)
+export const GROUP_COLORS = [
+    { bar: '#10b981', icon: '#10b981' }, // emerald
+    { bar: '#a855f7', icon: '#a855f7' }, // purple
+    { bar: '#3b82f6', icon: '#3b82f6' }, // blue
+    { bar: '#f43f5e', icon: '#f43f5e' }, // rose
+    { bar: '#f59e0b', icon: '#f59e0b' }, // amber
+    { bar: '#06b6d4', icon: '#06b6d4' }, // cyan
+];

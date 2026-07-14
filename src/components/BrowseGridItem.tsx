@@ -49,7 +49,7 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
             tabIndex={0}
             aria-label={`Ouvrir la carte ${card.title}`}
             aria-pressed={isSelected}
-            className={`glass-panel browse-card ${selectedCardId === card.id && !isSelectionMode ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0B1120]' : ''} ${isSelected ? 'is-selected' : ''}`}
+            className={`glass-panel browse-card transition-all duration-200 h-full ${selectedCardId === card.id && !isSelectionMode ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0B1120]' : ''} ${isSelected ? 'is-selected' : ''}`}
             onClick={handleClick}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -57,7 +57,6 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
                     handleClick(e as any);
                 }
             }}
-            style={{ transition: 'transform 0.2s, box-shadow 0.2s', height: '100%' }}
         >
             {/* Checkbox multi-sélection */}
             <div
@@ -72,31 +71,21 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
 
             <div className="browse-card-header">
                 <span
+                    className="uppercase text-[0.6rem] font-extrabold tracking-[0.05em] flex items-center gap-1 py-[3px] px-[7px] rounded-md shrink-0 border-none"
                     style={{
                         backgroundColor: darkMode ? '#0B1120' : '#f1f5f9',
                         color: getCategoryColor(card.type),
-                        border: 'none',
-                        textTransform: 'uppercase',
-                        fontSize: '0.6rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.05em',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '3px 7px',
-                        borderRadius: '6px',
-                        flexShrink: 0,
                     }}
                 >
                     <DynamicIcon name={getCategoryIcon(card.type)} size={11} /> <span>{card.type}</span>
                 </span>
 
                 {activeFilters.includes('needs-review') && calculateQualityScore(card, card.manualConnections?.length || 0).score < 50 && (
-                    <span style={{ fontSize: '0.6rem', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '2px 5px', borderRadius: '4px', fontWeight: 600, flexShrink: 0 }}>À revoir</span>
+                    <span className="text-[0.6rem] text-red-500 bg-red-500/10 py-[2px] px-[5px] rounded font-semibold shrink-0">À revoir</span>
                 )}
 
                 {(card.progress?.isLeech || (card.progress?.lapses ?? 0) >= 8) && (
-                    <span style={{ fontSize: '0.6rem', color: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '2px 5px', borderRadius: '4px', fontWeight: 600, flexShrink: 0 }}>Leech</span>
+                    <span className="text-[0.6rem] text-yellow-500 bg-yellow-500/10 py-[2px] px-[5px] rounded font-semibold shrink-0">Leech</span>
                 )}
 
                 {onDelete && !isSelectionMode && (
@@ -110,46 +99,40 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
                 )}
             </div>
 
-            <div className="browse-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '6px', color: 'var(--color-text)', lineHeight: 1.25, transition: 'color 0.2s' }}
-                    onMouseOver={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
-                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text)'}
-                >
+            <div className="browse-card-body flex-1 flex flex-col">
+                <h3 className="text-lg font-bold mb-[6px] text-[color:var(--color-text)] leading-tight transition-colors duration-200 hover:text-[color:var(--color-primary)]">
                     {card.title}
                 </h3>
                 {card.subtitle && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div className="text-xs text-[color:var(--color-text-muted)] mb-3 font-semibold uppercase tracking-[0.05em]">
                         {card.subtitle}
                     </div>
                 )}
-                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5, flex: 1 }}>
+                <div className="text-sm text-[color:var(--color-text-muted)] line-clamp-3 overflow-hidden leading-[1.5] flex-1">
                     {(card.details || '').split(/(\*\*.*?\*\*|\*.*?\*)/g).map((part, index) => {
                         if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-                            return <strong key={index} style={{ fontWeight: 600, color: 'var(--color-text)' }}>{part.slice(2, -2)}</strong>;
+                            return <strong key={index} className="font-semibold text-[color:var(--color-text)]">{part.slice(2, -2)}</strong>;
                         }
                         if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-                            return <em key={index} style={{ fontStyle: 'italic' }}>{part.slice(1, -1)}</em>;
+                            return <em key={index} className="italic">{part.slice(1, -1)}</em>;
                         }
                         return <span key={index}>{part}</span>;
                     })}
                 </div>
             </div>
 
-            <div className="browse-card-footer" style={{ borderTop: `1px solid ${darkMode ? '#1e293b' : '#f1f5f9'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', marginTop: '12px' }}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <div className="browse-card-footer flex items-center justify-between pt-3 mt-3 border-t" style={{ borderColor: darkMode ? '#1e293b' : '#f1f5f9' }}>
+                <div className="flex gap-[6px] flex-wrap">
                     {card.tags?.slice(0, 3).map(tag => (
-                        <span key={tag} style={{ fontSize: '0.75rem', color: darkMode ? '#94a3b8' : '#64748b', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', padding: '2px 8px', borderRadius: '6px', fontWeight: 500, transition: 'background-color 0.2s' }}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = darkMode ? '#334155' : '#e2e8f0'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = darkMode ? '#1e293b' : '#f1f5f9'}
-                        >
+                        <span key={tag} className={`text-xs px-2 py-0.5 rounded-md font-medium transition-colors ${darkMode ? 'text-[#94a3b8] bg-[#1e293b] hover:bg-[#334155]' : 'text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0]'}`}>
                             #{tag}
                         </span>
                     ))}
                     {(card.tags?.length || 0) > 3 && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, padding: '2px 6px' }}>+{(card.tags?.length || 0) - 3}</span>
+                        <span className="text-xs text-[color:var(--color-text-muted)] font-medium px-1.5 py-0.5">+{(card.tags?.length || 0) - 3}</span>
                     )}
                 </div>
-                <ArrowRight size={12} color="var(--color-text-muted)" style={{ opacity: 0.5, flexShrink: 0 }} />
+                <ArrowRight size={12} color="var(--color-text-muted)" className="opacity-50 shrink-0" />
             </div>
         </motion.div>
     );

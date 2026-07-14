@@ -186,8 +186,19 @@ export const useCardStore = create<CardState>((set, get) => ({
     const state = get();
     if (state.cardToDelete) {
       const cardId = state.cardToDelete.id;
-      // BUG-1 FIX: Also delete all children (concepts + flashcards) whose parentId matches
-      const childIds = new Set(state.cards.filter(c => c.parentId === cardId).map(c => c.id));
+      
+      // Recurse to find all children (e.g., Course -> Concept -> Flashcard)
+      const getAllChildIds = (parentId: string, allCards: Card[]): string[] => {
+        const directChildren = allCards.filter(c => c.parentId === parentId).map(c => c.id);
+        let allChildIds = [...directChildren];
+        for (const childId of directChildren) {
+          allChildIds = [...allChildIds, ...getAllChildIds(childId, allCards)];
+        }
+        return allChildIds;
+      };
+      
+      const childIds = new Set(getAllChildIds(cardId, state.cards));
+      
       const newCards = state.cards.filter(c => c.id !== cardId && !childIds.has(c.id));
       set({ cards: newCards, cardToDelete: null });
       saveCardsAsync(newCards).catch(console.error);

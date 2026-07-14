@@ -182,6 +182,12 @@ export const DataTab: React.FC = () => {
                     <GhostButton small onClick={handleReset}>Restaurer</GhostButton>
                 </SettingsRow>
                 <SettingsRow
+                    label="Charger les cours de démonstration"
+                    description="Ajoute les fiches d'exemple sur le Diabète à votre collection actuelle."
+                >
+                    <GhostButton small onClick={() => useCardStore.getState().loadDemoData()}>Charger</GhostButton>
+                </SettingsRow>
+                <SettingsRow
                     label="Nettoyer les cartes orphelines"
                     description="Détecte et supprime les cartes dont le parent a été supprimé."
                 >

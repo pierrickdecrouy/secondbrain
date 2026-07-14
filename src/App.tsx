@@ -6,6 +6,7 @@ import {
   lazy,
   Suspense,
 } from "react";
+import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { useNavigation } from "./hooks/useNavigation";
 import { useReviewSession } from "./hooks/useReviewSession";
 import { useFilteredCards } from "./hooks/useFilteredCards";
@@ -16,6 +17,8 @@ import { getLinkFeedback } from "./linkFeedback";
 import { useAppInitialization } from "./hooks/useAppInitialization";
 import { useFirebaseSync } from './hooks/useFirebaseSync';
 import { useAuth } from "./context/AuthContext";
+
+import { AddDataPage } from "./components/AddDataPage";
 import { AppLayout } from "./components/AppLayout";
 import { DetailModal } from "./components/DetailModal";
 import { AddDataModal } from "./components/AddDataModal";
@@ -56,7 +59,8 @@ export type AppSection =
   | "network"
   | "review"
   | "settings"
-  | "stats";
+  | "stats"
+  | "add";
 
 function LoadingFallback() {
   return (
@@ -102,6 +106,21 @@ function AppContent() {
     activeSection,
     setActiveSection,
   } = useUIStore();
+
+  const location = useLocation();
+
+  // Sync URL route to internal activeSection state
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/' && activeSection !== 'dashboard') setActiveSection('dashboard');
+    else if (path === '/courses' && activeSection !== 'courses') setActiveSection('courses');
+    else if ((path === '/cards' || path === '/browse') && activeSection !== 'cards') setActiveSection('cards');
+    else if (path === '/network' && activeSection !== 'network') setActiveSection('network');
+    else if (path === '/review' && activeSection !== 'review') setActiveSection('review');
+    else if (path === '/stats' && activeSection !== 'stats') setActiveSection('stats');
+    else if (path === '/settings' && activeSection !== 'settings') setActiveSection('settings');
+    else if (path === '/add' && activeSection !== 'add') setActiveSection('add');
+  }, [location.pathname, activeSection, setActiveSection]);
 
   const { embeddingsReady } = useAppInitialization();
 
@@ -262,111 +281,113 @@ function AppContent() {
     }
   }, [cards, setReviewSession]);
 
-  const renderMainContent = () => {
-    if (activeSection === "dashboard") {
-      return (
-        <HomePage
-          onNavigate={navigateSection}
-          onAddCard={() => setAddDataMode("create")}
-        />
-      );
-    }
-
-    if (activeSection === "settings") {
-      return <SettingsPage onClose={() => navigateSection("dashboard")} />;
-    }
-    if (activeSection === "stats") {
-      return <StatsPage />;
-    }
-
-    if (activeSection === "review") {
-      const courseCards = cards.filter(c => c.nodeType === 'course');
-      return (
-        <ReviewHubPage
-          onSelectFSRS={startFSRSReview}
-          onSelectCluster={startClusterReviewMode}
-          onSelectIntensive={startIntensiveReview}
-          onSelectCourse={(courseId) => {
-            const course = cards.find(c => c.id === courseId);
-            startCourseReview(courseId, `Révision — ${course?.title || 'Cours'}`);
-          }}
-          onSelectQuiz={startQuizReview}
-          onSelectCustom={startCustomReview}
-          hasEnoughCardsForCluster={
-            cards.filter(
-              (c) => c.manualConnections && c.manualConnections.length > 0,
-            ).length >= 1
+  const renderBrowsePage = (isNetworkOnly: boolean) => (
+    <BrowsePage
+      isNetworkOnly={isNetworkOnly}
+      networkPanelCard={isNetworkContext ? selectedCard : null}
+      networkPanelPinned={networkPanelPinned}
+      onNetworkPanelClose={() => {
+        setSelectedCardId(null);
+        if (!networkPanelPinned) {
+          setPinnedCardId(null);
+        }
+      }}
+      onNetworkPanelPinToggle={() => {
+        setNetworkPanelPinned((prev) => {
+          const next = !prev;
+          if (next && selectedCard) {
+            setPinnedCardId(selectedCard.id);
           }
-          courses={courseCards}
-          allCards={cards}
-        />
-      );
-    }
-
-    if (activeSection === "courses") {
-      return (
-        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircleNotch size={32} className="animate-spin text-blue-500" /></div>}>
-          <CoursesPage onStartReview={(cardIds, title) => setReviewSession({ cardIds, title })} />
-        </Suspense>
-      );
-    }
-
-    return (
-      <BrowsePage
-        isNetworkOnly={activeSection === "network"}
-        networkPanelCard={isNetworkContext ? selectedCard : null}
-        networkPanelPinned={networkPanelPinned}
-        onNetworkPanelClose={() => {
-          setSelectedCardId(null);
-          if (!networkPanelPinned) {
+          if (!next) {
             setPinnedCardId(null);
           }
-        }}
-        onNetworkPanelPinToggle={() => {
-          setNetworkPanelPinned((prev) => {
-            const next = !prev;
-            if (next && selectedCard) {
-              setPinnedCardId(selectedCard.id);
-            }
-            if (!next) {
-              setPinnedCardId(null);
-            }
-            return next;
-          });
-        }}
-        renderNetworkView={() => (
-          <Suspense fallback={<LoadingFallback />}>
-            <NetworkView
-              cards={filteredCards}
-              onNodeClick={(id) => {
-                if (networkPanelPinned) {
-                  setPinnedCardId(id);
-                }
-                setSelectedCardId(id);
-              }}
-              searchQuery={searchQuery}
-              highlightedIds={
-                searchResultIds ? new Set(searchResultIds) : undefined
+          return next;
+        });
+      }}
+      renderNetworkView={() => (
+        <Suspense fallback={<LoadingFallback />}>
+          <NetworkView
+            cards={filteredCards}
+            onNodeClick={(id) => {
+              if (networkPanelPinned) {
+                setPinnedCardId(id);
               }
-              activeFilters={activeFilters}
-              onSuppressConnections={handleSuppressConnections}
-              semanticReady={embeddingsReady}
-              vetoPairs={getLinkFeedback().vetoPairs}
-              typeCompat={getLinkFeedback().typePairScores}
-              activeNodeId={selectedCard?.id}
-              pendingClusterReview={pendingClusterReview}
-              onStartClusterReview={(clusterNodeIds) => {
-                setPendingClusterReview(false);
-                if (clusterNodeIds.length === 0) return;
-                setReviewSession({
-                  cardIds: clusterNodeIds,
-                  title: "Révision par Cluster",
-                });
-              }}
-            />
+              setSelectedCardId(id);
+            }}
+            searchQuery={searchQuery}
+            highlightedIds={
+              searchResultIds ? new Set(searchResultIds) : undefined
+            }
+            activeFilters={activeFilters}
+            onSuppressConnections={handleSuppressConnections}
+            semanticReady={embeddingsReady}
+            vetoPairs={getLinkFeedback().vetoPairs}
+            typeCompat={getLinkFeedback().typePairScores}
+            activeNodeId={selectedCard?.id}
+            pendingClusterReview={pendingClusterReview}
+            onStartClusterReview={(clusterNodeIds) => {
+              setPendingClusterReview(false);
+              if (clusterNodeIds.length === 0) return;
+              setReviewSession({
+                cardIds: clusterNodeIds,
+                title: "Révision par Cluster",
+              });
+            }}
+          />
+        </Suspense>
+      )}
+    />
+  );
+
+  const renderMainContent = () => {
+    return (
+      <Routes>
+        <Route path="/" element={<HomePage onNavigate={navigateSection} onAddCard={() => navigateSection("add")} />} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
+        
+        <Route path="/settings" element={<SettingsPage onClose={() => navigateSection("dashboard")} />} />
+        <Route path="/stats" element={<StatsPage />} />
+        <Route path="/add" element={
+          <AddDataPage
+            existingCards={cards}
+            onSave={handleSaveCardWrapped}
+            onImport={handleBatchImportWrapped}
+          />
+        } />
+        
+        <Route path="/review" element={
+          <ReviewHubPage
+            onSelectFSRS={startFSRSReview}
+            onSelectCluster={startClusterReviewMode}
+            onSelectIntensive={startIntensiveReview}
+            onSelectCourse={(courseId) => {
+              const course = cards.find(c => c.id === courseId);
+              startCourseReview(courseId, `Révision — ${course?.title || 'Cours'}`);
+            }}
+            onSelectQuiz={startQuizReview}
+            onSelectCustom={startCustomReview}
+            hasEnoughCardsForCluster={
+              cards.filter(
+                (c) => c.manualConnections && c.manualConnections.length > 0,
+              ).length >= 1
+            }
+            courses={cards.filter(c => c.nodeType === 'course')}
+            allCards={cards}
+          />
+        } />
+
+        <Route path="/courses" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <CoursesPage onStartReview={(cardIds, title) => setReviewSession({ cardIds, title })} />
           </Suspense>
-        )}
-      />
+        } />
+
+        <Route path="/cards" element={renderBrowsePage(false)} />
+        <Route path="/browse" element={<Navigate to="/cards" replace />} />
+        <Route path="/network" element={renderBrowsePage(true)} />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     );
   };
 
@@ -411,13 +432,9 @@ function AppContent() {
         />
       )}
 
-      {addDataMode !== "none" && (
+      {addDataMode === "edit" && (
         <AddDataModal
-          mode={
-            addDataMode === "create" || addDataMode === "import"
-              ? addDataMode
-              : "edit"
-          }
+          mode="edit"
           card={editingCard}
           existingCards={cards}
           onSave={handleSaveCardWrapped}

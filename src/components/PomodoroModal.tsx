@@ -44,25 +44,16 @@ const ModeTab: React.FC<{
     return (
         <button
             onClick={onClick}
+            className={`flex-1 py-2 px-1 text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 relative border-none ${active && !darkMode ? 'shadow-sm' : ''}`}
             style={{
-                flex: 1, padding: '8px 4px',
-                fontSize: '12px', fontWeight: 600,
                 background: active ? activeBg : 'transparent',
                 color: active ? activeColor : inactiveColor,
-                border: 'none', borderRadius: '8px', cursor: 'pointer',
                 letterSpacing: '0.04em',
-                boxShadow: active && !darkMode ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.2s ease',
-                position: 'relative',
             }}
         >
             {label}
             {active && (
-                <span style={{
-                    position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)',
-                    width: '4px', height: '4px', borderRadius: '50%',
-                    backgroundColor: color, display: 'block',
-                }} />
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full block" style={{ backgroundColor: color }} />
             )}
         </button>
     );
@@ -81,29 +72,26 @@ const SettingsSlider: React.FC<{
     const trackBg = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)';
     const thumbBg = darkMode ? '#ffffff' : '#ffffff';
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '13px', fontWeight: 500, color: labelColor, letterSpacing: '0.02em' }}>
+        <div className="flex flex-col gap-2.5">
+            <div className="flex justify-between items-baseline">
+                <span className="text-[13px] font-medium tracking-[0.02em]" style={{ color: labelColor }}>
                     {label}
                 </span>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: valueColor, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-mono, monospace)' }}>
-                    {value}<span style={{ fontSize: '11px', fontWeight: 500, color: unitColor, marginLeft: '2px' }}>min</span>
+                <span className="text-[15px] font-bold font-mono tabular-nums" style={{ color: valueColor }}>
+                    {value}<span className="text-[11px] font-medium ml-0.5" style={{ color: unitColor }}>min</span>
                 </span>
             </div>
-            <div style={{ position: 'relative', height: '3px', borderRadius: '99px', background: trackBg }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${pct}%`, borderRadius: '99px', background: color, transition: 'width 0.1s' }} />
-                <div style={{
-                    position: 'absolute', top: '50%', left: `calc(${pct}% - 7px)`,
-                    transform: 'translateY(-50%)',
-                    width: '14px', height: '14px', borderRadius: '50%',
+            <div className="relative h-[3px] rounded-full" style={{ background: trackBg }}>
+                <div className="absolute top-0 left-0 h-full rounded-full transition-[width] duration-100" style={{ width: `${pct}%`, background: color }} />
+                <div className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full pointer-events-none transition-[left] duration-100" style={{
+                    left: `calc(${pct}% - 7px)`,
                     background: thumbBg,
                     boxShadow: `0 0 0 3px ${color}60, 0 2px 6px rgba(0,0,0,${darkMode ? 0.3 : 0.15})`,
-                    transition: 'left 0.1s', pointerEvents: 'none',
                 }} />
                 <input
                     type="range" min={min} max={max} step={step} value={value}
                     onChange={e => onChange(parseInt(e.target.value))}
-                    style={{ position: 'absolute', inset: '-6px 0', opacity: 0, width: '100%', cursor: 'pointer', margin: 0 }}
+                    className="absolute -inset-y-1.5 inset-x-0 opacity-0 w-full cursor-pointer m-0"
                 />
             </div>
         </div>
@@ -223,13 +211,11 @@ export const PomodoroModal: React.FC = () => {
 
     return (
         <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-[pomo-backdrop-in_0.25s_ease]"
             style={{
-                position: 'fixed', inset: 0, zIndex: 9999,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
                 background: t.backdrop,
                 backdropFilter: 'blur(24px)',
                 WebkitBackdropFilter: 'blur(24px)',
-                animation: 'pomo-backdrop-in 0.25s ease',
             }}
         >
             <style>{`
@@ -247,19 +233,17 @@ export const PomodoroModal: React.FC = () => {
             `}</style>
 
             {/* Backdrop click to close */}
-            <div style={{ position: 'absolute', inset: 0 }} onClick={closeModal} />
+            <div className="absolute inset-0" onClick={closeModal} />
 
             {/* Card */}
-            <div style={{
-                position: 'relative',
-                width: '100%', maxWidth: '360px',
-                background: t.card,
-                borderRadius: '28px',
-                border: `1px solid ${t.cardBorder}`,
-                boxShadow: t.cardShadow,
-                overflow: 'hidden',
-                animation: 'pomo-card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}>
+            <div 
+                className="relative w-full max-w-[360px] rounded-[28px] overflow-hidden animate-[pomo-card-in_0.3s_cubic-bezier(0.16,1,0.3,1)]"
+                style={{
+                    background: t.card,
+                    border: `1px solid ${t.cardBorder}`,
+                    boxShadow: t.cardShadow,
+                }}
+            >
                 {/* Glow */}
                 <div style={{
                     position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
@@ -270,41 +254,36 @@ export const PomodoroModal: React.FC = () => {
 
                 {view === 'settings' ? (
                     /* ─── SETTINGS ─── */
-                    <div style={{ padding: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                    <div className="p-6">
+                        <div className="flex items-center gap-3 mb-8">
                             <button
-                                className="pm-icon-btn"
+                                className="pm-icon-btn w-8 h-8 rounded-[10px] border-none cursor-pointer flex items-center justify-center transition-all duration-150"
                                 onClick={() => setView('timer')}
                                 style={{
-                                    width: '32px', height: '32px', borderRadius: '10px',
-                                    background: t.iconBtnBg, border: 'none',
-                                    color: t.iconBtnClr, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.15s',
+                                    background: t.iconBtnBg,
+                                    color: t.iconBtnClr,
                                 }}
                             >
                                 <ArrowLeft size={16} />
                             </button>
-                            <span style={{ fontSize: '15px', fontWeight: 600, color: t.textPrimary, letterSpacing: '0.01em' }}>
+                            <span className="text-[15px] font-semibold tracking-[0.01em]" style={{ color: t.textPrimary }}>
                                 Paramètres
                             </span>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', marginBottom: '32px' }}>
+                        <div className="flex flex-col gap-7 mb-8">
                             <SettingsSlider label="Durée Focus"   value={localFocus} min={15} max={60} step={5}  color={modeColors.focus}      darkMode={darkMode} onChange={setLocalFocus} />
                             <SettingsSlider label="Pause courte"  value={localShort} min={2}  max={15} step={1}  color={modeColors.shortBreak}  darkMode={darkMode} onChange={setLocalShort} />
                             <SettingsSlider label="Pause longue"  value={localLong}  min={10} max={30} step={5}  color={modeColors.longBreak}   darkMode={darkMode} onChange={setLocalLong} />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '10px' }}>
+                        <div className="flex gap-2.5">
                             <button
-                                className="pm-cancel-btn"
+                                className="pm-cancel-btn flex-1 p-3 rounded-[14px] text-[14px] font-semibold cursor-pointer transition-all duration-150"
                                 onClick={() => setView('timer')}
                                 style={{
-                                    flex: 1, padding: '12px', borderRadius: '14px',
                                     background: t.cancelBg, border: t.cancelBorder,
-                                    color: t.cancelColor, fontSize: '14px', fontWeight: 600,
-                                    cursor: 'pointer', transition: 'all 0.15s',
+                                    color: t.cancelColor,
                                 }}
                             >
                                 Annuler
@@ -325,30 +304,21 @@ export const PomodoroModal: React.FC = () => {
                     </div>
                 ) : (
                     /* ─── TIMER ─── */
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div className="flex flex-col items-center">
                         {/* Top bar */}
-                        <div style={{
-                            display: 'flex', alignItems: 'center', gap: '4px',
-                            padding: '16px 16px 0', width: '100%',
-                        }}>
-                            <div style={{
-                                flex: 1, display: 'flex', gap: '2px',
-                                background: t.tabBg, borderRadius: '12px', padding: '4px',
-                            }}>
+                        <div className="flex items-center gap-1 pt-4 px-4 w-full">
+                            <div className="flex-1 flex gap-0.5 p-1 rounded-xl" style={{ background: t.tabBg }}>
                                 <ModeTab label="Focus"  active={mode === 'focus'}      color={modeColors.focus}      darkMode={darkMode} onClick={() => switchMode('focus')} />
                                 <ModeTab label="Pause"  active={mode === 'shortBreak'} color={modeColors.shortBreak} darkMode={darkMode} onClick={() => switchMode('shortBreak')} />
                                 <ModeTab label="Longue" active={mode === 'longBreak'}  color={modeColors.longBreak}  darkMode={darkMode} onClick={() => switchMode('longBreak')} />
                             </div>
 
                             <button
-                                className="pm-icon-btn"
+                                className="pm-icon-btn ml-2 w-[34px] h-[34px] rounded-[10px] border-none cursor-pointer flex items-center justify-center transition-all duration-150 shrink-0"
                                 onClick={() => setView('settings')}
                                 style={{
-                                    marginLeft: '8px', width: '34px', height: '34px', borderRadius: '10px',
-                                    background: t.iconBtnBg, border: 'none',
-                                    color: t.iconBtnClr, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.15s', flexShrink: 0,
+                                    background: t.iconBtnBg,
+                                    color: t.iconBtnClr,
                                 }}
                                 title="Paramètres"
                             >
@@ -356,14 +326,11 @@ export const PomodoroModal: React.FC = () => {
                             </button>
 
                             <button
-                                className="pm-icon-btn"
+                                className="pm-icon-btn w-[34px] h-[34px] rounded-[10px] border-none cursor-pointer flex items-center justify-center transition-all duration-150 shrink-0"
                                 onClick={closeModal}
                                 style={{
-                                    width: '34px', height: '34px', borderRadius: '10px',
-                                    background: t.iconBtnBg, border: 'none',
-                                    color: t.iconBtnClr, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.15s', flexShrink: 0,
+                                    background: t.iconBtnBg,
+                                    color: t.iconBtnClr,
                                 }}
                             >
                                 <X size={15} />
@@ -371,51 +338,32 @@ export const PomodoroModal: React.FC = () => {
                         </div>
 
                         {/* Ring + time */}
-                        <div style={{
-                            position: 'relative',
-                            width: RING, height: RING,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            margin: '32px 0 24px',
-                        }}>
+                        <div className="relative flex items-center justify-center my-8" style={{ width: RING, height: RING }}>
                             <ProgressRing
                                 size={RING} stroke={STROKE}
                                 progress={progress} color={color}
                                 trackColor={t.ringTrack}
                             />
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                <div style={{
-                                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                                    fontSize: '52px', fontWeight: 800, letterSpacing: '-0.03em',
-                                    color: t.textPrimary, lineHeight: 1,
-                                    fontVariantNumeric: 'tabular-nums',
-                                    transition: 'color 0.4s',
-                                }}>
-                                    {mm}<span style={{ color: t.textSub, fontWeight: 300 }}>:</span>{ss}
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="font-mono text-[52px] font-extrabold tracking-[-0.03em] leading-none tabular-nums transition-colors duration-400" style={{ color: t.textPrimary }}>
+                                    {mm}<span className="font-light" style={{ color: t.textSub }}>:</span>{ss}
                                 </div>
-                                <div style={{
-                                    fontSize: '11px', fontWeight: 600,
-                                    color: color, letterSpacing: '0.12em', textTransform: 'uppercase',
-                                    transition: 'color 0.4s',
-                                }}>
+                                <div className="text-[11px] font-semibold tracking-[0.12em] uppercase transition-colors duration-400" style={{ color: color }}>
                                     {modeLabels[mode]}
                                 </div>
                             </div>
                         </div>
 
                         {/* Cycle dots */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                            <span style={{ fontSize: '11px', color: t.textSub, fontWeight: 500, letterSpacing: '0.05em' }}>
+                        <div className="flex items-center gap-3 mb-8">
+                            <span className="text-[11px] font-medium tracking-[0.05em]" style={{ color: t.textSub }}>
                                 {cycleCount} session{cycleCount > 1 ? 's' : ''}
                             </span>
-                            <div style={{ display: 'flex', gap: '5px' }}>
+                            <div className="flex gap-[5px]">
                                 {[0, 1, 2, 3].map(i => (
-                                    <span key={i} style={{
-                                        display: 'block',
+                                    <span key={i} className="block h-[6px] rounded-full transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]" style={{
                                         width: i < completedInRound ? '20px' : '6px',
-                                        height: '6px',
-                                        borderRadius: '99px',
                                         background: i < completedInRound ? color : t.cycleEmpty,
-                                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                                         boxShadow: i < completedInRound ? `0 0 8px ${color}55` : 'none',
                                     }} />
                                 ))}
@@ -423,16 +371,13 @@ export const PomodoroModal: React.FC = () => {
                         </div>
 
                         {/* Controls */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                        <div className="flex items-center gap-3 mb-8">
                             <button
-                                className="pm-ctrl-btn"
+                                className="pm-ctrl-btn w-11 h-11 rounded-full cursor-pointer flex items-center justify-center transition-all duration-150"
                                 onClick={reset}
                                 style={{
-                                    width: '44px', height: '44px', borderRadius: '50%',
                                     background: t.ctrlBg, border: t.ctrlBorder,
-                                    color: t.ctrlColor, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.15s',
+                                    color: t.ctrlColor,
                                 }}
                                 title="Réinitialiser"
                             >
@@ -442,13 +387,10 @@ export const PomodoroModal: React.FC = () => {
                             </button>
 
                             <button
-                                className="pm-play-btn"
+                                className="pm-play-btn w-[72px] h-[72px] rounded-full border-none text-white cursor-pointer flex items-center justify-center"
                                 onClick={isRunning ? pause : start}
                                 style={{
-                                    width: '72px', height: '72px', borderRadius: '50%',
                                     background: `linear-gradient(145deg, ${color}ee, ${color}99)`,
-                                    border: 'none', color: '#fff', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: `0 8px 32px ${color}55, inset 0 1px 0 rgba(255,255,255,0.25)`,
                                 }}
                                 title={isRunning ? 'Pause' : 'Démarrer'}
@@ -459,14 +401,14 @@ export const PomodoroModal: React.FC = () => {
                                         <rect x="14" y="4" width="5" height="16" rx="1.5" />
                                     </svg>
                                 ) : (
-                                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" style={{ marginLeft: '3px' }}>
+                                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" className="ml-[3px]">
                                         <path d="M8 5v14l11-7z" />
                                     </svg>
                                 )}
                             </button>
 
                             <button
-                                className="pm-ctrl-btn"
+                                className="pm-ctrl-btn w-11 h-11 rounded-full cursor-pointer flex items-center justify-center transition-all duration-150"
                                 onClick={() => {
                                     const nextMode: PomodoroMode = mode === 'focus'
                                         ? ((cycleCount + 1) % 4 === 0 ? 'longBreak' : 'shortBreak')
@@ -474,11 +416,8 @@ export const PomodoroModal: React.FC = () => {
                                     switchMode(nextMode);
                                 }}
                                 style={{
-                                    width: '44px', height: '44px', borderRadius: '50%',
                                     background: t.ctrlBg, border: t.ctrlBorder,
-                                    color: t.ctrlColor, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.15s',
+                                    color: t.ctrlColor,
                                 }}
                                 title="Session suivante"
                             >

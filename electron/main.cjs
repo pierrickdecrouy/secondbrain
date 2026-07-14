@@ -251,27 +251,33 @@ ipcMain.handle('remove-setting', async (event, key) => {
 });
 
 // Vector Index Persistence
-const vectorIndexPath = path.join(userDataPath, 'vector-index.bin');
+const getVectorIndexPath = (shardId = 'global') => {
+    // Sanitize shardId to prevent directory traversal
+    const safeShardId = path.basename(shardId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    return path.join(userDataPath, `vector-index-${safeShardId}.bin`);
+};
 
-ipcMain.handle('load-vector-index', async () => {
+ipcMain.handle('load-vector-index', async (event, shardId = 'global') => {
     try {
-        if (fs.existsSync(vectorIndexPath)) {
-            const buffer = fs.readFileSync(vectorIndexPath);
+        const filePath = getVectorIndexPath(shardId);
+        if (fs.existsSync(filePath)) {
+            const buffer = fs.readFileSync(filePath);
             return new Uint8Array(buffer);
         }
         return null;
     } catch (error) {
-        console.error('Error loading vector index:', error);
+        console.error(`Error loading vector index for shard ${shardId}:`, error);
         return null;
     }
 });
 
-ipcMain.handle('save-vector-index', async (event, buffer) => {
+ipcMain.handle('save-vector-index', async (event, buffer, shardId = 'global') => {
     try {
-        fs.writeFileSync(vectorIndexPath, Buffer.from(buffer));
+        const filePath = getVectorIndexPath(shardId);
+        fs.writeFileSync(filePath, Buffer.from(buffer));
         return { success: true };
     } catch (error) {
-        console.error('Error saving vector index:', error);
+        console.error(`Error saving vector index for shard ${shardId}:`, error);
         return { success: false, error: error.message };
     }
 });

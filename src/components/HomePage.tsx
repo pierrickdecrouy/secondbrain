@@ -58,7 +58,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: 'var(--color-bg)', 
-                backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                backgroundImage: 'radial-gradient(var(--color-border) 1px, transparent 1px)',
                 backgroundSize: '40px 40px' 
             }}
         >
@@ -75,7 +75,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 
                 {/* Welcome Message */}
                 <div style={{ marginBottom: '24px', paddingLeft: '16px' }}>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
                         {getGreeting()}, <span style={{ color: '#4f46e5' }}>{userName}</span>
                     </h1>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem' }}>
@@ -153,7 +153,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                                     <Brain size={24} weight="duotone" />
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Sessions</h2>
+                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>Sessions</h2>
                                     <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#4f46e5', margin: '2px 0 0 0' }}>
                                         {totalToReview > 0 ? `${totalToReview} attente` : 'À jour'}
                                     </p>
@@ -191,7 +191,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                                     <BookOpen size={24} weight="duotone" />
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Cours</h2>
+                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>Cours</h2>
                                     <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#d97706', margin: '2px 0 0 0' }}>
                                         Fiches structurées
                                     </p>
@@ -203,7 +203,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                         </div>
                         <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                             <button style={{ 
-                                padding: '8px 20px', backgroundColor: 'var(--color-surface)', color: '#334155', 
+                                padding: '8px 20px', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', 
                                 border: '1px solid var(--color-border)', fontSize: '0.8125rem', fontWeight: 600, borderRadius: '10px', cursor: 'pointer'
                             }}>
                                 Lire
@@ -229,7 +229,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                                     <ShareNetwork size={24} weight="duotone" />
                                 </div>
                                 <div>
-                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Graphe</h2>
+                                    <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>Graphe</h2>
                                     <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#059669', margin: '2px 0 0 0' }}>
                                         {cards.length} concept{cards.length > 1 ? 's' : ''}
                                     </p>
@@ -241,7 +241,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                         </div>
                         <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                             <button style={{ 
-                                padding: '8px 20px', backgroundColor: 'var(--color-surface)', color: '#334155', 
+                                padding: '8px 20px', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', 
                                 border: '1px solid var(--color-border)', fontSize: '0.8125rem', fontWeight: 600, borderRadius: '10px', cursor: 'pointer'
                             }}>
                                 Explorer
@@ -285,7 +285,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                                         {card.type}
                                     </span>
                                 </div>
-                                <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {card.title}
                                 </h4>
                                 <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -298,10 +298,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                         <div 
                             onClick={onAddCard} 
                             style={{ 
-                                backgroundColor: 'rgba(248, 250, 252, 0.5)', padding: '16px', borderRadius: '16px', 
+                                backgroundColor: 'transparent', padding: '16px', borderRadius: '16px', 
                                 border: '2px dashed var(--color-border)', cursor: 'pointer', 
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                color: '#64748b', minHeight: '120px'
+                                color: 'var(--color-text-muted)', minHeight: '120px'
                             }}
                         >
                             <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-surface)', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>

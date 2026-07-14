@@ -42,28 +42,28 @@ html.dark .network-tooltip-card {
 /* Badge Variants */
 .network-tooltip-badge.semantic {
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
-    color: #9333ea;
+    color: var(--color-link-semantic);
     border: 1px solid rgba(168, 85, 247, 0.2);
 }
-html.dark .network-tooltip-badge.semantic { color: #d8b4fe; border-color: rgba(216, 180, 254, 0.2); }
+html.dark .network-tooltip-badge.semantic { color: var(--color-link-semantic-light); border-color: rgba(216, 180, 254, 0.2); }
 
 .network-tooltip-badge.reference {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
-    color: #4f46e5;
+    color: var(--color-link-reference);
     border: 1px solid rgba(99, 102, 241, 0.2);
 }
-html.dark .network-tooltip-badge.reference { color: #c7d2fe; border-color: rgba(199, 210, 254, 0.2); }
+html.dark .network-tooltip-badge.reference { color: var(--color-link-reference-light); border-color: rgba(199, 210, 254, 0.2); }
 
 .network-tooltip-badge.hybrid {
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(6, 182, 212, 0.05));
-    color: #0891b2;
+    color: var(--color-link-hybrid);
     border: 1px solid rgba(6, 182, 212, 0.2);
 }
-html.dark .network-tooltip-badge.hybrid { color: #67e8f9; border-color: rgba(103, 232, 249, 0.2); }
+html.dark .network-tooltip-badge.hybrid { color: var(--color-link-hybrid-light); border-color: rgba(103, 232, 249, 0.2); }
 
 .network-tooltip-badge.manual {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
-    color: #d97706;
+    color: var(--color-link-manual);
     border: 1px solid rgba(245, 158, 11, 0.2);
 }
-html.dark .network-tooltip-badge.manual { color: #fcd34d; border-color: rgba(252, 211, 77, 0.2); }
+html.dark .network-tooltip-badge.manual { color: var(--color-link-manual-light); border-color: rgba(252, 211, 77, 0.2); }

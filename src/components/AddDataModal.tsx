@@ -26,8 +26,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
         <div className={`modal-overlay ${layout === 'drawer' ? 'drawer-overlay' : ''}`} onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div 
                 ref={modalRef}
-                className={`modal-content glass-modal form-modal ${layout === 'drawer' ? 'fixed right-0 top-0 h-full max-h-none rounded-none w-full max-w-2xl animate-in slide-in-from-right-full duration-300 shadow-2xl border-l border-slate-200 dark:border-slate-800' : ''}`} 
-                style={layout === 'modal' ? { maxWidth: '1200px', width: '95vw', height: '85vh', maxHeight: '1000px', display: 'flex', flexDirection: 'column' } : { display: 'flex', flexDirection: 'column' }}
+                className={`modal-content glass-modal form-modal flex flex-col ${layout === 'drawer' ? 'fixed right-0 top-0 h-full max-h-none rounded-none w-full max-w-2xl animate-in slide-in-from-right-full duration-300 shadow-2xl border-l border-slate-200 dark:border-slate-800' : 'max-w-[1200px] w-[95vw] h-[85vh] max-h-[1000px]'}`} 
             >
                 <div className="modal-header">
                     <h2 className="modal-title">
@@ -39,8 +38,8 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                 </div>
 
                 {!isEditMode && (
-                    <div style={{ padding: '24px 32px 0', borderBottom: '1px solid var(--color-border)', display: 'flex', gap: '16px' }}>
-                        <div style={{ display: 'flex', background: 'var(--color-surface)', padding: '4px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                    <div className="pt-6 px-8 flex gap-4 border-b border-[color:var(--color-border)]">
+                        <div className="flex bg-[color:var(--color-surface)] p-1 rounded-xl border border-[color:var(--color-border)]">
                             <button
                                 onClick={() => setActiveTab('single')}
                                 className={activeTab === 'single' ? 'extnd-btn extnd-btn-primary' : 'extnd-btn extnd-btn-ghost'}
@@ -59,7 +58,7 @@ export const AddDataModal: React.FC<AddDataModalProps> = ({ mode = 'create', car
                     </div>
                 )}
 
-                <div className="modal-body" style={{ marginTop: 0, flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                <div className="modal-body mt-0 flex-1 min-h-0 overflow-hidden flex flex-col p-0">
                     {activeTab === 'single' ? (
                         <CardFormContent
                             card={card}

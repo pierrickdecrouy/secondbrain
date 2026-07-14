@@ -10,121 +10,137 @@ export interface SyncTask {
   timestamp: number;
 }
 
+import { getDB } from '../storage';
+
 class SyncQueue {
-  private queue: SyncTask[] = [];
   private isProcessing = false;
-  private readonly STORAGE_KEY = 'pharmabrain_sync_queue';
 
   constructor() {
-    this.loadQueue();
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.processQueue());
       // Check queue every 30 seconds
       setInterval(() => this.processQueue(), 30000);
+      this.migrateFromLocalStorage();
     }
   }
 
-  private loadQueue() {
+  private async migrateFromLocalStorage() {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const STORAGE_KEY = 'pharmabrain_sync_queue';
+      const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        this.queue = JSON.parse(stored);
+        const queue: SyncTask[] = JSON.parse(stored);
+        if (queue.length > 0) {
+          const db = getDB();
+          await db.syncTasks.bulkAdd(queue);
+        }
+        localStorage.removeItem(STORAGE_KEY);
+        this.processQueue();
       }
     } catch (e) {
-      console.error('Failed to load sync queue', e);
+      console.error('Migration failed', e);
     }
   }
 
-  private saveQueue() {
+  public async enqueueSaveCard(card: Card) {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.queue));
-    } catch (e) {
-      console.error('Failed to save sync queue', e);
+      const db = getDB();
+      // Remove existing save task for this card to avoid duplicates
+      const existing = await db.syncTasks.toArray();
+      const duplicate = existing.find(t => t.type === 'SAVE_CARD' && t.payload.id === card.id);
+      if (duplicate) {
+         await db.syncTasks.delete(duplicate.id);
+      }
+      
+      const task: SyncTask = {
+        id: crypto.randomUUID(),
+        type: 'SAVE_CARD',
+        payload: card,
+        retryCount: 0,
+        timestamp: Date.now()
+      };
+      await db.syncTasks.add(task);
+      this.processQueue();
+    } catch (err) {
+      console.error('Enqueue Save failed', err);
     }
   }
 
-  public enqueueSaveCard(card: Card) {
-    // Remove existing save task for this card to avoid duplicates
-    this.queue = this.queue.filter(t => !(t.type === 'SAVE_CARD' && t.payload.id === card.id));
-    this.queue.push({
-      id: crypto.randomUUID(),
-      type: 'SAVE_CARD',
-      payload: card,
-      retryCount: 0,
-      timestamp: Date.now()
-    });
-    this.saveQueue();
-    this.processQueue();
-  }
-
-  public enqueueDeleteCard(cardId: string) {
-    this.queue.push({
-      id: crypto.randomUUID(),
-      type: 'DELETE_CARD',
-      payload: cardId,
-      retryCount: 0,
-      timestamp: Date.now()
-    });
-    this.saveQueue();
-    this.processQueue();
+  public async enqueueDeleteCard(cardId: string) {
+    try {
+      const db = getDB();
+      const task: SyncTask = {
+        id: crypto.randomUUID(),
+        type: 'DELETE_CARD',
+        payload: cardId,
+        retryCount: 0,
+        timestamp: Date.now()
+      };
+      await db.syncTasks.add(task);
+      this.processQueue();
+    } catch(err) {
+      console.error('Enqueue Delete failed', err);
+    }
   }
 
   public async processQueue() {
-    if (this.isProcessing || this.queue.length === 0 || !navigator.onLine) {
+    if (this.isProcessing || !navigator.onLine) {
       return;
     }
 
     this.isProcessing = true;
-    useUIStore.getState().setSyncStatus('pending');
-
-    let allSuccess = true;
-
-    // Process a copy of the queue
-    const tasksToProcess = [...this.queue];
     
-    for (const task of tasksToProcess) {
-      try {
-        if (task.type === 'SAVE_CARD') {
-          await cardSyncService.performSaveCard(task.payload);
-        } else if (task.type === 'DELETE_CARD') {
-          await cardSyncService.performDeleteCard(task.payload);
-        }
-        
-        // Remove from queue on success
-        this.queue = this.queue.filter(t => t.id !== task.id);
-        this.saveQueue();
-      } catch (err: any) {
-        console.error(`Failed to process task ${task.type}`, err);
-        
-        // If conflict (newer server version), we drop the task because server is already ahead
-        if (err.message === "CONFLICT_SERVER_NEWER") {
-           this.queue = this.queue.filter(t => t.id !== task.id);
-           this.saveQueue();
-           continue;
-        }
-
-        allSuccess = false;
-        const taskIndex = this.queue.findIndex(t => t.id === task.id);
-        if (taskIndex >= 0) {
-          this.queue[taskIndex].retryCount++;
-          // Give up after 10 retries
-          if (this.queue[taskIndex].retryCount > 10) {
-            this.queue = this.queue.filter(t => t.id !== task.id);
-          }
-          this.saveQueue();
-        }
-        
-        // Stop processing rest of queue on network error to preserve order and avoid spam
-        break;
+    try {
+      const db = getDB();
+      const queue = await db.syncTasks.orderBy('timestamp').toArray();
+      
+      if (queue.length === 0) {
+        this.isProcessing = false;
+        return;
       }
-    }
 
-    this.isProcessing = false;
-    
-    if (allSuccess && this.queue.length === 0) {
-      useUIStore.getState().setSyncStatus('synced');
-    } else {
-      useUIStore.getState().setSyncStatus('error');
+      useUIStore.getState().setSyncStatus('pending');
+      let allSuccess = true;
+
+      for (const task of queue) {
+        try {
+          if (task.type === 'SAVE_CARD') {
+            await cardSyncService.performSaveCard(task.payload);
+          } else if (task.type === 'DELETE_CARD') {
+            await cardSyncService.performDeleteCard(task.payload);
+          }
+          
+          await db.syncTasks.delete(task.id);
+        } catch (err: any) {
+          console.error(`Failed to process task ${task.type}`, err);
+          
+          if (err.message === "CONFLICT_SERVER_NEWER") {
+             await db.syncTasks.delete(task.id);
+             continue;
+          }
+
+          allSuccess = false;
+          task.retryCount++;
+          if (task.retryCount > 10) {
+            await db.syncTasks.delete(task.id);
+          } else {
+            await db.syncTasks.put(task);
+          }
+          
+          break; // Stop processing rest of queue on network error
+        }
+      }
+
+      const remaining = await db.syncTasks.count();
+      if (allSuccess && remaining === 0) {
+        useUIStore.getState().setSyncStatus('synced');
+      } else {
+        useUIStore.getState().setSyncStatus('error');
+      }
+    } catch (err) {
+      console.error('ProcessQueue failed', err);
+    } finally {
+      this.isProcessing = false;
     }
   }
 }

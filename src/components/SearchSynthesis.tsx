@@ -49,71 +49,37 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
     }
 
     return (
-        <div style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-            border: '1px solid #e2e8f0',
-            borderRadius: 16,
-            padding: isCollapsed ? '12px 20px' : '20px',
-            marginBottom: 24,
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
+        <div 
+            className={`bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl mb-6 shadow-md transition-all duration-300 relative overflow-hidden dark:from-slate-800 dark:to-slate-900 dark:border-slate-700 ${isCollapsed ? 'py-3 px-5' : 'p-5'} ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-[10px]'}`}
+        >
             {/* Shimmer effect at the top */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'linear-gradient(90deg, #38bdf8, #818cf8, #c084fc, #38bdf8)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 3s infinite linear'
-            }} />
+            {/* Shimmer effect at the top */}
+            <div 
+                className="absolute top-0 left-0 right-0 h-[3px] bg-[linear-gradient(90deg,#38bdf8,#818cf8,#c084fc,#38bdf8)] bg-[length:200%_100%]"
+                style={{ animation: 'shimmer 3s infinite linear' }} 
+            />
 
             {/* Collapsible header */}
             <div
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                }}
+                className="flex items-center justify-between cursor-pointer select-none"
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                        background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
-                        padding: 8,
-                        borderRadius: '12px',
-                        boxShadow: '0 2px 4px rgba(14, 165, 233, 0.2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
+                <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-sky-100 to-sky-200 p-2 rounded-xl shadow-[0_2px_4px_rgba(14,165,233,0.2)] flex items-center justify-center">
                         <Brain size={20} color="#0284c7" weight="duotone" />
                     </div>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[15px] font-bold text-[color:var(--color-text)] tracking-[-0.01em]">
                                 Synthèse IA
                             </span>
                             {!isCollapsed && (
-                                <span style={{
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                    fontSize: 11, fontWeight: 600, color: '#0ea5e9',
-                                    background: '#f0f9ff', padding: '2px 8px', borderRadius: 12,
-                                    border: '1px solid #bae6fd'
-                                }}>
+                                <span className="flex items-center gap-1 text-[11px] font-semibold text-sky-500 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
                                     <Sparkle size={12} weight="fill" /> Sémantique
                                 </span>
                             )}
                         </div>
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginTop: 2, fontWeight: 500 }}>
+                        <span className="text-[12px] text-[color:var(--color-text-muted)] block mt-0.5 font-medium">
                             Analyse de {matchedCards.length} sources pertinentes
                         </span>
                     </div>
@@ -123,60 +89,36 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
 
             {/* Content */}
             {!isCollapsed && extraction && extraction.points.length > 0 && (
-                <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="mt-5 flex flex-col gap-3">
                     {extraction.points.map((point, i) => {
                         const typeColor = point.source.type === 'relation' ? '#8b5cf6' : getCategoryColor(point.source.type);
                         const typeIcon = point.source.type === 'relation' ? 'Link' : getCategoryIcon(point.source.type);
                         
                         return (
-                            <div key={i} style={{ 
-                                display: 'flex', 
-                                gap: 12, 
-                                alignItems: 'flex-start',
-                                animation: `fadeInUp 0.4s ease-out ${i * 0.1}s both`
-                            }}>
+                            <div key={i} className="flex gap-3 items-start" style={{ animation: `fadeInUp 0.4s ease-out ${i * 0.1}s both` }}>
                                 <div 
                                     onClick={() => point.source.id && onCardClick(point.source.id)}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-2xl text-[0.75rem] font-bold whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 mt-0.5 shrink-0 ${point.source.type === 'relation' ? 'cursor-default' : 'cursor-pointer hover:-translate-y-[1px]'}`}
                                     style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: 6,
-                                        padding: '4px 10px',
-                                        borderRadius: '16px',
                                         backgroundColor: `${typeColor}15`,
                                         border: `1px solid ${typeColor}30`,
                                         color: typeColor,
-                                        fontSize: '0.75rem',
-                                        fontWeight: 700,
-                                        cursor: point.source.type === 'relation' ? 'default' : 'pointer',
-                                        whiteSpace: 'nowrap',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                                        transition: 'all 0.2s',
-                                        marginTop: '2px',
-                                        flexShrink: 0
                                     }}
                                     onMouseOver={(e) => {
                                         if (point.source.type !== 'relation') {
                                             e.currentTarget.style.backgroundColor = `${typeColor}25`;
-                                            e.currentTarget.style.transform = 'translateY(-1px)';
                                         }
                                     }}
                                     onMouseOut={(e) => {
                                         if (point.source.type !== 'relation') {
                                             e.currentTarget.style.backgroundColor = `${typeColor}15`;
-                                            e.currentTarget.style.transform = 'none';
                                         }
                                     }}
                                 >
                                     {point.source.type === 'relation' ? <Sparkle size={12} weight="fill" /> : <DynamicIcon name={typeIcon} size={12} />}
                                     {point.source.title.length > 20 ? point.source.title.substring(0, 18) + '...' : point.source.title}
                                 </div>
-                                <div style={{ 
-                                    fontSize: '0.9rem', 
-                                    lineHeight: 1.5, 
-                                    color: 'var(--color-text)',
-                                    flex: 1
-                                }}>
+                                <div className="text-[0.9rem] leading-relaxed text-[color:var(--color-text)] flex-1">
                                     <MarkdownRenderer 
                                         content={point.text.replace(`**${point.source.title}** : `, '').replace(`📌 **${point.source.title}** : `, '')} 
                                         className="inline" 

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import 'katex/dist/katex.min.css'; // LaTeX Styles
+import './i18n'; // i18n Configuration
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 // @ts-ignore

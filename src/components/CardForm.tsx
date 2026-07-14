@@ -24,9 +24,10 @@ interface CardFormProps {
     onSave: (card: Card) => void;
     onCancel: () => void;
     onPause?: (card: Partial<Card>) => void;
+    hideCourseOption?: boolean;
 }
 
-export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, onSave, onCancel, onPause }) => {
+export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, onSave, onCancel, onPause, hideCourseOption }) => {
     const { getCategoryColor } = useTheme();
     const [showHistory, setShowHistory] = useState(false);
 
@@ -70,8 +71,13 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
         const cats = new Set<string>(CARD_TYPES);
         if (card) cats.add(card.type);
         existingCards.forEach(c => cats.add(c.type));
+        
+        if (hideCourseOption) {
+            cats.delete(COURSE_TYPE);
+        }
+        
         return Array.from(cats).sort();
-    }, [existingCards, card]);
+    }, [existingCards, card, hideCourseOption]);
 
     // Auto-save logic
     const formDataRef = useRef(formData);
@@ -249,110 +255,114 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
     const [showAdvanced, setShowAdvanced] = useState(false);
 
+    const categoryColor = getCategoryColor(isCustomTypeActive ? customTypeInput : (formData.type || 'drug'));
+
     return (
     <>
-        <div
-            className="custom-scrollbar"
-            style={{
-                flex: 1, overflowY: 'auto',
-                display: 'flex', flexDirection: 'column',
-                minHeight: 0,
-            }}
-        >
+        <div className="custom-scrollbar flex-1 overflow-x-hidden overflow-y-hidden flex flex-col min-h-0">
             {formData.nodeType === 'flashcard' ? (
                 <FlashcardEditor formData={formData} setFormData={setFormData} />
             ) : (
                 <>
-                    {/* Header: Title, Category, Tags */}
-                    <div style={{ padding: '24px 36px 0', display: 'flex', flexDirection: 'column', gap: 16, flexShrink: 0 }}>
-                        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                            <input
-                                type="text"
-                                value={formData.title}
-                                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                placeholder="Titre de la fiche..."
-                                style={{ 
-                                    flex: 1, 
-                                    fontSize: '2rem', 
-                                    fontWeight: 800, 
-                                    border: 'none', 
-                                    background: 'transparent', 
-                                    color: 'var(--color-text)', 
-                                    outline: 'none',
-                                    padding: 0,
-                                    margin: 0,
-                                    lineHeight: 1.2
+                    {/* ── Meta bar: type + tags ─────────────── */}
+                    <div className="px-10 py-4 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)] flex items-center gap-4 shrink-0 flex-wrap">
+                        {/* Category pill */}
+                        <div
+                            className="flex items-center gap-2 py-1.5 pr-[14px] pl-2.5 rounded-full shrink-0"
+                            style={{
+                                background: `${categoryColor}15`,
+                                border: `1px solid ${categoryColor}35`,
+                            }}
+                        >
+                            <div className="w-[9px] h-[9px] rounded-full shrink-0" style={{ background: categoryColor, boxShadow: `0 0 6px ${categoryColor}80` }} />
+                            <select
+                                value={isCustomTypeActive ? '__custom__' : (formData.type || '')}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '__custom__') {
+                                        setIsCustomTypeActive(true);
+                                        setFormData({ ...formData, type: customTypeInput || '' });
+                                    } else {
+                                        setIsCustomTypeActive(false);
+                                        setCustomTypeInput('');
+                                        setFormData({ ...formData, type: val });
+                                    }
                                 }}
-                                autoFocus
-                            />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-surface)', padding: '6px 12px', borderRadius: 20, border: '1px solid var(--color-border)', flexShrink: 0 }}>
-                                <select
-                                    value={isCustomTypeActive ? '__custom__' : (formData.type || '')}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        if (val === '__custom__') {
-                                            setIsCustomTypeActive(true);
-                                            setFormData({ ...formData, type: customTypeInput || '' });
-                                        } else {
-                                            // U-3 fix: reset custom input when switching back to standard
-                                            setIsCustomTypeActive(false);
-                                            setCustomTypeInput('');
-                                            setFormData({ ...formData, type: val });
-                                        }
+                                className="border-none bg-transparent outline-none text-[0.82rem] font-bold cursor-pointer p-0 tracking-[0.02em]"
+                                style={{ color: categoryColor }}
+                            >
+                                {[...allCategories].sort((a, b) => a.localeCompare(b)).map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                                <option value="__custom__">Autre / Nouveau...</option>
+                            </select>
+                            {isCustomTypeActive && (
+                                <input
+                                    type="text"
+                                    value={customTypeInput}
+                                    onChange={handleCustomTypeChange}
+                                    onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+                                    placeholder="Catégorie..."
+                                    autoFocus
+                                    className="border-none py-[3px] px-2 rounded-lg text-[0.82rem] outline-none w-[120px] font-semibold"
+                                    style={{
+                                        background: `${categoryColor}10`,
+                                        color: categoryColor,
                                     }}
-                                    style={{ border: 'none', background: 'transparent', outline: 'none', color: 'var(--color-text)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                                >
-                                    {[...allCategories].sort((a, b) => a.localeCompare(b)).map((t) => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                    <option value="__custom__">Autre / Nouveau...</option>
-                                </select>
-                                {isCustomTypeActive && (
-                                    <input 
-                                        type="text" 
-                                        value={customTypeInput} 
-                                        onChange={handleCustomTypeChange}
-                                        onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
-                                        placeholder="Catégorie..." 
-                                        autoFocus
-                                        style={{ border: 'none', background: 'var(--color-bg)', padding: '4px 8px', borderRadius: 12, fontSize: '0.85rem', outline: 'none', width: 120 }}
-                                    />
-                                )}
-                            </div>
+                                />
+                            )}
                         </div>
 
-                        {/* Subtitle & Tags */}
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <input
-                                type="text"
-                                value={formData.subtitle}
-                                onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
-                                placeholder="Sous-titre ou description courte (optionnel)..."
-                                style={{ flex: 1, minWidth: 200, padding: '0', fontSize: '1rem', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', outline: 'none', fontWeight: 500 }}
-                            />
-                        </div>
+                        {/* Tags */}
                         <TagInput
                             tags={formData.tags || []}
                             uniqueTags={uniqueTags}
                             onAddTag={addTag}
                             onRemoveTag={removeTag}
                         />
+
+                        {/* Markdown info toggle */}
+                        <button
+                            onClick={() => setShowMarkdownInfo(!showMarkdownInfo)}
+                            className="ml-auto flex items-center gap-1.5 rounded-lg cursor-pointer text-[0.78rem] font-medium py-[5px] px-3 transition-all duration-150 shrink-0"
+                            style={{
+                                background: showMarkdownInfo ? 'rgba(99,102,241,0.1)' : 'transparent',
+                                border: `1px solid ${showMarkdownInfo ? 'rgba(99,102,241,0.3)' : 'var(--color-border)'}`,
+                                color: showMarkdownInfo ? '#6366f1' : 'var(--color-text-muted)',
+                            }}
+                        >
+                            <Info size={13} /> Markdown
+                        </button>
                     </div>
 
-                    {/* Editor (flex:1) */}
-                    <div style={{ flex: 1, minHeight: 280, margin: '16px 32px 0', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)', flexShrink: 0 }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contenu</span>
-                            <button onClick={() => setShowMarkdownInfo(!showMarkdownInfo)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', fontWeight: 500 }}>
-                                <Info size={13} /> Markdown
-                            </button>
+                    {showMarkdownInfo && (
+                        <div className="py-2.5 px-10 bg-[rgba(99,102,241,0.05)] border-b border-[rgba(99,102,241,0.15)] text-[0.8rem] text-indigo-500 shrink-0">
+                            **Gras**, *Italique*, # Titre, - Liste, [[Lien interne]], $Équation$
                         </div>
-                        {showMarkdownInfo && (
-                            <div style={{ padding: '8px 14px', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                **Gras**, *Italique*, # Titre, - Liste, [[Lien]], $Math$
-                            </div>
-                        )}
-                        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                    )}
+
+                    {/* ── Title area ──────────────────── */}
+                    <div className="pt-10 px-10 pb-6 shrink-0">
+                        <input
+                            type="text"
+                            value={formData.title}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                            placeholder="Titre de la fiche…"
+                            className="w-full text-[2.4rem] font-extrabold border-none bg-transparent text-[color:var(--color-text)] outline-none p-0 m-0 leading-[1.15] tracking-[-0.02em]"
+                            autoFocus
+                        />
+                        <input
+                            type="text"
+                            value={formData.subtitle}
+                            onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                            placeholder="Sous-titre ou description courte (optionnel)…"
+                            className="w-full mt-3 text-[1rem] bg-transparent border-none text-[color:var(--color-text-muted)] outline-none p-0 font-normal"
+                        />
+                    </div>
+
+                    {/* ── Editor ───────────────────────────────── */}
+                    <div className="flex-1 mx-9 mb-5 flex flex-col overflow-hidden">
+                        <div className="flex-1 min-h-0 overflow-hidden">
                             <CourseEditor
                                 value={formData.details || ''}
                                 onChange={(val) => setFormData({ ...formData, details: val })}
@@ -361,68 +371,136 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         </div>
                     </div>
 
-                    {/* Advanced toggle */}
-                    <div style={{ padding: '12px 32px 20px', flexShrink: 0 }}>
+                    {/* ── Connections accordion ─────────────────── */}
+                    <div className="px-9 pb-6 shrink-0">
                         <button
                             onClick={() => setShowAdvanced(v => !v)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '0.78rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', padding: 0, marginBottom: showAdvanced ? 14 : 0 }}
+                            className="flex items-center gap-2 bg-transparent border-none cursor-pointer text-[color:var(--color-text-muted)] text-[0.78rem] font-bold uppercase tracking-[0.06em] py-2 transition-colors duration-150 hover:text-[color:var(--color-text)]"
+                            style={{ marginBottom: showAdvanced ? 16 : 0 }}
                         >
-                            <span style={{ transform: showAdvanced ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.2s', fontSize: '0.65rem' }}>▶</span>
-                            Connexions & Image
+                            <span
+                                className="inline-flex items-center justify-center w-4 h-4 rounded border border-[color:var(--color-border)] text-[0.55rem] transition-transform duration-200"
+                                style={{ transform: showAdvanced ? 'rotate(90deg)' : 'none' }}
+                            >▶</span>
+                            Connexions &amp; Image
                         </button>
+
                         {showAdvanced && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
-                                        <label>Lier à d'autres fiches</label>
-                                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '0.6rem 0.9rem', background: 'var(--color-surface)', marginBottom: 8, gap: 8 }}>
-                                            <MagnifyingGlass size={14} style={{ color: 'var(--color-text-muted)' }} />
-                                            <input type="text" placeholder="Rechercher..." value={connectionSearch} onChange={e => setConnectionSearch(e.target.value)} style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: 0, fontSize: '0.88rem' }} />
+                            <div className="flex flex-col gap-3.5">
+                                {/* Connections row */}
+                                <div className="grid grid-cols-2 gap-3.5 items-start">
+                                    {/* Link connections */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[0.72rem] font-bold text-[color:var(--color-text-muted)] uppercase tracking-[0.05em]">
+                                            Lier à d'autres fiches
+                                        </span>
+                                        <div className="flex items-center border border-[color:var(--color-border)] rounded-lg py-1.5 px-2.5 bg-[color:var(--color-bg)] gap-1.5">
+                                            <MagnifyingGlass size={13} className="text-[color:var(--color-text-muted)] shrink-0" />
+                                            <input
+                                                type="text"
+                                                placeholder="Rechercher une fiche..."
+                                                value={connectionSearch}
+                                                onChange={e => setConnectionSearch(e.target.value)}
+                                                className="border-none bg-transparent w-full outline-none p-0 text-[0.82rem] text-[color:var(--color-text)]"
+                                            />
                                         </div>
                                         {connectionCandidates.length > 0 && (
-                                            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden', marginBottom: 8 }}>
+                                            <div className="bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-lg overflow-hidden">
                                                 {connectionCandidates.map(c => (
-                                                    <div key={c.id} onClick={() => toggleConnection(c.id)} style={{ padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.85rem', borderBottom: '1px solid var(--color-border)' }}>
-                                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: getCategoryColor(c.type), flexShrink: 0 }} />{c.title}
+                                                    <div key={c.id} onClick={() => toggleConnection(c.id)} className="py-[7px] px-2.5 cursor-pointer flex items-center gap-[7px] text-[0.82rem] border-b border-[color:var(--color-border)] text-[color:var(--color-text)]">
+                                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: getCategoryColor(c.type) }} />{c.title}
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                                            {formData.manualConnections?.map(id => { const l = existingCards.find(c => c.id === id); return l ? <div key={id} style={{ fontSize: '0.8rem', padding: '3px 9px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>{l.title}<X size={10} onClick={() => toggleConnection(id)} style={{ cursor: 'pointer', color: 'var(--color-text-muted)' }} /></div> : null; })}
-                                        </div>
+                                        {(formData.manualConnections?.length ?? 0) > 0 && (
+                                            <div className="flex flex-wrap gap-1">
+                                                {formData.manualConnections?.map(id => {
+                                                    const l = existingCards.find(c => c.id === id);
+                                                    return l ? (
+                                                        <span key={id} className="text-xs py-0.5 px-2 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-md inline-flex items-center gap-1 text-[color:var(--color-text)]">
+                                                            {l.title}
+                                                            <X size={9} onClick={() => toggleConnection(id)} className="cursor-pointer text-[color:var(--color-text-muted)]" />
+                                                        </span>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
-                                        <label>Masquer des connexions</label>
-                                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '0.6rem 0.9rem', background: 'var(--color-surface)', marginBottom: 8, gap: 8 }}>
-                                            <EyeSlash size={14} style={{ color: 'var(--color-text-muted)' }} />
-                                            <input type="text" placeholder="Fiche à exclure..." value={suppressSearch} onChange={e => setSuppressSearch(e.target.value)} style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: 0, fontSize: '0.88rem' }} />
+
+                                    {/* Suppress connections */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[0.72rem] font-bold text-[color:var(--color-text-muted)] uppercase tracking-[0.05em]">
+                                            Masquer des connexions
+                                        </span>
+                                        <div className="flex items-center border border-[color:var(--color-border)] rounded-lg py-1.5 px-2.5 bg-[color:var(--color-bg)] gap-1.5">
+                                            <EyeSlash size={13} className="text-[color:var(--color-text-muted)] shrink-0" />
+                                            <input
+                                                type="text"
+                                                placeholder="Fiche à exclure..."
+                                                value={suppressSearch}
+                                                onChange={e => setSuppressSearch(e.target.value)}
+                                                className="border-none bg-transparent w-full outline-none p-0 text-[0.82rem] text-[color:var(--color-text)]"
+                                            />
                                         </div>
                                         {suppressionCandidates.length > 0 && (
-                                            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden', marginBottom: 8 }}>
+                                            <div className="bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-lg overflow-hidden">
                                                 {suppressionCandidates.map(c => (
-                                                    <div key={c.id} onClick={() => toggleSuppression(c.id)} style={{ padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.85rem', borderBottom: '1px solid var(--color-border)' }}>
-                                                        <EyeSlash size={12} />{c.title}
+                                                    <div key={c.id} onClick={() => toggleSuppression(c.id)} className="py-[7px] px-2.5 cursor-pointer flex items-center gap-[7px] text-[0.82rem] border-b border-[color:var(--color-border)] text-[color:var(--color-text)]">
+                                                        <EyeSlash size={11} />{c.title}
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                                            {formData.suppressedConnections?.map(id => { const l = existingCards.find(c => c.id === id); return l ? <div key={id} style={{ fontSize: '0.8rem', padding: '3px 9px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>{l.title}<X size={10} onClick={() => toggleSuppression(id)} style={{ cursor: 'pointer' }} /></div> : null; })}
-                                        </div>
+                                        {(formData.suppressedConnections?.length ?? 0) > 0 && (
+                                            <div className="flex flex-wrap gap-1">
+                                                {formData.suppressedConnections?.map(id => {
+                                                    const l = existingCards.find(c => c.id === id);
+                                                    return l ? (
+                                                        <span key={id} className="text-xs py-0.5 px-2 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-md inline-flex items-center gap-1 text-[color:var(--color-text)]">
+                                                            {l.title}
+                                                            <X size={9} onClick={() => toggleSuppression(id)} className="cursor-pointer text-[color:var(--color-text-muted)]" />
+                                                        </span>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>Image & Résumé court</label>
-                                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '0.6rem 0.9rem', background: 'var(--color-surface)', gap: 8 }}>
-                                                <input type="text" value={formData.imageUrl || ''} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: 0, fontSize: '0.88rem' }} placeholder="URL de l'image..." />
-                                                <label htmlFor="image-upload" style={{ cursor: 'pointer', color: 'var(--color-text-muted)', margin: 0, display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--color-border)', paddingLeft: 8 }}><UploadSimple size={17} /><input id="image-upload" type="file" hidden onChange={handleImageUpload} /></label>
+
+                                {/* Image & résumé */}
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[0.72rem] font-bold text-[color:var(--color-text-muted)] uppercase tracking-[0.05em]">
+                                        Image &amp; Résumé court
+                                    </span>
+                                    <div className="flex gap-2.5 items-start">
+                                        <div className="flex-1 flex flex-col gap-1.5">
+                                            <div className="flex items-center border border-[color:var(--color-border)] rounded-lg py-1.5 px-2.5 bg-[color:var(--color-bg)] gap-1.5">
+                                                <input
+                                                    type="text"
+                                                    value={formData.imageUrl || ''}
+                                                    onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                                                    className="border-none bg-transparent w-full outline-none p-0 text-[0.82rem] text-[color:var(--color-text)]"
+                                                    placeholder="URL de l'image..."
+                                                />
+                                                <label htmlFor="image-upload" className="cursor-pointer text-[color:var(--color-text-muted)] m-0 flex items-center border-l border-[color:var(--color-border)] pl-2">
+                                                    <UploadSimple size={15} />
+                                                    <input id="image-upload" type="file" hidden onChange={handleImageUpload} />
+                                                </label>
                                             </div>
-                                            <textarea value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} rows={2} placeholder="Bref résumé affiché dans la liste..." style={{ minHeight: 50 }} />
+                                            <textarea
+                                                value={formData.content}
+                                                onChange={e => setFormData({ ...formData, content: e.target.value })}
+                                                rows={2}
+                                                placeholder="Bref résumé affiché dans la liste..."
+                                                className="w-full py-2 px-2.5 text-[0.82rem] border border-[color:var(--color-border)] rounded-lg bg-[color:var(--color-bg)] text-[color:var(--color-text)] resize-y min-h-[52px] outline-none font-inherit"
+                                            />
                                         </div>
-                                        {formData.imageUrl && <div style={{ width: 90, height: 90, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border)', flexShrink: 0 }}><img src={formData.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.currentTarget.style.display='none'} /></div>}
+                                        {formData.imageUrl && (
+                                            <div className="w-[72px] h-[72px] rounded-lg overflow-hidden border border-[color:var(--color-border)] shrink-0">
+                                                <img src={formData.imageUrl} alt="" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -432,24 +510,24 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             )}
         </div>
 
-        {/* Footer */}
-        <div style={{ padding: '14px 32px', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        {/* ── Footer ──────────────────────────────── */}
+        <div className="py-4 px-10 bg-[color:var(--color-surface)] border-t border-[color:var(--color-border)] flex justify-between items-center shrink-0">
+            <div className="flex gap-2.5 items-center">
                 <button
-                    style={{ padding: '9px 22px', borderRadius: 8, fontWeight: 500, cursor: 'pointer', background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontSize: '0.88rem' }}
-                    onClick={() => { 
+                    className="py-2.5 px-5 rounded-xl font-medium cursor-pointer bg-transparent border border-[color:var(--color-border)] text-[color:var(--color-text-muted)] text-[0.88rem] transition-all duration-150 hover:text-[color:var(--color-text)] hover:border-[color:var(--color-text-muted)]"
+                    onClick={() => {
                         isExplicitlyClosedRef.current = true;
-                        if (onPause && (formData.title || formData.content || formData.details)) { 
-                            onPause(formData); 
-                        } 
-                        onCancel(); 
+                        if (onPause && (formData.title || formData.content || formData.details)) {
+                            onPause(formData);
+                        }
+                        onCancel();
                     }}
                 >
                     Annuler
                 </button>
                 {card && card.history && card.history.length > 0 && (
                     <button
-                        style={{ padding: '9px 14px', borderRadius: 8, fontWeight: 500, cursor: 'pointer', background: 'transparent', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        className="py-[9px] px-[14px] rounded-[10px] font-medium cursor-pointer bg-transparent border border-[color:var(--color-border)] text-[color:var(--color-text-muted)] text-[0.88rem] flex items-center gap-1.5"
                         onClick={() => setShowHistory(true)}
                         title="Voir l'historique des modifications"
                     >
@@ -458,14 +536,17 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     </button>
                 )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>⌘S</span>
+
+            <div className="flex items-center gap-3">
+                <kbd className="text-xs text-[color:var(--color-text-muted)] font-mono bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-md py-[3px] px-2">
+                    ⌘S
+                </kbd>
                 <button
-                    style={{ padding: '9px 24px', borderRadius: 8, fontWeight: 700, fontSize: '0.88rem', cursor: ((formData.title || formData.format === 'cloze') && formData.type) ? 'pointer' : 'not-allowed', background: ((formData.title || formData.format === 'cloze') && formData.type) ? 'var(--color-primary)' : 'var(--color-surface)', color: ((formData.title || formData.format === 'cloze') && formData.type) ? '#fff' : 'var(--color-text-muted)', border: 'none', display: 'flex', alignItems: 'center', gap: 7, opacity: ((formData.title || formData.format === 'cloze') && formData.type) ? 1 : 0.5, transition: 'all 0.15s' }}
+                    className={`py-2.5 px-7 rounded-[10px] font-bold text-[0.88rem] flex items-center gap-2 transition-all duration-150 ${((formData.title || formData.format === 'cloze') && formData.type) ? 'cursor-pointer text-white shadow-[0_4px_14px_rgba(13,148,136,0.3)] opacity-100 bg-gradient-to-br from-teal-600 to-cyan-600 border-none' : 'cursor-not-allowed bg-[color:var(--color-border)] text-[color:var(--color-text-muted)] border-none opacity-50 shadow-none'}`}
                     onClick={handleSave}
                     disabled={(!formData.title && formData.format !== 'cloze') || !formData.type}
                 >
-                    <FloppyDisk size={16} /> Enregistrer
+                    <FloppyDisk size={16} weight="bold" /> Enregistrer
                 </button>
             </div>
         </div>
@@ -479,11 +560,11 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
 export const CardForm: React.FC<CardFormProps> = (props) => {
     return (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
-            <div className="modal-content" style={{ display: 'flex', flexDirection: 'column', padding: 0, maxWidth: '900px', height: '90vh' }}>
-                <header className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--color-border)' }}>
-                    <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 600, margin: 0, color: 'var(--color-text)' }}>{props.card ? 'Modifier la fiche' : 'Nouvelle fiche'}</h2>
-                    <button className="modal-close" onClick={props.onCancel} title="Fermer" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+        <div className="modal-overlay z-[1000]">
+            <div className="modal-content flex flex-col p-0 max-w-[900px] h-[90vh]">
+                <header className="modal-header py-6 px-8 border-b border-[color:var(--color-border)]">
+                    <h2 className="modal-title text-2xl font-semibold m-0 text-[color:var(--color-text)]">{props.card ? 'Modifier la fiche' : 'Nouvelle fiche'}</h2>
+                    <button className="modal-close bg-transparent border-none cursor-pointer text-[color:var(--color-text-muted)]" onClick={props.onCancel} title="Fermer">
                         <X size={24} weight="bold" />
                     </button>
                 </header>

@@ -47,9 +47,8 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
             <div className="browse-selection-bar-divider" />
 
             <button
-                className="browse-selection-bar-btn"
+                className="browse-selection-bar-btn bg-[color:var(--color-surface-hover)] text-[color:var(--color-text)]"
                 onClick={onSelectAll}
-                style={{ background: 'var(--color-surface-hover)', color: 'var(--color-text)' }}
                 title="Tout sélectionner"
             >
                 <CheckSquare size={15} weight="bold" />
@@ -59,9 +58,8 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
             <div className="browse-selection-bar-divider" />
 
             <button
-                className="browse-selection-bar-btn"
+                className="browse-selection-bar-btn bg-blue-500/12 text-blue-400"
                 onClick={handleExportAnki}
-                style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa' }}
                 title="Exporter vers Anki"
             >
                 <Export size={15} weight="bold" />
@@ -69,9 +67,8 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
             </button>
 
             <button
-                className="browse-selection-bar-btn"
+                className="browse-selection-bar-btn bg-purple-500/12 text-purple-400"
                 onClick={handleExportJson}
-                style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa' }}
                 title="Exporter en JSON"
             >
                 <DownloadSimple size={15} weight="bold" />
@@ -81,9 +78,8 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
             <div className="browse-selection-bar-divider" />
 
             <button
-                className="browse-selection-bar-btn"
+                className="browse-selection-bar-btn bg-red-500/12 text-red-400"
                 onClick={onDeleteSelected}
-                style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#f87171' }}
                 title="Supprimer la sélection"
             >
                 <Trash size={15} weight="bold" />
@@ -93,9 +89,8 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
             <div className="browse-selection-bar-divider" />
 
             <button
-                className="browse-selection-bar-btn"
+                className="browse-selection-bar-btn bg-transparent text-[color:var(--color-text-muted)]"
                 onClick={onClear}
-                style={{ background: 'transparent', color: 'var(--color-text-muted)' }}
                 title="Annuler la sélection"
             >
                 <X size={15} weight="bold" />

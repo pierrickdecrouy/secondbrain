@@ -99,8 +99,8 @@ declare global {
       loadSetting: <T>(key: string) => Promise<T | undefined>;
       saveSetting: <T>(key: string, value: T) => Promise<void>;
       removeSetting: (key: string) => Promise<void>;
-      loadVectorIndex: () => Promise<Uint8Array | null>;
-      saveVectorIndex: (data: Uint8Array) => Promise<void>;
+      loadVectorIndex: (shardId?: string) => Promise<Uint8Array | null>;
+      saveVectorIndex: (data: Uint8Array, shardId?: string) => Promise<void>;
       loadAbbreviations: () => Promise<Record<string, string[]>>;
       saveAbbreviations: (abbreviations: Record<string, string[]>) => Promise<void>;
       startPdfImport?: (paths: string[]) => void;

@@ -14,8 +14,8 @@ interface ElectronAPI {
     removeSetting: (key: string) => Promise<{ success: boolean; error?: string }>;
 
     // Vector Index
-    loadVectorIndex: () => Promise<Uint8Array | null>;
-    saveVectorIndex: (buffer: Uint8Array) => Promise<{ success: boolean; error?: string }>;
+    loadVectorIndex: (shardId?: string) => Promise<Uint8Array | null>;
+    saveVectorIndex: (buffer: Uint8Array, shardId?: string) => Promise<{ success: boolean; error?: string }>;
 
     // AI Model
     checkModelExists: (filename: string) => Promise<boolean>;

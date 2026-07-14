@@ -5,12 +5,49 @@ import { useTheme } from '../../context/ThemeContext';
 import { COURSE_TYPE } from '../../types';
 import { useCardStore as useCards } from '../../store/useCardStore';
 import { S, SettingsCard, CardSection, CardBody, SectionHeading, GhostButton, PrimaryButton } from './SettingsUI';
+import { useTranslation } from 'react-i18next';
 
 interface AppearanceTabProps {
     onCloseSettings: () => void;
 }
 
+const ThemeOption: React.FC<{
+    mode: 'light' | 'dark' | 'system';
+    label: string;
+    icon: React.ReactNode;
+    themeMode: 'light' | 'dark' | 'system';
+    setThemeMode: (mode: 'light' | 'dark' | 'system') => void;
+}> = ({ mode, label, icon, themeMode, setThemeMode }) => {
+    const active = themeMode === mode;
+    return (
+        <button
+            onClick={() => setThemeMode(mode)}
+            style={{
+                flex: 1,
+                minWidth: 100,
+                padding: '14px 12px',
+                borderRadius: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                background: active ? S.primaryDim : 'transparent',
+                border: `1.5px solid ${active ? S.primary : S.border}`,
+                color: active ? S.primary : S.muted,
+            }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = S.muted; e.currentTarget.style.color = S.text; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted; } }}
+        >
+            <div style={{ color: active ? S.primary : S.text }}>{icon}</div>
+            <span style={{ fontSize: '0.8rem', fontWeight: active ? 600 : 500 }}>{label}</span>
+        </button>
+    );
+};
+
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings }) => {
+    const { t, i18n } = useTranslation();
     const { cards } = useCards();
     const availableCategories = Array.from(new Set(cards.map(c => c.type))).filter(t => t !== COURSE_TYPE).sort();
 
@@ -32,46 +69,47 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
         ...availableCategories,
     ])).sort();
 
-    // Theme option button
-    const ThemeOption: React.FC<{ mode: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }> = ({ mode, label, icon }) => {
-        const active = themeMode === mode;
-        return (
-            <button
-                onClick={() => setThemeMode(mode)}
-                style={{
-                    flex: 1,
-                    minWidth: 100,
-                    padding: '14px 12px',
-                    borderRadius: 12,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    background: active ? S.primaryDim : 'transparent',
-                    border: `1.5px solid ${active ? S.primary : S.border}`,
-                    color: active ? S.primary : S.muted,
-                }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = S.muted; e.currentTarget.style.color = S.text; } }}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted; } }}
-            >
-                {icon}
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
-            </button>
-        );
-    };
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Theme */}
             <SettingsCard>
-                <CardSection title="Thème" subtitle="Apparence globale de l'interface." />
+                <CardSection title={t('settings.theme')} subtitle="Apparence globale de l'interface." />
                 <CardBody>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        <ThemeOption mode="light" label="Clair" icon={<Sun size={24} />} />
-                        <ThemeOption mode="dark" label="Sombre" icon={<Moon size={24} />} />
-                        <ThemeOption mode="system" label="Système" icon={<Monitor size={24} />} />
+                        <ThemeOption mode="light" label={t('settings.light')} icon={<Sun size={24} />} themeMode={themeMode} setThemeMode={setThemeMode} />
+                        <ThemeOption mode="dark" label={t('settings.dark')} icon={<Moon size={24} />} themeMode={themeMode} setThemeMode={setThemeMode} />
+                        <ThemeOption mode="system" label={t('settings.system')} icon={<Monitor size={24} />} themeMode={themeMode} setThemeMode={setThemeMode} />
+                    </div>
+                </CardBody>
+            </SettingsCard>
+
+            {/* Language */}
+            <SettingsCard>
+                <CardSection title={t('settings.language')} subtitle="Langue de l'application." />
+                <CardBody>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        <button
+                            onClick={() => i18n.changeLanguage('fr')}
+                            style={{
+                                flex: 1, minWidth: 100, padding: '14px 12px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 0.15s',
+                                background: i18n.language.startsWith('fr') ? S.primaryDim : 'transparent',
+                                border: `1.5px solid ${i18n.language.startsWith('fr') ? S.primary : S.border}`,
+                                color: i18n.language.startsWith('fr') ? S.primary : S.muted,
+                            }}
+                        >
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{t('settings.lang_fr')}</span>
+                        </button>
+                        <button
+                            onClick={() => i18n.changeLanguage('en')}
+                            style={{
+                                flex: 1, minWidth: 100, padding: '14px 12px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 0.15s',
+                                background: i18n.language.startsWith('en') ? S.primaryDim : 'transparent',
+                                border: `1.5px solid ${i18n.language.startsWith('en') ? S.primary : S.border}`,
+                                color: i18n.language.startsWith('en') ? S.primary : S.muted,
+                            }}
+                        >
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{t('settings.lang_en')}</span>
+                        </button>
                     </div>
                 </CardBody>
             </SettingsCard>

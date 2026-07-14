@@ -8,31 +8,14 @@ interface SettingsSidebarProps {
     setActiveTab: (tab: SettingsTab) => void;
 }
 
-// ── Nav group ─────────────────────────────────────────────────────────────
-const NavGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <div style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: S.muted,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            padding: '0 10px',
-            marginBottom: 4,
-        }}>
-            {label}
-        </div>
-        {children}
-    </div>
-);
-
 // ── Nav item ──────────────────────────────────────────────────────────────
 const NavItem: React.FC<{
     label: string;
     icon: React.ReactNode;
     isActive: boolean;
     onClick: () => void;
-}> = ({ label, icon, isActive, onClick }) => (
+    accent?: string;
+}> = ({ label, icon, isActive, onClick, accent = S.primary }) => (
     <button
         onClick={onClick}
         style={{
@@ -40,13 +23,13 @@ const NavItem: React.FC<{
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            padding: '9px 10px',
-            borderRadius: 10,
-            fontSize: 14,
-            fontWeight: isActive ? 600 : 400,
+            padding: '9px 12px',
+            borderRadius: 12,
+            fontSize: 13.5,
+            fontWeight: isActive ? 700 : 500,
             border: 'none',
-            backgroundColor: isActive ? S.primaryDim : 'transparent',
-            color: isActive ? S.primary : S.muted,
+            backgroundColor: isActive ? `${accent}18` : 'transparent',
+            color: isActive ? accent : S.muted,
             cursor: 'pointer',
             transition: 'all 0.12s ease',
             textAlign: 'left',
@@ -64,7 +47,7 @@ const NavItem: React.FC<{
             }
         }}
     >
-        <span style={{ flexShrink: 0, opacity: isActive ? 1 : 0.7 }}>{icon}</span>
+        <span style={{ flexShrink: 0, opacity: isActive ? 1 : 0.6, color: isActive ? accent : 'inherit' }}>{icon}</span>
         <span>{label}</span>
     </button>
 );
@@ -82,12 +65,28 @@ const Icon = {
     Card: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>,
 };
 
+// Section label separator
+const SectionLabel: React.FC<{ label: string }> = ({ label }) => (
+    <div style={{
+        fontSize: 10,
+        fontWeight: 800,
+        color: S.muted,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        padding: '0 12px',
+        marginTop: 4,
+        marginBottom: 4,
+    }}>
+        {label}
+    </div>
+);
+
 export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, setActiveTab }) => {
     const { userName } = useUI();
 
     return (
         <aside style={{
-            width: 240,
+            width: 232,
             flexShrink: 0,
             background: S.surface,
             borderRight: `1px solid ${S.border}`,
@@ -97,57 +96,64 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
         }}>
             {/* Header */}
             <div style={{
-                padding: '20px 16px 16px',
+                padding: '18px 16px',
                 borderBottom: `1px solid ${S.border}`,
             }}>
-                <img src="/Logo-linear.svg" alt="Extnd" style={{ height: 28, width: 'auto' }} />
-                <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 10 }}>
+                <img src="/Logo-linear.svg" alt="Extnd" style={{ height: 26, width: 'auto' }} />
+                <div style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: S.muted,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginTop: 10,
+                }}>
                     Paramètres
                 </div>
             </div>
 
             {/* Nav */}
-            <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <NavGroup label="Contenu">
-                    <NavItem label="Abréviations" isActive={activeTab === 'dictionary'} onClick={() => setActiveTab('dictionary')} icon={<Icon.Book />} />
-                    <NavItem label="Intelligence IA" isActive={activeTab === 'intelligence'} onClick={() => setActiveTab('intelligence')} icon={<Icon.Brain />} />
-                </NavGroup>
+            <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <SectionLabel label="Contenu" />
+                <NavItem label="Abréviations" isActive={activeTab === 'dictionary'} onClick={() => setActiveTab('dictionary')} icon={<Icon.Book />} accent="#6366f1" />
+                <NavItem label="Intelligence IA" isActive={activeTab === 'intelligence'} onClick={() => setActiveTab('intelligence')} icon={<Icon.Brain />} accent="#8b5cf6" />
 
-                <NavGroup label="Application">
-                    <NavItem label="Apparence" isActive={activeTab === 'appearance'} onClick={() => setActiveTab('appearance')} icon={<Icon.Palette />} />
-                    <NavItem label="Révision" isActive={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} icon={<Icon.Calendar />} />
-                    <NavItem label="Données" isActive={activeTab === 'data'} onClick={() => setActiveTab('data')} icon={<Icon.Database />} />
-                    <NavItem label="Statistiques" isActive={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<Icon.BarChart />} />
-                </NavGroup>
+                <div style={{ height: 12 }} />
+                <SectionLabel label="Application" />
+                <NavItem label="Apparence" isActive={activeTab === 'appearance'} onClick={() => setActiveTab('appearance')} icon={<Icon.Palette />} accent="#0ea5e9" />
+                <NavItem label="Révision" isActive={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} icon={<Icon.Calendar />} accent="#f59e0b" />
+                <NavItem label="Données" isActive={activeTab === 'data'} onClick={() => setActiveTab('data')} icon={<Icon.Database />} accent="#10b981" />
+                <NavItem label="Statistiques" isActive={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<Icon.BarChart />} accent="#06b6d4" />
 
-                <NavGroup label="Compte">
-                    <NavItem label="Profil" isActive={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<Icon.User />} />
-                    <NavItem label="Abonnement" isActive={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')} icon={<Icon.Card />} />
-                </NavGroup>
+                <div style={{ height: 12 }} />
+                <SectionLabel label="Compte" />
+                <NavItem label="Profil" isActive={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<Icon.User />} accent="#f43f5e" />
+                <NavItem label="Abonnement" isActive={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')} icon={<Icon.Card />} accent="#f59e0b" />
             </nav>
 
             {/* User footer */}
             <div style={{
-                padding: '12px 16px',
+                padding: '12px 14px',
                 borderTop: `1px solid ${S.border}`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
             }}>
                 <div style={{
-                    width: 32, height: 32, borderRadius: '50%',
+                    width: 34, height: 34, borderRadius: '50%',
                     background: 'linear-gradient(135deg, #10b981, #2dd4bf)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0,
+                    color: '#fff', fontWeight: 800, fontSize: 14, flexShrink: 0,
+                    boxShadow: '0 2px 8px #10b98130',
                 }}>
                     {userName.charAt(0).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: S.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: S.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {userName}
                     </div>
                     <div style={{ fontSize: 11, color: S.muted, display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: S.primary, display: 'inline-block' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b98180' }} />
                         Connecté
                     </div>
                 </div>

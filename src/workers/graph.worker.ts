@@ -506,6 +506,16 @@ self.onmessage = (e: MessageEvent<WorkerInput | Card[]>) => {
             }
         }
 
+        // Manual Links
+        if (card.manualConnections) {
+            card.manualConnections.forEach(targetId => {
+                const targetCard = cardMap.get(targetId);
+                if (targetCard) {
+                    addLink(card.id, targetId, 1.0, `Lien manuel avec: ${targetCard.title}`);
+                }
+            });
+        }
+
         // --- Unigram matching (existing) ---
         let contentTokens = tokenize(card.content + ' ' + card.details)
             .filter(w => !DYNAMIC_STOPWORDS.has(w));

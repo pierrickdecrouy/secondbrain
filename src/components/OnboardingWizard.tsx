@@ -74,68 +74,47 @@ export const OnboardingWizard: React.FC = () => {
     };
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Inter, system-ui, sans-serif'
-        }}>
+        <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] flex items-center justify-center font-sans">
             {/* Background elements */}
-            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-                <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-                <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] blur-[80px]" style={{ background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)' }} />
+                <div className="absolute -bottom-[10%] -right-[10%] w-[50vw] h-[50vw] blur-[80px]" style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)' }} />
             </div>
 
-            <div style={{
-                position: 'relative', width: '100%', maxWidth: 500,
-                background: 'rgba(255, 255, 255, 0.03)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: 32, padding: '40px',
-                boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
-                color: 'white',
-                overflow: 'hidden'
-            }}>
+            <div className="relative w-full max-w-[500px] bg-white/5 backdrop-blur-[20px] border border-white/10 rounded-[32px] p-10 shadow-[0_32px_80px_rgba(0,0,0,0.5)] text-white overflow-hidden mx-5">
                 <AnimatePresence mode="wait">
                     {/* STEP 1: Profil */}
                     {step === 1 && (
                         <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 8px' }}>Bienvenue sur Extnd.</h2>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 32px' }}>Faisons connaissance pour adapter votre expérience.</p>
+                            <h2 className="text-[1.75rem] font-extrabold m-0 mb-2">Bienvenue sur Extnd.</h2>
+                            <p className="text-white/60 m-0 mb-8">Faisons connaissance pour adapter votre expérience.</p>
 
-                            <div style={{ marginBottom: 24 }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>Comment vous appelez-vous ?</label>
+                            <div className="mb-6">
+                                <label className="block text-[0.85rem] text-white/70 mb-2">Comment vous appelez-vous ?</label>
                                 <input 
                                     type="text" value={name} onChange={e => setName(e.target.value)}
                                     placeholder="Votre prénom"
-                                    style={{
-                                        width: '100%', padding: '16px', borderRadius: 16,
-                                        background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
-                                        color: 'white', fontSize: '1rem', outline: 'none'
-                                    }}
+                                    className="w-full p-4 rounded-2xl bg-black/20 border border-white/10 text-white text-base outline-none focus:border-white/30 transition-colors box-border"
                                 />
                             </div>
 
-                            <div style={{ marginBottom: 32 }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>Quel est votre domaine principal ?</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                            <div className="mb-8">
+                                <label className="block text-[0.85rem] text-white/70 mb-3">Quel est votre domaine principal ?</label>
+                                <div className="grid grid-cols-2 gap-3">
                                     {specialties.map(spec => {
                                         const active = specialty === spec.id;
                                         return (
                                             <button
                                                 key={spec.id}
                                                 onClick={() => setSpecialty(spec.id)}
-                                                style={{
-                                                    background: active ? `rgba(${spec.color === '#10b981' ? '16,185,129' : spec.color === '#6366f1' ? '99,102,241' : spec.color === '#f59e0b' ? '245,158,11' : '236,72,153'}, 0.2)` : 'rgba(255,255,255,0.05)',
-                                                    border: `1px solid ${active ? spec.color : 'rgba(255,255,255,0.1)'}`,
-                                                    borderRadius: 16, padding: '16px 8px',
-                                                    color: 'white', cursor: 'pointer',
-                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                                                    transition: 'all 0.2s'
-                                                }}
+                                                className={`rounded-2xl p-4 text-white cursor-pointer flex flex-col items-center gap-2 transition-all border ${active ? '' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                                                style={active ? {
+                                                    background: `rgba(${spec.color === '#10b981' ? '16,185,129' : spec.color === '#6366f1' ? '99,102,241' : spec.color === '#f59e0b' ? '245,158,11' : '236,72,153'}, 0.2)`,
+                                                    borderColor: spec.color
+                                                } : {}}
                                             >
                                                 <spec.icon size={28} color={active ? spec.color : 'rgba(255,255,255,0.5)'} weight={active ? "fill" : "regular"} />
-                                                <span style={{ fontSize: '0.85rem', fontWeight: active ? 600 : 400 }}>{spec.label}</span>
+                                                <span className={`text-[0.85rem] ${active ? 'font-semibold' : 'font-normal'}`}>{spec.label}</span>
                                             </button>
                                         )
                                     })}
@@ -145,15 +124,7 @@ export const OnboardingWizard: React.FC = () => {
                             <button
                                 onClick={handleNext}
                                 disabled={!name.trim() || !specialty}
-                                style={{
-                                    width: '100%', padding: 16, borderRadius: 16,
-                                    background: (!name.trim() || !specialty) ? 'rgba(255,255,255,0.1)' : 'white',
-                                    color: (!name.trim() || !specialty) ? 'rgba(255,255,255,0.3)' : 'black',
-                                    fontWeight: 700, fontSize: '1rem', border: 'none',
-                                    cursor: (!name.trim() || !specialty) ? 'not-allowed' : 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                    transition: 'all 0.2s'
-                                }}
+                                className={`w-full p-4 rounded-2xl font-bold text-base border-none flex items-center justify-center gap-2 transition-all ${(!name.trim() || !specialty) ? 'bg-white/10 text-white/30 cursor-not-allowed' : 'bg-white text-black cursor-pointer hover:bg-white/90'}`}
                             >
                                 Suivant <ArrowRight weight="bold" />
                             </button>
@@ -163,54 +134,40 @@ export const OnboardingWizard: React.FC = () => {
                     {/* STEP 2: Import */}
                     {step === 2 && (
                         <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 8px' }}>Nourrissez votre cerveau</h2>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 32px' }}>Importez vos fiches existantes ou démarrez sur une base vierge.</p>
+                            <h2 className="text-[1.75rem] font-extrabold m-0 mb-2">Nourrissez votre cerveau</h2>
+                            <p className="text-white/60 m-0 mb-8">Importez vos fiches existantes ou démarrez sur une base vierge.</p>
 
                             <div 
                                 onClick={() => fileInputRef.current?.click()}
-                                style={{
-                                    border: '2px dashed rgba(255,255,255,0.2)',
-                                    borderRadius: 24, padding: '40px 20px',
-                                    textAlign: 'center', cursor: 'pointer',
-                                    background: 'rgba(0,0,0,0.2)', marginBottom: 24,
-                                    transition: 'all 0.2s'
-                                }}
+                                className="border-2 border-dashed border-white/20 rounded-[24px] py-10 px-5 text-center cursor-pointer bg-black/20 mb-6 transition-all hover:border-white/40 hover:bg-black/30"
                             >
                                 {isImporting ? (
-                                    <div style={{ color: '#10b981' }}>Importation en cours...</div>
+                                    <div className="text-emerald-500">Importation en cours...</div>
                                 ) : importSuccessCount > 0 ? (
-                                    <div style={{ color: '#10b981', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                    <div className="text-emerald-500 flex flex-col items-center gap-3">
                                         <CheckCircle size={48} weight="fill" />
-                                        <div style={{ fontWeight: 600 }}>{importSuccessCount} fiches importées !</div>
+                                        <div className="font-semibold">{importSuccessCount} fiches importées !</div>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                    <div className="flex flex-col items-center gap-3">
                                         <UploadSimple size={48} color="rgba(255,255,255,0.5)" />
-                                        <div style={{ fontWeight: 600 }}>Importer un fichier CSV</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>Format attendu : titre, contenu, tags</div>
+                                        <div className="font-semibold">Importer un fichier CSV</div>
+                                        <div className="text-[0.8rem] text-white/40">Format attendu : titre, contenu, tags</div>
                                     </div>
                                 )}
-                                <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+                                <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12 }}>
+                            <div className="flex gap-3">
                                 <button
                                     onClick={handleNext}
-                                    style={{
-                                        flex: 1, padding: 16, borderRadius: 16,
-                                        background: 'rgba(255,255,255,0.05)', color: 'white',
-                                        fontWeight: 600, border: 'none', cursor: 'pointer'
-                                    }}
+                                    className="flex-1 p-4 rounded-2xl bg-white/5 text-white font-semibold border-none cursor-pointer hover:bg-white/10 transition-colors"
                                 >
                                     Passer
                                 </button>
                                 <button
                                     onClick={handleNext}
-                                    style={{
-                                        flex: 2, padding: 16, borderRadius: 16,
-                                        background: 'white', color: 'black',
-                                        fontWeight: 700, border: 'none', cursor: 'pointer'
-                                    }}
+                                    className="flex-[2] p-4 rounded-2xl bg-white text-black font-bold border-none cursor-pointer hover:bg-white/90 transition-colors"
                                 >
                                     Continuer
                                 </button>
@@ -220,38 +177,26 @@ export const OnboardingWizard: React.FC = () => {
 
                     {/* STEP 3: Notifications */}
                     {step === 3 && (
-                        <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ textAlign: 'center' }}>
-                            <div style={{
-                                width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px',
-                                boxShadow: '0 8px 32px rgba(99,102,241,0.4)'
-                            }}>
+                        <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-6 shadow-[0_8px_32px_rgba(99,102,241,0.4)]">
                                 <BellRinging size={40} color="white" weight="fill" />
                             </div>
-                            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 16px' }}>Ne perdez pas le fil</h2>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 32px', lineHeight: 1.6 }}>
+                            <h2 className="text-[1.75rem] font-extrabold m-0 mb-4">Ne perdez pas le fil</h2>
+                            <p className="text-white/60 m-0 mb-8 leading-relaxed">
                                 Activez les notifications pour savoir quand vos fiches doivent être révisées (algorithme FSRS). <br/>
                                 <i>Aucun spam, promis.</i>
                             </p>
 
                             <button
                                 onClick={handleRequestNotifications}
-                                style={{
-                                    width: '100%', padding: 16, borderRadius: 16,
-                                    background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white',
-                                    fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer',
-                                    marginBottom: 16, boxShadow: '0 8px 24px rgba(16,185,129,0.3)'
-                                }}
+                                className="w-full p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold text-base border-none cursor-pointer mb-4 shadow-[0_8px_24px_rgba(16,185,129,0.3)] hover:scale-[1.02] transition-transform"
                             >
                                 Activer les rappels
                             </button>
                             
                             <button
                                 onClick={handleFinish}
-                                style={{
-                                    background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-                                    cursor: 'pointer', fontSize: '0.9rem', padding: 8
-                                }}
+                                className="bg-transparent border-none text-white/40 cursor-pointer text-[0.9rem] p-2 hover:text-white/60 transition-colors"
                             >
                                 Plus tard
                             </button>

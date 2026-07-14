@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export type AddDataMode = 'none' | 'create' | 'edit' | 'import';
 type ViewMode = 'grid' | 'list' | 'network' | 'split';
-type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
+type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
 type SyncStatus = 'synced' | 'pending' | 'error';
 
 interface UIState {

@@ -220,42 +220,42 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
     const qualityScore = card.progress?.difficulty ? (10 - card.progress.difficulty) * 10 : 50;
 
     return (
-        <div className="modal-overlay focus-mode" style={{ padding: isFullscreen ? '0' : 'var(--modal-overlay-padding, 20px)' }}>
+        <div className={`modal-overlay focus-mode ${isFullscreen ? "p-0" : "p-5"}`}>
             
-            <div ref={modalRef} className="modal-content review-modal-content" style={{ width: isFullscreen ? '100vw' : 'min(800px, 95vw)', height: isFullscreen ? '100vh' : 'auto', maxHeight: isFullscreen ? '100vh' : '85vh', borderRadius: isFullscreen ? '0' : '16px', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
-                <div className="modal-header" style={{ display: 'block', borderBottom: 'none', paddingBottom: '0', background: 'var(--color-surface)', borderTopLeftRadius: isFullscreen ? '0' : '16px', borderTopRightRadius: isFullscreen ? '0' : '16px', paddingTop: '16px', paddingLeft: '24px', paddingRight: '24px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div ref={modalRef} className={`modal-content review-modal-content flex flex-col bg-[color:var(--color-bg)] ${isFullscreen ? "w-screen h-screen max-h-screen rounded-none" : "w-[min(800px,95vw)] h-auto max-h-[85vh] rounded-2xl"}`}>
+                <div className={`modal-header block border-b-0 pb-0 bg-[color:var(--color-surface)] pt-4 px-6 ${isFullscreen ? "rounded-t-none" : "rounded-t-2xl"}`}>
+                    <div className="flex justify-between items-center mb-4">
                         <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: title === 'Bachotage Intensif' ? '2px' : '4px' }}>
-                                <Brain size={24} weight="duotone" color="var(--color-drug)" />
-                                <h2 className="modal-title" style={{ margin: 0, fontSize: '1.25rem' }}>{title || 'Session de révision'}</h2>
+                            <div className={`flex items-center gap-2 ${title === 'Bachotage Intensif' ? "mb-0.5" : "mb-1"}`}>
+                                <Brain size={24} weight="duotone" className="text-[color:var(--color-drug)]" />
+                                <h2 className="modal-title m-0 text-xl">{title || 'Session de révision'}</h2>
                             </div>
                             {title === 'Bachotage Intensif' && (
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                <div className="text-xs text-[color:var(--color-text-muted)] font-medium">
                                     Mode Entraînement — Sans impact sur vos plannings FSRS
                                 </div>
                             )}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div className="flex gap-2 items-center">
                             {quizTimeLeft !== null && (
-                                <div style={{ display: 'inline-flex', alignItems: 'center', background: quizTimeLeft <= 5 ? '#fee2e2' : 'var(--color-bg)', border: `1px solid ${quizTimeLeft <= 5 ? '#ef4444' : 'var(--color-border)'}`, borderRadius: '20px', padding: '4px 12px', fontSize: '0.85rem', fontWeight: 600, color: quizTimeLeft <= 5 ? '#ef4444' : 'var(--color-text-muted)', marginRight: '8px', transition: 'all 0.3s ease' }}>
-                                    <Timer size={16} style={{ marginRight: '4px' }} weight={quizTimeLeft <= 5 ? 'bold' : 'regular'} />
+                                <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold mr-2 transition-all border ${quizTimeLeft <= 5 ? "bg-red-100 border-red-500 text-red-500" : "bg-[color:var(--color-bg)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]"}`}>
+                                    <Timer size={16} className="mr-1" weight={quizTimeLeft <= 5 ? 'bold' : 'regular'} />
                                     {quizTimeLeft}s
                                 </div>
                             )}
-                            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '20px', padding: '4px 12px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '8px' }}>
+                            <div className="inline-flex items-center bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-full px-3 py-1 text-sm font-semibold text-[color:var(--color-text-muted)] mr-2">
                                 {index + 1} / {cards.length}
                             </div>
                             
-                            <button className={`modal-close ${showStats ? 'active' : ''}`} onClick={() => setShowStats(!showStats)} title="Statistiques de la carte" style={{ background: showStats ? 'var(--color-bg)' : 'transparent', color: showStats ? 'var(--color-drug)' : 'var(--color-text-muted)' }}>
+                            <button className={`modal-close ${showStats ? 'bg-[color:var(--color-bg)] text-[color:var(--color-drug)]' : 'bg-transparent text-[color:var(--color-text-muted)]'}`} onClick={() => setShowStats(!showStats)} title="Statistiques de la carte">
                                 <ChartBar size={20} />
                             </button>
 
-                            <button className={`modal-close ${isPaused ? 'active' : ''}`} onClick={() => setIsPaused(!isPaused)} title="Pause" style={{ background: isPaused ? 'var(--color-bg)' : 'transparent', color: isPaused ? 'var(--color-drug)' : 'var(--color-text-muted)' }}>
+                            <button className={`modal-close ${isPaused ? 'bg-[color:var(--color-bg)] text-[color:var(--color-drug)]' : 'bg-transparent text-[color:var(--color-text-muted)]'}`} onClick={() => setIsPaused(!isPaused)} title="Pause">
                                 <Coffee size={20} />
                             </button>
 
-                            <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 4px' }} />
+                            <div className="w-[1px] h-5 bg-[color:var(--color-border)] mx-1" />
                             <button className="modal-close" onClick={toggleFullscreen} title={isFullscreen ? "Quitter le plein écran" : "Mettre au premier plan"}>
                                 {isFullscreen ? <CornersIn size={20} /> : <CornersOut size={20} />}
                             </button>
@@ -263,34 +263,21 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                         </div>
                     </div>
                     {/* Progress Bar */}
-                    <div style={{ width: '100%', height: '4px', background: 'var(--color-bg)', borderRadius: '2px', overflow: 'hidden', marginBottom: '0' }}>
-                        <div style={{ height: '100%', background: 'var(--color-drug)', width: `${((index + 1) / cards.length) * 100}%`, transition: 'width 0.3s ease' }} />
+                    <div className="w-full h-1 bg-[color:var(--color-bg)] rounded-full overflow-hidden mb-0">
+                        <div className="h-full bg-[color:var(--color-drug)] transition-[width] duration-300 ease-in-out" style={{ width: `${((index + 1) / cards.length) * 100}%` }} />
                     </div>
                 </div>
 
-                <div className="modal-body custom-scrollbar" style={{ flex: 1, overflow: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <div className="modal-body custom-scrollbar flex-1 overflow-auto p-6 flex flex-col relative">
                     
                     {isPaused ? (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
-                            <Coffee size={64} weight="duotone" color="var(--color-drug)" style={{ marginBottom: 16 }} />
-                            <h3 style={{ fontSize: '1.5rem', marginBottom: 8, color: 'var(--color-text)' }}>Pause Café</h3>
-                            <p style={{ fontSize: '1rem', marginBottom: 24, textAlign: 'center' }}>Prenez une respiration.<br/>La session est en pause.</p>
+                        <div className="flex-1 flex flex-col items-center justify-center text-[color:var(--color-text-muted)]">
+                            <Coffee size={64} weight="duotone" className="text-[color:var(--color-drug)] mb-4" />
+                            <h3 className="text-2xl mb-2 text-[color:var(--color-text)]">Pause Café</h3>
+                            <p className="text-base mb-6 text-center">Prenez une respiration.<br/>La session est en pause.</p>
                             <button
                                 onClick={() => setIsPaused(false)}
-                                style={{
-                                    padding: '10px 24px',
-                                    borderRadius: '12px',
-                                    background: 'var(--color-drug)',
-                                    color: 'white',
-                                    border: 'none',
-                                    fontWeight: 600,
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    boxShadow: 'var(--shadow)',
-                                    transition: 'all 0.15s ease'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                                className="px-6 py-2.5 rounded-xl bg-[color:var(--color-drug)] text-white border-none font-semibold text-base cursor-pointer shadow-md transition-all duration-150 hover:-translate-y-0.5"
                             >
                                 Reprendre
                             </button>
@@ -298,39 +285,39 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     ) : (
                         <>
                     {showStats && (
-                        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '20px', marginBottom: '24px', boxShadow: 'var(--shadow)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                        <div className="bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-xl p-5 mb-6 shadow-[var(--shadow)] grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-5">
                             <div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Statut de la carte</div>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)', marginTop: '4px' }}>
+                                <div className="text-xs text-[color:var(--color-text-muted)] uppercase font-bold tracking-wider">Statut de la carte</div>
+                                <div className="text-lg font-semibold text-[color:var(--color-text)] mt-1">
                                     {card.progress?.status === 'new' ? 'Nouvelle' : card.progress?.status === 'learning' ? 'En apprentissage' : 'À réviser'}
                                 </div>
                             </div>
                             <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Difficulté</div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: qualityScore < 40 ? '#ef4444' : qualityScore > 70 ? '#10b981' : '#f59e0b' }}>
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="text-xs text-[color:var(--color-text-muted)] uppercase font-bold tracking-wider">Difficulté</div>
+                                    <div className="text-sm font-semibold" style={{ color: qualityScore < 40 ? '#ef4444' : qualityScore > 70 ? '#10b981' : '#f59e0b' }}>
                                         {card.progress?.difficulty ? `${card.progress.difficulty.toFixed(1)} / 10` : 'N/A'}
                                     </div>
                                 </div>
-                                <div style={{ width: '100%', height: '6px', background: 'var(--color-bg)', borderRadius: '3px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', background: qualityScore < 40 ? '#ef4444' : qualityScore > 70 ? '#10b981' : '#f59e0b', width: `${card.progress?.difficulty ? (card.progress.difficulty / 10) * 100 : 0}%`, transition: 'width 0.3s ease' }} />
+                                <div className="w-full h-1.5 bg-[color:var(--color-bg)] rounded-full overflow-hidden">
+                                    <div className="h-full transition-[width] duration-300 ease-in-out" style={{ background: qualityScore < 40 ? '#ef4444' : qualityScore > 70 ? '#10b981' : '#f59e0b', width: `${card.progress?.difficulty ? (card.progress.difficulty / 10) * 100 : 0}%` }} />
                                 </div>
                             </div>
                             <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Stabilité</div>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-drug)' }}>
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="text-xs text-[color:var(--color-text-muted)] uppercase font-bold tracking-wider">Stabilité</div>
+                                    <div className="text-sm font-semibold text-[color:var(--color-drug)]">
                                         {card.progress?.stability ? `${card.progress.stability.toFixed(1)} j` : 'N/A'}
                                     </div>
                                 </div>
-                                <div style={{ width: '100%', height: '6px', background: 'var(--color-bg)', borderRadius: '3px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', background: 'var(--color-drug)', width: `${Math.min(100, (card.progress?.stability || 0) / 365 * 100)}%`, transition: 'width 0.3s ease' }} />
+                                <div className="w-full h-1.5 bg-[color:var(--color-bg)] rounded-full overflow-hidden">
+                                    <div className="h-full bg-[color:var(--color-drug)] transition-[width] duration-300 ease-in-out" style={{ width: `${Math.min(100, (card.progress?.stability || 0) / 365 * 100)}%` }} />
                                 </div>
                             </div>
                             <div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Historique</div>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)', marginTop: '4px' }}>
-                                    {card.progress?.reps ?? 0} rép. <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 400 }}>({card.progress?.lapses ?? 0} oublis)</span>
+                                <div className="text-xs text-[color:var(--color-text-muted)] uppercase font-bold tracking-wider">Historique</div>
+                                <div className="text-lg font-semibold text-[color:var(--color-text)] mt-1">
+                                    {card.progress?.reps ?? 0} rép. <span className="text-[color:var(--color-text-muted)] text-sm font-normal">({card.progress?.lapses ?? 0} oublis)</span>
                                 </div>
                             </div>
                         </div>
@@ -339,23 +326,23 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     <div className={`flip-card ${shouldReveal ? 'revealed' : ''}`}>
                         <div className="flip-card-inner">
                             {/* Front of Card (Question) */}
-                            <div className="flip-card-front custom-scrollbar" style={{ border: card.progress?.isLeech ? '2px solid #ef4444' : '1px solid var(--color-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+                            <div className={`flip-card-front custom-scrollbar shadow-[0_10px_30px_rgba(0,0,0,0.3)] ${card.progress?.isLeech ? 'border-2 border-red-500' : 'border border-[color:var(--color-border)]'}`}>
                                 {card.progress?.isLeech && (
-                                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px 16px', color: '#ef4444', display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '24px', width: '100%', maxWidth: '500px', margin: '0 auto 24px auto' }}>
-                                        <Brain size={24} weight="duotone" style={{ flexShrink: 0, marginTop: '2px' }} />
-                                        <div style={{ textAlign: 'left' }}>
-                                            <div style={{ fontWeight: 700, marginBottom: '4px' }}>Carte Difficile (Leech)</div>
-                                            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Vous bloquez souvent sur cette carte. Envisagez de la modifier pour la rendre plus simple ou de la décomposer.</div>
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg py-3 px-4 text-red-500 flex items-start gap-3 mb-6 w-full max-w-[500px] mx-auto">
+                                        <Brain size={24} weight="duotone" className="shrink-0 mt-0.5" />
+                                        <div className="text-left">
+                                            <div className="font-bold mb-1">Carte Difficile (Leech)</div>
+                                            <div className="text-sm opacity-90">Vous bloquez souvent sur cette carte. Envisagez de la modifier pour la rendre plus simple ou de la décomposer.</div>
                                         </div>
                                     </div>
                                 )}
-                                <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <div className="text-center flex-1 flex flex-col justify-center">
                                     {card.format === 'cloze' ? (
-                                        <div style={{ margin: '0 0 8px 0', fontSize: '1.75rem', color: 'var(--color-text)', fontWeight: 500, lineHeight: 1.6 }}>
+                                        <div className="m-0 mb-2 text-[1.75rem] text-[color:var(--color-text)] font-medium leading-relaxed">
                                             {(card.content || '').split(/(\{.*?\}|\|\|.*?\|\|)/).map((part, i) => {
                                                 if ((part.startsWith('{') && part.endsWith('}')) || (part.startsWith('||') && part.endsWith('||'))) {
                                                     return (
-                                                        <span key={i} style={{ color: 'var(--color-text-muted)', fontWeight: 800, borderBottom: '2px dashed var(--color-border)', padding: '0 4px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
+                                                        <span key={i} className="text-[color:var(--color-text-muted)] font-extrabold border-b-2 border-dashed border-[color:var(--color-border)] px-1 rounded bg-white/5">
                                                             [...]
                                                         </span>
                                                     );
@@ -365,37 +352,35 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                         </div>
                                     ) : (
                                         <>
-                                            <h3 style={{ margin: '0 0 8px 0', fontSize: '2rem', color: 'var(--color-text)', fontWeight: 700 }}>{card.title}</h3>
-                                            {card.subtitle && <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '1.25rem', fontFamily: 'monospace' }}>{card.subtitle}</p>}
+                                            <h3 className="m-0 mb-2 text-3xl text-[color:var(--color-text)] font-bold">{card.title}</h3>
+                                            {card.subtitle && <p className="text-[color:var(--color-text-muted)] m-0 text-xl font-mono">{card.subtitle}</p>}
                                         </>
                                     )}
                                 </div>
                                 
-                                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                                <div className="mt-auto flex flex-col items-center gap-4">
                                     <button 
                                         onClick={() => setIsAnswerRevealed(true)}
-                                        style={{ background: 'var(--color-drug)', color: 'white', border: 'none', padding: '16px 32px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(16,185,129,0.3)', transition: 'transform 0.2s, background 0.2s', width: '100%', maxWidth: '400px' }}
-                                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                        className="bg-[color:var(--color-drug)] text-white border-none py-4 px-8 rounded-xl text-lg font-semibold cursor-pointer shadow-[0_4px_14px_rgba(16,185,129,0.3)] transition-transform duration-200 hover:-translate-y-0.5 w-full max-w-[400px]"
                                     >
                                         Afficher la réponse
                                     </button>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        Appuyez sur <kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-border)', fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-text)' }}>Espace</kbd> pour révéler
+                                    <div className="text-sm text-[color:var(--color-text-muted)] flex items-center gap-1.5">
+                                        Appuyez sur <kbd className="bg-white/10 py-0.5 px-1.5 rounded border border-[color:var(--color-border)] font-mono font-semibold text-xs text-[color:var(--color-text)]">Espace</kbd> pour révéler
                                     </div>
                                 </div>
                             </div>
 
                             {/* Back of Card (Answer) */}
-                            <div className="flip-card-back custom-scrollbar" style={{ border: '1px solid var(--color-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-                                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                            <div className="flip-card-back custom-scrollbar border border-[color:var(--color-border)] shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                                <div className="text-center mb-8">
                                     {card.format === 'cloze' ? (
-                                        <div style={{ margin: '0 0 8px 0', fontSize: '1.75rem', color: 'var(--color-text)', fontWeight: 500, lineHeight: 1.6, textAlign: 'center' }}>
+                                        <div className="m-0 mb-2 text-[1.75rem] text-[color:var(--color-text)] font-medium leading-relaxed text-center">
                                             {(card.content || '').split(/(\{.*?\}|\|\|.*?\|\|)/).map((part, i) => {
                                                 if ((part.startsWith('{') && part.endsWith('}')) || (part.startsWith('||') && part.endsWith('||'))) {
                                                     const clozeText = part.startsWith('{') ? part.slice(1, -1) : part.slice(2, -2);
                                                     return (
-                                                        <span key={i} style={{ color: 'var(--color-drug)', fontWeight: 800, borderBottom: '2px dashed var(--color-drug)', padding: '0 4px', borderRadius: '4px', background: 'var(--color-drug-light)' }}>
+                                                        <span key={i} className="text-[color:var(--color-drug)] font-extrabold border-b-2 border-dashed border-[color:var(--color-drug)] px-1 rounded bg-[color:var(--color-drug-light)]">
                                                             {clozeText}
                                                         </span>
                                                     );
@@ -405,34 +390,34 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                         </div>
                                     ) : (
                                         <>
-                                            <h3 style={{ margin: '0 0 8px 0', fontSize: '2rem', color: 'var(--color-text)', fontWeight: 700 }}>{card.title}</h3>
-                                            {card.subtitle && <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '1.25rem', fontFamily: 'monospace' }}>{card.subtitle}</p>}
+                                            <h3 className="m-0 mb-2 text-3xl text-[color:var(--color-text)] font-bold">{card.title}</h3>
+                                            {card.subtitle && <p className="text-[color:var(--color-text-muted)] m-0 text-xl font-mono">{card.subtitle}</p>}
                                         </>
                                     )}
                                 </div>
 
-                                <div className="markdown-content" style={{ flex: 1 }}>
+                                <div className="markdown-content flex-1">
                                     {card.content && card.format !== 'cloze' && (
-                                        <div style={{ marginBottom: card.details ? '24px' : '0' }}>
+                                        <div className={card.details ? 'mb-6' : 'mb-0'}>
                                             <MarkdownRenderer content={card.content} />
                                         </div>
                                     )}
                                     
                                     {card.details && (
-                                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', borderLeft: '4px solid var(--color-drug)', marginBottom: '24px' }}>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-drug)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '8px' }}>Détails de la réponse</div>
+                                        <div className="bg-white/5 p-5 rounded-xl border-l-4 border-l-[color:var(--color-drug)] mb-6">
+                                            <div className="text-xs text-[color:var(--color-drug)] uppercase font-extrabold tracking-wider mb-2">Détails de la réponse</div>
                                             <MarkdownRenderer content={card.details} />
                                         </div>
                                     )}
                                     
                                     {linkedRecommendations.length > 0 && (
-                                        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--color-border)' }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <div className="mt-8 pt-6 border-t border-[color:var(--color-border)]">
+                                            <div className="text-sm font-semibold text-[color:var(--color-text-muted)] mb-3 flex items-center gap-1.5">
                                                 Parcours logique recommandé
                                             </div>
-                                            <div className="links-list" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                            <div className="links-list flex gap-2 flex-wrap">
                                                 {linkedRecommendations.map(rec => (
-                                                    <button key={rec.id} className="link-chip" onClick={() => onJumpToCard?.(rec.id)} style={{ padding: '6px 16px', fontSize: '0.85rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '20px', cursor: 'pointer', color: 'var(--color-text)', fontWeight: 500, transition: 'all 0.2s' }} onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--color-drug)'} onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}>
+                                                    <button key={rec.id} className="link-chip px-4 py-1.5 text-sm bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-full cursor-pointer text-[color:var(--color-text)] font-medium transition-all duration-200 hover:border-[color:var(--color-drug)]" onClick={() => onJumpToCard?.(rec.id)}>
                                                         {rec.title}
                                                     </button>
                                                 ))}
@@ -448,36 +433,19 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                 </div>
 
                 {shouldReveal && (
-                    <div style={{ padding: '20px 24px', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', animation: 'slideUp 0.3s ease-out' }}>
-                        <div className="review-actions-container" style={{ display: 'flex', gap: '12px', justifyContent: 'center', maxWidth: '800px', margin: '0 auto' }}>
+                    <div className="py-5 px-6 bg-[color:var(--color-surface)] border-t border-[color:var(--color-border)] rounded-b-2xl animate-[slideUp_0.3s_ease-out]">
+                        <div className="review-actions-container flex gap-3 justify-center max-w-[800px] mx-auto">
                             {(isCourseType ? COURSE_REVIEW_ACTIONS : REVIEW_ACTIONS)
                                 .filter(action => showEasyButton || action.rating !== 4)
                                 .map(action => (
                                 <button
                                     key={action.rating}
-                                    className={`review-action-btn ${action.className}`}
-                                    style={{ 
-                                        flex: 1, 
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: '12px 16px', 
-                                        borderRadius: '12px',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.1s, filter 0.2s',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                                    }}
+                                    className={`review-action-btn ${action.className} flex-1 flex flex-col items-center justify-center py-3 px-4 rounded-xl border-none cursor-pointer transition-all duration-100 shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:brightness-95 active:scale-95`}
                                     onClick={() => handleRate(action.rating)}
                                     title={`Raccourci clavier: ${action.rating}`}
-                                    onMouseOver={(e) => e.currentTarget.style.filter = 'brightness(0.95)'}
-                                    onMouseOut={(e) => e.currentTarget.style.filter = 'brightness(1)'}
-                                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.97)'}
-                                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 >
-                                    <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '4px' }}>{action.label}</div>
-                                    <div style={{ fontSize: '0.85rem', opacity: 0.85, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div className="text-base font-bold mb-1">{action.label}</div>
+                                    <div className="text-sm opacity-85 font-medium flex items-center gap-1">
                                         {nextIntervals[action.rating]}
                                     </div>
                                 </button>

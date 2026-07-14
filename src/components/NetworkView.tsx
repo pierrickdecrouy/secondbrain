@@ -131,12 +131,28 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 }
             }
         };
+        
+        const handleHeavyIndexing = (e: Event) => {
+            const customEvent = e as CustomEvent<{ isIndexing: boolean }>;
+            if (fgRef.current) {
+                if (customEvent.detail.isIndexing) {
+                    console.log("[Orchestration] Heavy indexing started, pausing physics");
+                    fgRef.current.pauseAnimation?.();
+                } else if (document.visibilityState === 'visible') {
+                    console.log("[Orchestration] Heavy indexing finished, resuming physics");
+                    fgRef.current.resumeAnimation?.();
+                }
+            }
+        };
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('heavy-indexing-status', handleHeavyIndexing);
 
         return () => {
             resizeObserver.disconnect();
             intersectionObserver.disconnect();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('heavy-indexing-status', handleHeavyIndexing);
         };
     }, []);
 
@@ -505,8 +521,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     };
 
     return (
-        <div className="flex w-full h-full" style={{ background: isFullscreen ? graphBg : 'transparent' }}>
-            <div ref={containerRef} className="relative flex-1 h-full overflow-hidden" style={{ background: 'transparent' }}>
+        <div className={`flex w-full h-full ${isFullscreen ? 'bg-[#f4f7fa] dark:bg-[#0f172a]' : 'bg-transparent'}`}>
+            <div ref={containerRef} className="relative flex-1 h-full overflow-hidden bg-transparent">
             {error && (
                 <div className="absolute top-4 left-4 right-4 z-50 pointer-events-none">
                     <div className={`mx-auto max-w-2xl rounded-lg border px-4 py-2 text-sm shadow-sm ${isDark ? 'bg-red-900/70 border-red-700 text-red-100' : 'bg-red-50 border-red-200 text-red-700'}`}>

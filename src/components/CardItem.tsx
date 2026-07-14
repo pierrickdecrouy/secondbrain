@@ -3,6 +3,7 @@ import type { Card } from '../types';
 import { Badge } from './Badge';
 import { PencilSimple, Trash } from '@phosphor-icons/react';
 import { stripMarkdown } from '../utils';
+import DOMPurify from 'dompurify';
 
 interface CardItemProps {
     card: Card;
@@ -38,7 +39,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, onClick, onEdit, onDel
             </div>
 
             <Badge type={card.type} className="card-badge" />
-            <h3 className="card-title" dangerouslySetInnerHTML={{ __html: card.title }} />
+            <h3 className="card-title" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(card.title || '') }} />
             {card.subtitle && <p className="card-subtitle">{card.subtitle}</p>}
             <p className="card-content">
                 {stripMarkdown(card.content)}

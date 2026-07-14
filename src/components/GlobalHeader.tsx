@@ -62,7 +62,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
             {!isHomeSection && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pointer-events-none" style={{ zIndex: -1 }} />
             )}
-            <div className="w-full max-w-[1600px] px-8 sm:px-12 flex items-center justify-between mx-auto">
+            <div className="w-full px-8 sm:px-12 flex items-center justify-between" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}>
             <div className="flex items-center gap-6">
                 {!isHomeSection && (
                     <button 
@@ -71,7 +71,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         aria-label="Ouvrir le menu"
                         title="Menu"
                     >
-                        <List size={20} weight="bold" />
+                        <List size={22} weight="regular" />
                     </button>
                 )}
                 <button

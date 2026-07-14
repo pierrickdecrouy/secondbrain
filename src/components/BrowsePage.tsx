@@ -13,6 +13,8 @@ import { useUIStore as useUI } from '../store/useUIStore';
 import { BrowseToolbar, type SortOption } from './browse/BrowseToolbar';
 import { BrowseMainContent } from './browse/BrowseMainContent';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
+
+import { useNavigate } from 'react-router-dom';
 import { CardSidePanel } from './CardSidePanel';
 import { DetailModal } from './DetailModal';
 import { BrowseSelectionBar } from './BrowseSelectionBar';
@@ -43,6 +45,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     const { cards, setEditingCard, setCardToDelete } = useCards();
     const { searchQuery, activeFilters, setActiveFilters, viewMode, setViewMode, setAddDataMode } = useUI();
     const { filteredCards, isSearching } = useFilteredCards(cards, searchQuery, activeFilters);
+    const navigate = useNavigate();
 
     const [sortOption, setSortOption] = useState<SortOption>('name-asc');
 
@@ -141,15 +144,15 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     };
 
     return (
-        <div className="browse-container" style={{ position: "relative", display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-            <div className="w-full self-center flex flex-col flex-1 min-h-0" style={{ overflow: 'hidden' }}>
+        <div className="browse-container relative flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="w-full self-center flex flex-col flex-1 min-h-0 overflow-hidden">
             <BrowseToolbar
                 cards={cards}
                 sortedCards={sortedCards}
                 activeFilters={activeFilters}
                 handleFilterToggle={handleFilterToggle}
                 getFilterLabel={getFilterLabel}
-                setAddDataMode={setAddDataMode}
+                onAdd={() => navigate('/add')}
                 isNetworkOnly={isNetworkOnly}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
@@ -169,8 +172,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.2 }}
-                        style={{ position: 'relative', overflow: 'hidden', padding: '0 40px' }}
-                        className="w-full max-w-[1600px] mx-auto self-center"
+                        className="w-full max-w-[1600px] mx-auto self-center relative overflow-hidden px-10"
                     >
                         <SearchSynthesis
                             query={searchQuery}
@@ -179,9 +181,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             onCardClick={setSynthesisPanelCardId}
                         />
                         {isSearching && (
-                            <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface)', padding: '6px 12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            <div className="absolute top-4 right-4 flex items-center gap-2 bg-[color:var(--color-surface)] py-1.5 px-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
                                 <div className="w-4 h-4 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
-                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Recherche en cours...</span>
+                                <span className="text-[0.8rem] text-[color:var(--color-text-muted)]">Recherche en cours...</span>
                             </div>
                         )}
                     </motion.div>
@@ -217,15 +219,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             </div>
                             {/* Network side panel: shown when a node is clicked in the graph */}
                             {networkPanelCard && (
-                                <div style={{
-                                    width: '380px',
-                                    flexShrink: 0,
-                                    borderLeft: '1px solid var(--border-light)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    overflow: 'hidden',
-                                    background: 'var(--color-surface)',
-                                }}>
+                                <div className="w-[380px] shrink-0 border-l border-[color:var(--border-light)] flex flex-col overflow-hidden bg-[color:var(--color-surface)]">
                                     <CardSidePanel
                                         card={networkPanelCard}
                                         allCards={cards}
@@ -273,23 +267,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
         
             {synthesisPanelCard && expandedCardId !== synthesisPanelCard.id && (
-                <div key={`synthesis-container-${synthesisPanelCard.id}`} style={{
-                    position: viewMode === 'split' ? 'absolute' : 'fixed',
-                    top: 16, 
-                    right: 16, 
-                    bottom: 16, 
-                    height: 'calc(100% - 32px)',
-                    width: viewMode === 'split' ? 'calc(50% - 32px)' : '500px',
-                    maxWidth: '100vw',
-                    backgroundColor: 'var(--color-surface)',
-                    zIndex: 1000,
-                    animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                    boxShadow: 'var(--shadow-2xl)',
-                    border: '1px solid var(--border-light)',
-                    borderRadius: '16px',
-                    display: 'flex', flexDirection: 'column',
-                    overflow: 'hidden'
-                }}>
+                <div key={`synthesis-container-${synthesisPanelCard.id}`} className={`top-4 right-4 bottom-4 max-w-[100vw] bg-[color:var(--color-surface)] z-[1000] shadow-[var(--shadow-2xl)] border border-[color:var(--border-light)] rounded-2xl flex flex-col overflow-hidden animate-[slideInRight_0.3s_cubic-bezier(0.16,1,0.3,1)] ${viewMode === 'split' ? 'absolute w-[calc(50%-32px)]' : 'fixed w-[500px]'}`} style={{ height: 'calc(100% - 32px)' }}>
                     <CardSidePanel
                         key={`synthesis-${synthesisPanelCard.id}`}
                         card={synthesisPanelCard}

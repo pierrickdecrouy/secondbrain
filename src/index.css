@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../src";
 @plugin "@tailwindcss/typography";
 
 @theme {
@@ -256,8 +257,8 @@ body,
   overflow: hidden;
   background: var(--color-bg);
   position: relative;
-  --sidebar-mini-width: 64px;
-  --sidebar-full-width: 280px;
+  --sidebar-mini-width: 72px;
+  --sidebar-full-width: 260px;
 }
 
 @media (max-width: 980px) {
@@ -276,32 +277,41 @@ body,
   flex-shrink: 0;
   display: flex;
   position: relative;
-  z-index: auto;
+  z-index: 100;
   transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.workspace-shell.home-layout .workspace-sidebar-container {
+  width: 0;
 }
 
 .workspace-sidebar {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  height: calc(100% - 32px);
+  top: 12px;
+  left: 10px;
+  height: calc(100% - 24px);
   width: var(--sidebar-mini-width);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   padding: 0;
-  gap: 0.25rem;
+  gap: 0;
   overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s cubic-bezier(0.2, 0, 0, 1), transform 0.3s cubic-bezier(0.2, 0, 0, 1);
-  border-radius: 1.5rem;
+  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s cubic-bezier(0.2, 0, 0, 1);
+  border-radius: 20px;
   z-index: 1300;
   pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0px rgba(0,0,0,0);
 }
 
 .workspace-sidebar.open {
   width: var(--sidebar-full-width);
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+.workspace-shell.home-layout .workspace-sidebar {
+  display: none;
 }
 
 .workspace-sidebar-header {
@@ -369,34 +379,35 @@ body,
 .workspace-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   flex: 1;
-  margin-top: 1rem;
+  padding: 10px 8px;
 }
 
 .workspace-nav-item {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 16px;
+  gap: 12px;
   border: none;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  margin: 0 0.5rem;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0;
   background: transparent;
   color: var(--color-text-muted);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, padding 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
-  width: calc(var(--sidebar-full-width) - 1rem);
+  width: 100%;
+  position: relative;
+  text-align: left;
 }
 
 .workspace-nav-item.collapsed {
-  width: calc(var(--sidebar-mini-width) - 1rem);
   justify-content: center;
-  padding: 0.75rem 0;
+  padding: 11px 0;
 }
 
 .workspace-nav-item.collapsed span {
@@ -408,35 +419,36 @@ body,
   background: var(--color-surface-hover);
 }
 
-
 .workspace-nav-item.active {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--color-primary);
-  position: relative;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  font-weight: 700;
 }
 
-.workspace-nav-item.active::before {
+.workspace-nav-item.active::after {
   content: '';
   position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: -1px;
+  top: 20%;
   height: 60%;
-  width: 4px;
-  background-color: var(--color-primary);
-  border-radius: 0 4px 4px 0;
+  width: 3px;
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  border-radius: 0 3px 3px 0;
 }
 
 .workspace-nav-item svg {
   flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.workspace-nav-item:hover svg {
+  transform: scale(1.1);
 }
 
 .workspace-nav-item span {
-  opacity: 1;
-  transition: opacity 0.2s ease;
-  transition-delay: 0.1s;
   font-size: 0.875rem;
-  margin-left: 0.5rem;
+  font-weight: inherit;
+  letter-spacing: -0.01em;
 }
 
 
@@ -447,8 +459,7 @@ body,
   flex-direction: column;
   height: 100vh;
   position: relative;
-  transition: padding-left 0.3s cubic-bezier(0.2, 0, 0, 1);
-  padding-left: var(--sidebar-width);
+  overflow: hidden;
 }
 
 /* ===========================
@@ -496,9 +507,9 @@ body,
 .workspace-content-scroll {
   flex: 1;
   overflow: auto;
-  padding: 0 2rem 2rem 1rem;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .workspace-sidebar-backdrop {

@@ -265,14 +265,21 @@ async function processCardEmbeddings(
         resolve: (embeddings) => {
           const entries = embeddings.map(({ cardId, embedding }) => {
             const card = cardMap.get(cardId);
+            const shardId = card?.subject || card?.parentId || 'global';
             return {
               id: cardId,
               title: card ? card.title : "Unknown",
               embeddings: embedding,
+              shardId
             };
           });
 
           try {
+            // Orchestration: Dispatch event when a heavy indexing chunk completes
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('heavy-indexing-status', { detail: { isIndexing: true } }));
+            }
+
             vectorStore.add(entries);
             // Trigger debounced save instead of immediate save
             scheduleSave();
@@ -309,8 +316,13 @@ async function processCardEmbeddings(
   // Force a final save at the end of the batch
   if (saveTimeout) {
     clearTimeout(saveTimeout);
-    vectorStore.save().catch((err) => console.error("Final save failed:", err));
+    vectorStore.saveAllLoadedShards().catch((err) => console.error("Final save failed:", err));
     saveTimeout = null;
+  }
+
+  // Orchestration: Indexing finished, resume physics
+  if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('heavy-indexing-status', { detail: { isIndexing: false } }));
   }
 
   // Clear progress
@@ -335,7 +347,8 @@ export async function semanticSearch(
     // Generate query embedding (No prefix for MiniLM)
     const queryEmbedding = await generateEmbedding(query);
 
-    // Find similar cards with higher threshold for precision
+    // Get active subjects/shards to search in (if none provided, defaults to all loaded)
+    // NOTE: This could be dynamically requested by passing targetShardIds in semanticSearch
     const results = vectorStore.search(queryEmbedding, topK);
 
     return results.map((r) => r.id);
@@ -417,8 +430,10 @@ export async function computePrecisionGraph(
       { rank: number; score: number }
     >();
     const embeddingA = vectorStore.getEmbedding(cardA.id);
+    if (!embeddingA) continue;
 
-    if (embeddingA) {
+    try {
+      // Find semantic neighbors across all loaded shards (we want global context for graph)
       const results = vectorStore.search(embeddingA, 25);
       results.forEach((r, rank) => {
         if (r.id !== cardA.id) {
@@ -428,6 +443,8 @@ export async function computePrecisionGraph(
           });
         }
       });
+    } catch (e) {
+      console.error(e);
     }
 
     // Collect candidates via Keyword Search (if function provided)

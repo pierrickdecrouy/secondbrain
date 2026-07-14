@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { getTypeColor } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import type { GraphNode, GraphLink } from '../components/NetworkGraphTypes';
 import { linkEndpointId } from '../components/NetworkGraphTypes';
 
@@ -30,6 +30,8 @@ export function useGraphPaint({
     pathLinks,
     getClusterColor
 }: UseGraphPaintProps) {
+
+    const { getCategoryColor } = useTheme();
 
     const nodePaint = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
         if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
@@ -67,7 +69,7 @@ export function useGraphPaint({
         const label = node.name;
 
         // Use cluster for color if available, fallback to type
-        let color = getTypeColor(node.type);
+        let color = getCategoryColor(node.type);
         if (pendingClusterReview) {
             const clusterId = nodeClusterMap.get(node.id);
             if (clusterId) {
@@ -134,7 +136,7 @@ export function useGraphPaint({
         }
 
         ctx.restore();
-    }, [hoverNode, selectedNodes, graphDataLinks, searchHighlightIds, isDark, pendingClusterReview, nodeClusterMap, activeNodeId, getClusterColor]);
+    }, [hoverNode, selectedNodes, graphDataLinks, searchHighlightIds, isDark, pendingClusterReview, nodeClusterMap, activeNodeId, getClusterColor, getCategoryColor]);
 
     const linkPaint = useCallback((link: GraphLink, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const source = link.source;
@@ -174,14 +176,14 @@ export function useGraphPaint({
 
         if (useGradient) {
             const gradient = ctx.createLinearGradient(source.x as number, source.y as number, target.x as number, target.y as number);
-            gradient.addColorStop(0, getTypeColor(source.type));
-            gradient.addColorStop(1, getTypeColor(target.type));
+            gradient.addColorStop(0, getCategoryColor(source.type));
+            gradient.addColorStop(1, getCategoryColor(target.type));
             ctx.strokeStyle = gradient;
             ctx.lineWidth = (isHover ? 2.5 : 1) / globalScale;
             ctx.shadowBlur = 0;
             ctx.setLineDash([]);
         } else {
-            ctx.strokeStyle = getTypeColor(source.type);
+            ctx.strokeStyle = getCategoryColor(source.type);
             ctx.lineWidth = 1 / globalScale;
             ctx.shadowBlur = 0;
             ctx.setLineDash([]);
@@ -202,7 +204,7 @@ export function useGraphPaint({
         ctx.shadowBlur = 0;
         ctx.setLineDash([]);
 
-    }, [hoverNode, hoverLink, pathLinks, searchHighlightIds, isDark, activeNodeId]);
+    }, [hoverNode, hoverLink, pathLinks, searchHighlightIds, isDark, activeNodeId, getCategoryColor]);
 
     return { nodePaint, linkPaint };
 }

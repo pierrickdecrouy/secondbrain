@@ -31,7 +31,7 @@ const CustomGridList = React.forwardRef((props: any, ref) => {
     const { context, style, children, ...rest } = props;
     const { viewMode, gridColumns } = context || {};
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', paddingBottom: '2rem' }}>
+        <div className="flex justify-center w-full pb-8">
             <div
                 {...rest}
                 ref={ref}
@@ -51,7 +51,8 @@ const CustomListList = React.forwardRef((props: any, ref) => {
         <div
             {...rest}
             ref={ref}
-            style={{ display: 'flex', flexDirection: 'column', minWidth: 0, ...style }}
+            style={{ ...style }}
+            className="flex flex-col min-w-0"
         >
             {children}
         </div>
@@ -60,55 +61,25 @@ const CustomListList = React.forwardRef((props: any, ref) => {
 
 // ── Header columns (shared widths must match BrowseListItem layout) ────────────
 const ListHeader: React.FC = () => (
-    <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '20px',
-        padding: '12px 28px',
-        borderBottom: '1px solid var(--color-border)',
-        background: 'var(--color-surface)',
-        flexShrink: 0,
-        userSelect: 'none',
-    }}>
+    <div className="flex items-center gap-5 py-3 px-7 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)] shrink-0 select-none">
         {/* checkbox spacer */}
-        <div style={{ flexShrink: 0, width: '18px' }} />
+        <div className="shrink-0 w-[18px]" />
         {/* icon spacer */}
-        <div style={{ flexShrink: 0, width: '38px' }} />
+        <div className="shrink-0 w-[38px]" />
         {/* title */}
-        <div style={{
-            flex: 1,
-            fontSize: '11px', fontWeight: 700,
-            color: 'var(--color-text-muted)',
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-        }}>
+        <div className="flex-1 text-[11px] font-bold text-[color:var(--color-text-muted)] tracking-[0.08em] uppercase">
             Titre de la fiche
         </div>
         {/* category */}
-        <div
-            className="hidden sm:block"
-            style={{
-                flexShrink: 0, width: '110px',
-                fontSize: '11px', fontWeight: 700,
-                color: 'var(--color-text-muted)',
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-            }}
-        >
+        <div className="hidden sm:block shrink-0 w-[110px] text-[11px] font-bold text-[color:var(--color-text-muted)] tracking-[0.08em] uppercase">
             Catégorie
         </div>
         {/* tags */}
-        <div
-            className="hidden lg:block"
-            style={{
-                flexShrink: 0, width: '200px',
-                fontSize: '11px', fontWeight: 700,
-                color: 'var(--color-text-muted)',
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-            }}
-        >
+        <div className="hidden lg:block shrink-0 w-[200px] text-[11px] font-bold text-[color:var(--color-text-muted)] tracking-[0.08em] uppercase">
             Tags
         </div>
         {/* actions spacer */}
-        <div style={{ flexShrink: 0, width: '68px' }} />
+        <div className="shrink-0 w-[68px]" />
     </div>
 );
 
@@ -126,27 +97,19 @@ export const BrowseMainContent: React.FC<BrowseMainContentProps> = ({
 
     return (
         <div
-            className={`browse-main-wrapper ${viewMode === 'split' ? 'is-split' : ''}`}
-            style={{
-                flex: viewMode === 'split' ? '0 0 55%' : 1,
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: 0,
-                minWidth: 0,
-                overflow: 'hidden',
-            }}
+            className={`browse-main-wrapper flex flex-col min-h-0 min-w-0 overflow-hidden ${viewMode === 'split' ? 'is-split' : ''}`}
+            style={{ flex: viewMode === 'split' ? '0 0 55%' : 1 }}
         >
             {/* ── Grid / Split view ── */}
             {isGrid && (
-                <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <div className="flex-1 min-h-0 flex flex-col">
                     {sortedCards.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--color-text-muted)' }}>
+                        <div className="text-center p-16 text-[color:var(--color-text-muted)]">
                             Aucun résultat trouvé
                         </div>
                     ) : (
                         <VirtuosoGrid
-                            className="browse-virtuoso-scroller"
-                            style={{ flex: 1 }}
+                            className="browse-virtuoso-scroller flex-1"
                             totalCount={sortedCards.length}
                             data={sortedCards}
                             context={{ viewMode, gridColumns }}
@@ -176,39 +139,19 @@ export const BrowseMainContent: React.FC<BrowseMainContentProps> = ({
 
             {/* ── List view — header fixed outside Virtuoso ── */}
             {viewMode === 'list' && (
-                <div style={{
-                    flex: 1,
-                    minHeight: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '0 40px 32px',
-                }}>
+                <div className="flex-1 min-h-0 flex flex-col px-10 pb-8">
                     {sortedCards.length === 0 ? (
-                        <div style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--color-text-muted)', fontSize: '15px',
-                        }}>
+                        <div className="flex-1 flex items-center justify-center text-[color:var(--color-text-muted)] text-[15px]">
                             Aucun résultat trouvé
                         </div>
                     ) : (
-                        <div style={{
-                            flex: 1,
-                            minHeight: 0,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            background: 'var(--color-surface)',
-                            borderRadius: '20px',
-                            border: '1px solid var(--color-border)',
-                            boxShadow: 'var(--shadow)',
-                            overflow: 'hidden',
-                        }}>
+                        <div className="flex-1 min-h-0 flex flex-col bg-[color:var(--color-surface)] rounded-[20px] border border-[color:var(--color-border)] shadow-[var(--shadow)] overflow-hidden">
                             {/* Sticky header — stays fixed while rows scroll */}
                             <ListHeader />
 
                             {/* Scrollable rows via Virtuoso */}
                             <VirtuosoGrid
-                                className="browse-virtuoso-scroller"
-                                style={{ flex: 1, minHeight: 0 }}
+                                className="browse-virtuoso-scroller flex-1 min-h-0"
                                 data={sortedCards}
                                 components={{ List: CustomListList }}
                                 itemContent={(index, card) => (

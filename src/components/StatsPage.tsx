@@ -152,7 +152,18 @@ export const StatsPage: React.FC = () => {
                 </div>
             </header>
 
-            <div className="stats-content scroll-area">
+            {cards.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4" style={{ marginTop: '10vh' }}>
+                    <div className="w-24 h-24 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <ChartBar size={48} weight="duotone" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Statistiques à venir</h2>
+                    <p className="text-slate-500 dark:text-slate-400 max-w-md text-lg mx-auto">
+                        Commencez à réviser pour voir vos statistiques. Vos progrès FSRS s'afficheront ici.
+                    </p>
+                </div>
+            ) : (
+                <div className="stats-content scroll-area">
                 <section className="stats-kpi-grid">
                     <article className="stats-kpi-card color-accent-1">
                         <div className="stats-kpi-label"><BookOpen size={16} /> Total fiches</div>
@@ -277,7 +288,8 @@ export const StatsPage: React.FC = () => {
                         </div>
                     </article>
                 </section>
-            </div>
+                </div>
+            )}
         </div>
     );
 };

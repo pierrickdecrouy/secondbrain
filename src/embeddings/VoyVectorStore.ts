@@ -1,23 +1,40 @@
 /**
  * Voy Vector Store - WASM-based high-performance vector search
+ * Now supports sharding (multiple Voy instances per subject/course)
  */
 import { Voy } from 'voy-search';
+import { getDB, isElectron } from '../storage';
 
 export interface EmbeddingEntry {
     id: string;
     title: string;
     embeddings: number[];
+    shardId?: string; // Optional shard identifier (e.g., courseId or subject)
 }
 
 export class VoyVectorStore {
-    private index: any = null; // Voy instance
+    // Map of shardId -> Voy instance
+    private indices = new Map<string, any>();
+    // Global embedding cache for O(1) lookups: Map<cardId, embedding>
     private embeddingCache = new Map<string, number[]>();
+    // Track which shard each card belongs to: Map<cardId, shardId>
+    private cardShardMap = new Map<string, string>();
+
+    constructor() {
+        // We always initialize a 'global' shard as default
+        this.getOrCreateIndex('global');
+    }
 
     /**
-     * Initialize the Voy index
+     * Helper to get or create an index for a given shardId
      */
-    constructor() {
-        this.index = new Voy();
+    private getOrCreateIndex(shardId: string): any {
+        let index = this.indices.get(shardId);
+        if (!index) {
+            index = new Voy();
+            this.indices.set(shardId, index);
+        }
+        return index;
     }
 
     /**
@@ -28,67 +45,85 @@ export class VoyVectorStore {
     }
 
     /**
-     * Add items to the index
+     * Add items to the index, routing them to the correct shards
      */
     add(items: EmbeddingEntry[]): void {
-        const formattedItems = items.map(item => {
-            // Cache the embedding
+        // Group items by shardId
+        const chunksByShard = new Map<string, any[]>();
+
+        items.forEach(item => {
+            const shardId = item.shardId || 'global';
+            
+            // Cache the embedding globally
             if (item.embeddings) {
                 this.embeddingCache.set(item.id, Array.isArray(item.embeddings) ? item.embeddings : Array.from(item.embeddings));
+                this.cardShardMap.set(item.id, shardId);
             }
 
-            return {
+            if (!chunksByShard.has(shardId)) {
+                chunksByShard.set(shardId, []);
+            }
+
+            chunksByShard.get(shardId)!.push({
                 id: item.id,
                 title: item.title,
-                url: '', // Explicitly add empty URL as it might be required by Voy Resource type
+                url: '', // Explicitly add empty URL as required by Voy Resource type
                 embeddings: Array.isArray(item.embeddings) ? item.embeddings : Array.from(item.embeddings || [])
-            };
+            });
         });
 
-        try {
-            // Sanitize in chunks to avoid overwhelming WASM memory or stack
-            const CHUNK_SIZE = 100;
-            for (let i = 0; i < formattedItems.length; i += CHUNK_SIZE) {
-                const chunk = formattedItems.slice(i, i + CHUNK_SIZE);
-                // Ensure plain objects
-                const cleanChunk = JSON.parse(JSON.stringify(chunk));
+        // Add to each shard's index
+        for (const [shardId, shardItems] of chunksByShard.entries()) {
+            const index = this.getOrCreateIndex(shardId);
+            try {
+                // Sanitize in chunks
+                const CHUNK_SIZE = 100;
+                for (let i = 0; i < shardItems.length; i += CHUNK_SIZE) {
+                    const chunk = shardItems.slice(i, i + CHUNK_SIZE);
+                    const cleanChunk = JSON.parse(JSON.stringify(chunk));
 
-                if (cleanChunk.length > 0) {
-                    // Voy expects a Resource object { embeddings: [...] }
-                    this.index.add({ embeddings: cleanChunk });
+                    if (cleanChunk.length > 0) {
+                        index.add({ embeddings: cleanChunk });
+                    }
                 }
-            }
-        } catch (e) {
-            console.error("Voy index add error:", e);
-            // If critical error (like recursive use), we might need to recreate the index to recover
-            if (e instanceof Error && (e.message.includes('recursive') || e.message.includes('unreachable'))) {
-                console.warn("Voy index corrupted, resetting...");
-                // Keep cache, reset index
-                this.index = new Voy();
-                // Re-add everything from cache? That might trigger it again if data is bad.
-                // For now, just reset to avoid app-wide freeze.
+            } catch (e) {
+                console.error(`Voy index add error for shard ${shardId}:`, e);
+                if (e instanceof Error && (e.message.includes('recursive') || e.message.includes('unreachable'))) {
+                    console.warn(`Voy index corrupted for shard ${shardId}, resetting...`);
+                    this.indices.set(shardId, new Voy());
+                }
             }
         }
     }
 
     /**
-     * Search for similar items
+     * Search for similar items across specified shards (or 'global' + specific shards)
      */
-    search(queryEmbedding: number[], k: number = 10): { id: string; similarity: number }[] {
-        if (!this.index) return [];
+    search(queryEmbedding: number[], k: number = 10, targetShardIds?: string[]): { id: string; similarity: number }[] {
+        // If no target shards specified, search across all currently loaded shards
+        const shardsToSearch = targetShardIds && targetShardIds.length > 0 
+            ? targetShardIds.map(id => this.indices.get(id)).filter(idx => !!idx)
+            : Array.from(this.indices.values());
+
+        if (shardsToSearch.length === 0) return [];
 
         try {
-            const results = this.index.search(queryEmbedding, k);
+            const allResults: { id: string; similarity: number }[] = [];
 
-            if (!results || !Array.isArray(results)) {
-                return [];
+            for (const index of shardsToSearch) {
+                const results = index.search(queryEmbedding, k);
+                if (results && Array.isArray(results)) {
+                    results.forEach((r: { id: string; score: number }) => {
+                        allResults.push({ id: r.id, similarity: r.score || 0 });
+                    });
+                }
             }
 
-            // Map results. Note: Voy might not return score in all versions.
-            return results.map((r: { id: string; score: number }) => ({
-                id: r.id,
-                similarity: r.score || 0
-            }));
+            // Sort merged results by similarity (descending) and take top K
+            return allResults
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, k);
+
         } catch (e) {
             console.error("Voy search error:", e);
             return [];
@@ -96,27 +131,34 @@ export class VoyVectorStore {
     }
 
     /**
-     * Serialize index and cache to Uint8Array for storage
+     * Serialize a specific shard and its subset of the cache
      */
-    serialize(): Uint8Array {
-        // Serialize index
+    serializeShard(shardId: string): Uint8Array {
+        const index = this.indices.get(shardId);
+        if (!index) return new Uint8Array(0);
+
         let indexData: Uint8Array;
         try {
-            const serialized = this.index.serialize();
+            const serialized = index.serialize();
             indexData = new TextEncoder().encode(serialized);
         } catch (e) {
-            console.error("Voy serialize error:", e);
-            // Return empty if failed to avoid crashing
+            console.error(`Voy serialize error for shard ${shardId}:`, e);
             return new Uint8Array(0);
         }
 
-        // Serialize cache
-        const cacheEntries = Array.from(this.embeddingCache.entries());
-        const cacheData = new TextEncoder().encode(JSON.stringify(cacheEntries));
+        // Serialize only cache entries for this shard
+        const shardCacheEntries = Array.from(this.cardShardMap.entries())
+            .filter(([_, mappedShardId]) => mappedShardId === shardId)
+            .map(([cardId, _]) => {
+                const emb = this.embeddingCache.get(cardId);
+                return [cardId, emb] as [string, number[]];
+            })
+            .filter(([_, emb]) => !!emb);
 
+        const cacheData = new TextEncoder().encode(JSON.stringify(shardCacheEntries));
         const header = new TextEncoder().encode("VOY+CACHE_V2"); // 12 bytes
         const lengthBuffer = new ArrayBuffer(4);
-        new DataView(lengthBuffer).setUint32(0, indexData.length, true); // Little endian
+        new DataView(lengthBuffer).setUint32(0, indexData.length, true);
 
         const combined = new Uint8Array(header.length + 4 + indexData.length + cacheData.length);
         combined.set(header, 0);
@@ -128,9 +170,9 @@ export class VoyVectorStore {
     }
 
     /**
-     * Deserialize index and recover cache from Uint8Array
+     * Deserialize a shard and inject its subset of the cache
      */
-    deserialize(data: Uint8Array): void {
+    deserializeShard(data: Uint8Array, shardId: string): void {
         const headerV2 = new TextEncoder().encode("VOY+CACHE_V2");
         const headerV1 = new TextEncoder().encode("VOY+CACHE");
 
@@ -151,42 +193,46 @@ export class VoyVectorStore {
                 const cacheData = data.subarray(headerV2.length + 4 + indexLength);
 
                 const indexString = new TextDecoder().decode(indexData);
-                this.index = Voy.deserialize(indexString);
+                this.indices.set(shardId, Voy.deserialize(indexString));
 
                 const cacheJson = new TextDecoder().decode(cacheData);
-                const entries = JSON.parse(cacheJson);
-                this.embeddingCache = new Map(entries);
-
+                const entries: [string, number[]][] = JSON.parse(cacheJson);
+                
+                for (const [cardId, emb] of entries) {
+                    this.embeddingCache.set(cardId, emb);
+                    this.cardShardMap.set(cardId, shardId);
+                }
             } catch (e) {
-                console.error("[Voy] Failed to deserialize with cache, falling back to clean slate:", e);
-                this.clear();
+                console.error(`[Voy] Failed to deserialize shard ${shardId}, recreating:`, e);
+                this.indices.set(shardId, new Voy());
             }
         } else if (hasHeader(headerV1)) {
-            console.warn("[Voy] Found V1 index incompatible with new model. Resetting index.");
-            this.clear();
+            console.warn(`[Voy] Found V1 index for shard ${shardId} incompatible with new model. Recreating.`);
+            this.indices.set(shardId, new Voy());
         } else {
-            // Legacy format or corrupted
+            // Legacy monolithic format (assume it's the global shard)
             try {
                 const indexString = new TextDecoder().decode(data);
                 if (indexString && indexString.trim().length > 0 && indexString.trim().startsWith('{')) {
-                    this.index = Voy.deserialize(indexString);
+                    this.indices.set(shardId, Voy.deserialize(indexString));
                 } else {
-                    console.warn("[Voy] Legacy index empty or invalid, resetting");
-                    this.clear();
+                    this.indices.set(shardId, new Voy());
                 }
             } catch (e) {
-                console.error("[Voy] Failed to deserialize legacy index:", e);
-                this.clear();
+                console.error(`[Voy] Failed to deserialize legacy index for shard ${shardId}:`, e);
+                this.indices.set(shardId, new Voy());
             }
         }
     }
 
     /**
-     * Clear index
+     * Clear all indices and cache
      */
     clear(): void {
-        this.index = new Voy();
+        this.indices.clear();
         this.embeddingCache.clear();
+        this.cardShardMap.clear();
+        this.getOrCreateIndex('global');
     }
 
     /**
@@ -197,35 +243,79 @@ export class VoyVectorStore {
     }
 
     /**
-     * Load index from disk
+     * Check if a shard is currently loaded in memory
      */
-    async load(): Promise<boolean> {
-        if (typeof window !== 'undefined' && window.electronAPI?.loadVectorIndex) {
+    isShardLoaded(shardId: string): boolean {
+        return this.indices.has(shardId);
+    }
+
+    /**
+     * Load a specific shard from disk/IndexedDB
+     */
+    async load(shardId: string = 'global'): Promise<boolean> {
+        if (this.isShardLoaded(shardId) && shardId !== 'global') {
+            return true; // Already loaded
+        }
+
+        if (isElectron() && window.electronAPI?.loadVectorIndex) {
             try {
-                const data = await window.electronAPI.loadVectorIndex();
+                const data = await window.electronAPI.loadVectorIndex(shardId);
                 if (data) {
-                    this.deserialize(data);
+                    this.deserializeShard(data, shardId);
                     return true;
                 }
             } catch (e) {
-                console.error("[Voy] Failed to load index:", e);
+                console.error(`[Voy] Failed to load shard ${shardId}:`, e);
+            }
+        } else {
+            // IndexedDB Fallback for Web
+            try {
+                const db = getDB();
+                const record = await db.vectorIndices.get(shardId);
+                if (record && record.data) {
+                    this.deserializeShard(record.data, shardId);
+                    return true;
+                }
+            } catch (e) {
+                console.error(`[Voy] Failed to load shard ${shardId} from IndexedDB:`, e);
             }
         }
+        
+        // If it wasn't found, ensure an empty index exists
+        this.getOrCreateIndex(shardId);
         return false;
     }
 
     /**
-     * Save index to disk
+     * Save a specific shard to disk/IndexedDB
      */
-    async save(): Promise<void> {
-        if (typeof window !== 'undefined' && window.electronAPI?.saveVectorIndex) {
+    async save(shardId: string = 'global'): Promise<void> {
+        const data = this.serializeShard(shardId);
+        if (data.length === 0) return;
+
+        if (isElectron() && window.electronAPI?.saveVectorIndex) {
             try {
-                const data = this.serialize();
-                await window.electronAPI.saveVectorIndex(data);
+                await window.electronAPI.saveVectorIndex(data, shardId);
             } catch (e) {
-                console.error("[Voy] Failed to save index:", e);
+                console.error(`[Voy] Failed to save shard ${shardId}:`, e);
+            }
+        } else {
+            // IndexedDB Fallback for Web
+            try {
+                const db = getDB();
+                await db.vectorIndices.put({ shardId, data });
+            } catch (e) {
+                console.error(`[Voy] Failed to save shard ${shardId} to IndexedDB:`, e);
             }
         }
+    }
+    
+    /**
+     * Helper to save all currently loaded shards
+     */
+    async saveAllLoadedShards(): Promise<void> {
+        const promises = Array.from(this.indices.keys()).map(shardId => this.save(shardId));
+        await Promise.allSettled(promises);
     }
 }
 

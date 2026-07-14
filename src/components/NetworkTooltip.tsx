@@ -42,7 +42,7 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
     return (
         <div className="network-tooltip-container animate-in fade-in zoom-in-95 duration-200">
             <div className="network-tooltip-card shadow-2xl border border-[var(--color-border)]">
-                <div className="flex flex-col" style={{ padding: "12px 16px" }}>
+                <div className="flex flex-col px-4 py-3">
                     
                     {/* Header: Type and Action */}
                     <div className="flex items-center justify-between mb-2">
@@ -63,11 +63,11 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
 
                     {/* Nodes relationship */}
                     <div className="flex items-center justify-between gap-4 py-2 text-[15px] font-bold">
-                        <span className="text-slate-800 dark:text-slate-100 text-right leading-tight break-words text-sm" style={{ flex: '0 1 auto' }} title={sourceName}>{sourceName}</span>
+                        <span className="text-slate-800 dark:text-slate-100 text-right leading-tight break-words text-sm flex-[0_1_auto]" title={sourceName}>{sourceName}</span>
                         <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800">
                             <ArrowsLeftRight size={12} className="text-slate-400 dark:text-slate-500" weight="bold" />
                         </div>
-                        <span className="text-slate-800 dark:text-slate-100 text-left leading-tight break-words text-sm" style={{ flex: '0 1 auto' }} title={targetName}>{targetName}</span>
+                        <span className="text-slate-800 dark:text-slate-100 text-left leading-tight break-words text-sm flex-[0_1_auto]" title={targetName}>{targetName}</span>
                     </div>
 
                     {/* Confidence Score */}

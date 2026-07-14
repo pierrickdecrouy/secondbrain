@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { useCardStore } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
+import DOMPurify from 'dompurify';
 
 interface CourseViewerProps {
     course: Card;
@@ -585,7 +586,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                         </div>
                                         <div style={{ margin: '0 0 8px 0', fontSize: '1.05rem' }}>
                                             {fc.format === 'cloze' ? (
-                                                <span dangerouslySetInnerHTML={{ __html: (fc.content || '').replace(/\{([^}]+)\}/g, '<strong>___________</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong>___________</strong>') }} />
+                                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((fc.content || '').replace(/\{([^}]+)\}/g, '<strong>___________</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong>___________</strong>')) }} />
                                             ) : (
                                                 fc.title
                                             )}
@@ -605,7 +606,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                         </div>
                                         <div style={{ color: '#333', fontSize: '1.05rem' }}>
                                             {fc.format === 'cloze' ? (
-                                                <span dangerouslySetInnerHTML={{ __html: (fc.content || '').replace(/\{([^}]+)\}/g, '<strong style="color: black; text-decoration: underline">$1</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong style="color: black; text-decoration: underline">$1</strong>') }} />
+                                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((fc.content || '').replace(/\{([^}]+)\}/g, '<strong style="color: black; text-decoration: underline">$1</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong style="color: black; text-decoration: underline">$1</strong>')) }} />
                                             ) : (
                                                 <MarkdownRenderer content={fc.details || ''} onInternalLinkClick={handleInternalLinkClick} />
                                             )}

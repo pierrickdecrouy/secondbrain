@@ -86,41 +86,34 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
         <div className="modal-overlay" onClick={handleOverlayClick}>
 
 
-            <motion.div ref={modalRef} layoutId={`card-${card.id}`} className="modal-content glass-modal" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+            <motion.div ref={modalRef} layoutId={`card-${card.id}`} className="modal-content glass-modal flex flex-col p-0">
                 {/* Header */}
-                <header className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, paddingRight: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <header className="modal-header py-6 px-8 border-b border-[color:var(--border-light)] flex justify-between items-start flex-wrap gap-4">
+                    <div className="flex flex-col gap-2 flex-1 pr-6">
+                        <div className="flex items-center gap-3 mb-2">
                             <Badge type={card.type} />
                             {/* Quality Indicator */}
                             <div
                                 title={`Score de qualité : ${quality.score}/100\nContenu: ${quality.details.contentScore}\nConnexions: ${quality.details.connectivityScore}\nMétadonnées: ${quality.details.metadataScore}`}
+                                className="flex items-center gap-1.5 py-0.5 px-2 rounded-xl text-xs font-semibold cursor-help border"
                                 style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '2px 8px',
-                                    borderRadius: '12px',
                                     background: `${quality.color}20`, // 12% opacity
-                                    border: `1px solid ${quality.color}40`,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
+                                    borderColor: `${quality.color}40`,
                                     color: quality.color,
-                                    cursor: 'help'
                                 }}
                             >
-                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: quality.color }} />
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: quality.color }} />
                                 {quality.label} ({quality.score}%)
                             </div>
                         </div>
-                        <h2 className="modal-title" style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em' }}>{card.title}</h2>
-                        {card.subtitle && <p className="modal-subtitle" style={{ marginTop: '6px', fontSize: '1.05rem', opacity: 0.9 }}>{card.subtitle}</p>}
+                        <h2 className="modal-title m-0 text-3xl font-bold leading-[1.2] tracking-[-0.02em]">{card.title}</h2>
+                        {card.subtitle && <p className="modal-subtitle mt-1.5 text-[1.05rem] opacity-90">{card.subtitle}</p>}
                     </div>
                     
                     {/* Actions */}
-                    <div className="modal-header-actions" style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                    <div className="modal-header-actions flex gap-1 items-center shrink-0">
                         {actions}
-                        <div style={{ width: '1px', height: '16px', background: 'var(--border-light)', margin: '0 8px' }} />
+                        <div className="w-[1px] h-4 bg-[color:var(--border-light)] mx-2" />
                         {onPrev && (
                             <button className="browse-action-btn" onClick={(e) => { e.stopPropagation(); onPrev(); }} title="Précédent (Flèche Gauche)">
                                 <CaretLeft size={20} weight="bold" />
@@ -141,11 +134,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
                 </header>
 
                 {/* Content Area */}
-                <div className={`modal-body markdown-content custom-scrollbar ${isExamMode ? 'exam-mode' : ''}`} style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+                <div className={`modal-body markdown-content custom-scrollbar flex-1 overflow-y-auto p-8 ${isExamMode ? 'exam-mode' : ''}`}>
                     {/* Image display */}
                     {card.imageUrl && (
-                        <div className="modal-image" style={{ marginBottom: '24px' }}>
-                            <img src={card.imageUrl} alt={card.title} style={{ width: '100%', borderRadius: '12px' }} />
+                        <div className="modal-image mb-6">
+                            <img src={card.imageUrl} alt={card.title} className="w-full rounded-xl" />
                         </div>
                     )}
 
@@ -166,9 +159,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
 
                     {/* Details */}
                     {card.details && (
-                        <div className="modal-main-content" style={{ marginTop: (card.content && card.content.trim() !== card.details?.trim()) ? '24px' : '0' }}>
+                        <div className={`modal-main-content ${card.content && card.content.trim() !== card.details?.trim() ? 'mt-6' : 'mt-0'}`}>
                             {card.content && card.content.trim() !== card.details?.trim() && (
-                                <h4 style={{ textTransform: 'uppercase', fontSize: '0.85rem', color: 'var(--text-grey)', marginBottom: '12px', letterSpacing: '0.05em' }}>Détails</h4>
+                                <h4 className="uppercase text-[0.85rem] text-[color:var(--text-grey)] mb-3 tracking-[0.05em]">Détails</h4>
                             )}
                             <MarkdownRenderer 
                                 content={card.details} 
@@ -184,12 +177,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
 
                     {/* Forward links */}
                     {forwardLinks.length > 0 && (
-                        <section style={{ marginTop: '48px' }}>
-                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', fontSize: '0.85rem', color: 'var(--text-grey)', marginBottom: '16px', letterSpacing: '0.05em' }}>
+                        <section className="mt-12">
+                            <h4 className="flex items-center gap-2 uppercase text-[0.85rem] text-[color:var(--text-grey)] mb-4 tracking-[0.05em]">
                                 <Link size={16} />
                                 Liens sortants ({forwardLinks.length})
                             </h4>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            <div className="flex flex-wrap gap-2">
                                 {forwardLinks.map(link => (
                                     <button
                                         key={link.id}
@@ -206,12 +199,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
 
                     {/* Backlinks */}
                     {backlinks.length > 0 && (
-                        <section style={{ marginTop: '32px' }}>
-                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', fontSize: '0.85rem', color: 'var(--text-grey)', marginBottom: '16px', letterSpacing: '0.05em' }}>
+                        <section className="mt-8">
+                            <h4 className="flex items-center gap-2 uppercase text-[0.85rem] text-[color:var(--text-grey)] mb-4 tracking-[0.05em]">
                                 <Link size={16} />
                                 Mentionné dans : ({backlinks.length})
                             </h4>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            <div className="flex flex-wrap gap-2">
                                 {backlinks.map(link => (
                                     <button
                                         key={link.id}
@@ -228,9 +221,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({ card, allCards, onClos
 
                     {/* Tags */}
                     {card.tags && card.tags.length > 0 && (
-                        <div style={{ marginTop: '32px', display: 'flex', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--border-light)', paddingTop: '24px' }}>
+                        <div className="mt-8 flex flex-wrap gap-2 border-t border-[color:var(--border-light)] pt-6">
                             {card.tags.map(tag => (
-                                <span key={tag} style={{ fontSize: '0.8rem', color: 'var(--text-grey)', border: '1px solid var(--border-light)', padding: '4px 12px', borderRadius: '16px' }}>#{tag}</span>
+                                <span key={tag} className="text-sm text-[color:var(--text-grey)] border border-[color:var(--border-light)] py-1 px-3 rounded-full">#{tag}</span>
                             ))}
                         </div>
                     )}

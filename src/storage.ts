@@ -17,12 +17,16 @@ import Dexie, { type Table } from 'dexie';
 class PharmaBrainDB extends Dexie {
     cards!: Table<Card, string>;
     settings!: Table<{ key: string; value: unknown }, string>;
+    vectorIndices!: Table<{ shardId: string; data: Uint8Array }, string>;
+    syncTasks!: Table<any, string>;
 
     constructor(dbName: string) {
         super(dbName);
-        this.version(1).stores({
+        this.version(3).stores({
             cards: 'id, type', // Primary key and indexed props
-            settings: 'key'
+            settings: 'key',
+            vectorIndices: 'shardId',
+            syncTasks: 'id'
         });
     }
 }
