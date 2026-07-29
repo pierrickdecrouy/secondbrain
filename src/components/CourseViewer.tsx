@@ -97,7 +97,6 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             height: '100%',
             background: 'var(--color-bg)',
             overflow: 'hidden',
-            margin: '0 -2rem -2rem -1rem',
         }}>
             <div className="no-print" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             

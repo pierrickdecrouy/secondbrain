@@ -141,22 +141,22 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
 
                 {/* View Toggle */}
                 {!isNetworkOnly && (
-                    <div className="flex items-center gap-1 rounded-[10px] p-1 bg-slate-200 dark:bg-[#1A2235]">
+                    <div className="flex items-center gap-1 rounded-xl p-1 bg-slate-100 dark:bg-[#1A2235]" style={{ border: '1px solid var(--color-border)' }}>
                         <button
-                            className={`m-0 py-1.5 px-3.5 rounded-md border-none font-medium text-[0.85rem] flex items-center gap-1.5 cursor-pointer transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-[#0B1120] dark:text-emerald-400 dark:shadow-none' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
+                            className={`m-0 py-1.5 px-3.5 rounded-lg border-none font-medium text-[0.85rem] flex items-center gap-1.5 cursor-pointer transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-[#0B1120] dark:text-emerald-400 dark:shadow-none' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
                             onClick={() => setViewMode('grid')}
                         >
                             <SquaresFour size={16} /> Grille
                         </button>
                         <button
-                            className={`m-0 py-1.5 px-3.5 rounded-md border-none font-medium text-[0.85rem] flex items-center gap-1.5 cursor-pointer transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-[#0B1120] dark:text-emerald-400 dark:shadow-none' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
+                            className={`m-0 py-1.5 px-3.5 rounded-lg border-none font-medium text-[0.85rem] flex items-center gap-1.5 cursor-pointer transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-[#0B1120] dark:text-emerald-400 dark:shadow-none' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
                             onClick={() => setViewMode('list')}
                         >
                             <Rows size={16} /> Liste
                         </button>
 
                         <button
-                            className={`m-0 py-1.5 px-3.5 rounded-md border-none font-medium text-[0.85rem] flex items-center gap-1.5 cursor-pointer transition-all duration-200 ${viewMode === 'split' ? 'bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-[#0B1120] dark:text-emerald-400 dark:shadow-none' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
+                            className={`m-0 py-1.5 px-3.5 rounded-lg border-none font-medium text-[0.85rem] flex items-center gap-1.5 cursor-pointer transition-all duration-200 ${viewMode === 'split' ? 'bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-[#0B1120] dark:text-emerald-400 dark:shadow-none' : 'bg-transparent text-slate-500 dark:text-slate-400'}`}
                             onClick={() => setViewMode('split')}
                         >
                             <SquaresFour size={16} /> Mixte
@@ -168,7 +168,7 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                 <button
                     onClick={handleAnkiExport}
                     disabled={isExporting}
-                    className={`flex items-center gap-1.5 rounded-lg py-2 px-4 font-semibold text-[0.85rem] transition-all duration-200 ${isExporting ? 'cursor-wait opacity-70' : 'cursor-pointer opacity-100'} ${canExportAnki ? 'bg-transparent text-[color:var(--color-text-muted)] border border-[color:var(--color-border)] hover:text-[color:var(--color-text)] hover:border-[color:var(--color-text-muted)]' : 'bg-indigo-500/[0.06] dark:bg-indigo-500/[0.08] text-indigo-400 border border-indigo-500/30 hover:text-indigo-300 hover:border-indigo-500/50'}`}
+                    className={`flex items-center gap-1.5 rounded-xl py-2 px-4 font-semibold text-[0.85rem] transition-all duration-200 border ${isExporting ? 'cursor-wait opacity-70' : 'cursor-pointer opacity-100'} ${canExportAnki ? 'bg-transparent text-[color:var(--color-text-muted)] border-[color:var(--color-border)] hover:text-[color:var(--color-text)] hover:border-[color:var(--color-text-muted)]' : 'bg-indigo-500/[0.06] dark:bg-indigo-500/[0.08] text-indigo-400 border-indigo-500/30 hover:text-indigo-300 hover:border-indigo-500/50'}`}
                     title={canExportAnki ? `Exporter ${sortedCards.length} fiche${sortedCards.length > 1 ? 's' : ''} vers Anki` : 'Fonctionnalité Pro — Activez votre licence'}
                 >
                     {isExporting ? (

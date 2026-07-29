@@ -3,7 +3,7 @@ import {
     ArrowLeft,
     FilePlus,
     UploadSimple,
-    Sparkle,
+    FloppyDisk,
 } from '@phosphor-icons/react';
 import { CardFormContent } from './CardForm';
 import { BatchImportContent } from './BatchImportModal';
@@ -34,73 +34,56 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({
     };
 
     return (
-        <div
-            className="flex flex-col w-full h-full overflow-hidden"
-            style={{
-                backgroundColor: 'var(--color-bg)',
-                backgroundImage: 'radial-gradient(var(--color-border) 1px, transparent 1px)',
-                backgroundSize: '40px 40px',
-            }}
-        >
-            {/* ── Top bar ────────────────────────────────────────────── */}
-            <div
-                className="flex items-center gap-4 px-8 py-4 border-b border-[color:var(--color-border)] shrink-0"
-                style={{ backgroundColor: 'var(--color-surface)', backdropFilter: 'blur(8px)' }}
-            >
-                {/* Back */}
-                <button
-                    onClick={handleBack}
-                    className="flex items-center gap-1.5 bg-transparent border border-[color:var(--color-border)] rounded-xl cursor-pointer text-[color:var(--color-text-muted)] text-[0.82rem] font-medium py-2 px-3.5 transition-all duration-150 hover:text-[color:var(--color-text)] hover:border-[color:var(--color-text-muted)]"
-                >
-                    <ArrowLeft size={14} />
-                    Retour
-                </button>
+        <div className="adp-root">
+            {/* ── Top bar ── */}
+            <div className="adp-topbar">
+                {/* Left: Back + Title */}
+                <div className="adp-topbar-left">
+                    <button onClick={handleBack} className="adp-back-btn">
+                        <ArrowLeft size={15} weight="bold" />
+                        Retour
+                    </button>
 
-                {/* Brand */}
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500 to-violet-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
-                        <Sparkle size={16} weight="fill" color="#fff" />
-                    </div>
-                    <span className="text-[1rem] font-bold text-[color:var(--color-text)]">
+                    <div className="adp-topbar-divider" />
+
+                    <div className="adp-topbar-title">
+                        <FloppyDisk size={16} weight="fill" className="adp-topbar-title-icon" />
                         Nouvelle fiche
-                    </span>
+                    </div>
                 </div>
 
-                {/* Mode toggle */}
-                <div className="flex bg-[color:var(--color-bg)] rounded-xl p-1 border border-[color:var(--color-border)] ml-2 gap-1">
+                {/* Center: Mode toggle */}
+                <div className="adp-mode-toggle">
                     {([
-                        { id: 'single' as Mode, icon: <FilePlus size={14} weight="bold" />, label: 'Nouvelle Carte', color: '#0d9488' },
-                        { id: 'batch' as Mode, icon: <UploadSimple size={14} weight="bold" />, label: 'Import en masse', color: '#8b5cf6' },
+                        { id: 'single' as Mode, icon: <FilePlus size={14} weight="bold" />, label: 'Nouvelle Carte' },
+                        { id: 'batch' as Mode, icon: <UploadSimple size={14} weight="bold" />, label: 'Import en masse' },
                     ]).map(m => {
                         const isActive = mode === m.id;
                         return (
                             <button
                                 key={m.id}
                                 onClick={() => setMode(m.id)}
-                                className={`flex items-center gap-1.5 py-2 px-4 rounded-[9px] border-none cursor-pointer text-[0.8rem] transition-all duration-150 ${isActive ? 'font-bold' : 'font-medium'}`}
-                                style={{
-                                    color: isActive ? m.color : 'var(--color-text-muted)',
-                                    background: isActive ? `${m.color}18` : 'transparent',
-                                }}
+                                className={`adp-mode-btn${isActive ? ' active' : ''}`}
                             >
-                                <span style={{ color: isActive ? m.color : 'var(--color-text-muted)' }}>{m.icon}</span>
+                                {m.icon}
                                 {m.label}
                             </button>
                         );
                     })}
                 </div>
 
-                <div className="ml-auto">
-                    <span className="text-xs text-[color:var(--color-text-muted)] py-1.5 px-3 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg)] font-medium">
+                {/* Right: count badge */}
+                <div className="adp-topbar-right">
+                    <span className="adp-count-badge">
                         {existingCards.length} fiches
                     </span>
                 </div>
             </div>
 
-            {/* ── Content ────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            {/* ── Content ── */}
+            <div className="adp-content">
                 {mode === 'single' ? (
-                    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                    <div className="adp-single-wrapper">
                         <CardFormContent
                             existingCards={existingCards}
                             onSave={handleSave}
@@ -109,7 +92,7 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({
                         />
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="adp-batch-wrapper">
                         <BatchImportContent
                             onImport={(importedCards) => {
                                 onImport(importedCards);
@@ -124,4 +107,3 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({
         </div>
     );
 };
-
