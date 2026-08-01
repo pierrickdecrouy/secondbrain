@@ -9,7 +9,6 @@ import { validateImportData } from '../utils/importValidation';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { useTheme } from '../context/ThemeContext';
 import { parseJsonFormat, parseTextFormat, parseCsvFormat } from '../utils/importParser';
-import './styles/BatchImport.css';
 
 interface BatchImportModalProps {
     onImport: (cards: Card[]) => void;
@@ -158,14 +157,14 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
     const activeMeta = MODE_META[importMode];
 
     return (
-        <div className="flex flex-col lg:flex-row flex-1 h-full p-6 sm:p-8 gap-8 overflow-hidden bg-[color:var(--color-bg)] text-[color:var(--color-text)]">
+        <div className="flex flex-col lg:flex-row flex-1 h-full p-6 sm:p-8 gap-8 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             {/* LEFT PANE: Editor */}
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
                 {/* Header / Format selector */}
                 <div className="flex items-center justify-between shrink-0">
-                    <h3 className="text-2xl font-bold text-[color:var(--color-text)] m-0">Saisie des Données</h3>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 m-0">Saisie des Données</h3>
                     
-                    <div className="batch-format-selector">
+                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
                         {(Object.keys(MODE_META) as ImportMode[]).map((m) => {
                             const meta = MODE_META[m];
                             const isActive = importMode === m;
@@ -173,7 +172,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                                 <button
                                     key={m}
                                     onClick={() => setImportMode(m)}
-                                    className={`batch-format-btn ${isActive ? 'active' : ''}`}
+                                    className={`flex items-center gap-2 py-1.5 px-4 text-sm font-semibold rounded-lg transition-all border-none outline-none cursor-pointer ${isActive ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
                                 >
                                     <span style={{ color: isActive ? meta.color : 'inherit' }}>{meta.icon}</span>
                                     {meta.label}
@@ -190,9 +189,9 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                         placeholder="Groupe optionnel (ex: Cours 3)"
                         value={groupName}
                         onChange={(e) => setGroupName(e.target.value)}
-                        className="flex-1 max-w-sm py-2.5 px-4 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-text)] text-sm outline-none focus:border-indigo-500/50 transition-colors shadow-inner"
+                        className="flex-1 max-w-sm py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm outline-none focus:border-indigo-500/50 transition-colors shadow-inner"
                     />
-                    <label className="flex items-center gap-2 py-2.5 px-5 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-hover)] hover:bg-[color:var(--color-surface)] text-[color:var(--color-text)] text-sm font-bold cursor-pointer transition-colors shadow-sm">
+                    <label className="flex items-center gap-2 py-2.5 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm font-bold cursor-pointer transition-colors shadow-sm">
                         <UploadSimple size={18} weight="bold" /> Parcourir...
                         <input type="file" accept=".txt,.json,.csv,.tsv,.md" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileLoad(file); e.target.value = ''; }} />
                     </label>
@@ -200,21 +199,20 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
 
                 {/* Editor textarea */}
                 <div 
-                    className={`batch-dropzone ${isDragOver ? 'drag-over' : ''}`}
+                    className={`flex-1 relative rounded-2xl border-2 transition-all overflow-hidden shadow-inner ${isDragOver ? 'border-solid' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}
                     style={{ 
-                        '--active-color': activeMeta.color, 
-                        '--active-bg': activeMeta.accent 
-                    } as React.CSSProperties}
+                        ...(isDragOver ? { borderColor: activeMeta.color, backgroundColor: activeMeta.accent } : {})
+                    }}
                     onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                     onDragLeave={() => setIsDragOver(false)}
                     onDrop={(e) => { e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileLoad(file); }}
                 >
                     {!input && !isDragOver && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none opacity-50">
-                            <CloudArrowUp size={64} className="text-[color:var(--color-text-muted)]" />
-                            <p className="text-lg font-medium text-[color:var(--color-text-muted)] text-center m-0">
+                            <CloudArrowUp size={64} className="text-slate-500 dark:text-slate-400" />
+                            <p className="text-lg font-medium text-slate-500 dark:text-slate-400 text-center m-0">
                                 Glissez-déposez un fichier ou collez votre texte ici<br />
-                                <span className="text-sm text-[color:var(--color-text-muted)] font-normal">Supporte Markdown, JSON, CSV</span>
+                                <span className="text-sm text-slate-500 dark:text-slate-400 font-normal">Supporte Markdown, JSON, CSV</span>
                             </p>
                         </div>
                     )}
@@ -223,7 +221,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={PLACEHOLDERS[importMode]}
-                        className={`absolute inset-0 w-full h-full resize-none border-none bg-transparent text-[color:var(--color-text)] text-base leading-relaxed p-6 outline-none focus:ring-0 custom-scrollbar ${importMode === 'json' ? 'font-mono' : 'font-sans'}`}
+                        className={`absolute inset-0 w-full h-full resize-none border-none bg-transparent text-slate-900 dark:text-slate-100 text-base leading-relaxed p-6 outline-none focus:ring-0 custom-scrollbar ${importMode === 'json' ? 'font-mono' : 'font-sans'}`}
                     />
                 </div>
             </div>
@@ -231,15 +229,15 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
             {/* RIGHT PANE: Preview */}
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
                 <div className="flex items-center justify-between shrink-0">
-                    <h3 className="text-2xl font-bold text-[color:var(--color-text)] m-0">Aperçu</h3>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 m-0">Aperçu</h3>
                     <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 py-1.5 px-4 rounded-xl text-sm font-bold shadow-sm">
                         <Cards size={18} weight="bold" /> {parsedCards.length} élément(s)
                     </div>
                 </div>
 
-                <div className="flex-1 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-2xl overflow-y-auto custom-scrollbar p-6 flex flex-col gap-4 shadow-inner relative">
+                <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-y-auto custom-scrollbar p-6 flex flex-col gap-4 shadow-inner relative">
                     {parsedCards.length === 0 ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40 text-[color:var(--color-text-muted)]">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40 text-slate-500 dark:text-slate-400">
                             <Info size={48} weight="duotone" className="mb-4" />
                             <p className="text-lg font-medium m-0">Aperçu du contenu importé</p>
                         </div>
@@ -248,15 +246,15 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                             const color = getCategoryColor(card.type);
                             const indent = card.nodeType === 'flashcard' ? 48 : card.nodeType === 'concept' ? 24 : 0;
                             return (
-                                <div key={idx} className="batch-preview-item" style={{ marginLeft: indent }}>
+                                <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col gap-3 relative shadow-sm transition-colors hover:border-slate-300 dark:hover:border-slate-600" style={{ marginLeft: indent }}>
                                     <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl opacity-80" style={{ backgroundColor: color }} />
                                     <div className="flex items-start justify-between gap-4">
-                                        <span className={`text-base text-[color:var(--color-text)] leading-snug ${card.nodeType === 'course' ? 'font-extrabold text-lg' : 'font-bold'}`}>
+                                        <span className={`text-base text-slate-900 dark:text-slate-100 leading-snug ${card.nodeType === 'course' ? 'font-extrabold text-lg' : 'font-bold'}`}>
                                             {card.title}
                                         </span>
                                         <div className="flex gap-2 shrink-0">
                                             {card.nodeType && (
-                                                <span className="text-[10px] font-bold py-1 px-2.5 rounded-lg bg-[color:var(--color-surface)] text-[color:var(--color-text-muted)] border border-[color:var(--color-border)] uppercase tracking-wider">
+                                                <span className="text-[10px] font-bold py-1 px-2.5 rounded-lg bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
                                                     {card.nodeType}
                                                 </span>
                                             )}
@@ -271,7 +269,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                                     {card.tags && card.tags.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
                                             {card.tags.map((tag) => (
-                                                <span key={tag} className="text-[11px] font-medium py-1 px-2.5 rounded-lg bg-[color:var(--color-surface)]/50 text-[color:var(--color-text-muted)] border border-[color:var(--color-border)]">
+                                                <span key={tag} className="text-[11px] font-medium py-1 px-2.5 rounded-lg bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                                     #{tag}
                                                 </span>
                                             ))}
@@ -327,9 +325,9 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
 export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
     const modalRef = useFocusTrap(true);
     return (
-        <div className="fixed inset-0 bg-[color:var(--color-surface)]/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
-            <div className="relative w-full max-w-[1200px] h-[80vh] shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200 bg-[color:var(--color-bg)] overflow-hidden" ref={modalRef as any}>
-                <button onClick={props.onClose} className="absolute top-4 right-4 p-2 rounded-xl text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-surface)] transition-colors z-10"><X size={20} weight="bold" /></button>
+        <div className="fixed inset-0 bg-white dark:bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
+            <div className="relative w-full max-w-[1200px] h-[80vh] shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200 bg-slate-50 dark:bg-slate-950 overflow-hidden" ref={modalRef as any}>
+                <button onClick={props.onClose} className="absolute top-4 right-4 p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 hover:bg-white dark:bg-slate-900 transition-colors z-10"><X size={20} weight="bold" /></button>
                 <BatchImportContent {...props} />
             </div>
         </div>

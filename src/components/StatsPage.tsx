@@ -8,7 +8,6 @@ import { LeechHunter } from './LeechHunter';
 
 import { useCardStore as useCards } from '../store/useCardStore';
 import { useDueCards } from '../hooks/useDueCards';
-import './styles/StatsPage.css';
 
 interface HeatmapValue {
     count?: number;
@@ -133,9 +132,9 @@ export const StatsPage: React.FC = () => {
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="statspage-style-1" >
-                    <p className="statspage-style-2" >{payload[0].name || payload[0].payload.day}</p>
-                    <p className="statspage-style-3" style={{
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-lg shadow-lg" >
+                    <p className="m-0 font-semibold text-slate-900 dark:text-slate-100" >{payload[0].name || payload[0].payload.day}</p>
+                    <p className="m-0" style={{
   color: payload[0].color || 'var(--color-drug)'
 }}>{payload[0].value} cartes</p>
                 </div>
@@ -145,7 +144,8 @@ export const StatsPage: React.FC = () => {
     };
 
     return (
-        <div className="stats-page">
+        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-slate-950 px-8 py-5 flex flex-col">
+            <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0 gap-6">
             <header className="stats-header app-drag-region">
                 <div className="stats-title-wrap app-no-drag">
                     <div className="stats-title-icon">
@@ -159,7 +159,7 @@ export const StatsPage: React.FC = () => {
             </header>
 
             {cards.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4 statspage-style-4" >
+                <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4 mt-[10vh]" >
                     <div className="w-24 h-24 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-6 mx-auto">
                         <ChartBar size={48} weight="duotone" />
                     </div>
@@ -169,7 +169,7 @@ export const StatsPage: React.FC = () => {
                     </p>
                 </div>
             ) : (
-                <div className="stats-content scroll-area">
+                <div className="stats-content flex flex-col gap-6">
                 <section className="stats-kpi-grid">
                     <article className="stats-kpi-card color-accent-1">
                         <div className="stats-kpi-label"><BookOpen size={16} /> Total fiches</div>
@@ -207,9 +207,9 @@ export const StatsPage: React.FC = () => {
                 </section>
 
                 <section className="stats-grid">
-                    <article className="stats-panel glass-panel statspage-style-5" >
+                    <article className="stats-panel glass-panel pb-8" >
                         <h3>Prévisions de révision (7 jours)</h3>
-                        <div className="statspage-style-6" >
+                        <div className="flex-1 min-h-0 w-full mt-4" >
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={forecastData} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
@@ -222,10 +222,10 @@ export const StatsPage: React.FC = () => {
                         </div>
                     </article>
 
-                    <article className="stats-panel glass-panel statspage-style-7" >
+                    <article className="stats-panel glass-panel pb-8" >
                         <h3>Répartition par type</h3>
-                        <div className="statspage-style-8" >
-                            <div className="statspage-style-9" >
+                        <div className="flex-1 min-h-0 w-full flex items-center mt-4" >
+                            <div className="flex-1 min-w-0 h-full" >
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                     <Pie
@@ -240,7 +240,7 @@ export const StatsPage: React.FC = () => {
                                         stroke="none"
                                     >
                                         {byType.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="statspage-style-10"  />
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="drop-shadow-[0px_2px_4px_rgba(0,0,0,0.1)]"  />
                                         ))}
                                     </Pie>
                                     <RechartsTooltip content={<CustomTooltip />} />
@@ -260,7 +260,7 @@ export const StatsPage: React.FC = () => {
                     </article>
                 </section>
 
-                <section className="stats-grid statspage-style-11" >
+                <section className="stats-grid mt-2" >
                     <article className="stats-panel glass-panel">
                         <h3>Activité (6 derniers mois)</h3>
                         <div className="home-heatmap-wrap">
@@ -279,19 +279,19 @@ export const StatsPage: React.FC = () => {
                     
                     <article className="stats-panel glass-panel stats-progress-panel">
                         <h3>Progression d'apprentissage</h3>
-                        <div className="statspage-style-12" >
+                        <div className="flex-1 flex flex-col justify-center" >
                             <div className="stats-progress-row">
-                                <span className="statspage-style-13" >Fiches découvertes</span>
-                                <strong className="statspage-style-14" >{asPercent(reviewedRatio)}</strong>
+                                <span className="text-slate-500 dark:text-slate-400" >Fiches découvertes</span>
+                                <strong className="text-[1.2rem] text-slate-900 dark:text-slate-100" >{asPercent(reviewedRatio)}</strong>
                             </div>
-                            <div className="stats-progress-track statspage-style-15" >
-                                <div className="stats-progress-fill statspage-style-16" style={{
+                            <div className="stats-progress-track h-3 bg-slate-50 dark:bg-slate-950 rounded-xl overflow-hidden" >
+                                <div className="stats-progress-fill bg-gradient-to-r from-emerald-500 to-blue-500 h-full rounded-xl" style={{
   width: asPercent(reviewedRatio)
 }} />
                             </div>
-                            <div className="statspage-style-17" >
-                                <span className="statspage-style-18" >0%</span>
-                                <span className="statspage-style-19" >100%</span>
+                            <div className="flex justify-between mt-3 text-[0.85rem]" >
+                                <span className="text-slate-500 dark:text-slate-400" >0%</span>
+                                <span className="text-slate-500 dark:text-slate-400" >100%</span>
                             </div>
                         </div>
                     </article>
@@ -300,6 +300,7 @@ export const StatsPage: React.FC = () => {
                 </section>
                 </div>
             )}
+            </div>
         </div>
     );
 };

@@ -9,7 +9,6 @@ import { useCardStore } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
 import DOMPurify from 'dompurify';
 import { toast } from 'react-hot-toast';
-import './styles/CourseViewer.css';
 
 interface CourseViewerProps {
     course: Card;
@@ -122,46 +121,34 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
     const headerElevated = scrollY > 8;
 
     return (
-        <div className="courseviewer-style-1" >
-            <div className="no-print courseviewer-style-2" >
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden" >
+            <div className="no-print flex flex-col h-full" >
             
             {/* ── Top Bar ─────────────────────────────────────────── */}
-            <div className="courseviewer-style-3" style={{
+            <div className="flex items-center justify-between px-6 h-16 shrink-0 bg-slate-50 dark:bg-slate-950 transition-colors duration-200 z-20" style={{
   borderBottom: `1px solid ${headerElevated ? 'var(--color-border)' : 'transparent'}`
 }}>
                 {/* Back */}
                 <button
                     onClick={onBack}
-                    className="courseviewer-style-4" 
-                    onMouseEnter={e => {
-                        e.currentTarget.style.background = 'var(--color-surface-hover)';
-                        e.currentTarget.style.color = 'var(--color-text)';
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.background = 'none';
-                        e.currentTarget.style.color = 'var(--color-text-muted)';
-                    }}
+                    className="flex items-center gap-2 bg-transparent border-none cursor-pointer text-slate-500 font-medium text-sm px-3 py-2 rounded-md transition-all duration-150 hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-900 hover:dark:text-slate-100" 
+                    
+                    
                 >
                     <ArrowLeft size={18} />
                     Retour
                 </button>
 
                 {/* Actions */}
-                <div className="courseviewer-style-5" >
+                <div className="flex items-center gap-1.5" >
                     {/* Add concept */}
                     {course.nodeType === 'course' && (
                         <button
                             onClick={onAddConcept}
                             title="Ajouter un concept"
-                            className="courseviewer-style-6" 
-                            onMouseEnter={e => {
-                                e.currentTarget.style.background = 'var(--color-surface-hover)';
-                                e.currentTarget.style.color = 'var(--color-text)';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.background = 'none';
-                                e.currentTarget.style.color = 'var(--color-text-muted)';
-                            }}
+                            className="flex items-center gap-1.5 bg-transparent border-none rounded-md px-3 py-2 text-[13px] font-medium text-slate-500 cursor-pointer transition-all duration-150 hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-900 hover:dark:text-slate-100" 
+                            
+                            
                         >
                             <Plus size={16} /> Concept
                         </button>
@@ -171,56 +158,38 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                     <button
                         onClick={onAddFlashcard}
                         title="Créer une flashcard"
-                        className="courseviewer-style-7" 
-                        onMouseEnter={e => {
-                            e.currentTarget.style.background = 'var(--color-surface-hover)';
-                            e.currentTarget.style.color = 'var(--color-text)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.background = 'none';
-                            e.currentTarget.style.color = 'var(--color-text-muted)';
-                        }}
+                        className="flex items-center gap-1.5 bg-transparent border-none rounded-md px-3 py-2 text-[13px] font-medium text-slate-500 cursor-pointer transition-all duration-150 hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-900 hover:dark:text-slate-100" 
+                        
+                        
                     >
                         <Plus size={16} /> Flashcard
                     </button>
 
-                    <div className="courseviewer-style-8"  />
+                    <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"  />
 
                     <button
                         onClick={handlePrint}
-                        className="courseviewer-style-9" 
-                        onMouseEnter={e => {
-                            e.currentTarget.style.background = 'var(--color-surface-hover)';
-                            e.currentTarget.style.color = 'var(--color-text)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.background = 'none';
-                            e.currentTarget.style.color = 'var(--color-text-muted)';
-                        }}
+                        className="flex items-center gap-1.5 bg-transparent border-none rounded-md px-3 py-2 text-[13px] font-medium text-slate-500 cursor-pointer transition-all duration-150 hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-900 hover:dark:text-slate-100" 
+                        
+                        
                     >
                         <Printer size={16} /> {isGeneratingPdf ? 'Génération...' : 'PDF'}
                     </button>
 
                     <button
                         onClick={onDelete}
-                        className="courseviewer-style-10" 
-                        onMouseEnter={e => {
-                            e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
-                            e.currentTarget.style.color = '#ef4444';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.background = 'none';
-                            e.currentTarget.style.color = 'var(--color-text-muted)';
-                        }}
+                        className="flex items-center gap-1.5 bg-transparent border-none rounded-md px-3 py-2 text-[13px] font-medium text-slate-500 cursor-pointer transition-all duration-150 hover:bg-red-50 hover:dark:bg-red-900/20 hover:text-red-500" 
+                        
+                        
                     >
                         <Trash size={16} />
                     </button>
 
                     <button
                         onClick={onEdit}
-                        className="courseviewer-style-11" 
-                        onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-                        onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                        className="flex items-center gap-1.5 bg-teal-600 dark:bg-teal-500 border-none rounded-lg px-4.5 py-2.5 text-sm font-semibold text-white cursor-pointer transition-opacity duration-150 ml-1 hover:opacity-90" 
+                        
+                        
                     >
                         <PencilSimple size={16} weight="fill" /> Modifier
                     </button>
@@ -234,26 +203,26 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 <div ref={scrollRef} className="course-left-pane">
                     
                     {/* Cover Banner */}
-                    <div className="courseviewer-style-12" style={{
+                    <div className="w-full h-[180px] shrink-0 relative" style={{
   background: course.tags && course.tags.length > 0 ? 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(45,212,191,0.05) 100%)' : 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.05) 100%)'
 }}>
-                        <div className="courseviewer-style-13"  />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 dark:from-slate-950 to-transparent"  />
                     </div>
 
-                    <article className="courseviewer-style-14" style={{
+                    <article className="w-full max-w-[760px] px-10 pb-20 relative z-10" style={{
   marginTop: -60
 }}>
                         {/* Document header */}
-                        <div className="courseviewer-style-15" >
-                            <h1 className="courseviewer-style-16" >
+                        <div className="mb-10" >
+                            <h1 className="text-5xl font-extrabold tracking-tight leading-tight text-slate-900 dark:text-slate-100 mb-5" >
                                 {course.title}
                             </h1>
 
                             {/* Tags */}
                             {course.tags && course.tags.length > 0 && (
-                                <div className="courseviewer-style-17" >
+                                <div className="flex flex-wrap gap-2 mb-5" >
                                     {course.tags.map(t => (
-                                        <span key={t} className="courseviewer-style-18" >
+                                        <span key={t} className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2.5 py-1" >
                                             <Hash size={12} weight="bold" /> {t}
                                         </span>
                                     ))}
@@ -261,13 +230,13 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             )}
 
                             {/* Meta row */}
-                            <div className="courseviewer-style-19" >
-                                <div className="courseviewer-style-20" >
+                            <div className="flex items-center gap-4" >
+                                <div className="flex items-center gap-1.5 text-[13px] text-slate-500 font-medium" >
                                     <CalendarBlank size={15} /> Modifié le {updatedDate}
                                 </div>
                                 {conceptCards.length > 0 && (
-                                    <div className="courseviewer-style-21" >
-                                        <span className="courseviewer-style-22"  />
+                                    <div className="flex items-center gap-1.5 text-[13px] text-slate-500 font-medium" >
+                                        <span className="w-[3px] h-[3px] rounded-full bg-slate-500"  />
                                         {conceptCards.length} concept{conceptCards.length > 1 ? 's' : ''}
                                     </div>
                                 )}
@@ -276,29 +245,29 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                         {/* Content Prose */}
                         {(course.details || course.content) && (
-                            <div className="prose-container courseviewer-style-23" >
+                            <div className="prose-container text-base leading-relaxed text-slate-900 dark:text-slate-100" >
                                 <MarkdownRenderer content={course.details || course.content || ''} onInternalLinkClick={handleInternalLinkClick} />
                             </div>
                         )}
 
                         {/* Concepts rendering inline */}
                         {course.nodeType === 'course' && conceptCards.length > 0 && (
-                            <div className="courseviewer-style-24" >
-                                <h2 className="courseviewer-style-25" >
+                            <div className="mt-12 border-t-2 border-dashed border-slate-200 dark:border-slate-700 pt-10" >
+                                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-8 flex items-center gap-3" >
                                     <PresentationChart size={28} weight="duotone" className="text-indigo-500" />
                                     Concepts Clés
                                 </h2>
-                                <div className="courseviewer-style-26" >
+                                <div className="flex flex-col gap-10" >
                                     {conceptCards.map(concept => (
-                                        <details key={concept.id} id={`concept-${concept.id}`} className="courseviewer-style-27"  open>
-                                            <summary className="courseviewer-style-28" >
-                                                <div className="courseviewer-style-29" style={{
+                                        <details key={concept.id} id={`concept-${concept.id}`} className="scroll-mt-[100px] group"  open>
+                                            <summary className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-3 cursor-pointer outline-none select-none list-none [&::-webkit-details-marker]:hidden" >
+                                                <div className="w-3 h-3 rounded-full" style={{
   background: getCategoryColor(concept.type)
 }} />
-                                                <div className="courseviewer-style-30" >{concept.title}</div>
-                                                <CaretDown size={20} color="var(--color-text-muted)" className="accordion-icon courseviewer-style-31"  />
+                                                <div className="flex-1" >{concept.title}</div>
+                                                <CaretDown size={20} color="var(--color-text-muted)" className="accordion-icon transition-transform duration-200 group-open:rotate-180"  />
                                             </summary>
-                                            <div className="prose-container courseviewer-style-32" >
+                                            <div className="prose-container text-base leading-relaxed text-slate-900 dark:text-slate-100" >
                                                 <MarkdownRenderer content={concept.details || concept.content || ''} onInternalLinkClick={handleInternalLinkClick} />
                                             </div>
                                         </details>
@@ -311,30 +280,24 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                 {/* ── Right Pane (Sidebar / Action) ─────────────── */}
                 <div className="course-right-pane">
-                    <div className="courseviewer-style-33" >
+                    <div className="p-6" >
                         
                         {/* Sticky CTA Révision */}
                         {flashcardCards.length > 0 && onStartReview && (
                             <div className="sticky-cta">
                                 <div>
-                                    <div className="courseviewer-style-34" >
+                                    <div className="font-extrabold text-base text-slate-900 dark:text-slate-100 mb-1" >
                                         Prêt à vous tester ?
                                     </div>
-                                    <div className="courseviewer-style-35" >
+                                    <div className="text-[13px] text-slate-500" >
                                         {flashcardCards.length} flashcard{flashcardCards.length > 1 ? 's' : ''} disponible{flashcardCards.length > 1 ? 's' : ''}.
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => onStartReview(flashcardCards.map(f => f.id), `Révision — ${course.title}`)}
-                                    className="courseviewer-style-36" 
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(16,185,129,0.4)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.transform = 'none';
-                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)';
-                                    }}
+                                    className="flex items-center justify-center gap-2 w-full p-3 rounded-xl mt-4 bg-emerald-500 border-none text-white font-bold text-sm cursor-pointer transition-all duration-200 shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(16,185,129,0.4)]" 
+                                    
+                                    
                                 >
                                     <Brain size={18} weight="fill" />
                                     Réviser maintenant
@@ -344,19 +307,19 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                         {/* Concepts List Sidebar */}
                         {conceptCards.length > 0 && (
-                            <div className="courseviewer-style-37" >
-                                <div className="courseviewer-style-38" >
-                                    <h3 className="courseviewer-style-39" >
+                            <div className="mb-8" >
+                                <div className="flex justify-between items-center mb-4" >
+                                    <h3 className="text-base font-bold m-0 text-slate-900 dark:text-slate-100" >
                                         Concepts liés
                                     </h3>
                                     <button
                                         onClick={onAddConcept}
-                                        className="courseviewer-style-40" 
+                                        className="bg-transparent border-none text-slate-500 cursor-pointer p-1" 
                                     >
                                         <Plus size={16} weight="bold" />
                                     </button>
                                 </div>
-                                <div className="courseviewer-style-41" >
+                                <div className="flex flex-col gap-2" >
                                     {conceptCards.map(concept => (
                                         <div
                                             key={concept.id}
@@ -364,25 +327,21 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                                 const el = document.getElementById(`concept-${concept.id}`);
                                                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                                             }}
-                                            className="courseviewer-style-42" 
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.borderColor = 'var(--color-border)';
-                                            }}
+                                            className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-150 hover:border-teal-500" 
+                                            
+                                            
                                         >
-                                            <div className="courseviewer-style-43" style={{
+                                            <div className="w-2 h-2 rounded-full" style={{
   background: getCategoryColor(concept.type)
 }} />
-                                            <div className="courseviewer-style-44" >
+                                            <div className="flex-1 min-w-0 font-semibold text-[13px] text-slate-900 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap" >
                                                 {concept.title}
                                             </div>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onEditConcept?.(concept.id); }}
-                                                className="courseviewer-style-45" 
-                                                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--color-primary)'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.opacity = '0.6'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                                                className="bg-transparent border-none p-1 cursor-pointer text-slate-500 opacity-60 hover:opacity-100 hover:text-teal-500" 
+                                                
+                                                
                                                 title="Modifier le concept"
                                             >
                                                 <PencilSimple size={14} />
@@ -396,15 +355,15 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         {/* Flashcards List */}
                         {flashcardCards.length > 0 && (
                             <div style={{ marginTop: flashcardCards.length > 0 ? 0 : 24 }}>
-                                <div className="courseviewer-style-46" >
-                                    <h3 className="courseviewer-style-47" >
+                                <div className="flex justify-between items-center mb-4" >
+                                    <h3 className="text-base font-bold m-0 text-slate-900 dark:text-slate-100" >
                                         Flashcards liées
                                     </h3>
-                                    <div className="courseviewer-style-48" >
+                                    <div className="flex gap-1" >
                                         {onBulkAddFlashcard && (
                                             <button
                                                 onClick={onBulkAddFlashcard}
-                                                className="courseviewer-style-49" 
+                                                className="bg-transparent border-none text-slate-500 cursor-pointer p-1" 
                                                 title="Ajout en masse"
                                             >
                                                 <ListPlus size={16} weight="bold" />
@@ -412,31 +371,27 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                         )}
                                         <button
                                             onClick={onAddFlashcard}
-                                            className="courseviewer-style-50" 
+                                            className="bg-transparent border-none text-slate-500 cursor-pointer p-1" 
                                             title="Ajouter une flashcard"
                                         >
                                             <Plus size={16} weight="bold" />
                                         </button>
                                     </div>
                                 </div>
-                                <div className="courseviewer-style-51" >
+                                <div className="flex flex-col gap-2" >
                                     {flashcardCards.map(fc => (
                                         <div
                                             key={fc.id}
                                             onClick={() => onEditFlashcard?.(fc.id)}
-                                            className="courseviewer-style-52" 
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.borderColor = 'var(--color-border)';
-                                            }}
+                                            className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-150 hover:border-teal-500" 
+                                            
+                                            
                                         >
-                                            <div className="courseviewer-style-53" >
-                                                <div className="courseviewer-style-54" >
+                                            <div className="flex-1 min-w-0" >
+                                                <div className="font-semibold text-[13px] text-slate-900 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap" >
                                                     {fc.format === 'cloze' ? 'Texte à trou' : fc.title}
                                                 </div>
-                                                <div className="courseviewer-style-55" style={{
+                                                <div className="text-[11px] font-semibold mt-1" style={{
   color: fc.progress?.status === 'review' ? '#ef4444' : fc.progress?.status === 'learning' ? '#f59e0b' : '#6366f1'
 }}>
                                                     {fc.progress?.status === 'review' ? 'À réviser' : fc.progress?.status === 'learning' ? 'En cours' : 'Nouvelle'}
@@ -450,22 +405,22 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                         {/* Empty State Sidebar */}
                         {course.nodeType === 'course' && conceptCards.length === 0 && flashcardCards.length === 0 && (
-                            <div className="courseviewer-style-56" >
-                                <PresentationChart size={28} weight="duotone" className="text-indigo-400 courseviewer-style-57"  />
-                                <h3 className="courseviewer-style-58" >Aucune action</h3>
-                                <p className="courseviewer-style-59" >
+                            <div className="p-8 px-6 text-center rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center" >
+                                <PresentationChart size={28} weight="duotone" className="text-indigo-400 mb-4"  />
+                                <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100 m-0 mb-2" >Aucune action</h3>
+                                <p className="text-[13px] text-slate-500 m-0 mb-6 leading-relaxed" >
                                     Divisez ce cours en créant des concepts clés ou des flashcards.
                                 </p>
-                                <div className="courseviewer-style-60" >
-                                    <button onClick={onAddConcept} className="courseviewer-style-61" >
+                                <div className="flex flex-col gap-2.5 w-full" >
+                                    <button onClick={onAddConcept} className="p-2.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold text-[13px] cursor-pointer border-none" >
                                         Lier un concept
                                     </button>
-                                    <div className="courseviewer-style-62" >
-                                        <button onClick={onAddFlashcard} className="courseviewer-style-63" >
+                                    <div className="flex gap-2" >
+                                        <button onClick={onAddFlashcard} className="flex-1 p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-semibold text-[13px] cursor-pointer" >
                                             Flashcard
                                         </button>
                                         {onBulkAddFlashcard && (
-                                            <button onClick={onBulkAddFlashcard} className="courseviewer-style-64" >
+                                            <button onClick={onBulkAddFlashcard} className="flex-1 p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-semibold text-[13px] cursor-pointer" >
                                                 En masse
                                             </button>
                                         )}
@@ -479,27 +434,27 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             </div>
 
             {/* ── Print Only Layout ────────────────────────────────── */}
-            <div className="print-only-course courseviewer-style-65" >
+            <div className="print-only-course font-sans leading-[1.4] text-[11pt]" >
                 <div className="print-header">
-                    <h1 className="courseviewer-style-66" >
+                    <h1 className="text-[2rem] font-extrabold m-0 mb-1 font-sans text-black" >
                         {course.title}
                     </h1>
-                    <div className="courseviewer-style-67" >
-                        {course.subtitle && <span className="courseviewer-style-68" >{course.subtitle}</span>}
+                    <div className="text-[0.9rem] text-[#555] mb-4" >
+                        {course.subtitle && <span className="mr-4" >{course.subtitle}</span>}
                         Mise à jour le {updatedDate}
                     </div>
                 </div>
 
-                <div className="print-intro prose courseviewer-style-69" >
+                <div className="print-intro prose mb-5" >
                     <MarkdownRenderer content={course.content || ''} onInternalLinkClick={handleInternalLinkClick} />
                 </div>
 
                 {conceptCards.length > 0 && (
                     <div className="print-concepts">
-                        <h2 className="courseviewer-style-70" >Concepts Clés</h2>
+                        <h2 className="text-[1.5rem] border-b border-black pb-1 m-0 mb-4" >Concepts Clés</h2>
                         {conceptCards.map(concept => (
-                            <div key={concept.id} className="print-concept-item courseviewer-style-71" >
-                                <h3 className="courseviewer-style-72" >
+                            <div key={concept.id} className="print-concept-item mb-4 break-inside-avoid" >
+                                <h3 className="text-[1.2rem] text-black m-0 mb-2" >
                                     {concept.title}
                                 </h3>
                                 <div className="prose">
@@ -512,15 +467,15 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                 {flashcardCards.length > 0 && (
                     <>
-                        <div className="print-flashcards courseviewer-style-73" >
-                            <h2 className="courseviewer-style-74" >Quiz (Questions)</h2>
-                            <ul className="courseviewer-style-75" >
+                        <div className="print-flashcards mt-6 break-before-page" >
+                            <h2 className="text-[1.5rem] border-b border-black pb-1 m-0 mb-4 font-sans" >Quiz (Questions)</h2>
+                            <ul className="list-none p-0" >
                                 {flashcardCards.map((fc, index) => (
-                                    <li key={`q-${fc.id}`} className="courseviewer-style-76" >
-                                        <div className="courseviewer-style-77" >
+                                    <li key={`q-${fc.id}`} className="mb-4 pb-2 border-b border-dashed border-[#ccc] break-inside-avoid" >
+                                        <div className="font-bold m-0 mb-1 text-[1.05rem]" >
                                             Question {index + 1}
                                         </div>
-                                        <div className="courseviewer-style-78" >
+                                        <div className="m-0 mb-2 text-[1.05rem]" >
                                             {fc.format === 'cloze' ? (
                                                 <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((fc.content || '').replace(/\{([^}]+)\}/g, '<strong>___________</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong>___________</strong>')) }} />
                                             ) : (
@@ -532,15 +487,15 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                             </ul>
                         </div>
                         
-                        <div className="print-flashcards-answers courseviewer-style-79" >
-                            <h2 className="courseviewer-style-80" >Corrigé du Quiz</h2>
-                            <ul className="courseviewer-style-81" >
+                        <div className="print-flashcards-answers mt-6 break-before-page" >
+                            <h2 className="text-[1.5rem] border-b border-black pb-1 m-0 mb-4 font-sans" >Corrigé du Quiz</h2>
+                            <ul className="list-none p-0" >
                                 {flashcardCards.map((fc, index) => (
-                                    <li key={`a-${fc.id}`} className="courseviewer-style-82" >
-                                        <div className="courseviewer-style-83" >
+                                    <li key={`a-${fc.id}`} className="mb-4 pb-2 border-b border-[#eee] break-inside-avoid" >
+                                        <div className="font-bold m-0 mb-1 text-[#555]" >
                                             Réponse {index + 1}
                                         </div>
-                                        <div className="courseviewer-style-84" >
+                                        <div className="text-[#333] text-[1.05rem]" >
                                             {fc.format === 'cloze' ? (
                                                 <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((fc.content || '').replace(/\{([^}]+)\}/g, '<strong style="color: black; text-decoration: underline">$1</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong style="color: black; text-decoration: underline">$1</strong>')) }} />
                                             ) : (

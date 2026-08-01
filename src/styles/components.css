@@ -1320,54 +1320,5 @@ div[role="button"]:hover .list-action-btn {
   color: #ef4444;
 }
 
-/* Barre flottante de multi-sélection */
-.browse-selection-bar {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  backdrop-filter: blur(12px);
-  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes slideUp {
-  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
-}
-.browse-selection-bar-count {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text);
-  white-space: nowrap;
-}
-.browse-selection-bar-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--color-border);
-}
-.browse-selection-bar-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 10px;
-  border: none;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.browse-selection-bar-btn:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
-}
+
 

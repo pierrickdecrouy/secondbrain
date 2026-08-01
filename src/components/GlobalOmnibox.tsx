@@ -12,7 +12,6 @@ import { stripMarkdown } from '../utils';
 import { DynamicIcon } from './DynamicIcon';
 import { hybridSearch, fastLexicalSearch } from '../searchIndex';
 import type { Card } from '../types';
-import './styles/GlobalOmnibox.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -294,28 +293,28 @@ export const GlobalOmnibox: React.FC = () => {
     };
 
     return (
-        <div className="globalomnibox-style-1" >
+        <div className="fixed inset-0 z-[2000] flex items-start justify-center pt-[13vh]" >
             {/* Backdrop */}
             <div
-                className="globalomnibox-style-2" 
+                className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" 
                 onClick={() => setOmniboxOpen(false)}
             />
 
             {/* Panel */}
-            <div className="globalomnibox-style-3" >
+            <div className="relative w-full max-w-[680px] flex flex-col overflow-hidden rounded-[20px] shadow-[0_25px_60px_rgba(0,0,0,0.35)] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900" >
 
                 {/* ── Input ── */}
-                <div className="globalomnibox-style-4" >
+                <div className="flex items-center px-5 py-4 border-b border-slate-200 dark:border-slate-800 gap-3" >
                     {isSlash
-                        ? <span className="globalomnibox-style-5" >/</span>
+                        ? <span className="text-[1.15rem] font-black text-teal-600 dark:text-teal-500 min-w-[22px] text-center leading-none" >/</span>
                         : isSystem
-                            ? <span className="globalomnibox-style-6" >{'>'}</span>
-                            : <MagnifyingGlass size={20} className="globalomnibox-style-7"  />
+                            ? <span className="text-[1.15rem] font-black text-slate-400 dark:text-slate-500 min-w-[22px] text-center leading-none" >{'>'}</span>
+                            : <MagnifyingGlass size={20} className="text-slate-400 dark:text-slate-500 shrink-0"  />
                     }
                     <input
                         ref={inputRef}
                         type="text"
-                        className="globalomnibox-style-8" 
+                        className="flex-1 bg-transparent border-none outline-none text-[1.05rem] font-semibold text-slate-900 dark:text-slate-100" 
                         placeholder={
                             isSlash ? 'carte · cours · flash · cloze · revision · tag: · type:…'
                             : isSystem ? 'Commande système…'
@@ -325,87 +324,87 @@ export const GlobalOmnibox: React.FC = () => {
                         onChange={e => { setLocalQuery(e.target.value); setSelectedIndex(0); }}
                     />
                     {localQuery && (
-                        <button onClick={() => setLocalQuery('')} className="globalomnibox-style-9" >
+                        <button onClick={() => setLocalQuery('')} className="bg-transparent border-none cursor-pointer text-slate-400 dark:text-slate-500 p-1 rounded-md flex items-center hover:bg-slate-100 dark:hover:bg-slate-800" >
                             <X size={17} />
                         </button>
                     )}
                     {isSlash && (
-                        <span className="globalomnibox-style-10" >CRÉATION</span>
+                        <span className="text-[0.7rem] font-extrabold px-2.5 py-[3px] rounded-full bg-indigo-500/10 text-indigo-500 tracking-wider shrink-0" >CRÉATION</span>
                     )}
                     {isSystem && (
-                        <span className="globalomnibox-style-11" >SYSTÈME</span>
+                        <span className="text-[0.7rem] font-extrabold px-2.5 py-[3px] rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 tracking-wider shrink-0" >SYSTÈME</span>
                     )}
                 </div>
 
                 {/* ── Results ── */}
-                <div  className="custom-scrollbar globalomnibox-style-12" ref={listRef}>
+                <div  className="custom-scrollbar max-h-[56vh] overflow-y-auto" ref={listRef}>
 
                     {/* Empty state */}
                     {localQuery.trim() === '' && (
-                        <div className="globalomnibox-style-13" >
-                            <div className="globalomnibox-style-14" >
+                        <div className="px-4 pt-5 pb-[18px]" >
+                            <div className="flex flex-wrap gap-2 mb-[18px]" >
                                 {[
                                     { label: '/ Créer', color: '#6366f1', bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.2)', action: () => setLocalQuery('/') },
                                     { label: '> Commande', color: 'var(--color-text-muted)', bg: 'var(--color-bg)', border: 'var(--color-border)', action: () => setLocalQuery('>') },
                                 ].map(p => (
-                                    <button key={p.label} onClick={p.action} className="globalomnibox-style-15" style={{
+                                    <button key={p.label} onClick={p.action} className="px-4 py-1.5 rounded-full text-[0.82rem] font-bold cursor-pointer" style={{
   background: p.bg,
   color: p.color,
   border: `1px solid ${p.border}`
 }}>{p.label}</button>
                                 ))}
                                 {dueCount > 0 && (
-                                    <button onClick={() => { setOmniboxOpen(false); navigate('/review'); }} className="globalomnibox-style-16" >
+                                    <button onClick={() => { setOmniboxOpen(false); navigate('/review'); }} className="px-[14px] py-1.5 rounded-full text-[0.82rem] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20 cursor-pointer" >
                                         🧠 {dueCount} à réviser
                                     </button>
                                 )}
                             </div>
-                            <p className="globalomnibox-style-17" >Tapez pour rechercher dans votre base de connaissances</p>
+                            <p className="text-[0.83rem] text-slate-400 dark:text-slate-500 text-center" >Tapez pour rechercher dans votre base de connaissances</p>
                         </div>
                     )}
 
                     {/* Slash mode */}
                     {isSlash && !isFilterMode && (
-                        <div className="globalomnibox-style-18" >
+                        <div className="p-2" >
                             <div style={s.sectionLabel}>Créer</div>
                             {slashCommands.length === 0
-                                ? <div className="globalomnibox-style-19" >Commande inconnue — <kbd style={s.kbd}>/carte</kbd> <kbd style={s.kbd}>/cours</kbd> <kbd style={s.kbd}>/flash</kbd></div>
+                                ? <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-[0.88rem]" >Commande inconnue — <kbd style={s.kbd}>/carte</kbd> <kbd style={s.kbd}>/cours</kbd> <kbd style={s.kbd}>/flash</kbd></div>
                                 : slashCommands.map((cmd, idx) => {
                                     const sel = idx === selectedIndex;
                                     return (
                                         <div key={cmd.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)} onClick={() => cmd.action()}>
                                             <div style={s.icon(cmd.color, sel)}>{cmd.icon}</div>
-                                            <div className="globalomnibox-style-20" >
-                                                <div className="globalomnibox-style-21" >{cmd.label}</div>
-                                                <div className="globalomnibox-style-22" >{cmd.description}</div>
+                                            <div className="flex-1 min-w-0" >
+                                                <div className="font-bold text-[0.92rem] text-slate-900 dark:text-slate-100" >{cmd.label}</div>
+                                                <div className="text-[0.77rem] text-slate-400 dark:text-slate-500 mt-[1px]" >{cmd.description}</div>
                                             </div>
-                                            <div className="globalomnibox-style-23" >
+                                            <div className="flex gap-1" >
                                                 {cmd.aliases.slice(0, 2).map(a => <kbd key={a} style={s.kbd}>/{a}</kbd>)}
                                             </div>
-                                            {sel && <ArrowElbowDownLeft size={13} className="globalomnibox-style-24"  />}
+                                            {sel && <ArrowElbowDownLeft size={13} className="text-slate-400 dark:text-slate-500 shrink-0"  />}
                                         </div>
                                     );
                                 })
                             }
 
-                            <div className="globalomnibox-style-25" style={{
+                            <div className="mt-2" style={{
   ...s.sectionLabel
 }}>Filtrer</div>
                             {[
                                 { label: '/tag:', desc: 'Filtrer par étiquette', icon: <Tag size={16} />, color: '#14b8a6' },
                                 { label: '/type:', desc: 'Filtrer par catégorie', icon: <Funnel size={16} />, color: '#f97316' },
                             ].map(f => (
-                                <div key={f.label} className="globalomnibox-style-26" style={{
+                                <div key={f.label} className="transition-none" style={{
   ...s.row(false)
 }} onClick={() => setLocalQuery(f.label)}
                                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg)')}
                                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                     <div style={s.icon(f.color, false)}>{f.icon}</div>
-                                    <div className="globalomnibox-style-27" >
-                                        <div className="globalomnibox-style-28" >
-                                            {f.label}<span className="globalomnibox-style-29" >valeur</span>
+                                    <div className="flex-1" >
+                                        <div className="font-bold text-[0.88rem] text-slate-900 dark:text-slate-100" >
+                                            {f.label}<span className="opacity-45" >valeur</span>
                                         </div>
-                                        <div className="globalomnibox-style-30" >{f.desc}</div>
+                                        <div className="text-[0.77rem] text-slate-400 dark:text-slate-500" >{f.desc}</div>
                                     </div>
                                 </div>
                             ))}
@@ -414,17 +413,17 @@ export const GlobalOmnibox: React.FC = () => {
 
                     {/* Filter mode */}
                     {isSlash && isFilterMode && (
-                        <div className="globalomnibox-style-31" >
+                        <div className="p-2" >
                             <div style={s.sectionLabel}>{slashCmd.startsWith('tag:') ? 'Étiquettes' : 'Catégories'}</div>
                             {filterCommands.length === 0
-                                ? <div className="globalomnibox-style-32" >Aucun résultat</div>
+                                ? <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-[0.88rem]" >Aucun résultat</div>
                                 : filterCommands.map((cmd, idx) => {
                                     const sel = idx === selectedIndex;
                                     return (
                                         <div key={cmd.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)} onClick={cmd.action}>
-                                            <span className="globalomnibox-style-33" >{cmd.icon}</span>
-                                            <span className="globalomnibox-style-34" >{cmd.label}</span>
-                                            {sel && <ArrowElbowDownLeft size={13} className="globalomnibox-style-35"  />}
+                                            <span className="text-slate-400 dark:text-slate-500" >{cmd.icon}</span>
+                                            <span className="flex-1 font-semibold text-[0.9rem] text-slate-900 dark:text-slate-100" >{cmd.label}</span>
+                                            {sel && <ArrowElbowDownLeft size={13} className="text-slate-400 dark:text-slate-500"  />}
                                         </div>
                                     );
                                 })
@@ -434,17 +433,17 @@ export const GlobalOmnibox: React.FC = () => {
 
                     {/* System mode */}
                     {isSystem && (
-                        <div className="globalomnibox-style-36" >
+                        <div className="p-2" >
                             <div style={s.sectionLabel}>Commandes système</div>
                             {filteredSystemCommands.length === 0
-                                ? <div className="globalomnibox-style-37" >Commande inconnue</div>
+                                ? <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-[0.88rem]" >Commande inconnue</div>
                                 : filteredSystemCommands.map((cmd, idx) => {
                                     const sel = idx === selectedIndex;
                                     return (
                                         <div key={cmd.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)} onClick={() => { cmd.action(); setOmniboxOpen(false); }}>
-                                            <span className="globalomnibox-style-38" >{cmd.icon}</span>
-                                            <span className="globalomnibox-style-39" >{cmd.label}</span>
-                                            {sel && <ArrowElbowDownLeft size={13} className="globalomnibox-style-40"  />}
+                                            <span className="text-slate-400 dark:text-slate-500" >{cmd.icon}</span>
+                                            <span className="flex-1 font-semibold text-slate-900 dark:text-slate-100" >{cmd.label}</span>
+                                            {sel && <ArrowElbowDownLeft size={13} className="text-slate-400 dark:text-slate-500"  />}
                                         </div>
                                     );
                                 })
@@ -454,12 +453,12 @@ export const GlobalOmnibox: React.FC = () => {
 
                     {/* Search results */}
                     {!isSlash && !isSystem && localQuery.trim() !== '' && (
-                        <div className="globalomnibox-style-41" >
+                        <div className="p-2" >
                             {results.length === 0 ? (
-                                <div className="globalomnibox-style-42" >
-                                    <MagnifyingGlass size={28} className="globalomnibox-style-43"  />
-                                    <p className="globalomnibox-style-44" >Aucun résultat pour « {localQuery} »</p>
-                                    <p className="globalomnibox-style-45" >Tapez <kbd style={s.kbd}>/carte</kbd> pour créer une nouvelle fiche</p>
+                                <div className="px-6 py-8 text-center text-slate-400 dark:text-slate-500" >
+                                    <MagnifyingGlass size={28} className="opacity-25 block mx-auto mb-2.5"  />
+                                    <p className="text-[0.9rem]" >Aucun résultat pour « {localQuery} »</p>
+                                    <p className="text-[0.78rem] mt-1.5" >Tapez <kbd style={s.kbd}>/carte</kbd> pour créer une nouvelle fiche</p>
                                 </div>
                             ) : (
                                 <>
@@ -469,45 +468,45 @@ export const GlobalOmnibox: React.FC = () => {
                                         return (
                                             <div key={card.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)}
                                                 onClick={() => { setSearchQuery(localQuery); setOmniboxOpen(false); navigate('/browse'); }}>
-                                                <div className="globalomnibox-style-46" style={{
+                                                <div className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-white shrink-0" style={{
   background: getCategoryColor(card.type)
 }}>
                                                     <DynamicIcon name={getCategoryIcon(card.type)} size={15} />
                                                 </div>
-                                                <div className="globalomnibox-style-47" >
-                                                    <div className="globalomnibox-style-48" >
-                                                        <span className="globalomnibox-style-49" >{card.title}</span>
-                                                        {card.subtitle && <span className="globalomnibox-style-50" >{card.subtitle}</span>}
+                                                <div className="flex-1 min-w-0" >
+                                                    <div className="flex items-center gap-[7px]" >
+                                                        <span className="font-bold text-[0.9rem] text-slate-900 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap" >{card.title}</span>
+                                                        {card.subtitle && <span className="text-[0.7rem] px-[7px] py-[2px] rounded-[5px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 shrink-0" >{card.subtitle}</span>}
                                                     </div>
                                                     
                                                     {highlights[card.id] ? (
                                                         <p 
-                                                            className="globalomnibox-style-51" 
+                                                            className="text-[0.77rem] text-slate-400 dark:text-slate-500 mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap" 
                                                             dangerouslySetInnerHTML={{ __html: highlights[card.id] }}
                                                         />
                                                     ) : (
-                                                        card.content && <p className="globalomnibox-style-52" >{stripMarkdown(card.content)}</p>
+                                                        card.content && <p className="text-[0.77rem] text-slate-400 dark:text-slate-500 mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap" >{stripMarkdown(card.content)}</p>
                                                     )}
                                                 </div>
                                                 {card.tags && card.tags.length > 0 && (
-                                                    <div className="globalomnibox-style-53" >
-                                                        {card.tags.slice(0, 2).map(t => <span key={t} className="globalomnibox-style-54" >#{t}</span>)}
+                                                    <div className="flex gap-1 shrink-0" >
+                                                        {card.tags.slice(0, 2).map(t => <span key={t} className="text-[0.66rem] px-[7px] py-[2px] rounded-[10px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500" >#{t}</span>)}
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })}
-                                    <div className="globalomnibox-style-55"  />
-                                    <div className="globalomnibox-style-56" style={{
+                                    <div className="my-1 mx-0.5 border-t border-slate-200 dark:border-slate-800"  />
+                                    <div className="justify-between" style={{
   ...s.row(selectedIndex === results.length)
 }}
                                         onMouseEnter={() => setSelectedIndex(results.length)}
                                         onClick={() => { setSearchQuery(localQuery); setOmniboxOpen(false); navigate('/browse'); }}>
-                                        <div className="globalomnibox-style-57" >
-                                            <span className="globalomnibox-style-58" >Voir tous les résultats pour « {localQuery} »</span>
-                                            {isDeepSearch && <span className="globalomnibox-style-59" >SÉMANTIQUE RRF</span>}
+                                        <div className="flex items-center gap-1.5" >
+                                            <span className="font-semibold text-[0.87rem] text-slate-900 dark:text-slate-100" >Voir tous les résultats pour « {localQuery} »</span>
+                                            {isDeepSearch && <span className="text-[0.65rem] font-extrabold px-[6px] py-[2px] rounded-[20px] bg-emerald-500/10 text-emerald-500" >SÉMANTIQUE RRF</span>}
                                         </div>
-                                        <ArrowRight size={15} className="globalomnibox-style-60"  />
+                                        <ArrowRight size={15} className="text-slate-400 dark:text-slate-500"  />
                                     </div>
                                 </>
                             )}
@@ -516,24 +515,24 @@ export const GlobalOmnibox: React.FC = () => {
                 </div>
 
                 {/* ── Footer ── */}
-                <div className="globalomnibox-style-61" >
-                    <div className="globalomnibox-style-62" >
-                        <span className="globalomnibox-style-63" >
+                <div className="flex items-center justify-between px-[18px] py-[9px] border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[0.7rem] text-slate-400 dark:text-slate-500" >
+                    <div className="flex items-center gap-[14px]" >
+                        <span className="flex items-center gap-1" >
                             <kbd style={s.kbd}>↑</kbd><kbd style={s.kbd}>↓</kbd> Naviguer
                         </span>
-                        <span className="globalomnibox-style-64" >
+                        <span className="flex items-center gap-1" >
                             <kbd style={s.kbd}>↵</kbd> Confirmer
                         </span>
                         {!isSlash && !isSystem && (
-                            <span className="globalomnibox-style-65" >
-                                <kbd className="globalomnibox-style-66" style={{
+                            <span className="flex items-center gap-1" >
+                                <kbd className="text-teal-600 dark:text-teal-500 border-teal-600 dark:border-teal-500 opacity-80" style={{
   ...s.kbd
 }}>/</kbd>
                                 Créer
                             </span>
                         )}
                     </div>
-                    <span className="globalomnibox-style-67" >
+                    <span className="flex items-center gap-1" >
                         <kbd style={s.kbd}>Esc</kbd> Fermer
                     </span>
                 </div>

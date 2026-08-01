@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { usePomodoroStore } from '../store/usePomodoroStore';
-import './styles/PomodoroTimer.css';
 
 export const PomodoroTimer: React.FC = () => {
     const {
@@ -159,7 +158,7 @@ export const PomodoroTimer: React.FC = () => {
                     title="Ouvrir le Pomodoro"
                 >
                     {/* Mode dot */}
-                    <span className="pomodorotimer-style-1" style={{
+                    <span className="w-[7px] h-[7px] rounded-full shrink-0 transition-all duration-400 ease-in-out" style={{
   backgroundColor: dotColor,
   boxShadow: isRunning ? `0 0 0 3px ${dotColor}25` : 'none'
 }} />
@@ -170,11 +169,11 @@ export const PomodoroTimer: React.FC = () => {
                     </span>
 
                     {/* Cycle dots */}
-                    <div className="pomodorotimer-style-2" >
+                    <div className="flex items-center gap-[3px]" >
                         {[0, 1, 2, 3].map(i => (
                             <span
                                 key={i}
-                                className="pomodorotimer-style-3" style={{
+                                className="block rounded-full transition-all duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] h-1" style={{
   width: i < completedInRound ? '10px' : '4px',
   backgroundColor: i < completedInRound ? dotColor : 'var(--pomo-dot-empty)'
 }}
@@ -187,7 +186,7 @@ export const PomodoroTimer: React.FC = () => {
                 <div className="pomo-divider" />
 
                 {/* Controls */}
-                <div className="pomodorotimer-style-4" >
+                <div className="flex items-center py-1 pr-1 pl-1.5 gap-0" >
                     <button
                         className={`pomo-ctrl-btn ${isUrgent ? 'urgent-play' : ''}`}
                         onClick={isRunning ? pause : start}
@@ -199,7 +198,7 @@ export const PomodoroTimer: React.FC = () => {
                                 <rect x="14" y="4" width="5" height="16" rx="1.5" />
                             </svg>
                         ) : (
-                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" className="pomodorotimer-style-5" >
+                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" className="ml-[1px]" >
                                 <path d="M8 5v14l11-7z" />
                             </svg>
                         )}
@@ -216,7 +215,7 @@ export const PomodoroTimer: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="pomodorotimer-style-6"  />
+                <div className="w-1"  />
             </div>
         </>
     );

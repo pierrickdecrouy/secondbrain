@@ -20,7 +20,6 @@ import {
 import { ClozeExtension } from './editor/ClozeExtension';
 import type { NodeViewProps } from '@tiptap/core';
 import type { Card } from '../types';
-import './styles/CourseEditor.css';
 
 // --- Custom Node for Medical Alerts ---
 
@@ -249,30 +248,30 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
             
             
             {showCardSelector && (
-                <div ref={selectorRef} className="card-selector-popup courseeditor-style-1" >
+                <div ref={selectorRef} className="absolute top-[70px] left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 z-50 shadow-md w-[300px] flex flex-col gap-2" >
                     <input 
                         type="text" 
                         autoFocus
                         placeholder="Rechercher une carte..." 
                         value={cardSearch}
                         onChange={(e) => setCardSearch(e.target.value)}
-                        className="courseeditor-style-2" 
+                        className="px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded outline-none bg-transparent text-slate-900 dark:text-slate-100" 
                     />
-                    <div className="courseeditor-style-3" >
+                    <div className="max-h-[200px] overflow-y-auto flex flex-col custom-scrollbar" >
                         {filteredCards.length > 0 ? filteredCards.map(c => (
                             <button 
                                 key={c.id} 
                                 type="button" 
                                 onClick={() => insertCardLink(c)}
-                                className="courseeditor-style-4" 
-                                onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                onFocus={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
-                                onBlur={(e) => e.currentTarget.style.background = 'transparent'}
+                                className="px-2 py-1.5 text-left bg-transparent border-none rounded cursor-pointer text-sm text-slate-900 dark:text-slate-100 transition-colors" 
+                                onMouseOver={(e) => e.currentTarget.classList.add('bg-slate-100', 'dark:bg-slate-800')}
+                                onMouseOut={(e) => e.currentTarget.classList.remove('bg-slate-100', 'dark:bg-slate-800')}
+                                onFocus={(e) => e.currentTarget.classList.add('bg-slate-100', 'dark:bg-slate-800')}
+                                onBlur={(e) => e.currentTarget.classList.remove('bg-slate-100', 'dark:bg-slate-800')}
                             >
                                 {c.title}
                             </button>
-                        )) : <div className="courseeditor-style-5" >Aucune carte trouvée</div>}
+                        )) : <div className="p-2 text-sm text-slate-500 dark:text-slate-400 text-center" >Aucune carte trouvée</div>}
                     </div>
                 </div>
             )}

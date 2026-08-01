@@ -26,7 +26,6 @@ import { MedicalAlert } from './CourseEditor'; // Reusing the same node!
 import { ClozeExtension } from './editor/ClozeExtension';
 import { CardSuggestionPlugin } from './editor/CardSuggestionPlugin';
 import { getSuggestionOptions } from './editor/suggestionConfig';
-import './styles/FullCourseEditor.css';
 
 interface FullCourseEditorProps {
     course: Card;
@@ -212,38 +211,38 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
 
     const filteredCards = existingCards.filter(c => c.title.toLowerCase().includes(cardSearch.toLowerCase())).slice(0, 10);
 
-    if (!editor) return <div className="fullcourseeditor-style-1" >Chargement de l'éditeur... (si ce message reste, c'est que l'éditeur a planté)</div>;
+    if (!editor) return <div className="p-12 text-red-500" >Chargement de l'éditeur... (si ce message reste, c'est que l'éditeur a planté)</div>;
 
     return (
-        <div ref={editorContainerRef} className="full-course-editor fullcourseeditor-style-2" style={{
+        <div ref={editorContainerRef} className="full-course-editor flex flex-col h-full overflow-hidden" style={{
   backgroundColor: isFullscreen ? 'var(--color-surface)' : 'var(--color-bg)'
 }}>
-            <div className="fullcourseeditor-style-3" >
-                <div className="fullcourseeditor-style-4" >
+            <div className="flex-1 overflow-y-auto px-4 py-8 flex justify-center" >
+                <div className="w-full max-w-[1200px] bg-white dark:bg-slate-900 rounded-xl shadow-md flex flex-col" >
                     
                     {/* Course Meta (Title, Tags) */}
-                    <div className="fullcourseeditor-style-5" >
-                        <div className="fullcourseeditor-style-6" >
+                    <div className="p-6 pb-4 border-b border-slate-50 dark:border-slate-950" >
+                        <div className="flex items-center justify-between mb-6" >
                             <button onClick={() => {
                                 isExplicitlyClosedRef.current = true;
                                 handleSave(); // Save one last time before leaving
                                 onCancel();
-                            }} className="fullcourseeditor-style-7" 
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg)'; e.currentTarget.style.color = 'var(--color-text)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                            }} className="inline-flex items-center gap-2 bg-transparent border-none text-slate-500 font-semibold px-3 py-1.5 rounded-lg -ml-3 cursor-pointer transition-colors duration-150" 
+                            
+                            
                             >
                                 <ArrowLeft size={18} weight="bold" />
                                 Retour
                             </button>
 
-                            <span className="fullcourseeditor-style-8" >
+                            <span className="text-xs text-slate-500" >
                                 (Sauvegarde auto activée)
                             </span>
 
-                            <div className="fullcourseeditor-style-9" >
-                                <button onClick={toggleFullscreen} className="fullcourseeditor-style-10" 
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-surface)'; }}
+                            <div className="flex gap-2" >
+                                <button onClick={toggleFullscreen} className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-150" 
+                                
+                                
                                 title="Mode Focus (Cmd+Shift+F)"
                                 >
                                     {isFullscreen ? <CornersIn size={18} weight="bold" /> : <CornersOut size={18} weight="bold" />}
@@ -251,9 +250,9 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                 </button>
                                 <button onClick={() => {
                                     handleSave();
-                                }} className="fullcourseeditor-style-11" 
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-surface)'; }}
+                                }} className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-150 -mr-3" 
+                                
+                                
                                 >
                                     <FloppyDisk size={18} weight="bold" />
                                     Enregistrer
@@ -266,37 +265,37 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Titre du cours..."
-                            className="fullcourseeditor-style-12" 
+                            className="w-full border-none outline-none text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-4 bg-transparent" 
                         />
-                        <div className="fullcourseeditor-style-13" >
-                            <div className="fullcourseeditor-style-14" >
-                                <span className="fullcourseeditor-style-15" >Matière:</span>
+                        <div className="flex gap-4 flex-wrap" >
+                            <div className="flex items-center gap-2 flex-1 basis-[250px]" >
+                                <span className="color-slate-500 text-sm font-medium" >Matière:</span>
                                 <input 
                                     type="text"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
                                     placeholder="Ex: Cardiologie..."
-                                    className="fullcourseeditor-style-16" 
+                                    className="flex-1 min-w-[150px] border-none outline-none text-sm text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-md" 
                                 />
                             </div>
-                            <div className="fullcourseeditor-style-17" >
-                                <span className="fullcourseeditor-style-18" >Tags:</span>
-                                <div className="fullcourseeditor-style-19" >
+                            <div className="flex items-start gap-2 flex-1 basis-[300px] flex-col" >
+                                <span className="color-slate-500 text-sm font-medium" >Tags:</span>
+                                <div className="flex flex-wrap gap-1.5 items-center" >
                                     {tags.map(tag => (
-                                        <span key={tag} className="fullcourseeditor-style-20" >
+                                        <span key={tag} className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-950 px-2.5 py-1 rounded-full text-[0.85rem] text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700" >
                                             #{tag}
-                                            <X size={12} weight="bold" className="fullcourseeditor-style-21"  onClick={() => removeTag(tag)} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'} />
+                                            <X size={12} weight="bold" className="cursor-pointer text-slate-500 hover:text-red-500 transition-colors"  onClick={() => removeTag(tag)}   />
                                         </span>
                                     ))}
-                                    <div className="fullcourseeditor-style-22" >
-                                        <Plus size={14} className="fullcourseeditor-style-23"  onClick={addTag} />
+                                    <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700" >
+                                        <Plus size={14} className="cursor-pointer text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"  onClick={addTag} />
                                         <input 
                                             type="text"
                                             value={tagInput}
                                             onChange={(e) => setTagInput(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && addTag()}
                                             placeholder="Nouveau tag..."
-                                            className="fullcourseeditor-style-24" 
+                                            className="border-none outline-none text-[0.85rem] text-slate-900 dark:text-slate-100 bg-transparent w-[100px]" 
                                         />
                                     </div>
                                 </div>
@@ -305,7 +304,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                     </div>
 
                     {/* Toolbar */}
-                    <div className="course-editor-toolbar fullcourseeditor-style-25" >
+                    <div className="course-editor-toolbar px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex flex-wrap bg-white dark:bg-slate-900 sticky top-0 z-10" >
                         <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
                             <TextB size={18} />
                         </button>
@@ -325,7 +324,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                             type="color" 
                             onInput={(event) => editor.chain().focus().setColor((event.target as HTMLInputElement).value).run()}
                             value={editor.getAttributes('textStyle').color || 'var(--color-text)'}
-                            className="fullcourseeditor-style-26" 
+                            className="w-7 h-7 p-0 border-none rounded cursor-pointer ml-1" 
                             title="Couleur du texte"
                         />
                         
@@ -373,44 +372,44 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                         <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="toolbar-btn" title="Insérer un tableau">
                             <TableIcon size={18} />
                         </button>
-                        <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="toolbar-btn fullcourseeditor-style-27" title="Lier une carte existante" >
+                        <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="toolbar-btn relative" title="Lier une carte existante" >
                             <Cards size={18} />
                         </button>
 
                         <div className="toolbar-divider" />
 
                         {/* Blocs Médicaux Spécifiques */}
-                        <button type="button" onClick={() => addAlert('definition')} className="toolbar-btn fullcourseeditor-style-28"  title="Définition">
-                            <Info size={18} weight="bold" /> <span className="fullcourseeditor-style-29" >Déf.</span>
+                        <button type="button" onClick={() => addAlert('definition')} className="toolbar-btn text-blue-600 dark:text-blue-500"  title="Définition">
+                            <Info size={18} weight="bold" /> <span className="text-xs ml-1 font-semibold" >Déf.</span>
                         </button>
-                        <button type="button" onClick={() => addAlert('concours')} className="toolbar-btn fullcourseeditor-style-30"  title="À connaître (Concours)">
-                            <GraduationCap size={18} weight="bold" /> <span className="fullcourseeditor-style-31" >Concours</span>
+                        <button type="button" onClick={() => addAlert('concours')} className="toolbar-btn text-amber-600 dark:text-amber-500"  title="À connaître (Concours)">
+                            <GraduationCap size={18} weight="bold" /> <span className="text-xs ml-1 font-semibold" >Concours</span>
                         </button>
-                        <button type="button" onClick={() => addAlert('vigilance')} className="toolbar-btn fullcourseeditor-style-32"  title="Vigilance">
-                            <Warning size={18} weight="bold" /> <span className="fullcourseeditor-style-33" >Vigi.</span>
+                        <button type="button" onClick={() => addAlert('vigilance')} className="toolbar-btn text-red-600 dark:text-red-500"  title="Vigilance">
+                            <Warning size={18} weight="bold" /> <span className="text-xs ml-1 font-semibold" >Vigi.</span>
                         </button>
-                        <button type="button" onClick={() => addAlert('expert')} className="toolbar-btn fullcourseeditor-style-34"  title="Expert">
-                            <Brain size={18} weight="bold" /> <span className="fullcourseeditor-style-35" >Expert</span>
+                        <button type="button" onClick={() => addAlert('expert')} className="toolbar-btn text-slate-900 dark:text-slate-100"  title="Expert">
+                            <Brain size={18} weight="bold" /> <span className="text-xs ml-1 font-semibold" >Expert</span>
                         </button>
                     </div>
 
                     {showCardSelector && (
-                        <div ref={selectorRef} className="card-selector-popup fullcourseeditor-style-36" >
+                        <div ref={selectorRef} className="card-selector-popup absolute top-[230px] left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 z-50 shadow-md w-[300px] flex flex-col gap-2" >
                             <input 
                                 type="text" 
                                 autoFocus
                                 placeholder="Rechercher une carte..." 
                                 value={cardSearch}
                                 onChange={(e) => setCardSearch(e.target.value)}
-                                className="fullcourseeditor-style-37" 
+                                className="px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded outline-none bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100" 
                             />
-                            <div className="fullcourseeditor-style-38" >
+                            <div className="max-h-[200px] overflow-y-auto flex flex-col" >
                                 {filteredCards.length > 0 ? filteredCards.map(c => (
                                     <button 
                                         key={c.id} 
                                         type="button" 
                                         onClick={() => insertCardLink(c)}
-                                        className="fullcourseeditor-style-39" 
+                                        className="px-2 py-1.5 text-left bg-transparent border-none rounded cursor-pointer text-sm text-slate-900 dark:text-slate-100 transition-colors" 
                                         onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
                                         onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                                         onFocus={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
@@ -418,13 +417,13 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                     >
                                         {c.title}
                                     </button>
-                                )) : <div className="fullcourseeditor-style-40" >Aucune carte trouvée</div>}
+                                )) : <div className="p-2 text-sm text-slate-500 text-center" >Aucune carte trouvée</div>}
                             </div>
                         </div>
                     )}
 
                     {editor && (
-                        <BubbleMenu editor={editor} className="course-editor-toolbar bubble-menu fullcourseeditor-style-41" >
+                        <BubbleMenu editor={editor} className="course-editor-toolbar bubble-menu p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 shadow-md" >
                             <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
                                 <TextB size={18} />
                             </button>
@@ -447,7 +446,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                     )}
 
                     {/* Editor Content Area */}
-                    <div className="course-editor-content fullcourseeditor-style-42" >
+                    <div className="course-editor-content px-12 py-4 pb-16 flex-1 overflow-visible min-h-[500px]" >
                         <EditorContent editor={editor} />
                     </div>
                 </div>

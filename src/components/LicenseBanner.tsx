@@ -1,7 +1,6 @@
 import React from 'react';
 import { Warning, ArrowSquareOut, X, Timer, Crown, CheckCircle } from '@phosphor-icons/react';
 import type { LicenseInfo } from '../lib/useLicense';
-import './styles/LicenseBanner.css';
 
 interface LicenseBannerProps {
     licenseInfo: LicenseInfo;
@@ -65,24 +64,24 @@ export const LicenseBanner: React.FC<LicenseBannerProps> = ({
     if (!c) return null;
 
     return (
-        <div className="licensebanner-style-1" style={{
+        <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{
   background: c.bg,
   borderBottom: `1px solid ${c.border}`
 }}>
-            <div className="licensebanner-style-2" >
-                <span className="licensebanner-style-3" style={{
+            <div className="flex items-center gap-2" >
+                <span className="flex items-center" style={{
   color: c.color
 }}>{c.icon}</span>
-                <span className="licensebanner-style-4" >
+                <span className="text-[13px] font-medium text-slate-900 dark:text-slate-100" >
                     {c.text}
                 </span>
             </div>
 
-            <div className="licensebanner-style-5" >
+            <div className="flex items-center gap-2" >
                 {c.cta && onUpgrade && (
                     <button
                         onClick={onUpgrade}
-                        className="licensebanner-style-6" style={{
+                        className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg border-none text-white font-semibold text-xs cursor-pointer" style={{
   background: c.color
 }}
                     >
@@ -92,7 +91,7 @@ export const LicenseBanner: React.FC<LicenseBannerProps> = ({
                 {onDismiss && (
                     <button
                         onClick={onDismiss}
-                        className="licensebanner-style-7" 
+                        className="bg-transparent border-none cursor-pointer text-slate-500 dark:text-slate-400 flex p-1" 
                     >
                         <X size={14} />
                     </button>

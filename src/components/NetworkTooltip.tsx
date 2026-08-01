@@ -1,6 +1,5 @@
 import React from 'react';
 import { Brain, Link as LinkIcon, ArrowsLeftRight, Hand, Trash, ArrowsMerge } from '@phosphor-icons/react';
-import './NetworkTooltip.css';
 
 interface NetworkTooltipProps {
     link: Record<string, unknown>; // Using Record for Link object as seen in NetworkView usage
@@ -12,14 +11,14 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
     const getTypeDetails = (type: string) => {
         switch (type) {
             case 'explicit':
-                return { label: 'Référence', className: 'reference', icon: LinkIcon };
+                return { label: 'Référence', className: 'bg-gradient-to-br from-indigo-500/15 to-indigo-500/5 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20', icon: LinkIcon };
             case 'hybrid':
-                return { label: 'Hybride', className: 'hybrid', icon: ArrowsMerge };
+                return { label: 'Hybride', className: 'bg-gradient-to-br from-cyan-500/15 to-cyan-500/5 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20', icon: ArrowsMerge };
             case 'manual':
-                return { label: 'Manuel', className: 'manual', icon: Hand };
+                return { label: 'Manuel', className: 'bg-gradient-to-br from-amber-500/15 to-amber-500/5 text-amber-600 dark:text-amber-300 border border-amber-500/20', icon: Hand };
             case 'semantic':
             default:
-                return { label: 'Sémantique', className: 'semantic', icon: Brain };
+                return { label: 'Sémantique', className: 'bg-gradient-to-br from-purple-500/15 to-purple-500/5 text-purple-600 dark:text-purple-300 border border-purple-500/20', icon: Brain };
         }
     };
 
@@ -40,13 +39,13 @@ export const NetworkTooltip: React.FC<NetworkTooltipProps> = ({ link, onReportIn
     const targetName = typeof link.target === 'object' ? (link.target as any).name : link.target;
 
     return (
-        <div className="network-tooltip-container animate-in fade-in zoom-in-95 duration-200">
-            <div className="network-tooltip-card shadow-2xl border border-[var(--color-border)]">
+        <div className="w-max min-w-[280px] max-w-[450px] pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-900/80 dark:backdrop-blur-md rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
                 <div className="flex flex-col px-4 py-3">
                     
                     {/* Header: Type and Action */}
                     <div className="flex items-center justify-between mb-2">
-                        <div className={`network-tooltip-badge ${typeDetails.className}`}>
+                        <div className={`inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-[3px] rounded-lg ${typeDetails.className}`}>
                             <TypeIcon size={12} weight="bold" />
                             <span>{typeDetails.label}</span>
                         </div>

@@ -20,18 +20,18 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
     const handleSave = async (card: Card) => { await onSave(card); handleBack(); };
 
     const tabsNode = (
-        <div className="add-data-segmented-control">
-            <button onClick={() => setMode("course")} className={`segmented-btn ${mode === "course" ? "active-emerald" : ""}`}>
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner overflow-x-auto">
+            <button onClick={() => setMode("course")} className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all border-none outline-none cursor-pointer ${mode === "course" ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-500 font-semibold shadow-sm" : "bg-transparent text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-100"}`}>
                 <BookOpen size={16} weight={mode === "course" ? "fill" : "bold"} /> <span className="hidden sm:inline">Nouveau</span> Cours
             </button>
-            <button onClick={() => setMode("concept")} className={`segmented-btn ${mode === "concept" ? "active-amber" : ""}`}>
+            <button onClick={() => setMode("concept")} className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all border-none outline-none cursor-pointer ${mode === "concept" ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-amber-500 font-semibold shadow-sm" : "bg-transparent text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-100"}`}>
                 <FileText size={16} weight={mode === "concept" ? "fill" : "bold"} /> <span className="hidden sm:inline">Nouveau</span> Concept
             </button>
-            <button onClick={() => setMode("flashcard")} className={`segmented-btn ${mode === "flashcard" ? "active-blue" : ""}`}>
+            <button onClick={() => setMode("flashcard")} className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all border-none outline-none cursor-pointer ${mode === "flashcard" ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-blue-500 font-semibold shadow-sm" : "bg-transparent text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-100"}`}>
                 <Cards size={16} weight={mode === "flashcard" ? "fill" : "bold"} /> <span className="hidden sm:inline">Nouvelle</span> Flashcard
             </button>
-            <div className="w-px h-4 bg-[color:var(--color-border)] mx-1"></div>
-            <button onClick={() => setMode("batch")} className={`segmented-btn ${mode === "batch" ? "active-indigo" : ""}`}>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button onClick={() => setMode("batch")} className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all border-none outline-none cursor-pointer ${mode === "batch" ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-indigo-500 font-semibold shadow-sm" : "bg-transparent text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-100"}`}>
                 <UploadSimple size={16} weight={mode === "batch" ? "fill" : "bold"} /> Import Massif
             </button>
         </div>
@@ -39,9 +39,9 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
 
     if (mode === "batch") {
         return (
-            <div className="flex flex-col h-screen w-full bg-[color:var(--color-bg)] font-sans text-[color:var(--color-text)] overflow-hidden relative">
-                <div className="h-16 bg-[color:var(--color-bg)] border-b border-[color:var(--color-border)] flex items-center justify-between px-6 lg:px-12 shrink-0 z-20">
-                    <button onClick={handleBack} className="flex items-center gap-2 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-surface-hover)] px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border-none outline-none cursor-pointer bg-transparent">
+            <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden relative">
+                <div className="h-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 lg:px-12 shrink-0 z-20">
+                    <button onClick={handleBack} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border-none outline-none cursor-pointer bg-transparent">
                         <ArrowLeft size={18} weight="bold" />
                         Retour au deck
                     </button>

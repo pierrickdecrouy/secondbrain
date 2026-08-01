@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Lightning, ShieldWarning, Trash } from '@phosphor-icons/react';
 import { getDashboardStats, resetFeedback, type DashboardStats } from '../../linkFeedback';
-import { S, SettingsCard, CardSection, CardBody, StatCard, DangerButton } from './SettingsUI';
-import './styles/IntelligenceTab.css';
+import { SettingsCard, CardSection, CardBody, StatCard, DangerButton } from './SettingsUI';
 
 export const IntelligenceTab: React.FC = () => {
     const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
@@ -14,44 +13,37 @@ export const IntelligenceTab: React.FC = () => {
     if (!dashStats) return null;
 
     const score = dashStats.learningScore;
-    const scoreColor = score >= 75 ? S.primary : score >= 40 ? S.warning : S.danger;
+    const scoreColorHex = score >= 75 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+    const scoreColorClass = score >= 75 ? 'text-emerald-500' : score >= 40 ? 'text-amber-500' : 'text-red-500';
 
     return (
-        <div className="intelligencetab-style-1" >
+        <div className="flex flex-col gap-6">
             {/* Score card */}
             <SettingsCard>
-                <CardBody className="intelligencetab-style-2" >
+                <CardBody className="flex flex-col sm:flex-row items-center gap-6">
                     {/* Circle gauge */}
-                    <div className="intelligencetab-style-3" >
-                        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" className="intelligencetab-style-4" >
-                            <circle cx="44" cy="44" r="36" stroke={S.border} strokeWidth="8" fill="none" />
+                    <div className="relative flex items-center justify-center shrink-0">
+                        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" className="transform -rotate-90">
+                            <circle cx="44" cy="44" r="36" className="stroke-slate-200 dark:stroke-slate-700" strokeWidth="8" fill="none" />
                             <circle
                                 cx="44" cy="44" r="36"
-                                stroke={scoreColor}
+                                stroke={scoreColorHex}
                                 strokeWidth="8"
                                 fill="none"
                                 strokeDasharray={`${2 * Math.PI * 36}`}
                                 strokeDashoffset={`${2 * Math.PI * 36 * (1 - score / 100)}`}
                                 strokeLinecap="round"
-                                className="intelligencetab-style-5" 
+                                className="transition-all duration-1000 ease-out" 
                             />
                         </svg>
-                        <div className="intelligencetab-style-6" >
-                            <span className="intelligencetab-style-7" style={{
-  color: scoreColor
-}}>{score}</span>
-                            <span className="intelligencetab-style-8" style={{
-  color: S.muted
-}}>/100</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className={`text-2xl font-black tracking-tight leading-none ${scoreColorClass}`}>{score}</span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">/100</span>
                         </div>
                     </div>
-                    <div>
-                        <div className="intelligencetab-style-9" style={{
-  color: S.text
-}}>Score d'apprentissage</div>
-                        <div className="intelligencetab-style-10" style={{
-  color: S.muted
-}}>
+                    <div className="text-center sm:text-left">
+                        <div className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Score d'apprentissage</div>
+                        <div className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
                             Évaluation de la qualité de l'algorithme de liens sémantiques basée sur vos retours.
                         </div>
                     </div>
@@ -59,57 +51,45 @@ export const IntelligenceTab: React.FC = () => {
             </SettingsCard>
 
             {/* KPI grid */}
-            <div className="intelligencetab-style-11" >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard label="Liens générés" value={dashStats.totalLinksGenerated} color="#a855f7" />
-                <StatCard label="Supprimés" value={dashStats.totalSuppressed} color={S.danger} />
-                <StatCard label="Manuels" value={dashStats.totalManual} color={S.primary} />
+                <StatCard label="Supprimés" value={dashStats.totalSuppressed} color="#ef4444" />
+                <StatCard label="Manuels" value={dashStats.totalManual} color="#10b981" />
                 <StatCard label="Taux d'acceptation" value={`${dashStats.acceptanceRate}%`} color="#8b5cf6" />
             </div>
 
             {/* Patterns + type-pair */}
-            <div className="intelligencetab-style-12" >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SettingsCard>
-                    <CardSection title="Patterns appris" icon={<Brain size={16} />} />
-                    <CardBody className="intelligencetab-style-13" >
+                    <CardSection title="Patterns appris" icon={<Brain size={18} weight="duotone" />} />
+                    <CardBody className="flex flex-col">
                         {[
-                            { label: 'Positifs (boosts)', value: dashStats.positivePatternCount, color: S.primary },
-                            { label: 'Négatifs (pénalités)', value: dashStats.negativePatternCount, color: S.danger },
-                            { label: 'Vetos (hard)', value: dashStats.vetoCount, color: S.warning },
+                            { label: 'Positifs (boosts)', value: dashStats.positivePatternCount, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+                            { label: 'Négatifs (pénalités)', value: dashStats.negativePatternCount, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10' },
+                            { label: 'Vetos (hard)', value: dashStats.vetoCount, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
                         ].map((row, i, arr) => (
-                            <div key={row.label} className="intelligencetab-style-14" style={{
-  borderBottom: i < arr.length - 1 ? `1px solid ${S.border}` : 'none'
-}}>
-                                <span className="intelligencetab-style-15" style={{
-  color: S.muted
-}}>{row.label}</span>
-                                <span className="intelligencetab-style-16" style={{
-  color: row.color
-}}>{row.value}</span>
+                            <div key={row.label} className={`flex items-center justify-between py-3.5 ${i < arr.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''}`}>
+                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">{row.label}</span>
+                                <span className={`text-sm font-bold px-2.5 py-0.5 rounded-md ${row.bg} ${row.color}`}>{row.value}</span>
                             </div>
                         ))}
                     </CardBody>
                 </SettingsCard>
 
                 <SettingsCard>
-                    <CardSection title="Scores type-pair" icon={<Lightning size={16} />} />
+                    <CardSection title="Scores type-pair" icon={<Lightning size={18} weight="duotone" />} />
                     <CardBody>
                         {Object.entries(dashStats.typePairScores).length === 0 ? (
-                            <div className="intelligencetab-style-17" style={{
-  color: S.muted
-}}>
+                            <div className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
                                 Aucune donnée enregistrée pour l'instant.
                             </div>
                         ) : (
-                            <div className="intelligencetab-style-18" >
-                                {Object.entries(dashStats.typePairScores).map(([pair, score]) => (
-                                    <div key={pair} className="intelligencetab-style-19" >
-                                        <span className="intelligencetab-style-20" style={{
-  color: S.muted
-}}>{pair.replace('|', ' ↔ ')}</span>
-                                        <span className="intelligencetab-style-21" style={{
-  color: score > 0 ? S.primary : score < 0 ? S.danger : S.muted
-}}>
-                                            {score > 0 ? '+' : ''}{(score * 100).toFixed(0)}%
+                            <div className="flex flex-col gap-2">
+                                {Object.entries(dashStats.typePairScores).map(([pair, s]) => (
+                                    <div key={pair} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                        <span className="font-mono text-slate-500 dark:text-slate-400 text-xs">{pair.replace('|', ' ↔ ')}</span>
+                                        <span className={`font-bold ${s > 0 ? 'text-emerald-500' : s < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                                            {s > 0 ? '+' : ''}{(s * 100).toFixed(0)}%
                                         </span>
                                     </div>
                                 ))}
@@ -122,18 +102,20 @@ export const IntelligenceTab: React.FC = () => {
             {/* Toxic keywords */}
             {dashStats.topToxicKeywords.length > 0 && (
                 <SettingsCard>
-                    <CardSection title="Mots-clés toxiques" subtitle="Ces termes génèrent souvent des faux positifs et sont automatiquement pénalisés." icon={<ShieldWarning size={16} />} />
+                    <CardSection title="Mots-clés toxiques" subtitle="Ces termes génèrent souvent des faux positifs et sont automatiquement pénalisés." icon={<ShieldWarning size={18} weight="duotone" />} />
                     <CardBody>
-                        <div className="intelligencetab-style-22" >
-                            {dashStats.topToxicKeywords.map(tw => (
-                                <span key={tw.word} className="intelligencetab-style-23" style={{
-  border: `1px solid ${tw.count >= 3 ? S.danger + '66' : S.warning + '66'}`,
-  background: tw.count >= 3 ? S.dangerDim : S.warningDim,
-  color: tw.count >= 3 ? S.danger : S.warning
-}}>
-                                    {tw.word} <span className="intelligencetab-style-24" >×{tw.count}</span>
-                                </span>
-                            ))}
+                        <div className="flex flex-wrap gap-2.5">
+                            {dashStats.topToxicKeywords.map(tw => {
+                                const isHigh = tw.count >= 3;
+                                return (
+                                    <span key={tw.word} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border ${
+                                        isHigh ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' 
+                                               : 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                    }`}>
+                                        {tw.word} <span className="opacity-70 font-mono tracking-normal">×{tw.count}</span>
+                                    </span>
+                                );
+                            })}
                         </div>
                     </CardBody>
                 </SettingsCard>
@@ -141,21 +123,16 @@ export const IntelligenceTab: React.FC = () => {
 
             {/* Reset */}
             <SettingsCard danger>
-                <CardBody className="intelligencetab-style-25" >
-                    <div className="intelligencetab-style-26" style={{
-  background: S.dangerDim,
-  color: S.danger
-}}>
-                        <Trash size={20} />
-                    </div>
-                    <div className="intelligencetab-style-27" >
-                        <div className="intelligencetab-style-28" style={{
-  color: S.text
-}}>Réinitialiser l'intelligence</div>
-                        <div className="intelligencetab-style-29" style={{
-  color: S.muted
-}}>
-                            Supprime tous les patterns, vetos et mots toxiques appris. L'algorithme repartira de zéro.
+                <CardBody className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6">
+                    <div className="flex items-center gap-4 text-center sm:text-left">
+                        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                            <Trash size={24} weight="duotone" />
+                        </div>
+                        <div>
+                            <div className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Réinitialiser l'intelligence</div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                                Supprime tous les patterns, vetos et mots toxiques appris. L'algorithme repartira de zéro.
+                            </div>
                         </div>
                     </div>
                     <DangerButton onClick={() => {
@@ -163,7 +140,7 @@ export const IntelligenceTab: React.FC = () => {
                             resetFeedback();
                             setDashStats(getDashboardStats());
                         }
-                    }}>
+                    }} className="w-full sm:w-auto">
                         Réinitialiser
                     </DangerButton>
                 </CardBody>

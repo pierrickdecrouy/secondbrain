@@ -4,7 +4,6 @@ import type { Card } from '../../types';
 import type { QualityAssessment } from '../../algorithms/qualityScoring';
 import { BrowseGridItem } from '../BrowseGridItem';
 import { BrowseListItem } from '../BrowseListItem';
-import './styles/BrowseMainContent.css';
 
 interface BrowseMainContentProps {
     sortedCards: Card[];
@@ -27,17 +26,17 @@ interface BrowseMainContentProps {
     setCardToEdit?: (card: Card) => void;
 }
 
-// ── Grid list wrapper (unchanged) ──────────────────────────────────────────────
+// ── Grid list wrapper ──────────────────────────────────────────────
 const CustomGridList = React.forwardRef((props: any, ref) => {
     const { context, style, children, ...rest } = props;
     const { viewMode, gridColumns } = context || {};
     return (
-        <div className="flex justify-center w-full pb-8">
+        <div className="flex justify-center w-full pb-10">
             <div
                 {...rest}
                 ref={ref}
                 style={{ ...style, display: undefined, flexWrap: undefined }}
-                className={`grid gap-5 px-10 py-4 w-full ${viewMode !== 'split' ? 'max-w-[1600px]' : ''} ${gridColumns}`}
+                className={`grid gap-6 px-10 py-4 w-full ${viewMode !== 'split' ? 'max-w-[2000px]' : ''} ${gridColumns}`}
             >
                 {children}
             </div>
@@ -45,7 +44,7 @@ const CustomGridList = React.forwardRef((props: any, ref) => {
     );
 });
 
-// ── List rows wrapper — simple div, header is rendered OUTSIDE ─────────────────
+// ── List rows wrapper ──────────────────────────────────────────────
 const CustomListList = React.forwardRef((props: any, ref) => {
     const { style, children, ...rest } = props;
     return (
@@ -60,27 +59,21 @@ const CustomListList = React.forwardRef((props: any, ref) => {
     );
 });
 
-// ── Header columns (shared widths must match BrowseListItem layout) ────────────
+// ── Header columns ────────────────────────────────────────────────
 const ListHeader: React.FC = () => (
-    <div className="flex items-center border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)] shrink-0 select-none browsemaincontent-style-1" >
-        {/* checkbox spacer */}
-        <div className="shrink-0 w-[18px]" />
-        {/* icon spacer */}
-        <div className="shrink-0 w-[38px]" />
-        {/* title */}
-        <div className="flex-1 text-[11px] font-bold text-[color:var(--color-text-muted)] tracking-[0.08em] uppercase">
+    <div className="flex items-center border-b border-slate-100 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-900/50 shrink-0 select-none px-7 py-3 gap-5" >
+        <div className="shrink-0 w-5" />
+        <div className="shrink-0 w-11" />
+        <div className="flex-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
             Titre de la fiche
         </div>
-        {/* category */}
-        <div className="hidden sm:block shrink-0 w-[110px] text-[11px] font-bold text-[color:var(--color-text-muted)] tracking-[0.08em] uppercase">
+        <div className="hidden sm:block shrink-0 w-[110px] text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
             Catégorie
         </div>
-        {/* tags */}
-        <div className="hidden lg:block shrink-0 w-[200px] text-[11px] font-bold text-[color:var(--color-text-muted)] tracking-[0.08em] uppercase">
+        <div className="hidden lg:block shrink-0 w-[200px] text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
             Tags
         </div>
-        {/* actions spacer */}
-        <div className="shrink-0 w-[68px]" />
+        <div className="shrink-0 w-[76px]" />
     </div>
 );
 
@@ -92,25 +85,26 @@ export const BrowseMainContent: React.FC<BrowseMainContentProps> = ({
 }) => {
     const isGrid = viewMode === 'grid' || viewMode === 'split';
 
+    // Ensure grid cards are not comically large on wide screens, but limit to 3 columns max
     const gridColumns = viewMode === 'split'
-        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2'
-        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+        ? 'grid-cols-1 xl:grid-cols-2'
+        : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3';
 
     return (
         <div
-            className={`browse-main-wrapper flex flex-col min-h-0 min-w-0 overflow-hidden ${viewMode === 'split' ? 'is-split' : ''}`}
+            className={`flex flex-col min-h-0 min-w-0 overflow-hidden ${viewMode === 'split' ? 'is-split' : ''}`}
             style={{ flex: viewMode === 'split' ? '0 0 55%' : 1 }}
         >
             {/* ── Grid / Split view ── */}
             {isGrid && (
                 <div className="flex-1 min-h-0 flex flex-col">
                     {sortedCards.length === 0 ? (
-                        <div className="text-center p-16 text-[color:var(--color-text-muted)]">
+                        <div className="text-center p-20 text-slate-400 font-medium">
                             Aucun résultat trouvé
                         </div>
                     ) : (
                         <VirtuosoGrid
-                            className="browse-virtuoso-scroller flex-1"
+                            className="flex-1 custom-scrollbar"
                             totalCount={sortedCards.length}
                             data={sortedCards}
                             context={{ viewMode, gridColumns }}
@@ -138,21 +132,19 @@ export const BrowseMainContent: React.FC<BrowseMainContentProps> = ({
                 </div>
             )}
 
-            {/* ── List view — header fixed outside Virtuoso ── */}
+            {/* ── List view ── */}
             {viewMode === 'list' && (
-                <div className="flex-1 min-h-0 flex flex-col px-10 pb-8">
+                <div className="flex-1 min-h-0 flex flex-col px-10 pb-8 max-w-[2000px] w-full mx-auto">
                     {sortedCards.length === 0 ? (
-                        <div className="flex-1 flex items-center justify-center text-[color:var(--color-text-muted)] text-[15px]">
+                        <div className="flex-1 flex items-center justify-center text-slate-400 font-medium text-[15px]">
                             Aucun résultat trouvé
                         </div>
                     ) : (
-                        <div className="flex-1 min-h-0 flex flex-col bg-[color:var(--color-surface)] rounded-[20px] border border-[color:var(--color-border)] shadow-[var(--shadow)] overflow-hidden">
-                            {/* Sticky header — stays fixed while rows scroll */}
+                        <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/60 shadow-sm overflow-hidden">
                             <ListHeader />
 
-                            {/* Scrollable rows via Virtuoso */}
                             <VirtuosoGrid
-                                className="browse-virtuoso-scroller flex-1 min-h-0"
+                                className="flex-1 min-h-0 custom-scrollbar"
                                 data={sortedCards}
                                 components={{ List: CustomListList }}
                                 itemContent={(index, card) => (

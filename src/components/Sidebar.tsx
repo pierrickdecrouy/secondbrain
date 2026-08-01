@@ -10,7 +10,6 @@ import { TagManagerModal } from './TagManagerModal';
 import { useTranslation } from 'react-i18next';
 import { useCardStore } from '../store/useCardStore';
 import { useMemo } from 'react';
-import './styles/Sidebar.css';
 
 export interface SidebarProps {
   pausedTasks: PausedTask[];
@@ -92,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
     <div className="workspace-sidebar-container" ref={sidebarRef}>
       {sidebarOpen && (
         <div
-          className="sidebar-overlay sidebar-style-1"
+          className="sidebar-overlay fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-[4px]"
           
           onClick={() => setSidebarOpen(false)}
         />
@@ -103,16 +102,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
       >
         {/* Header */}
         <div
-          className="sidebar-style-3" style={{
+          className="flex items-center border-b border-slate-200 dark:border-slate-800 min-h-[56px] shrink-0" style={{
   justifyContent: shouldCollapseSidebar ? 'center' : 'space-between',
   padding: shouldCollapseSidebar ? '16px 0 12px' : '16px 12px 12px'
 }}
         >
           {!shouldCollapseSidebar && (
-            <img src="/Logo-linear.svg" alt="Extnd" className="sidebar-style-4"  />
+            <img src="/Logo-linear.svg" alt="Extnd" className="h-7 w-auto ml-1"  />
           )}
           <button
-            className="workspace-btn sidebar-style-5"
+            className="workspace-btn rounded-[10px]"
             
             onClick={() => {
               if (shouldCollapseSidebar) {
@@ -144,17 +143,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
                   color: item.accent,
                 } : {}}
               >
-                <span className="sidebar-style-6" style={{
+                <span className="shrink-0 flex items-center" style={{
   color: isActive ? item.accent : undefined
 }}>
                   {item.icon}
                 </span>
                 {!shouldCollapseSidebar && (
-                  <span className="sidebar-style-7" >{item.label}</span>
+                  <span className="flex-1" >{item.label}</span>
                 )}
                 {/* Due badge on review item */}
                 {item.id === 'review' && dueCount > 0 && (
-                  <span className="sidebar-style-8" style={{
+                  <span className="min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[0.6rem] font-extrabold flex items-center justify-center px-1 leading-none shadow-[0_1px_4px_rgba(245,158,11,0.4)] shrink-0" style={{
   marginLeft: shouldCollapseSidebar ? undefined : 'auto',
   position: shouldCollapseSidebar ? 'absolute' : 'static',
   top: shouldCollapseSidebar ? 4 : undefined,
@@ -169,12 +168,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
 
           {/* Tags button — visible only when expanded */}
           {!shouldCollapseSidebar && (
-            <div className="sidebar-style-9" >
+            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800" >
               <button
                 onClick={() => setIsTagManagerOpen(true)}
-                className="sidebar-style-10" 
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                className="flex items-center gap-3 px-3 py-2.5 bg-transparent border-none cursor-pointer rounded-xl text-slate-500 text-sm font-medium w-full transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100" 
+                
+                
               >
                 <Tag size={18} /> {t('sidebar.tags')}
               </button>
@@ -183,36 +182,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
 
           {/* Paused tasks */}
           {!shouldCollapseSidebar && pausedTasks.length > 0 && (
-            <div className="sidebar-style-11" >
-              <div className="sidebar-style-12" >
+            <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-3" >
+              <div className="text-[0.65rem] font-extrabold uppercase tracking-[0.08em] text-slate-500 mb-2 pl-3" >
                 {t('sidebar.active_tasks')}
               </div>
-              <div className="sidebar-style-13" >
+              <div className="flex flex-col gap-1.5" >
                 {pausedTasks.map(task => {
                   let TaskIcon = Pause;
                   if (task.type === 'card_edit') TaskIcon = PencilSimple;
                   else if (task.type === 'course_edit') TaskIcon = BookOpen;
                   else if (task.type === 'review_session') TaskIcon = ClockCounterClockwise;
                   return (
-                    <div key={task.id} className="sidebar-style-14" >
-                      <div className="sidebar-style-15" >
-                        <div className="sidebar-style-16" >
+                    <div key={task.id} className="flex items-center justify-between p-2 rounded-[10px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mx-1" >
+                      <div className="flex items-center gap-2 overflow-hidden flex-1" >
+                        <div className="w-[26px] h-[26px] rounded-md bg-white dark:bg-slate-800 flex items-center justify-center shrink-0" >
                           <TaskIcon size={13} color="var(--color-primary)" />
                         </div>
-                        <div className="sidebar-style-17" >
-                          <span className="sidebar-style-18"  title={task.title}>
+                        <div className="flex flex-col overflow-hidden" >
+                          <span className="text-[0.78rem] text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis font-medium"  title={task.title}>
                             {task.title}
                           </span>
-                          <span className="sidebar-style-19" >
+                          <span className="text-[0.62rem] text-slate-500" >
                             {formatTaskTime(task.timestamp)}
                           </span>
                         </div>
                       </div>
-                      <div className="sidebar-style-20" >
-                        <button onClick={() => onResumeTask(task.id)} className="sidebar-style-21"  title="Reprendre">
+                      <div className="flex items-center gap-[3px] shrink-0 ml-1" >
+                        <button onClick={() => onResumeTask(task.id)} className="bg-emerald-500 border-none cursor-pointer p-[5px] text-white rounded-md"  title="Reprendre">
                           <Play size={12} weight="bold" />
                         </button>
-                        <button onClick={() => onRemoveTask(task.id)} className="sidebar-style-22"  title="Abandonner">
+                        <button onClick={() => onRemoveTask(task.id)} className="bg-transparent border border-slate-200 dark:border-slate-800 cursor-pointer p-[5px] text-slate-500 rounded-md"  title="Abandonner">
                           <Trash size={12} />
                         </button>
                       </div>
@@ -225,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
         </nav>
 
         {/* Stats at bottom */}
-        <div className="sidebar-style-23" >
+        <div className="border-t border-slate-200 dark:border-slate-800 p-2 shrink-0" >
           {navItems.filter(i => i.id === 'stats').map(item => {
             const isActive = location.pathname === item.path;
             return (
@@ -236,7 +235,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
                 title={shouldCollapseSidebar ? item.label : undefined}
                 style={isActive ? { background: `${item.accent}18`, color: item.accent } : {}}
               >
-                <span className="sidebar-style-24" style={{
+                <span className="shrink-0 flex items-center" style={{
   color: isActive ? item.accent : undefined
 }}>
                   {item.icon}

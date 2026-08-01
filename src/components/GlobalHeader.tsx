@@ -19,7 +19,6 @@ import { useUIStore as useUI } from '../store/useUIStore';
 import { useAuth } from '../context/AuthContext';
 import { exportAllData } from '../storage';
 import { PomodoroTimer } from './PomodoroTimer';
-import './styles/GlobalHeader.css';
 
 interface GlobalHeaderProps {
     isHomeSection: boolean;
@@ -63,11 +62,11 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
             {!isHomeSection && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pointer-events-none" style={{ zIndex: -1 }} />
             )}
-            <div className="w-full px-8 sm:px-12 flex items-center justify-between globalheader-style-1" >
+            <div className="w-full px-8 sm:px-12 flex items-center justify-between max-w-[1400px] mx-auto" >
             <div className="flex items-center gap-6">
                 {!isHomeSection && (
                     <button 
-                        className="app-no-drag flex items-center justify-center w-10 h-10 rounded-full bg-transparent border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800/80 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer transition-colors shadow-sm" 
+                        className="app-no-drag flex items-center justify-center w-10 h-10 rounded-[12px] bg-transparent border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-800/80 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer transition-colors shadow-sm" 
                         onClick={() => setSidebarOpen(true)}
                         aria-label="Ouvrir le menu"
                         title="Menu"
@@ -111,7 +110,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         <MagnifyingGlass size={24} className="absolute left-4 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" weight="bold" />
                         <input 
                             type="text" 
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none globalheader-style-2"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none py-[14px] pr-[80px] pl-[56px]"
                             
                             placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]} 
                             readOnly
@@ -146,7 +145,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     style={isHomeSection ? { marginRight: '24px', marginTop: '24px' } : { marginLeft: '8px' }}
                 >
                     <button 
-                        className="p-0 bg-transparent cursor-pointer rounded-full globalheader-style-3" 
+                        className="p-0 bg-transparent cursor-pointer rounded-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]" 
                         style={{
   border: isProfileMenuOpen ? '2px solid var(--color-drug)' : '2px solid transparent',
   transform: isProfileMenuOpen ? 'scale(0.95)' : 'scale(1)'
@@ -172,32 +171,32 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                 aria-hidden="true"
                                 onClick={() => setProfileMenuOpen(false)}></div>
                             <div 
-                                className="absolute right-0 z-[1100] animate-in fade-in slide-in-from-top-4 duration-200 globalheader-style-4"
+                                className="absolute right-0 z-[1100] animate-in fade-in slide-in-from-top-4 duration-200 top-[calc(100%+12px)] w-[380px] rounded-[24px] overflow-hidden flex flex-col"
                                 style={{
   backgroundColor: darkMode ? '#0f1420' : '#ffffff',
   border: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`,
   boxShadow: darkMode ? '0 20px 50px rgba(0, 0, 0, 0.5)' : '0 10px 40px rgba(0, 0, 0, 0.1)'
 }}
                             >
-                                <div className="globalheader-style-5" style={{
+                                <div className="p-6" style={{
   borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`,
   backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc'
 }}>
-                                    <div className="globalheader-style-6" >
-                                        <div className="globalheader-style-7" >
+                                    <div className="flex items-center gap-4" >
+                                        <div className="w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-2xl font-bold shrink-0 border border-emerald-500/30 overflow-hidden" >
                                             {user?.photoURL ? (
                                                 <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
                                                 userName.charAt(0).toUpperCase()
                                             )}
                                         </div>
-                                        <div className="globalheader-style-8" >
-                                            <span className="globalheader-style-9" style={{
+                                        <div className="flex-1 min-w-0 pl-1" >
+                                            <span className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis block" style={{
   color: darkMode ? '#f8fafc' : '#0f172a'
 }}>
                                                 {user?.displayName || userName}
                                             </span>
-                                            <p className="globalheader-style-10" style={{
+                                            <p className="text-sm mt-1 whitespace-nowrap overflow-hidden text-ellipsis font-medium" style={{
   color: darkMode ? '#94a3b8' : '#64748b'
 }}>
                                                 {user?.email || 'Mode local (non connecté)'}
@@ -205,15 +204,15 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                         </div>
                                     </div>
                                 </div>
-                                <div className="globalheader-style-11" >
+                                <div className="p-3 flex flex-col gap-1" >
                                     <button 
-                                        className="profile-menu-item globalheader-style-12"
+                                        className="profile-menu-item flex items-center gap-4 px-4 py-3 rounded-2xl border-none bg-transparent cursor-pointer text-[15px] font-medium transition-colors text-left hover:bg-slate-100 dark:hover:bg-slate-800"
                                         style={{
   color: darkMode ? '#e2e8f0' : '#334155'
 }}
                                         onClick={() => { onNavigateSettings(); setProfileMenuOpen(false); }}
                                     >
-                                        <div className="globalheader-style-13" style={{
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-full" style={{
   backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
   color: darkMode ? '#94a3b8' : '#64748b'
 }}>
@@ -223,13 +222,13 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                     </button>
 
                                     <button 
-                                        className="profile-menu-item globalheader-style-14"
+                                        className="profile-menu-item flex items-center gap-4 px-4 py-3 rounded-2xl border-none bg-transparent cursor-pointer text-[15px] font-medium transition-colors text-left hover:bg-slate-100 dark:hover:bg-slate-800"
                                         style={{
   color: darkMode ? '#e2e8f0' : '#334155'
 }}
                                         onClick={() => { setThemeMode(darkMode ? 'light' : 'dark'); setProfileMenuOpen(false); }}
                                     >
-                                        <div className="globalheader-style-15" style={{
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-full" style={{
   backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
   color: darkMode ? '#94a3b8' : '#64748b'
 }}>
@@ -239,13 +238,13 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                     </button>
 
                                     <button 
-                                        className="profile-menu-item globalheader-style-16"
+                                        className="profile-menu-item flex items-center gap-4 px-4 py-3 rounded-2xl border-none bg-transparent cursor-pointer text-[15px] font-medium transition-colors text-left hover:bg-slate-100 dark:hover:bg-slate-800"
                                         style={{
   color: darkMode ? '#e2e8f0' : '#334155'
 }}
                                         onClick={() => { setThemeMode('system'); setProfileMenuOpen(false); }}
                                     >
-                                        <div className="globalheader-style-17" style={{
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-full" style={{
   backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
   color: darkMode ? '#94a3b8' : '#64748b'
 }}>
@@ -255,7 +254,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                     </button>
 
                                     <button 
-                                        className="profile-menu-item globalheader-style-18"
+                                        className="profile-menu-item flex items-center gap-4 px-4 py-3 rounded-2xl border-none bg-transparent cursor-pointer text-[15px] font-medium transition-colors text-left hover:bg-slate-100 dark:hover:bg-slate-800"
                                         style={{
   color: darkMode ? '#e2e8f0' : '#334155'
 }}
@@ -273,7 +272,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                             setProfileMenuOpen(false); 
                                         }}
                                     >
-                                        <div className="globalheader-style-19" style={{
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-full" style={{
   backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
   color: darkMode ? '#94a3b8' : '#64748b'
 }}>
@@ -283,34 +282,34 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                     </button>
                                 </div>
 
-                                <div className="globalheader-style-20" style={{
+                                <div className="p-3" style={{
   backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc',
   borderTop: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`
 }}>
                                     {!user ? (
                                         <button 
-                                            className="profile-menu-item globalheader-style-21"
+                                            className="profile-menu-item flex items-center gap-4 px-4 py-3 rounded-2xl border-none bg-transparent cursor-pointer text-emerald-500 font-bold text-[15px] transition-colors text-left w-full hover:bg-slate-100 dark:hover:bg-slate-800"
                                             
                                             onClick={async () => {
                                                 await signInWithGoogle();
                                                 setProfileMenuOpen(false);
                                             }}
                                         >
-                                            <div className="globalheader-style-22" >
+                                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500" >
                                                 <Command size={20} weight="duotone" />
                                             </div>
                                             Se connecter avec Google
                                         </button>
                                     ) : (
                                         <button 
-                                            className="profile-menu-item globalheader-style-23"
+                                            className="profile-menu-item flex items-center gap-4 px-4 py-3 rounded-2xl border-none bg-transparent cursor-pointer text-red-400 font-bold text-[15px] transition-colors text-left w-full hover:bg-slate-100 dark:hover:bg-slate-800"
                                             
                                             onClick={async () => {
                                                 await logout();
                                                 setProfileMenuOpen(false);
                                             }}
                                         >
-                                            <div className="globalheader-style-24" >
+                                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500/10 text-red-400" >
                                                 <SignOut size={20} weight="duotone" />
                                             </div>
                                             Déconnexion

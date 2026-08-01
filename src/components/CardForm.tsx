@@ -18,7 +18,6 @@ import { CourseEditor } from './CourseEditor';
 import { TagInput } from './card-form/TagInput';
 import { FlashcardEditor } from './card-form/FlashcardEditor';
 import { CardHistoryModal } from './CardHistoryModal';
-import './styles/CardForm.css';
 
 interface CardFormProps {
     card?: Card | null;
@@ -169,11 +168,11 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
     return (
     <>
-        <div className="flex flex-col h-full w-full bg-[color:var(--color-bg)]">
+        <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950">
             
             {/* SUB-HEADER: Toolbar for Actions */}
-            <div className="h-16 bg-[color:var(--color-bg)] border-b border-[color:var(--color-border)] flex items-center justify-between px-6 lg:px-12 shrink-0 z-10">
-                <button onClick={onCancel} className="flex items-center gap-2 text-sm font-medium text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors px-4 py-2 rounded-xl hover:bg-[color:var(--color-surface)] border-none outline-none cursor-pointer bg-transparent">
+            <div className="h-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 lg:px-12 shrink-0 z-10">
+                <button onClick={onCancel} className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 transition-colors px-4 py-2 rounded-xl hover:bg-white dark:bg-slate-900 border-none outline-none cursor-pointer bg-transparent">
                     <ArrowLeft size={18} weight="bold" />
                     Retour au deck
                 </button>
@@ -185,13 +184,13 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                 )}
                 
                 <div className="flex items-center gap-4">
-                    <span className="card-form-status-badge hidden sm:block">
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm hidden sm:block">
                         Non enregistré
                     </span>
                     <button 
                         onClick={handleSave} 
                         disabled={(!formData.title?.trim() && formData.nodeType !== 'flashcard') || (formData.nodeType === 'flashcard' && !formData.content?.trim())} 
-                        className="card-form-save-btn"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-semibold rounded-lg shadow-sm transition-all border-none outline-none cursor-pointer shrink-0 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <FloppyDisk size={18} weight="fill" />
                         Enregistrer
@@ -200,7 +199,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
             </div>
 
             {/* MAIN: Scrollable Content Area */}
-            <main className="flex-1 overflow-y-auto custom-scrollbar relative w-full flex justify-center py-10 px-4 sm:px-6 lg:px-8 bg-[color:var(--color-bg)]">
+            <main className="flex-1 overflow-y-auto custom-scrollbar relative w-full flex justify-center py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950">
                 
                 <div className="w-full max-w-3xl flex flex-col gap-6 relative">
                     
@@ -229,10 +228,10 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                 <option value="__custom__">Autre / Nouveau...</option>
                             </select>
 
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-wider transition-colors cursor-pointer border border-[color:var(--color-border)]/50 bg-[color:var(--color-surface)] hover:bg-[color:var(--color-surface-hover)] shadow-sm" style={{ color: categoryColor }}>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-wider transition-colors cursor-pointer border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 shadow-sm" style={{ color: categoryColor }}>
                                 <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ background: categoryColor }}></div>
                                 {isCustomTypeActive ? customTypeInput || 'Catégorie...' : formData.type}
-                                <CaretDown size={14} weight="bold" className="ml-1 text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)] transition-colors" />
+                                <CaretDown size={14} weight="bold" className="ml-1 text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:text-slate-100 transition-colors" />
                             </div>
 
                             {isCustomTypeActive && (
@@ -243,23 +242,23 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                     onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
                                     placeholder="Nouvelle..."
                                     autoFocus
-                                    className="ml-2 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-md py-1.5 px-3 text-[13px] outline-none w-[140px] font-medium text-[color:var(--color-text)] shadow-sm focus:border-blue-500/50 transition-colors"
+                                    className="ml-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md py-1.5 px-3 text-[13px] outline-none w-[140px] font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500/50 transition-colors"
                                 />
                             )}
                         </div>
                         
                         {/* Format Toggle for Flashcards (Text / Q&A) */}
                         {formData.nodeType === 'flashcard' && (
-                            <div className="add-data-segmented-control mb-4">
+                            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner overflow-x-auto mb-4">
                                 <button 
                                     onClick={() => setFormData({ ...formData, format: 'cloze' })}
-                                    className={`segmented-btn ${formData.format === 'cloze' ? 'active-emerald' : ''}`}
+                                    className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all duration-200 border-none outline-none cursor-pointer font-medium ${formData.format === 'cloze' ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-500 font-semibold shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
                                 >
                                     Texte à trous
                                 </button>
                                 <button 
                                     onClick={() => setFormData({ ...formData, format: 'q&a' })}
-                                    className={`segmented-btn ${formData.format === 'q&a' ? 'active-emerald' : ''}`}
+                                    className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all duration-200 border-none outline-none cursor-pointer font-medium ${formData.format === 'q&a' ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-500 font-semibold shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
                                 >
                                     Q / R
                                 </button>
@@ -280,7 +279,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                         <option key={c.id} value={c.id}>{c.title || 'Cours sans titre'}</option>
                                     ))}
                             </select>
-                            <button className="card-form-action-btn">
+                            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-[0.05em] transition-all cursor-pointer border border-transparent outline-none bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20">
                                 <Stack size={16} weight="duotone" className="shrink-0" />
                                 {formData.parentId 
                                     ? existingCards.find(c => c.id === formData.parentId)?.title || 'Cours inconnu' 
@@ -291,17 +290,17 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                     </div>
 
                     {/* MAIN CARD (Title & Content) */}
-                    <div className="bg-[color:var(--color-surface)] rounded-[24px] shadow-card border border-[color:var(--color-border)] p-8 md:p-10 flex flex-col relative z-10 min-h-[400px]">
+                    <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-card border border-slate-200 dark:border-slate-700 p-8 md:p-10 flex flex-col relative z-10 min-h-[400px]">
                         
                         {/* Title & Subtitle */}
                         {formData.nodeType !== 'flashcard' && (
-                            <div className="mb-6 border-b border-[color:var(--color-border)]/50 pb-6">
+                            <div className="mb-6 border-b border-slate-200 dark:border-slate-700/50 pb-6">
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                     placeholder={formData.nodeType === 'course' ? "Titre du cours..." : "Titre du concept..."}
-                                    className="w-full bg-transparent border-none outline-none text-[32px] md:text-[40px] font-extrabold tracking-tight text-[color:var(--color-text)] mb-2 placeholder-slate-400 dark:placeholder-slate-600 focus:ring-0 p-0"
+                                    className="w-full bg-transparent border-none outline-none text-[32px] md:text-[40px] font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mb-2 placeholder-slate-400 dark:placeholder-slate-600 focus:ring-0 p-0"
                                     autoFocus
                                 />
                                 <input
@@ -309,7 +308,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                     value={formData.subtitle}
                                     onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
                                     placeholder="Sous-titre ou contexte (optionnel)..."
-                                    className="w-full bg-transparent border-none outline-none text-base md:text-lg font-medium text-[color:var(--color-text-muted)] placeholder-slate-400/80 focus:ring-0 p-0"
+                                    className="w-full bg-transparent border-none outline-none text-base md:text-lg font-medium text-slate-500 dark:text-slate-400 placeholder-slate-400/80 focus:ring-0 p-0"
                                 />
                             </div>
                         )}
@@ -327,11 +326,11 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                             )}
                         </div>
                     </div>
-                    <div className="bg-[color:var(--color-surface)] rounded-2xl shadow-sm border border-[color:var(--color-border)] overflow-hidden flex flex-col mb-8">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col mb-8">
                         
                         {/* Tags Row */}
-                        <div className="flex flex-col sm:flex-row border-b border-[color:var(--color-border)]/70 min-h-[50px]">
-                            <div className="w-full sm:w-1/3 px-6 py-4 bg-[color:var(--color-bg)]/30 border-b sm:border-b-0 sm:border-r border-[color:var(--color-border)]/70 flex items-center gap-3 text-xs font-bold text-[color:var(--color-text-muted)] uppercase tracking-wider">
+                        <div className="flex flex-col sm:flex-row border-b border-slate-200 dark:border-slate-700/70 min-h-[50px]">
+                            <div className="w-full sm:w-1/3 px-6 py-4 bg-slate-50 dark:bg-slate-950/30 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-700/70 flex items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 <Tag size={16} weight="duotone" />
                                 Tags de la fiche
                             </div>
@@ -346,21 +345,21 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                         </div>
 
                         {/* Connections Row */}
-                        <div className="flex flex-col sm:flex-row border-b border-[color:var(--color-border)]/70 min-h-[50px]">
-                            <div className="w-full sm:w-1/3 px-6 py-4 bg-[color:var(--color-bg)]/30 border-b sm:border-b-0 sm:border-r border-[color:var(--color-border)]/70 flex items-center gap-3 text-xs font-bold text-[color:var(--color-text-muted)] uppercase tracking-wider">
+                        <div className="flex flex-col sm:flex-row border-b border-slate-200 dark:border-slate-700/70 min-h-[50px]">
+                            <div className="w-full sm:w-1/3 px-6 py-4 bg-slate-50 dark:bg-slate-950/30 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-700/70 flex items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 <LinkSimple size={16} weight="duotone" />
                                 Fiches liées
                             </div>
-                            <div className="w-full sm:w-2/3 flex flex-col justify-center bg-transparent group focus-within:bg-[color:var(--color-bg)]/30 transition-colors">
+                            <div className="w-full sm:w-2/3 flex flex-col justify-center bg-transparent group focus-within:bg-slate-50 dark:bg-slate-950/30 transition-colors">
                                 <div className="flex items-center gap-3 px-6 py-4 w-full">
-                                    <MagnifyingGlass size={16} className="text-[color:var(--color-text-muted)] shrink-0 group-focus-within:text-emerald-500 transition-colors" />
-                                    <input type="text" placeholder="Rechercher une fiche à lier..." value={connectionSearch} onChange={e => setConnectionSearch(e.target.value)} className="w-full bg-transparent border-none outline-none text-sm font-medium text-[color:var(--color-text)] placeholder-[color:var(--color-text-muted)]" />
+                                    <MagnifyingGlass size={16} className="text-slate-500 dark:text-slate-400 shrink-0 group-focus-within:text-emerald-500 transition-colors" />
+                                    <input type="text" placeholder="Rechercher une fiche à lier..." value={connectionSearch} onChange={e => setConnectionSearch(e.target.value)} className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400" />
                                 </div>
                                 
                                 {connectionCandidates.length > 0 && (
-                                    <div className="bg-[color:var(--color-surface)] border-t border-[color:var(--color-border)]/50 overflow-y-auto max-h-40 custom-scrollbar z-20">
+                                    <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/50 overflow-y-auto max-h-40 custom-scrollbar z-20">
                                         {connectionCandidates.map(c => (
-                                            <div key={c.id} onClick={() => toggleConnection(c.id)} className="py-2.5 px-6 cursor-pointer flex items-center gap-3 text-sm border-b border-[color:var(--color-border)]/30 text-[color:var(--color-text)] hover:bg-[color:var(--color-bg)] transition-colors last:border-none">
+                                            <div key={c.id} onClick={() => toggleConnection(c.id)} className="py-2.5 px-6 cursor-pointer flex items-center gap-3 text-sm border-b border-slate-200 dark:border-slate-700/30 text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:bg-slate-950 transition-colors last:border-none">
                                                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getCategoryColor(c.type) }} />
                                                 <span className="font-medium">{c.title}</span>
                                             </div>
@@ -373,10 +372,10 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                         {formData.manualConnections?.map(id => {
                                             const l = existingCards.find(c => c.id === id);
                                             return l ? (
-                                                <span key={id} className="text-[13px] py-1 px-2.5 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-md flex items-center gap-2 text-[color:var(--color-text)] font-medium shadow-sm hover:border-red-400/50 transition-colors group/pill cursor-pointer" onClick={() => toggleConnection(id)}>
+                                                <span key={id} className="text-[13px] py-1 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md flex items-center gap-2 text-slate-900 dark:text-slate-100 font-medium shadow-sm hover:border-red-400/50 transition-colors group/pill cursor-pointer" onClick={() => toggleConnection(id)}>
                                                     <div className="w-2 h-2 rounded-full shrink-0" style={{ background: getCategoryColor(l.type) }} />
                                                     {l.title}
-                                                    <X size={12} weight="bold" className="text-[color:var(--color-text-muted)] group-hover/pill:text-red-500 transition-colors" />
+                                                    <X size={12} weight="bold" className="text-slate-500 dark:text-slate-400 group-hover/pill:text-red-500 transition-colors" />
                                                 </span>
                                             ) : null;
                                         })}
@@ -387,18 +386,18 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
                         {/* Image Row */}
                         <div className="flex flex-col sm:flex-row min-h-[50px]">
-                            <div className="w-full sm:w-1/3 px-6 py-4 bg-[color:var(--color-bg)]/30 border-b sm:border-b-0 sm:border-r border-[color:var(--color-border)]/70 flex items-center gap-3 text-xs font-bold text-[color:var(--color-text-muted)] uppercase tracking-wider">
+                            <div className="w-full sm:w-1/3 px-6 py-4 bg-slate-50 dark:bg-slate-950/30 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-700/70 flex items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 <ImageSquare size={16} weight="duotone" />
                                 Image (URL)
                             </div>
-                            <div className="w-full sm:w-2/3 flex flex-col justify-center bg-transparent group focus-within:bg-[color:var(--color-bg)]/30 transition-colors">
+                            <div className="w-full sm:w-2/3 flex flex-col justify-center bg-transparent group focus-within:bg-slate-50 dark:bg-slate-950/30 transition-colors">
                                 <div className="flex items-center gap-3 px-6 py-4 w-full">
-                                    <UploadSimple size={16} className="text-[color:var(--color-text-muted)] shrink-0 group-focus-within:text-blue-500 transition-colors" />
-                                    <input type="text" placeholder="https://..." value={formData.imageUrl || ''} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} className="w-full bg-transparent border-none outline-none text-sm font-medium text-[color:var(--color-text)] placeholder-[color:var(--color-text-muted)]" />
+                                    <UploadSimple size={16} className="text-slate-500 dark:text-slate-400 shrink-0 group-focus-within:text-blue-500 transition-colors" />
+                                    <input type="text" placeholder="https://..." value={formData.imageUrl || ''} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400" />
                                 </div>
                                 {formData.imageUrl && (
                                     <div className="px-6 pb-6">
-                                        <div className="rounded-xl overflow-hidden border border-[color:var(--color-border)] bg-[color:var(--color-bg)] p-2 flex items-center justify-center relative group/img">
+                                        <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2 flex items-center justify-center relative group/img">
                                             <img src={formData.imageUrl} alt="Preview" className="max-h-[140px] mx-auto rounded-lg object-contain block shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                         </div>
                                     </div>

@@ -2,7 +2,6 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { DynamicIcon } from './DynamicIcon';
 import { getTypeColor } from '../theme';
-import './styles/Badge.css';
 
 interface BadgeProps {
     type: string;

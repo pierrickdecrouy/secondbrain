@@ -4,8 +4,7 @@ import { useCardStore } from '../../store/useCardStore';
 import { toast } from '../../store/useToastStore';
 import { importAnkiPackage } from '../../ankiImport';
 import { saveCardsAsync, exportAllData, importAllData, resetToDefaults } from '../../storage';
-import { S, SettingsCard, CardSection, CardBody, SettingsRow, GhostButton, DangerButton } from './SettingsUI';
-import './styles/DataTab.css';
+import { SettingsCard, CardSection, CardBody, SettingsRow, GhostButton, DangerButton } from './SettingsUI';
 
 export const DataTab: React.FC = () => {
     const { cards, deleteCards } = useCardStore();
@@ -48,7 +47,7 @@ export const DataTab: React.FC = () => {
     };
 
     return (
-        <div className="datatab-style-1" >
+        <div className="flex flex-col gap-6">
             {/* Import Anki */}
             <SettingsCard>
                 <CardSection
@@ -56,12 +55,12 @@ export const DataTab: React.FC = () => {
                     subtitle="Format .apkg uniquement — images ignorées, fiches classées dans « Données »."
                 />
                 <CardBody>
-                    <div className="datatab-style-2" >
+                    <div className="flex flex-col gap-3">
                         <input
                             type="file"
                             accept=".apkg"
                             id="anki-upload"
-                            className="datatab-style-3" 
+                            className="hidden" 
                             disabled={isImportingAnki}
                             onChange={async e => {
                                 const file = e.target.files?.[0];
@@ -82,19 +81,13 @@ export const DataTab: React.FC = () => {
                         />
                         <label
                             htmlFor="anki-upload"
-                            className="datatab-style-4" style={{
-  background: S.primary,
-  cursor: isImportingAnki ? 'not-allowed' : 'pointer',
-  opacity: isImportingAnki ? 0.5 : 1
-}}
+                            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-teal-600 hover:bg-teal-500 transition-colors w-fit ${isImportingAnki ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
                         >
-                            <UploadSimple size={15} weight="bold" />
+                            <UploadSimple size={18} weight="bold" />
                             {isImportingAnki ? 'Import en cours…' : 'Choisir un fichier .apkg'}
                         </label>
                         {isImportingAnki && (
-                            <span className="datatab-style-5" style={{
-  color: S.primary
-}}>{ankiImportProgress}</span>
+                            <span className="text-sm font-medium text-teal-600 dark:text-teal-400 mt-1">{ankiImportProgress}</span>
                         )}
                     </div>
                 </CardBody>
@@ -105,17 +98,15 @@ export const DataTab: React.FC = () => {
                 <CardSection title="Sauvegarde complète" subtitle="Exportez ou restaurez l'ensemble de vos données (fiches, abréviations, paramètres)." />
                 <SettingsRow label="Télécharger une sauvegarde" description="Fichier JSON de toutes vos données." last>
                     <GhostButton onClick={handleExport} small>
-                        <DownloadSimple size={15} /> Exporter
+                        <DownloadSimple size={16} weight="bold" /> Exporter
                     </GhostButton>
                 </SettingsRow>
-                <div className="datatab-style-6" style={{
-  borderTop: `1px solid ${S.border}`
-}}>
+                <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700">
                     <input
                         type="file"
                         accept=".json"
                         id="restore-upload"
-                        className="datatab-style-7" 
+                        className="hidden" 
                         onChange={e => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -134,23 +125,16 @@ export const DataTab: React.FC = () => {
                             reader.readAsText(file);
                         }}
                     />
-                    <div className="datatab-style-8" >
+                    <div className="flex items-center justify-between">
                         <div>
-                            <div className="datatab-style-9" style={{
-  color: S.text
-}}>Restaurer depuis un fichier</div>
-                            <div className="datatab-style-10" style={{
-  color: S.muted
-}}>Écrase toutes les données actuelles.</div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Restaurer depuis un fichier</div>
+                            <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">Écrase toutes les données actuelles.</div>
                         </div>
                         <label
                             htmlFor="restore-upload"
-                            className="datatab-style-11" style={{
-  color: S.muted,
-  border: `1px solid ${S.border}`
-}}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-xl bg-transparent text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95"
                         >
-                            <UploadSimple size={14} /> Restaurer
+                            <UploadSimple size={16} weight="bold" /> Restaurer
                         </label>
                     </div>
                 </div>
@@ -161,7 +145,7 @@ export const DataTab: React.FC = () => {
                 <CardSection
                     title="Zone de danger"
                     subtitle="Actions irréversibles — procédez avec précaution."
-                    icon={<Warning size={16} />}
+                    icon={<Warning size={20} weight="fill" />}
                 />
                 <SettingsRow
                     label="Restaurer le dictionnaire par défaut"
@@ -198,7 +182,6 @@ export const DataTab: React.FC = () => {
                                 }
                             }
                         }}
-                        className="datatab-style-12" 
                     >
                         Tout supprimer
                     </DangerButton>

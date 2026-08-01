@@ -1,6 +1,5 @@
 import React from 'react';
 import * as PhosphorIcons from '@phosphor-icons/react';
-import './styles/DynamicIcon.css';
 
 export const AVAILABLE_ICONS = [
     'Pill',
@@ -31,14 +30,14 @@ export const DynamicIcon: React.FC<DynamicIconProps> = ({ name, size = 24, class
 
     if (!PhosphorIcon) {
         return (
-            <span key="FileText" className="dynamicicon-style-1" >
+            <span key="FileText" className="contents" >
                 <PhosphorIcons.FileText size={size} className={className} {...props} />
             </span>
         );
     }
 
     return (
-        <span key={name} className="dynamicicon-style-2" >
+        <span key={name} className="contents" >
             <PhosphorIcon size={size} className={className} {...props} />
         </span>
     );

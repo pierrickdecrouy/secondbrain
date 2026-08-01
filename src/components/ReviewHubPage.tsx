@@ -4,7 +4,6 @@ import type { Card } from '../types';
 import { CARD_TYPES } from '../types';
 import { useDueCards } from '../hooks/useDueCards';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import './styles/ReviewHubPage.css';
 
 interface ReviewHubPageProps {
     onSelectFSRS: (tags?: string[]) => void;
@@ -111,30 +110,30 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
     const hasEnoughForQuiz = totalFlashcards >= 5;
 
     return (
-        <div className="reviewhubpage-style-1" >
-            <div className="reviewhubpage-style-2" >
+        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-slate-950 px-8 py-5 flex flex-col" >
+            <div className="max-w-6xl w-full mx-auto flex flex-col flex-1 min-h-0 gap-4" >
 
                 {/* Header */}
-                <div className="reviewhubpage-style-3" >
-                    <div className="reviewhubpage-style-4" >
+                <div className="flex items-center justify-between shrink-0" >
+                    <div className="flex items-center gap-6" >
                         <div>
-                            <h1 className="reviewhubpage-style-5" >
+                            <h1 className="text-[22px] font-extrabold m-0 tracking-[-0.3px] text-slate-900 dark:text-slate-100" >
                                 Espace de Révision
                             </h1>
                         </div>
 
                     {/* Due counter badge */}
                     {totalDue > 0 ? (
-                        <div className="reviewhubpage-style-6" >
-                            <span className="reviewhubpage-style-7" >
-                                <span className="reviewhubpage-style-8"  />
-                                <span className="reviewhubpage-style-9"  />
+                        <div className="inline-flex items-center gap-2.5 px-4 py-[7px] rounded-full border-[1.5px] border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[13px] font-bold" >
+                            <span className="relative flex w-2 h-2" >
+                                <span className="absolute top-0 left-0 w-full h-full rounded-full bg-emerald-500 opacity-75 animate-[ping_1.2s_cubic-bezier(0,0,0.2,1)_infinite]"  />
+                                <span className="relative block w-2 h-2 rounded-full bg-emerald-500"  />
                             </span>
                             {totalDue} carte{totalDue > 1 ? 's' : ''} à réviser
                         </div>
                     ) : (
-                        <div className="reviewhubpage-style-10" >
-                            <CheckCircle size={15} weight="fill" className="reviewhubpage-style-11"  />
+                        <div className="inline-flex items-center gap-2 px-3.5 py-[7px] rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-[13px] font-semibold" >
+                            <CheckCircle size={15} weight="fill" className="text-emerald-500"  />
                             Tout est à jour
                         </div>
                     )}
@@ -142,34 +141,34 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                 </div>
 
                 {/* ── LE QUOTIDIEN (FSRS Hero) ── */}
-                <div className="reviewhubpage-style-12" >
-                    <div className="reviewhubpage-style-13" >
-                        <div className="reviewhubpage-style-14"  />
-                        <h2 className="reviewhubpage-style-15" >
+                <div className="mb-5" >
+                    <div className="flex items-center gap-2.5 mb-3" >
+                        <div className="w-1 h-3.5 bg-emerald-500 rounded"  />
+                        <h2 className="text-[13px] font-bold uppercase tracking-[0.05em] m-0 text-slate-900 dark:text-slate-100" >
                             Le Quotidien
                         </h2>
                     </div>
                     
-                    <div className="reviewhubpage-style-16" >
-                        <div className="reviewhubpage-style-17" >
-                            <div className="reviewhubpage-style-18" >
-                                <div className="reviewhubpage-style-19" >
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col relative overflow-visible" >
+                        <div className="flex items-center justify-between gap-4 z-10 flex-wrap" >
+                            <div className="flex gap-4 items-center" >
+                                <div className="w-[52px] h-[52px] rounded-[14px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0" >
                                     <Brain size={28} weight="duotone" />
                                 </div>
                                 <div>
-                                    <div className="reviewhubpage-style-20" >
-                                        <h3 className="reviewhubpage-style-21" >Faire mes révisions</h3>
-                                        <span className="reviewhubpage-style-22" >FSRS IA</span>
+                                    <div className="flex items-center gap-2 mb-1" >
+                                        <h3 className="text-lg font-extrabold m-0 text-slate-900 dark:text-slate-100" >Faire mes révisions</h3>
+                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 bg-emerald-500/15 px-1.5 py-[3px] rounded-md uppercase tracking-[0.05em]" >FSRS IA</span>
                                     </div>
-                                    <p className="reviewhubpage-style-23" >
+                                    <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed m-0 max-w-[500px]" >
                                         L'algorithme sélectionne les cartes exactes à revoir aujourd'hui pour optimiser votre mémoire à long terme.
                                     </p>
                                     
                                     {uniqueTags.length > 0 && (
-                                        <div className="reviewhubpage-style-24" >
+                                        <div className="mt-2.5 relative" >
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setFsrsTagPickerOpen(!fsrsTagPickerOpen); }}
-                                                className="reviewhubpage-style-25" style={{
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer" style={{
   background: fsrsTags.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
   border: fsrsTags.length > 0 ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)',
   color: fsrsTags.length > 0 ? '#10b981' : 'var(--color-text-muted)'
@@ -180,14 +179,14 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                             </button>
                                             
                                             {fsrsTagPickerOpen && (
-                                                <div className="reviewhubpage-style-26" >
-                                                    <div className="reviewhubpage-style-27" >Tags</div>
-                                                    <div className="reviewhubpage-style-28" >
+                                                <div className="absolute top-full left-0 z-50 mt-1.5 w-[220px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-lg p-2.5 flex flex-col gap-1.5" >
+                                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase" >Tags</div>
+                                                    <div className="flex flex-wrap gap-1" >
                                                         {uniqueTags.map(tag => (
                                                             <button
                                                                 key={tag}
                                                                 onClick={() => setFsrsTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                                                                className="reviewhubpage-style-29" style={{
+                                                                className="px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer" style={{
   border: fsrsTags.includes(tag) ? '1px solid #10b981' : '1px solid var(--color-border)',
   background: fsrsTags.includes(tag) ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
   color: fsrsTags.includes(tag) ? '#10b981' : 'var(--color-text-muted)'
@@ -197,7 +196,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                                             </button>
                                                         ))}
                                                     </div>
-                                                    <button onClick={() => setFsrsTagPickerOpen(false)} className="reviewhubpage-style-30" >
+                                                    <button onClick={() => setFsrsTagPickerOpen(false)} className="mt-1 p-1.5 bg-transparent border-none text-slate-500 dark:text-slate-400 text-[11px] cursor-pointer font-semibold" >
                                                         Fermer
                                                     </button>
                                                 </div>
@@ -210,7 +209,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                             <button
                                 onClick={() => onSelectFSRS(fsrsTags)}
                                 disabled={fsrsDueCount === 0}
-                                className="reviewhubpage-style-31" style={{
+                                className="flex items-center gap-2 px-6 py-3 rounded-xl border-none font-bold text-sm shrink-0 transition-all duration-200" style={{
   background: fsrsDueCount > 0 ? '#10b981' : 'var(--color-bg)',
   color: fsrsDueCount > 0 ? '#fff' : 'var(--color-text-muted)',
   cursor: fsrsDueCount > 0 ? 'pointer' : 'not-allowed',
@@ -226,53 +225,53 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                 </div>
 
                 {/* ── MODES DE DÉCOUVERTE ── */}
-                <div className="reviewhubpage-style-32" >
-                    <div className="reviewhubpage-style-33"  />
-                    <h2 className="reviewhubpage-style-34" >
+                <div className="flex items-center gap-2.5 mb-3" >
+                    <div className="w-1 h-3.5 bg-slate-400 dark:bg-slate-600 rounded"  />
+                    <h2 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-[0.05em] m-0" >
                         Modes de découverte
                     </h2>
                 </div>
                 
                 {/* Secondary Modes Grid */}
-                <div className="reviewhubpage-style-35" >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 min-h-0" >
 
                     {/* ── Mode Par Cours ── */}
-                    <div className="reviewhubpage-style-36" style={{
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] p-4 flex flex-col gap-2.5 transition-shadow duration-200" style={{
   opacity: coursesWithFlashcards.length > 0 ? 1 : 0.6
 }}>
                         <div>
-                            <div className="reviewhubpage-style-37" >
-                                <div className="reviewhubpage-style-38" >
-                                    <div className="reviewhubpage-style-39" >
+                            <div className="flex justify-between items-start mb-2.5" >
+                                <div className="flex items-center gap-2" >
+                                    <div className="w-10 h-10 rounded-[10px] bg-blue-500/10 flex items-center justify-center text-blue-500" >
                                         <BookOpen size={22} weight="duotone" />
                                     </div>
                                     <div>
-                                        <div className="reviewhubpage-style-40" >Par Cours</div>
-                                        <div className="reviewhubpage-style-41" >Révision Ciblée</div>
+                                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.08em]" >Par Cours</div>
+                                        <div className="text-base font-bold text-slate-900 dark:text-slate-100" >Révision Ciblée</div>
                                     </div>
                                 </div>
-                                {coursesWithFlashcards.length === 0 && <LockKey size={16} className="reviewhubpage-style-42"  />}
+                                {coursesWithFlashcards.length === 0 && <LockKey size={16} className="text-slate-500 dark:text-slate-400"  />}
                             </div>
-                            <p className="reviewhubpage-style-43" >
+                            <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed m-0 mb-4" >
                                 Sélectionnez un cours et révisez toutes les flashcards qui y sont rattachées.
                             </p>
 
                             {/* Course picker */}
                             {coursesWithFlashcards.length > 0 && (
-                                <div className="reviewhubpage-style-44" >
+                                <div className="relative" >
                                     <button
                                         onClick={() => setCoursePickerOpen(v => !v)}
-                                        className="reviewhubpage-style-45" style={{
+                                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-[10px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 cursor-pointer text-[13px] font-medium" style={{
   color: selectedCourse ? 'var(--color-text)' : 'var(--color-text-muted)'
 }}
                                     >
-                                        <span className="reviewhubpage-style-46" >
+                                        <span className="overflow-hidden text-ellipsis whitespace-nowrap" >
                                             {selectedCourse ? selectedCourse.title : 'Choisir un cours...'}
                                         </span>
                                         {coursePickerOpen ? <CaretUp size={14} /> : <CaretDown size={14} />}
                                     </button>
                                     {coursePickerOpen && (
-                                        <div className="reviewhubpage-style-47" >
+                                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] overflow-hidden shadow-lg max-h-[220px] overflow-y-auto" >
                                             {coursesWithFlashcards.map(course => {
                                                 const fcCount = allCards.filter(c => c.nodeType === 'flashcard' && c.parentId === course.id).length;
                                                 return (
@@ -282,14 +281,14 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                                             setSelectedCourseId(course.id);
                                                             setCoursePickerOpen(false);
                                                         }}
-                                                        className="reviewhubpage-style-48" style={{
+                                                        className="px-3.5 py-2.5 cursor-pointer flex items-center justify-between text-[13px] font-medium text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 transition-colors duration-100" style={{
   background: selectedCourseId === course.id ? 'rgba(59,130,246,0.08)' : 'transparent'
 }}
                                                         onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface-hover)'}
                                                         onMouseLeave={e => e.currentTarget.style.background = selectedCourseId === course.id ? 'rgba(59,130,246,0.08)' : 'transparent'}
                                                     >
-                                                        <span className="reviewhubpage-style-49" >{course.title}</span>
-                                                        <span className="reviewhubpage-style-50" >{fcCount} cartes</span>
+                                                        <span className="overflow-hidden text-ellipsis whitespace-nowrap flex-1" >{course.title}</span>
+                                                        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-2 shrink-0" >{fcCount} cartes</span>
                                                     </div>
                                                 );
                                             })}
@@ -302,7 +301,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         <button
                             onClick={() => selectedCourseId && onSelectCourse(selectedCourseId)}
                             disabled={!selectedCourseId || coursesWithFlashcards.length === 0}
-                            className="reviewhubpage-style-51" style={{
+                            className="flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] border-none font-bold text-sm transition-all duration-200 mt-auto" style={{
   background: selectedCourseId ? '#3b82f6' : 'var(--color-bg)',
   color: selectedCourseId ? '#fff' : 'var(--color-text-muted)',
   cursor: selectedCourseId ? 'pointer' : 'not-allowed'
@@ -389,27 +388,27 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
             
             {/* Custom Deck Modal */}
             {customDeckOpen && (
-                <div className="reviewhubpage-style-52" >
-                    <div className="reviewhubpage-style-53"  onClick={() => setCustomDeckOpen(false)} />
-                    <div ref={customDeckModalRef as any} className="reviewhubpage-style-54" >
-                        <button onClick={() => setCustomDeckOpen(false)} className="reviewhubpage-style-55"  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center" >
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"  onClick={() => setCustomDeckOpen(false)} />
+                    <div ref={customDeckModalRef as any} className="relative bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[20px] w-full max-w-[600px] p-8 shadow-xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto" >
+                        <button onClick={() => setCustomDeckOpen(false)} className="absolute top-5 right-5 bg-transparent border-none text-slate-500 dark:text-slate-400 cursor-pointer p-2 rounded-full"  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                             <X size={20} />
                         </button>
                         
                         <div>
-                            <h2 className="reviewhubpage-style-56" >Créer un Deck Personnalisé</h2>
-                            <p className="reviewhubpage-style-57" >Filtrez les cartes pour cibler exactement ce que vous voulez réviser maintenant.</p>
+                            <h2 className="text-[22px] font-extrabold text-slate-900 dark:text-slate-100 m-0 mb-2" >Créer un Deck Personnalisé</h2>
+                            <p className="m-0 text-sm text-slate-500 dark:text-slate-400" >Filtrez les cartes pour cibler exactement ce que vous voulez réviser maintenant.</p>
                         </div>
 
                         {/* Catégories */}
                         <div>
-                            <label className="reviewhubpage-style-58" >1. Catégories</label>
-                            <div className="reviewhubpage-style-59" >
+                            <label className="block text-[13px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-[0.05em] mb-3" >1. Catégories</label>
+                            <div className="flex flex-wrap gap-2" >
                                 {CARD_TYPES.map(type => (
                                     <button
                                         key={type}
                                         onClick={() => handleToggleCustomType(type)}
-                                        className="reviewhubpage-style-60" style={{
+                                        className="px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-200" style={{
   border: customConfig.types.includes(type) ? '1px solid #3b82f6' : '1px solid var(--color-border)',
   background: customConfig.types.includes(type) ? 'rgba(59,130,246,0.1)' : 'var(--color-surface)',
   color: customConfig.types.includes(type) ? '#3b82f6' : 'var(--color-text)'
@@ -423,16 +422,16 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 
                         {/* Tags */}
                         <div>
-                            <label className="reviewhubpage-style-61" >2. Tags (Union)</label>
+                            <label className="block text-[13px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-[0.05em] mb-3" >2. Tags (Union)</label>
                             {uniqueTags.length === 0 ? (
-                                <div className="reviewhubpage-style-62" >Aucun tag utilisé pour l'instant.</div>
+                                <div className="text-[13px] text-slate-500 dark:text-slate-400 italic" >Aucun tag utilisé pour l'instant.</div>
                             ) : (
-                                <div  className="custom-scrollbar reviewhubpage-style-63">
+                                <div  className="custom-scrollbar flex flex-wrap gap-2 max-h-[150px] overflow-y-auto p-1 -m-1 custom-scrollbar">
                                     {uniqueTags.map(tag => (
                                         <button
                                             key={tag}
                                             onClick={() => handleToggleCustomTag(tag)}
-                                            className="reviewhubpage-style-64" style={{
+                                            className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 flex items-center gap-1.5" style={{
   border: customConfig.tags.includes(tag) ? '1px solid #8b5cf6' : '1px solid var(--color-border)',
   background: customConfig.tags.includes(tag) ? 'rgba(139,92,246,0.1)' : 'var(--color-surface)',
   color: customConfig.tags.includes(tag) ? '#8b5cf6' : 'var(--color-text-muted)'
@@ -448,8 +447,8 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 
                         {/* Status */}
                         <div>
-                            <label className="reviewhubpage-style-65" >3. Statut d'apprentissage</label>
-                            <div className="reviewhubpage-style-66" >
+                            <label className="block text-[13px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-[0.05em] mb-3" >3. Statut d'apprentissage</label>
+                            <div className="flex flex-wrap gap-2" >
                                 {[
                                     { id: 'new', label: 'Nouvelles', color: '#6366f1' },
                                     { id: 'learning', label: 'En apprentissage', color: '#f59e0b' },
@@ -458,13 +457,13 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                     <button
                                         key={status.id}
                                         onClick={() => handleToggleCustomStatus(status.id)}
-                                        className="reviewhubpage-style-67" style={{
+                                        className="px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2" style={{
   border: customConfig.statuses.includes(status.id) ? `1px solid ${status.color}` : '1px solid var(--color-border)',
   background: customConfig.statuses.includes(status.id) ? `${status.color}15` : 'var(--color-surface)',
   color: customConfig.statuses.includes(status.id) ? status.color : 'var(--color-text)'
 }}
                                     >
-                                        <div className="reviewhubpage-style-68" style={{
+                                        <div className="w-2 h-2 rounded-full" style={{
   background: status.color,
   opacity: customConfig.statuses.includes(status.id) ? 1 : 0.5
 }} />
@@ -476,11 +475,11 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 
                         {/* Limite */}
                         <div>
-                            <label className="reviewhubpage-style-69" >4. Limite de cartes</label>
+                            <label className="block text-[13px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-[0.05em] mb-3" >4. Limite de cartes</label>
                             <select 
                                 value={customConfig.limit === null ? 'all' : customConfig.limit.toString()} 
                                 onChange={e => setCustomConfig(prev => ({ ...prev, limit: e.target.value === 'all' ? null : parseInt(e.target.value) }))}
-                                className="reviewhubpage-style-70" 
+                                className="px-3.5 py-2.5 rounded-[10px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm outline-none w-full max-w-[200px]" 
                             >
                                 <option value="10">10 cartes</option>
                                 <option value="20">20 cartes</option>
@@ -490,15 +489,15 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                             </select>
                         </div>
 
-                        <div className="reviewhubpage-style-71" >
-                            <div className="reviewhubpage-style-72" >
+                        <div className="mt-2 border-t border-slate-200 dark:border-slate-800 pt-6 flex justify-between items-center gap-3" >
+                            <div className="text-[0.82rem] text-slate-500 dark:text-slate-400" >
                                 {hasCustomFilters
-                                    ? <span><strong className="reviewhubpage-style-73" >{customDeckMatchCount}</strong> carte{customDeckMatchCount !== 1 ? 's' : ''} correspondante{customDeckMatchCount !== 1 ? 's' : ''}</span>
-                                    : <span className="reviewhubpage-style-74" >⚠ Sélectionnez au moins un filtre</span>
+                                    ? <span><strong className="text-slate-900 dark:text-slate-100" >{customDeckMatchCount}</strong> carte{customDeckMatchCount !== 1 ? 's' : ''} correspondante{customDeckMatchCount !== 1 ? 's' : ''}</span>
+                                    : <span className="text-amber-500" >⚠ Sélectionnez au moins un filtre</span>
                                 }
                             </div>
-                            <div className="reviewhubpage-style-75" >
-                                <button onClick={() => setCustomConfig({ tags: [], types: [], statuses: [], limit: null })} className="reviewhubpage-style-76"  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                            <div className="flex gap-2.5 items-center" >
+                                <button onClick={() => setCustomConfig({ tags: [], types: [], statuses: [], limit: null })} className="px-4 py-2.5 bg-transparent border-none text-slate-500 dark:text-slate-400 font-semibold text-sm cursor-pointer rounded-[10px]"  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                     Réinitialiser
                                 </button>
                                 <button 
@@ -509,7 +508,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                     }}
                                     disabled={!hasCustomFilters || customDeckMatchCount === 0}
                                     title={!hasCustomFilters ? 'Sélectionnez au moins un filtre' : customDeckMatchCount === 0 ? 'Aucune carte ne correspond' : undefined}
-                                    className="reviewhubpage-style-77" style={{
+                                    className="px-6 py-2.5 border-none rounded-[10px] font-bold text-sm transition-all duration-150" style={{
   background: hasCustomFilters && customDeckMatchCount > 0 ? '#8b5cf6' : 'var(--color-border)',
   color: hasCustomFilters && customDeckMatchCount > 0 ? 'white' : 'var(--color-text-muted)',
   cursor: hasCustomFilters && customDeckMatchCount > 0 ? 'pointer' : 'not-allowed',
@@ -567,7 +566,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
                 onClick();
             }
         }}
-        className="reviewhubpage-style-78" style={{
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] p-4 flex flex-col gap-2.5 transition-all duration-200 min-h-0 overflow-hidden" style={{
   opacity: disabled ? 0.5 : 1,
   cursor: disabled ? 'not-allowed' : 'pointer'
 }}
@@ -585,37 +584,37 @@ const ModeCard: React.FC<ModeCardProps> = ({
         }}
     >
         {/* Icon + meta */}
-        <div className="reviewhubpage-style-79" >
-            <div className="reviewhubpage-style-80" >
-                <div className="reviewhubpage-style-81" style={{
+        <div className="flex items-center justify-between" >
+            <div className="flex items-center gap-2.5" >
+                <div className="w-[34px] h-[34px] rounded-md flex items-center justify-center shrink-0" style={{
   background: badgeBg,
   color: iconColor
 }}>
                     {React.cloneElement(icon as React.ReactElement<any>, { size: 18 })}
                 </div>
                 <div>
-                    <div className="reviewhubpage-style-82" style={{
+                    <div className="text-[9px] font-bold uppercase tracking-[0.08em] leading-none" style={{
   color: badgeColor
 }}>
                         {badge}
                     </div>
-                    <div className="reviewhubpage-style-83" >{title}</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight mt-0.5" >{title}</div>
                 </div>
             </div>
-            {disabled && <LockKey size={14} className="reviewhubpage-style-84"  />}
+            {disabled && <LockKey size={14} className="text-slate-500 dark:text-slate-400"  />}
         </div>
 
-        <p className="reviewhubpage-style-85" >
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed m-0 flex-1 min-h-0 line-clamp-3" >
             {description}
         </p>
 
         {children}
         
-        <div className="reviewhubpage-style-86" >
+        <div className="mt-auto flex items-center justify-start" >
             <button
                 onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
                 disabled={disabled}
-                className="reviewhubpage-style-87" style={{
+                className="flex items-center justify-center gap-1.5 py-2 px-0 border-none bg-transparent font-bold text-[13px] transition-colors duration-200 shrink-0" style={{
   color: disabled ? 'var(--color-text-muted)' : 'var(--color-text)',
   cursor: disabled ? 'not-allowed' : 'pointer'
 }}
@@ -623,7 +622,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
                 onMouseLeave={e => { if (!disabled) e.currentTarget.style.color = 'var(--color-text)'; }}
             >
                 {actionLabel}
-                {!disabled && <span className="reviewhubpage-style-88" >→</span>}
+                {!disabled && <span className="ml-1" >→</span>}
             </button>
         </div>
     </div>

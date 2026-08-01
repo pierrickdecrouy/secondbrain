@@ -39,15 +39,15 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
     if (count === 0) return null;
 
     return (
-        <div className="browse-selection-bar" role="toolbar" aria-label="Barre d'actions multi-sélection">
-            <span className="browse-selection-bar-count">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-2.5 flex items-center gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-md animate-[slideUp_0.25s_cubic-bezier(0.16,1,0.3,1)]" role="toolbar" aria-label="Barre d'actions multi-sélection">
+            <span className="text-[0.85rem] font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                 {count} fiche{count > 1 ? 's' : ''} sélectionnée{count > 1 ? 's' : ''}
             </span>
 
-            <div className="browse-selection-bar-divider" />
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
 
             <button
-                className="browse-selection-bar-btn bg-[color:var(--color-surface-hover)] text-[color:var(--color-text)]"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-none text-[0.8rem] font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap hover:brightness-110 hover:-translate-y-px bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 onClick={onSelectAll}
                 title="Tout sélectionner"
             >
@@ -55,10 +55,10 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
                 Tout
             </button>
 
-            <div className="browse-selection-bar-divider" />
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
 
             <button
-                className="browse-selection-bar-btn bg-blue-500/12 text-blue-400"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-none text-[0.8rem] font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap hover:brightness-110 hover:-translate-y-px bg-blue-500/12 text-blue-400"
                 onClick={handleExportAnki}
                 title="Exporter vers Anki"
             >
@@ -67,7 +67,7 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
             </button>
 
             <button
-                className="browse-selection-bar-btn bg-purple-500/12 text-purple-400"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-none text-[0.8rem] font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap hover:brightness-110 hover:-translate-y-px bg-purple-500/12 text-purple-400"
                 onClick={handleExportJson}
                 title="Exporter en JSON"
             >
@@ -75,10 +75,10 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
                 JSON
             </button>
 
-            <div className="browse-selection-bar-divider" />
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
 
             <button
-                className="browse-selection-bar-btn bg-red-500/12 text-red-400"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-none text-[0.8rem] font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap hover:brightness-110 hover:-translate-y-px bg-red-500/12 text-red-400"
                 onClick={onDeleteSelected}
                 title="Supprimer la sélection"
             >
@@ -86,10 +86,10 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
                 Supprimer
             </button>
 
-            <div className="browse-selection-bar-divider" />
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
 
             <button
-                className="browse-selection-bar-btn bg-transparent text-[color:var(--color-text-muted)]"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-none text-[0.8rem] font-semibold cursor-pointer transition-all duration-150 whitespace-nowrap hover:brightness-110 hover:-translate-y-px bg-transparent text-slate-500 dark:text-slate-400"
                 onClick={onClear}
                 title="Annuler la sélection"
             >

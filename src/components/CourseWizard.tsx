@@ -45,14 +45,14 @@ export const CourseWizard: React.FC<CourseWizardProps> = ({
 
                 {/* Modal Container */}
                 <motion.div 
-                    className="relative w-full max-w-3xl max-h-[90vh] overflow-hidden bg-[color:var(--color-bg)] rounded-[24px] border border-white/10 shadow-2xl flex flex-col"
+                    className="relative w-full max-w-3xl max-h-[90vh] overflow-hidden bg-slate-50 dark:bg-slate-950 rounded-[24px] border border-white/10 shadow-2xl flex flex-col"
                     initial={{ scale: 0.95, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.95, y: 20 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/5 shrink-0 bg-[color:var(--color-surface)]">
+                    <div className="flex items-center justify-between p-6 border-b border-white/5 shrink-0 bg-white dark:bg-slate-900">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                                 <Sparkle size={20} weight="fill" />

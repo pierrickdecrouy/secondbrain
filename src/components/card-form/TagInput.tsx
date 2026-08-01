@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { X, CaretDown } from '@phosphor-icons/react';
-import '../styles/CardForm.css';
 
 interface TagInputProps {
     tags: string[];
@@ -38,13 +37,13 @@ export const TagInput: React.FC<TagInputProps> = ({ tags, uniqueTags, onAddTag, 
     return (
         <div className="flex flex-wrap items-center gap-2">
             {tags.map(tag => (
-                <span key={tag} className="text-[11px] font-semibold py-1 px-2.5 bg-[color:var(--color-surface-hover)] border border-[color:var(--color-border)] rounded-md flex items-center gap-1.5 text-[color:var(--color-text)]">
+                <span key={tag} className="text-[11px] font-semibold py-1 px-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
                     #{tag}
-                    <X size={12} weight="bold" onClick={() => onRemoveTag(tag)} className="cursor-pointer text-[color:var(--color-text-muted)] hover:text-red-500 transition-colors" />
+                    <X size={12} weight="bold" onClick={() => onRemoveTag(tag)} className="cursor-pointer text-slate-500 dark:text-slate-400 hover:text-red-500 transition-colors" />
                 </span>
             ))}
             
-            <div className="flex items-center gap-1.5 py-1 px-1 text-[12px] font-medium text-[color:var(--color-text-muted)] w-48 bg-transparent">
+            <div className="flex items-center gap-1.5 py-1 px-1 text-[12px] font-medium text-slate-500 dark:text-slate-400 w-48 bg-transparent">
                 <span className="font-bold">+</span>
                 <input
                     type="text"
@@ -52,7 +51,7 @@ export const TagInput: React.FC<TagInputProps> = ({ tags, uniqueTags, onAddTag, 
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
                     onKeyDown={handleTagKeyDown}
-                    className="bg-transparent border-none outline-none w-full text-[color:var(--color-text)] placeholder-[color:var(--color-text-muted)] placeholder-opacity-70"
+                    className="bg-transparent border-none outline-none w-full text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 placeholder-opacity-70"
                 />
                 {uniqueTags.filter(t => !tags.includes(t)).length > 0 && (
                     <div className="relative flex items-center shrink-0">

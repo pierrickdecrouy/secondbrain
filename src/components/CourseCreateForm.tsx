@@ -52,18 +52,18 @@ export const CourseCreateForm: React.FC<CourseCreateFormProps> = ({ existingCard
     const uniqueTags = Array.from(new Set(existingCards.flatMap(c => c.tags || []))).sort();
 
     return (
-        <div className="flex flex-col h-full bg-[color:var(--color-bg)]">
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
             <div className="p-10 flex flex-col gap-6 max-w-3xl mx-auto w-full">
                 <div>
-                    <h2 className="text-2xl font-bold text-[color:var(--color-text)] mb-2">Créer un nouveau Cours</h2>
-                    <p className="text-[color:var(--color-text-muted)] text-sm">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Créer un nouveau Cours</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
                         Définissez les bases de votre cours. Vous serez ensuite redirigé vers l'éditeur complet pour ajouter du contenu, des concepts et lier vos fiches.
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-4 bg-[color:var(--color-surface)] p-6 rounded-xl border border-[color:var(--color-border)]">
+                <div className="flex flex-col gap-4 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-[color:var(--color-text-muted)] uppercase tracking-wider">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             Titre du cours *
                         </label>
                         <input
@@ -71,13 +71,13 @@ export const CourseCreateForm: React.FC<CourseCreateFormProps> = ({ existingCard
                             value={title}
                             onChange={e => setTitle(e.target.value)}
                             placeholder="Ex: Cardiologie générale..."
-                            className="w-full bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-lg px-4 py-3 text-[color:var(--color-text)] outline-none focus:border-indigo-500 transition-colors"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
                             autoFocus
                         />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-[color:var(--color-text-muted)] uppercase tracking-wider">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             Matière / Module
                         </label>
                         <input
@@ -85,12 +85,12 @@ export const CourseCreateForm: React.FC<CourseCreateFormProps> = ({ existingCard
                             value={subject}
                             onChange={e => setSubject(e.target.value)}
                             placeholder="Ex: Médecine, Pharmacie, Biologie..."
-                            className="w-full bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-lg px-4 py-2 text-[color:var(--color-text)] outline-none focus:border-indigo-500 transition-colors"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500 transition-colors"
                         />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-[color:var(--color-text-muted)] uppercase tracking-wider">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             Tags
                         </label>
                         <TagInput
@@ -105,7 +105,7 @@ export const CourseCreateForm: React.FC<CourseCreateFormProps> = ({ existingCard
                 <div className="flex justify-end gap-3 mt-4">
                     <button
                         onClick={onCancel}
-                        className="px-5 py-2.5 rounded-lg border border-[color:var(--color-border)] text-[color:var(--color-text)] hover:bg-[color:var(--color-surface)] transition-colors text-sm font-medium cursor-pointer bg-transparent"
+                        className="px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:bg-white dark:bg-slate-900 transition-colors text-sm font-medium cursor-pointer bg-transparent"
                     >
                         Annuler
                     </button>

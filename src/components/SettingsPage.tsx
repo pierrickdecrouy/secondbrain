@@ -5,7 +5,7 @@ import { DictionaryTab } from './settings/DictionaryTab';
 import { AppearanceTab } from './settings/AppearanceTab';
 import { IntelligenceTab } from './settings/IntelligenceTab';
 import { RevisionTab } from './settings/RevisionTab';
-import { S, SettingsCard, CardSection, CardBody, FieldLabel, SettingsInput, PrimaryButton, Badge, StatCard } from './settings/SettingsUI';
+import { SettingsCard, CardSection, CardBody, FieldLabel, SettingsInput, PrimaryButton, Badge, StatCard } from './settings/SettingsUI';
 import { useUIStore as useUI } from '../store/useUIStore';
 import { saveSettingAsync } from '../persistentSettings';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,6 @@ import { updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useLicense } from '../lib/useLicense';
 import { ArrowSquareOut, CheckCircle, Warning, Timer, Crown, Key } from '@phosphor-icons/react';
-import './styles/SettingsPage.css';
 
 export type SettingsTab = 'dictionary' | 'advanced' | 'stats' | 'appearance' | 'data' | 'intelligence' | 'profile' | 'subscription';
 
@@ -89,10 +88,10 @@ const ProfileTab: React.FC = () => {
                             </div>
                         )}
                         <div>
-                            <div className="text-base font-bold text-[color:var(--color-text)] whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px]">
+                            <div className="text-base font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px]">
                                 {displayName}
                             </div>
-                            <div className="text-[13px] text-[color:var(--color-text-muted)] mt-0.5">{email}</div>
+                            <div className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">{email}</div>
                             <div className="mt-1.5">
                                 {user ? <Badge>Compte connecté</Badge> : <Badge>Mode hors-ligne</Badge>}
                             </div>
@@ -121,7 +120,7 @@ const ProfileTab: React.FC = () => {
                     </div>
 
                     <div className="mt-5 flex justify-end items-center gap-3">
-                        {saved && <span className="text-[13px] text-[color:var(--color-primary)] font-medium">Enregistré ✓</span>}
+                        {saved && <span className="text-[13px] text-teal-600 dark:text-teal-400 font-medium">Enregistré ✓</span>}
                         <PrimaryButton
                             onClick={handleSave}
                             disabled={saving || !tempName.trim() || tempName === displayName}
@@ -137,15 +136,15 @@ const ProfileTab: React.FC = () => {
             <SettingsCard>
                 <CardSection title="Stockage local" subtitle="Données enregistrées dans votre navigateur." />
                 <CardBody>
-                    <p className="text-[13px] text-[color:var(--color-text-muted)] mb-4 leading-relaxed">
+                    <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
                         Vos données sont synchronisées avec Firebase si vous êtes connecté, et sauvegardées localement via IndexedDB.
                     </p>
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-[13px] text-[color:var(--color-text-muted)]">Espace utilisé</span>
-                        <span className="text-[13px] font-semibold text-[color:var(--color-primary)]">~2.4 Mo / 10 Mo</span>
+                        <span className="text-[13px] text-slate-500 dark:text-slate-400">Espace utilisé</span>
+                        <span className="text-[13px] font-semibold text-teal-600 dark:text-teal-400">~2.4 Mo / 10 Mo</span>
                     </div>
-                    <div className="h-1.5 bg-[color:var(--color-border)] rounded-full overflow-hidden">
-                        <div className="w-[24%] h-full bg-[color:var(--color-primary)] rounded-full" />
+                    <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="w-[24%] h-full bg-teal-600 dark:bg-teal-500 rounded-full" />
                     </div>
                 </CardBody>
             </SettingsCard>
@@ -159,13 +158,13 @@ const StatsTab: React.FC = () => (
         <div className="grid grid-cols-3 gap-4">
             <StatCard label="Total fiches" value="—" sub="Toutes catégories" />
             <StatCard label="Abréviations" value="—" sub="Personnalisées" />
-            <StatCard label="Intégrité base" value="99.8%" color={S.primary} sub="0 doublon" />
+            <StatCard label="Intégrité base" value="99.8%" color="#10b981" sub="0 doublon" />
         </div>
 
         <SettingsCard>
             <CardSection title="Activité récente" />
             <CardBody>
-                <p className="text-[13px] text-[color:var(--color-text-muted)] m-0 leading-relaxed">
+                <p className="text-[13px] text-slate-500 dark:text-slate-400 m-0 leading-relaxed">
                     Les graphiques d'activité et de répartition seront disponibles dans une prochaine mise à jour.
                 </p>
             </CardBody>
@@ -195,8 +194,8 @@ const LicenseTab: React.FC = () => {
         grace:    { label: 'Hors-ligne (cache)', color: '#8b5cf6', icon: <CheckCircle size={16} weight="fill" /> },
         expired:  { label: 'Expirée', color: '#ef4444', icon: <Warning size={16} weight="fill" /> },
         invalid:  { label: 'Invalide', color: '#ef4444', icon: <Warning size={16} weight="fill" /> },
-        none:     { label: 'Aucune', color: S.muted, icon: <Crown size={16} /> },
-        checking: { label: 'Vérification...', color: S.muted, icon: null },
+        none:     { label: 'Aucune', color: '#64748b', icon: <Crown size={16} /> },
+        checking: { label: 'Vérification...', color: '#64748b', icon: null },
     };
 
     const sd = statusDisplay[licenseInfo.status] ?? statusDisplay.none;
@@ -208,14 +207,14 @@ const LicenseTab: React.FC = () => {
             <SettingsCard>
                 <CardSection title="Statut de la licence" subtitle="Votre abonnement Extnd." />
                 <CardBody>
-                    <div className="flex items-center gap-3 p-4 bg-[color:var(--color-bg)] rounded-[10px] border border-[color:var(--color-border)] mb-5">
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-950 rounded-[10px] border border-slate-200 dark:border-slate-700 mb-5">
                         <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: sd.color + '15', color: sd.color }}>
                             {sd.icon}
                         </div>
                         <div>
-                            <div className="text-[15px] font-bold text-[color:var(--color-text)]">Licence {sd.label}</div>
-                            {licenseInfo.planName && <div className="text-[12px] text-[color:var(--color-text-muted)] mt-0.5">{licenseInfo.planName}</div>}
-                            {licenseInfo.expiresAt && <div className="text-[12px] text-[color:var(--color-text-muted)] mt-0.5">Expire le {licenseInfo.expiresAt.toLocaleDateString('fr-FR')}</div>}
+                            <div className="text-[15px] font-bold text-slate-900 dark:text-slate-100">Licence {sd.label}</div>
+                            {licenseInfo.planName && <div className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{licenseInfo.planName}</div>}
+                            {licenseInfo.expiresAt && <div className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Expire le {licenseInfo.expiresAt.toLocaleDateString('fr-FR')}</div>}
                             {licenseInfo.expiresAt === null && licenseInfo.status === 'active' && <div className="text-[12px] text-[#10b981] mt-0.5 font-semibold">∞ Licence à vie</div>}
                         </div>
                     </div>
@@ -223,15 +222,15 @@ const LicenseTab: React.FC = () => {
                     {/* Plans */}
                     <div className="grid grid-cols-3 gap-3 mb-5">
                         {[
-                            { name: 'Mensuel', price: '5,99 €', per: 'par mois', color: 'var(--color-physio)', popular: false },
-                            { name: 'Annuel', price: '49 €', per: 'par an — économisez 30%', color: 'var(--color-success)', popular: true },
-                            { name: 'Vie entière', price: '79 €', per: 'paiement unique', color: 'var(--color-warning)', popular: false },
+                            { name: 'Mensuel', price: '5,99 €', per: 'par mois', color: '#14b8a6', popular: false },
+                            { name: 'Annuel', price: '49 €', per: 'par an — économisez 30%', color: '#10b981', popular: true },
+                            { name: 'Vie entière', price: '79 €', per: 'paiement unique', color: '#f59e0b', popular: false },
                         ].map(plan => (
-                            <div key={plan.name} className="p-4 rounded-[10px] relative" style={{ border: `1.5px solid ${plan.popular ? plan.color : S.border}`, background: plan.popular ? plan.color + '06' : 'transparent' }}>
+                            <div key={plan.name} className="p-4 rounded-[10px] relative" style={{ border: `1.5px solid ${plan.popular ? plan.color : '#e2e8f0'}`, background: plan.popular ? plan.color + '06' : 'transparent' }}>
                                 {plan.popular && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-bold px-2.5 py-[3px] rounded-full" style={{ background: plan.color }}>RECOMMANDÉ</div>}
-                                <div className="text-[13px] font-bold text-[color:var(--color-text)]">{plan.name}</div>
+                                <div className="text-[13px] font-bold text-slate-900 dark:text-slate-100">{plan.name}</div>
                                 <div className="text-[22px] font-extrabold mt-1.5 mb-0.5" style={{ color: plan.color }}>{plan.price}</div>
-                                <div className="text-[11px] text-[color:var(--color-text-muted)]">{plan.per}</div>
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400">{plan.per}</div>
                             </div>
                         ))}
                     </div>
@@ -240,7 +239,7 @@ const LicenseTab: React.FC = () => {
                         href={import.meta.env.VITE_LEMONSQUEEZY_STORE_URL || "https://extnd.lemonsqueezy.com"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[color:var(--color-primary)] text-white font-bold text-sm no-underline"
+                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-teal-600 dark:bg-teal-500 text-white font-bold text-sm no-underline"
                     >
                         <ArrowSquareOut size={16} /> Acheter sur LemonSqueezy
                     </a>
@@ -263,14 +262,14 @@ const LicenseTab: React.FC = () => {
                     )}
                     <FieldLabel>Clé de licence</FieldLabel>
                     <div className="flex gap-2.5 items-center">
-                        <div className="flex-1 flex items-center gap-2.5 border border-[color:var(--color-border)] rounded-lg px-3.5 py-2.5 bg-[color:var(--color-bg)]">
-                            <Key size={16} className="text-[color:var(--color-text-muted)] shrink-0" />
+                        <div className="flex-1 flex items-center gap-2.5 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950">
+                            <Key size={16} className="text-slate-500 dark:text-slate-400 shrink-0" />
                             <input
                                 type="text"
                                 value={licenseKey}
                                 onChange={e => setLicenseKey(e.target.value)}
                                 placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-                                className="border-none bg-transparent outline-none w-full text-[13px] font-mono text-[color:var(--color-text)]"
+                                className="border-none bg-transparent outline-none w-full text-[13px] font-mono text-slate-900 dark:text-slate-100"
                             />
                         </div>
                         <PrimaryButton
@@ -283,7 +282,7 @@ const LicenseTab: React.FC = () => {
                     </div>
                     {licenseInfo.licenseKey && (
                         <div className="mt-4 flex items-center justify-between">
-                            <span className="text-[12px] text-[color:var(--color-text-muted)] font-mono">Clé active : {licenseInfo.licenseKey.slice(0, 8)}••••••••</span>
+                            <span className="text-[12px] text-slate-500 dark:text-slate-400 font-mono">Clé active : {licenseInfo.licenseKey.slice(0, 8)}••••••••</span>
                             <button onClick={deactivateLicense} className="text-[12px] text-red-500 bg-transparent border-none cursor-pointer font-medium">
                                 Désactiver
                             </button>
@@ -316,33 +315,33 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-[color:var(--color-bg)] text-[color:var(--color-text)] font-sans flex flex-col antialiased">
+        <div className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col antialiased">
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
                 <SettingsSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 {/* Content */}
                 <main
-                    className="flex-1 flex flex-col overflow-hidden settingspage-style-1"
+                    className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 bg-[radial-gradient(var(--color-border)_1px,transparent_1px)] bg-[size:40px_40px]"
                     
                 >
                     {/* Top bar */}
                     <header
-                        className="h-14 shrink-0 border-b border-[color:var(--color-border)] flex items-center justify-between px-8 settingspage-style-2"
+                        className="h-14 shrink-0 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-8 bg-white dark:bg-slate-900"
                         
                     >
                         {/* Breadcrumb */}
                         <div className="flex items-center gap-2 text-[13px]">
-                            <span className="text-[color:var(--color-text-muted)] font-medium">Paramètres</span>
-                            <svg width="12" height="12" fill="none" className="stroke-[color:var(--color-text-muted)] stroke-2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                            <span className="text-[color:var(--color-text)] font-semibold">{TAB_LABELS[activeTab]}</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">Paramètres</span>
+                            <svg width="12" height="12" fill="none" className="stroke-slate-500 dark:stroke-slate-400 stroke-2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            <span className="text-slate-900 dark:text-slate-100 font-semibold">{TAB_LABELS[activeTab]}</span>
                         </div>
 
                         {/* Close */}
                         <button
                             onClick={handleClose}
                             title="Fermer les paramètres"
-                            className="flex items-center justify-center w-8 h-8 border border-[color:var(--color-border)] rounded-xl bg-transparent text-[color:var(--color-text-muted)] cursor-pointer transition-colors hover:text-[color:var(--color-text)] hover:border-[color:var(--color-text-muted)]"
+                            className="flex items-center justify-center w-8 h-8 border border-slate-200 dark:border-slate-700 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 cursor-pointer transition-colors hover:text-slate-900 dark:text-slate-100 hover:border-slate-500 dark:border-slate-400"
                         >
                             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
@@ -350,10 +349,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
 
                     {/* Page header */}
                     <div className="pt-8 px-8 pb-2 shrink-0">
-                        <h1 className="text-2xl font-extrabold text-[color:var(--color-text)] m-0 mb-1 tracking-tight">
+                        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 m-0 mb-1 tracking-tight">
                             {TAB_LABELS[activeTab]}
                         </h1>
-                        <div className="h-px bg-[color:var(--color-border)] mt-5" />
+                        <div className="h-px bg-slate-200 dark:bg-slate-700 mt-5" />
                     </div>
 
                     {/* Tab content */}

@@ -1,6 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Badge } from '../Badge';
-import './styles/SuggestionList.css';
 
 interface SuggestionListProps {
   items: any[];
@@ -64,25 +63,25 @@ export const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
 
   return (
     <div
-      className="suggestionlist-style-1" style={{
+      className="fixed z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden min-w-[250px] max-h-[300px] flex flex-col" style={{
   top: rect.bottom + 4,
   left: rect.left
 }}
     >
-      <div className="suggestionlist-style-2" >
+      <div className="px-3 py-2 text-[0.8rem] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800" >
         Insérer un lien...
       </div>
-      <div className="suggestionlist-style-3" >
+      <div className="overflow-y-auto custom-scrollbar" >
         {props.items.map((item, index) => (
           <button
             key={item.id}
             onClick={() => selectItem(index)}
-            className="suggestionlist-style-4" style={{
+            className="flex items-center w-full px-3 py-2 border-none text-slate-900 dark:text-slate-100 cursor-pointer text-left gap-2" style={{
   background: index === selectedIndex ? 'var(--color-surface-hover, #f1f5f9)' : 'transparent'
 }}
           >
             <Badge type={item.type} />
-            <span className="suggestionlist-style-5" >
+            <span className="font-medium flex-1 whitespace-nowrap overflow-hidden text-ellipsis" >
               {item.title}
             </span>
           </button>

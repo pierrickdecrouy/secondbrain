@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, GearSix, ArrowLeft } from '@phosphor-icons/react';
 import { usePomodoroStore, type PomodoroMode } from '../store/usePomodoroStore';
 import { useTheme } from '../context/ThemeContext';
-import './styles/PomodoroModal.css';
 
 // ─── SVG Progress Ring ────────────────────────────────────────────────────────
 
@@ -19,7 +18,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ size, stroke, progress, col
     const circ = 2 * Math.PI * r;
     const offset = circ * (1 - Math.max(0, Math.min(1, progress)));
     return (
-        <svg width={size} height={size} className="pomodoromodal-style-1" >
+        <svg width={size} height={size} className="-rotate-90 absolute top-0 left-0" >
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth={stroke} />
             <circle
                 cx={size / 2} cy={size / 2} r={r}
@@ -27,7 +26,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ size, stroke, progress, col
                 strokeLinecap="round"
                 strokeDasharray={circ}
                 strokeDashoffset={offset}
-                className="pomodoromodal-style-2" 
+                className="transition-[stroke-dashoffset,stroke] duration-[1s,600ms] ease-[linear,ease]" 
             />
         </svg>
     );
@@ -211,7 +210,7 @@ export const PomodoroModal: React.FC = () => {
 
     return (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-[pomo-backdrop-in_0.25s_ease] pomodoromodal-style-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-[pomo-backdrop-in_0.25s_ease] backdrop-blur-[24px]"
             style={{
   background: t.backdrop
 }}
@@ -243,7 +242,7 @@ export const PomodoroModal: React.FC = () => {
                 }}
             >
                 {/* Glow */}
-                <div className="pomodoromodal-style-5" style={{
+                <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[200px] h-[200px] rounded-full pointer-events-none transition-colors duration-600 ease-in-out" style={{
   background: t.glowBg(color)
 }} />
 
@@ -285,7 +284,7 @@ export const PomodoroModal: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="pomodoromodal-style-6" style={{
+                                className="flex-1 p-3 rounded-[14px] border-none text-white text-sm font-bold cursor-pointer transition-all duration-150" style={{
   background: color,
   boxShadow: `0 4px 20px ${color}50`
 }}

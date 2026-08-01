@@ -7,7 +7,6 @@ import { fastLexicalSearch } from '../searchIndex';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
 import { useTheme } from '../context/ThemeContext';
 import { getTypeColor } from '../theme';
-import './styles/CardSidePanel.css';
 
 function hexToRgba(hex: string, alpha: number): string {
     if (!hex) return 'rgba(0,0,0,0.1)';
@@ -112,7 +111,7 @@ export const CardSidePanel: React.FC<CardSidePanelProps> = ({
 
     return (
         <aside
-            className="card-side-panel flex flex-col h-full relative overflow-hidden transition-colors cardsidepanel-style-1"
+            className="card-side-panel flex flex-col h-full relative overflow-hidden transition-colors shadow-[-10px_0_30px_rgba(0,0,0,0.03)]"
             style={{
   backgroundColor: darkMode ? '#0f172a' : '#ffffff',
   borderLeft: darkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0'

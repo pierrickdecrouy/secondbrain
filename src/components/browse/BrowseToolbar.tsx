@@ -5,7 +5,6 @@ import { COURSE_TYPE } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { useTier } from '../../lib/useTier';
 import toast from 'react-hot-toast';
-import './styles/BrowseToolbar.css';
 
 
 
@@ -24,14 +23,13 @@ interface BrowseToolbarProps {
     sortOption: SortOption;
     setSortOption: (option: SortOption) => void;
     exportToAnki: (deckName: string, cards: Card[]) => Promise<void>;
-    darkMode: boolean;
 }
 
 export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
     cards, sortedCards, activeFilters, handleFilterToggle,
     getFilterLabel, onAdd,
     isNetworkOnly, viewMode, setViewMode,
-    sortOption, setSortOption, exportToAnki, darkMode
+    sortOption, setSortOption, exportToAnki
 }) => {
     const { getCategoryColor } = useTheme();
     const { canAccess } = useTier();
@@ -74,19 +72,11 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
     };
 
     return (
-        <div className="browse-toolbar w-full max-w-[1600px] mx-auto self-center browsetoolbar-style-1" >
-            <div className="hover-scrollbar browsetoolbar-style-2" style={{
-  background: darkMode ? '#1e293b' : '#f1f5f9',
-  border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`
-}}>
+        <div className="browse-toolbar w-full max-w-[1600px] mx-auto self-center flex flex-wrap gap-4 items-center px-10 py-5" >
+            <div className="hover-scrollbar flex gap-2 p-1.5 rounded-xl overflow-x-auto flex-nowrap max-w-[700px] bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.02)]">
                 <button
-                    className={`browse-filter-pill ${activeFilters.length === 0 || activeFilters.includes('all') ? 'active' : ''} browsetoolbar-style-3`}
+                    className={`px-5 py-2 rounded-lg text-[14px] font-bold transition-all duration-200 border-none cursor-pointer outline-none whitespace-nowrap flex items-center justify-center ${activeFilters.length === 0 || activeFilters.includes('all') ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                     onClick={() => handleFilterToggle('all')}
-                    style={{
-  background: activeFilters.length === 0 || activeFilters.includes('all') ? 'var(--color-surface)' : 'transparent',
-  color: activeFilters.length === 0 || activeFilters.includes('all') ? 'var(--color-text)' : 'var(--color-text-muted)',
-  boxShadow: activeFilters.length === 0 || activeFilters.includes('all') ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
-}}
                 >
                     Tous
                 </button>
@@ -96,14 +86,13 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                     return (
                         <button
                             key={type}
-                            className={`browse-filter-pill ${isActive ? 'active' : ''} browsetoolbar-style-4`}
+                            className={`px-5 py-2 rounded-lg text-[14px] font-bold transition-all duration-200 border-none cursor-pointer outline-none whitespace-nowrap flex items-center justify-center ${!isActive ? 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50' : ''}`}
                             onClick={() => handleFilterToggle(type)}
-                            style={{
-  background: isActive ? `${typeColor}1A` : 'transparent',
-  color: isActive ? typeColor : 'var(--color-text-muted)',
-  fontWeight: isActive ? 600 : 500,
-  boxShadow: isActive ? `0 0 0 1px ${typeColor}33` : 'none'
-}}
+                            style={isActive ? {
+                                background: `color-mix(in srgb, ${typeColor} 15%, transparent)`,
+                                color: typeColor,
+                                boxShadow: `0 0 0 1px color-mix(in srgb, ${typeColor} 30%, transparent)`
+                            } : {}}
                         >
                             {getFilterLabel(type)}
                         </button>
@@ -112,9 +101,8 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                 {/* special filter for review mode */}
                 {activeFilters.includes('needs-review') && (
                     <button
-                        className="browse-filter-pill active browsetoolbar-style-5"
+                        className="m-0 border-none bg-amber-500 text-white font-bold px-5 py-2 rounded-lg text-[14px] cursor-pointer transition-all duration-200 whitespace-nowrap flex items-center justify-center shadow-sm"
                         onClick={() => handleFilterToggle('needs-review')}
-                        
                     >
                         À réviser
                     </button>
@@ -125,71 +113,51 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                 {/* Add Button */}
                 <button
                     onClick={onAdd}
-                    className="extnd-btn extnd-btn-primary rounded-xl"
+                    className="flex items-center justify-center gap-2.5 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[15px] font-bold rounded-xl shadow-sm hover:shadow transition-all duration-200 border-none cursor-pointer outline-none"
                 >
-                    <Plus size={16} />
+                    <Plus size={18} weight="bold" />
                     Nouvelle Fiche
                 </button>
 
                 {/* Sort Options */}
                 {!isNetworkOnly && viewMode !== 'network' && (
-                    <div className="flex items-center gap-2">
-                        <ArrowsDownUp size={16} color="var(--color-text-muted)" />
-                        <div className="relative">
-                            <select
-                                value={sortOption}
-                                onChange={(e) => setSortOption(e.target.value as SortOption)}
-                                className="appearance-none border-none bg-transparent py-1.5 pr-3 pl-8 text-[0.9rem] text-[color:var(--color-text)] font-semibold cursor-pointer outline-none font-inherit"
-                            >
-                                <option value="name-asc">Nom (A-Z)</option>
-                                <option value="name-desc">Nom (Z-A)</option>
-                                <option value="type">Catégorie</option>
-                                <option value="date-created-desc">Plus récents (Création)</option>
-                                <option value="date-created-asc">Plus anciens (Création)</option>
-                                <option value="date-modified-desc">Dernière modif.</option>
-                            </select>
-                        </div>
+                    <div className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 shadow-sm hover:border-slate-300 transition-colors">
+                        <ArrowsDownUp size={16} className="text-slate-400 mr-2" weight="bold" />
+                        <select
+                            value={sortOption}
+                            onChange={(e) => setSortOption(e.target.value as SortOption)}
+                            className="appearance-none border-none bg-transparent text-[14px] text-slate-700 dark:text-slate-200 font-bold cursor-pointer outline-none pr-4 w-full h-[40px]"
+                        >
+                            <option value="name-asc">Nom (A-Z)</option>
+                            <option value="name-desc">Nom (Z-A)</option>
+                            <option value="type">Catégorie</option>
+                            <option value="date-created-desc">Plus récents (Création)</option>
+                            <option value="date-created-asc">Plus anciens (Création)</option>
+                            <option value="date-modified-desc">Dernière modif.</option>
+                        </select>
                     </div>
                 )}
 
                 {/* View Toggle */}
                 {!isNetworkOnly && (
-                    <div 
-                        className="flex items-center browsetoolbar-style-6" 
-                        style={{
-  background: darkMode ? '#1e293b' : '#f1f5f9',
-  border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`
-}}
-                    >
+                    <div className="flex items-center gap-1.5 p-1.5 rounded-xl h-max bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.02)]">
                         <button
                             onClick={() => setViewMode('grid')}
-                            className="browsetoolbar-style-7" style={{
-  background: viewMode === 'grid' ? darkMode ? '#0f172a' : '#ffffff' : 'transparent',
-  color: viewMode === 'grid' ? darkMode ? '#34d399' : '#059669' : darkMode ? '#94a3b8' : '#64748b',
-  boxShadow: viewMode === 'grid' ? darkMode ? 'none' : '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-}}
+                            className={`m-0 px-4 py-2 rounded-lg border-none text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 outline-none ${viewMode === 'grid' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
-                            <SquaresFour size={16} /> Grille
+                            <SquaresFour size={18} weight={viewMode === 'grid' ? "fill" : "regular"} /> Grille
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
-                            className="browsetoolbar-style-8" style={{
-  background: viewMode === 'list' ? darkMode ? '#0f172a' : '#ffffff' : 'transparent',
-  color: viewMode === 'list' ? darkMode ? '#34d399' : '#059669' : darkMode ? '#94a3b8' : '#64748b',
-  boxShadow: viewMode === 'list' ? darkMode ? 'none' : '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-}}
+                            className={`m-0 px-4 py-2 rounded-lg border-none text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 outline-none ${viewMode === 'list' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
-                            <Rows size={16} /> Liste
+                            <Rows size={18} weight={viewMode === 'list' ? "fill" : "regular"} /> Liste
                         </button>
                         <button
                             onClick={() => setViewMode('split')}
-                            className="browsetoolbar-style-9" style={{
-  background: viewMode === 'split' ? darkMode ? '#0f172a' : '#ffffff' : 'transparent',
-  color: viewMode === 'split' ? darkMode ? '#34d399' : '#059669' : darkMode ? '#94a3b8' : '#64748b',
-  boxShadow: viewMode === 'split' ? darkMode ? 'none' : '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-}}
+                            className={`m-0 px-4 py-2 rounded-lg border-none text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 outline-none ${viewMode === 'split' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
-                            <SquaresFour size={16} /> Mixte
+                            <SquaresFour size={18} weight={viewMode === 'split' ? "fill" : "regular"} /> Mixte
                         </button>
                     </div>
                 )}
@@ -198,15 +166,15 @@ export const BrowseToolbar: React.FC<BrowseToolbarProps> = ({
                 <button
                     onClick={handleAnkiExport}
                     disabled={isExporting}
-                    className={`extnd-btn rounded-xl transition-all duration-200 ${isExporting ? 'cursor-wait opacity-70' : 'cursor-pointer opacity-100'} ${canExportAnki ? 'extnd-btn-secondary' : 'bg-indigo-500/[0.06] dark:bg-indigo-500/[0.08] text-indigo-400 border border-indigo-500/30 hover:text-indigo-300 hover:border-indigo-500/50'}`}
+                    className={`flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl text-[15px] font-bold transition-all duration-200 border-none outline-none ${isExporting ? 'cursor-wait opacity-70' : 'cursor-pointer opacity-100'} ${canExportAnki ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-sm hover:border-slate-300 dark:hover:border-slate-600' : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'}`}
                     title={canExportAnki ? `Exporter ${sortedCards.length} fiche${sortedCards.length > 1 ? 's' : ''} vers Anki` : 'Fonctionnalité Pro — Activez votre licence'}
                 >
                     {isExporting ? (
-                        <SpinnerGap size={16} className="animate-spin" />
+                        <SpinnerGap size={18} className="animate-spin" />
                     ) : (
                         <>
                             {!canExportAnki && <span className="text-[12px]">🔒</span>}
-                            <Export size={16} />
+                            <Export size={18} />
                         </>
                     )}
                     {isExporting ? 'Export…' : 'Anki'}

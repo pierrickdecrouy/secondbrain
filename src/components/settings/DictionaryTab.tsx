@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Books, MagnifyingGlass, Trash } from '@phosphor-icons/react';
 import { loadCustomAbbreviations, saveCustomAbbreviations } from '../../storage';
-import { S, SettingsCard, CardSection, CardBody, SettingsInput, PrimaryButton, Badge } from './SettingsUI';
-import './styles/DictionaryTab.css';
+import { SettingsCard, CardSection, CardBody, SettingsInput, PrimaryButton, Badge } from './SettingsUI';
 
 export const DictionaryTab: React.FC = () => {
     const [abbreviations, setAbbreviations] = useState<{ [key: string]: string }>({});
@@ -44,7 +43,7 @@ export const DictionaryTab: React.FC = () => {
     const canSubmit = abbrvKey.trim() && abbrvValue.trim();
 
     return (
-        <div className="dictionarytab-style-1" >
+        <div className="flex flex-col gap-6">
             {/* Add form */}
             <SettingsCard>
                 <CardSection
@@ -52,11 +51,9 @@ export const DictionaryTab: React.FC = () => {
                     subtitle="Ajoutez un terme et sa définition complète."
                 />
                 <CardBody>
-                    <form onSubmit={handleAdd} className="dictionarytab-style-2" >
-                        <div>
-                            <div className="dictionarytab-style-3" style={{
-  color: S.muted
-}}>
+                    <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-4 items-end">
+                        <div className="flex-1 min-w-0 w-full">
+                            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                                 Abréviation
                             </div>
                             <SettingsInput
@@ -67,10 +64,8 @@ export const DictionaryTab: React.FC = () => {
                                 onChange={e => setAbbrvKey(e.target.value)}
                             />
                         </div>
-                        <div>
-                            <div className="dictionarytab-style-4" style={{
-  color: S.muted
-}}>
+                        <div className="flex-[2] min-w-0 w-full">
+                            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                                 Signification
                             </div>
                             <SettingsInput
@@ -81,8 +76,12 @@ export const DictionaryTab: React.FC = () => {
                                 onChange={e => setAbbrvValue(e.target.value)}
                             />
                         </div>
-                        <PrimaryButton type="submit" style={{ opacity: canSubmit ? 1 : 0.4, cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
-                            <Plus size={15} weight="bold" /> Ajouter
+                        <PrimaryButton 
+                            type="submit" 
+                            disabled={!canSubmit}
+                            className={`w-full sm:w-auto ${!canSubmit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
+                        >
+                            <Plus size={16} weight="bold" /> Ajouter
                         </PrimaryButton>
                     </form>
                 </CardBody>
@@ -91,72 +90,50 @@ export const DictionaryTab: React.FC = () => {
             {/* List */}
             <SettingsCard>
                 {/* Toolbar */}
-                <div className="dictionarytab-style-5" style={{
-  borderBottom: `1px solid ${S.border}`
-}}>
-                    <div className="dictionarytab-style-6" >
-                        <MagnifyingGlass size={15} className="dictionarytab-style-7" style={{
-  color: S.muted
-}} />
+                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4">
+                    <div className="relative max-w-sm w-full">
+                        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                         <input
                             type="text"
                             placeholder="Rechercher…"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="dictionarytab-style-8" style={{
-  border: `1px solid ${S.border}`,
-  color: S.text,
-  background: S.bg
-}}
+                            className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-slate-900 dark:text-slate-100 transition-all"
                         />
                     </div>
                     <Badge>{filtered.length} entrée{filtered.length !== 1 ? 's' : ''}</Badge>
                 </div>
 
                 {/* Rows */}
-                <div className="dictionarytab-style-9" >
+                <div className="flex flex-col">
                     {filtered.length === 0 ? (
-                        <div className="dictionarytab-style-10" style={{
-  color: S.muted
-}}>
-                            <Books size={40} weight="duotone" className="dictionarytab-style-11"  />
-                            <div className="dictionarytab-style-12" >Aucune abréviation</div>
-                            <div className="dictionarytab-style-13" >Utilisez le formulaire ci-dessus pour en ajouter.</div>
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                            <Books size={48} weight="duotone" className="text-slate-300 dark:text-slate-600 mb-4" />
+                            <div className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Aucune abréviation</div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400">Utilisez le formulaire ci-dessus pour en ajouter.</div>
                         </div>
                     ) : (
                         filtered.map(([key, value], i) => (
                             <div
                                 key={key}
-                                className="dictionarytab-style-14" style={{
-  borderBottom: i < filtered.length - 1 ? `1px solid ${S.border}` : 'none'
-}}
-                                onMouseEnter={e => { e.currentTarget.style.background = S.surfaceHover; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                className={`flex items-center justify-between px-6 py-3.5 group hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+                                    i < filtered.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''
+                                }`}
                             >
-                                <div className="dictionarytab-style-15" >
-                                    <code className="dictionarytab-style-16" style={{
-  color: S.primary,
-  background: S.primaryDim,
-  border: `1px solid ${S.primaryBorder}`
-}}>
+                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                                    <code className="text-[13px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 px-2 py-0.5 rounded-md shrink-0">
                                         {key}
                                     </code>
-                                    <span className="dictionarytab-style-17" style={{
-  color: S.text
-}}>
+                                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                                         {value}
                                     </span>
                                 </div>
                                 <button
                                     onClick={() => handleDelete(key)}
                                     title="Supprimer"
-                                    className="dictionarytab-style-18" style={{
-  color: S.muted
-}}
-                                    onMouseEnter={e => { e.currentTarget.style.color = S.danger; }}
-                                    onMouseLeave={e => { e.currentTarget.style.color = S.muted; }}
+                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 ml-2"
                                 >
-                                    <Trash size={15} />
+                                    <Trash size={16} />
                                 </button>
                             </div>
                         ))
@@ -165,17 +142,12 @@ export const DictionaryTab: React.FC = () => {
 
                 {/* Footer */}
                 {filtered.length > 0 && (
-                    <div className="dictionarytab-style-19" style={{
-  borderTop: `1px solid ${S.border}`,
-  color: S.muted
-}}>
+                    <div className="px-6 py-3 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>{filtered.length} sur {Object.keys(abbreviations).length} entrée{Object.keys(abbreviations).length !== 1 ? 's' : ''}</span>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="dictionarytab-style-20" style={{
-  color: S.primary
-}}
+                                className="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
                             >
                                 Effacer filtre
                             </button>

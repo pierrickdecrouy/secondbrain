@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { DynamicIcon } from './DynamicIcon';
 import type { Card } from '../types';
-import { Check, Trash } from '@phosphor-icons/react';
-import './styles/BrowseGridItem.css';
+import { ArrowRight, Check } from '@phosphor-icons/react';
 
 interface BrowseGridItemProps {
     card: Card;
@@ -21,27 +20,6 @@ interface BrowseGridItemProps {
     onDelete?: (id: string, e: React.MouseEvent) => void;
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-    const clean = hex.replace('#', '');
-    const r = parseInt(clean.substring(0, 2), 16);
-    const g = parseInt(clean.substring(2, 4), 16);
-    const b = parseInt(clean.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function stripMarkdown(text: string): string {
-    return text
-        .replace(/#{1,6}\s+/g, '')
-        .replace(/\*\*(.+?)\*\*/g, '$1')
-        .replace(/\*(.+?)\*/g, '$1')
-        .replace(/`(.+?)`/g, '$1')
-        .replace(/!\[.*?\]\(.*?\)/g, '')
-        .replace(/\[(.+?)\]\(.*?\)/g, '$1')
-        .replace(/>\s+/g, '')
-        .replace(/\n+/g, ' ')
-        .trim();
-}
-
 export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
     card,
     selectedCardId,
@@ -56,8 +34,6 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
     onToggleSelect,
     onDelete
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
-
     const handleClick = (e: React.MouseEvent) => {
         if (isSelectionMode) {
             onToggleSelect(card.id, e);
@@ -66,21 +42,6 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
         }
     };
 
-    const categoryColor = getCategoryColor(card.type);
-    const badgeBg = hexToRgba(categoryColor, darkMode ? 0.15 : 0.1);
-    const glowBg = hexToRgba(categoryColor, darkMode ? 0.1 : 0.08);
-    const borderColor = darkMode ? '#1e293b' : '#f1f5f9';
-    const tagBg = darkMode ? '#1e293b' : '#f1f5f9';
-    const tagColor = darkMode ? '#94a3b8' : '#64748b';
-    const textMuted = darkMode ? '#64748b' : '#94a3b8';
-
-    const rawExcerpt = card.details || card.content || '';
-    const excerpt = stripMarkdown(rawExcerpt);
-    const displayExcerpt = excerpt.length > 120 ? excerpt.slice(0, 120) + '…' : excerpt;
-
-    const isDue = card.progress?.dueDate && new Date(card.progress?.dueDate) <= new Date();
-    const isActive = selectedCardId === card.id && !isSelectionMode;
-
     return (
         <motion.div
             layoutId={`card-${card.id}`}
@@ -88,159 +49,90 @@ export const BrowseGridItem: React.FC<BrowseGridItemProps> = React.memo(({
             tabIndex={0}
             aria-label={`Ouvrir la carte ${card.title}`}
             aria-pressed={isSelected}
-            className={`browse-card h-full ${isActive ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[var(--color-bg)]' : ''} ${isSelected ? 'is-selected' : ''}`}
+            className={`glass-panel browse-card p-6 flex flex-col transition-all duration-200 h-full ${selectedCardId === card.id && !isSelectionMode ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0B1120]' : ''} ${isSelected ? 'is-selected' : ''}`}
             onClick={handleClick}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     handleClick(e as any);
                 }
             }}
-            whileHover={{ y: -3 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 30 }}
         >
-            {/* Lueur de coin — se révèle au hover */}
+            {/* Checkbox multi-sélection */}
             <div
-                aria-hidden
-                className="browsegriditem-style-1" style={{
-  backgroundColor: glowBg,
-  opacity: isHovered ? 1 : 0
-}}
-            />
+                className={`browse-card-checkbox ${isSelectionMode ? 'is-visible' : ''} ${isSelected ? 'is-checked' : ''}`}
+                onClick={(e) => { e.stopPropagation(); onToggleSelect(card.id, e); }}
+                role="checkbox"
+                aria-checked={isSelected}
+                aria-label={`Sélectionner ${card.title}`}
+            >
+                {isSelected && <Check size={11} weight="bold" color="white" />}
+            </div>
 
-            {/* Contenu au-dessus du glow */}
-            <div className="browsegriditem-style-2" >
+            <div className="browse-card-header flex items-start justify-between mb-3 gap-2 flex-wrap">
+                <span
+                    className="uppercase text-[0.6rem] font-extrabold tracking-[0.05em] flex items-center gap-1 py-[3px] px-[7px] rounded-md shrink-0 border-none"
+                    style={{
+                        backgroundColor: darkMode ? '#0B1120' : '#f1f5f9',
+                        color: getCategoryColor(card.type),
+                    }}
+                >
+                    <DynamicIcon name={getCategoryIcon(card.type)} size={11} /> <span>{card.type}</span>
+                </span>
 
-                {/* ── Header : badge + action/checkbox ── */}
-                <div className="browsegriditem-style-3" >
+                {activeFilters.includes('needs-review') && calculateQualityScore(card, card.manualConnections?.length || 0).score < 50 && (
+                    <span className="text-[0.6rem] text-red-500 bg-red-500/10 py-[2px] px-[5px] rounded font-semibold shrink-0">À revoir</span>
+                )}
 
-                    {/* Badge type — fond pastel + icône fill */}
-                    <span className="browsegriditem-style-4" style={{
-  backgroundColor: badgeBg,
-  color: categoryColor
-}}>
-                        <DynamicIcon name={getCategoryIcon(card.type)} size={12} weight="fill" />
-                        {card.type}
-                    </span>
+                {(card.progress?.isLeech || (card.progress?.lapses ?? 0) >= 8) && (
+                    <span className="text-[0.6rem] text-yellow-500 bg-yellow-500/10 py-[2px] px-[5px] rounded font-semibold shrink-0">Leech</span>
+                )}
 
-                    {/* Côté droit : checkbox au hover/sélection, ou bouton delete au hover */}
-                    <div className="browsegriditem-style-5" >
-                        {/* Checkbox — visible au hover ou en mode sélection */}
-                        {(isSelectionMode || isHovered) && (
-                            <div
-                                role="checkbox"
-                                aria-checked={isSelected}
-                                aria-label={`Sélectionner ${card.title}`}
-                                onClick={(e) => { e.stopPropagation(); onToggleSelect(card.id, e); }}
-                                className="browsegriditem-style-6" style={{
-  border: `2px solid ${isSelected ? '#10b981' : darkMode ? '#334155' : '#cbd5e1'}`,
-  backgroundColor: isSelected ? '#10b981' : darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'
-}}
-                            >
-                                {isSelected && <Check size={10} weight="bold" color="white" />}
-                            </div>
-                        )}
+                {onDelete && !isSelectionMode && (
+                    <button
+                        onClick={(e) => onDelete(card.id, e)}
+                        className="browse-card-delete"
+                        aria-label="Supprimer la carte"
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
+                )}
+            </div>
 
-                        {/* Bouton suppression — visible au hover uniquement, hors sélection */}
-                        {!isSelectionMode && onDelete && isHovered && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onDelete(card.id, e); }}
-                                aria-label="Supprimer la carte"
-                                className="browsegriditem-style-7" style={{
-  color: darkMode ? '#475569' : '#94a3b8'
-}}
-                                onMouseEnter={e => {
-                                    (e.currentTarget as HTMLButtonElement).style.color = '#ef4444';
-                                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)';
-                                }}
-                                onMouseLeave={e => {
-                                    (e.currentTarget as HTMLButtonElement).style.color = darkMode ? '#475569' : '#94a3b8';
-                                    (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                                }}
-                            >
-                                <Trash size={13} weight="bold" />
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* ── Titre ── */}
-                <h3 className="browsegriditem-style-8" style={{
-  marginBottom: card.subtitle ? 3 : 0,
-  color: isHovered ? categoryColor : 'var(--color-text)'
-}}>
+            <div className="browse-card-body flex-1 flex flex-col">
+                <h3 className="text-lg font-bold mb-[6px] text-[color:var(--color-text)] leading-tight transition-colors duration-200 hover:text-[color:var(--color-primary)]">
                     {card.title}
                 </h3>
-
-                {/* ── Sous-titre ── */}
                 {card.subtitle && (
-                    <p className="browsegriditem-style-9" >
+                    <div className="text-xs text-[color:var(--color-text-muted)] mb-3 font-semibold uppercase tracking-[0.05em]">
                         {card.subtitle}
-                    </p>
-                )}
-
-                {/* ── Extrait — 2 lignes, Markdown strippé ── */}
-                {displayExcerpt && (
-                    <p style={{
-                        fontSize: '0.81rem',
-                        lineHeight: 1.6,
-                        color: 'var(--color-text-muted)',
-                        margin: '8px 0 0 0',
-                        flex: 1,
-                        overflow: 'hidden',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                    } as React.CSSProperties}>
-                        {displayExcerpt}
-                    </p>
-                )}
-
-                {/* ── Footer : tags + point de révision ── */}
-                <div className="browsegriditem-style-10" style={{
-  borderTop: `1px solid ${borderColor}`
-}}>
-                    <div className="browsegriditem-style-11" >
-                        {/* Badges d'état */}
-                        {activeFilters.includes('needs-review') && calculateQualityScore(card, card.manualConnections?.length || 0).score < 50 && (
-                            <span className="browsegriditem-style-12" >
-                                À revoir
-                            </span>
-                        )}
-                        {(card.progress?.isLeech || (card.progress?.lapses ?? 0) >= 8) && (
-                            <span className="browsegriditem-style-13" >
-                                Leech
-                            </span>
-                        )}
-                        {/* Tags */}
-                        {card.tags?.slice(0, 2).map(tag => (
-                            <span key={tag} className="browsegriditem-style-14" style={{
-  backgroundColor: tagBg,
-  color: tagColor
-}}>
-                                #{tag}
-                            </span>
-                        ))}
-                        {(card.tags?.length || 0) > 2 && (
-                            <span className="browsegriditem-style-15" style={{
-  backgroundColor: tagBg,
-  color: textMuted
-}}>
-                                +{(card.tags?.length || 0) - 2}
-                            </span>
-                        )}
                     </div>
+                )}
+                <div className="text-sm text-[color:var(--color-text-muted)] line-clamp-3 overflow-hidden leading-[1.5] flex-1">
+                    {(card.details || '').split(/(\*\*.*?\*\*|\*.*?\*)/g).map((part, index) => {
+                        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+                            return <strong key={index} className="font-semibold text-[color:var(--color-text)]">{part.slice(2, -2)}</strong>;
+                        }
+                        if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                            return <em key={index} className="italic">{part.slice(1, -1)}</em>;
+                        }
+                        return <span key={index}>{part}</span>;
+                    })}
+                </div>
+            </div>
 
-                    {/* Point vert si révision due */}
-                    {isDue && (
-                        <div
-                            title="À réviser aujourd'hui"
-                            className="browsegriditem-style-16" 
-                        />
+            <div className="browse-card-footer flex items-center justify-between pt-3 mt-3 border-t" style={{ borderColor: darkMode ? '#1e293b' : '#f1f5f9' }}>
+                <div className="flex gap-[6px] flex-wrap">
+                    {card.tags?.slice(0, 3).map(tag => (
+                        <span key={tag} className={`text-xs px-2 py-0.5 rounded-md font-medium transition-colors ${darkMode ? 'text-[#94a3b8] bg-[#1e293b] hover:bg-[#334155]' : 'text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0]'}`}>
+                            #{tag}
+                        </span>
+                    ))}
+                    {(card.tags?.length || 0) > 3 && (
+                        <span className="text-xs text-[color:var(--color-text-muted)] font-medium px-1.5 py-0.5">+{(card.tags?.length || 0) - 3}</span>
                     )}
                 </div>
+                <ArrowRight size={12} color="var(--color-text-muted)" className="opacity-50 shrink-0" />
             </div>
         </motion.div>
     );

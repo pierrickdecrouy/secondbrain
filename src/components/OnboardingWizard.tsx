@@ -10,7 +10,6 @@ import {
     Heartbeat, Code, Translate, Lightbulb,
     UploadSimple, BellRinging, CheckCircle, ArrowRight
 } from '@phosphor-icons/react';
-import './styles/OnboardingWizard.css';
 
 const specialties = [
     { id: 'sante', label: 'Santé', icon: Heartbeat, color: '#10b981' },
@@ -78,8 +77,8 @@ export const OnboardingWizard: React.FC = () => {
         <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] flex items-center justify-center font-sans">
             {/* Background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] blur-[80px] onboardingwizard-style-1"  />
-                <div className="absolute -bottom-[10%] -right-[10%] w-[50vw] h-[50vw] blur-[80px] onboardingwizard-style-2"  />
+                <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] blur-[80px] bg-[radial-gradient(circle,rgba(99,102,241,0.15)_0%,transparent_70%)]"  />
+                <div className="absolute -bottom-[10%] -right-[10%] w-[50vw] h-[50vw] blur-[80px] bg-[radial-gradient(circle,rgba(16,185,129,0.15)_0%,transparent_70%)]"  />
             </div>
 
             <div className="relative w-full max-w-[500px] bg-white/5 backdrop-blur-[20px] border border-white/10 rounded-[32px] p-10 shadow-[0_32px_80px_rgba(0,0,0,0.5)] text-white overflow-hidden mx-5">

@@ -8,7 +8,6 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTheme } from '../context/ThemeContext';
 import { DynamicIcon } from './DynamicIcon';
 import { Eye, EyeSlash, X, PencilSimple, Trash, Link } from '@phosphor-icons/react';
-import './styles/DetailModal.css';
 
 // --- THEME MAP ---
 const lightThemeMap: Record<string, { bubble: string, tagBg: string, tagText: string, title: string, examBtn: string, fill: string }> = {
@@ -190,7 +189,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 <div className="relative z-10 flex flex-col flex-1 h-full w-full">
 
                     {/* Header Actions & Tags */}
-                    <div  className="flex flex-wrap gap-4 items-start justify-between shrink-0 detailmodal-style-1">
+                    <div  className="flex flex-wrap gap-4 items-start justify-between shrink-0 pt-10 px-12 pb-4">
                         <div className="flex items-center gap-3">
                             {/* Category Tag */}
                             <span className={`inline-flex items-center gap-2.5 ${theme.tagText} ${theme.tagBg} px-4 py-2 rounded-xl text-[14px] font-semibold tracking-wide`}>
@@ -236,7 +235,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         </div>
                     </div>
 
-                    <div  className="shrink-0 mt-2 detailmodal-style-3">
+                    <div  className="shrink-0 mt-2 px-12 pb-6">
                         <h2 className={`text-[26px] md:text-[36px] font-bold leading-tight mb-2 ${theme.title}`}>
                             {card.title}
                         </h2>

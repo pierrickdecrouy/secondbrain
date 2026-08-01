@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
-import './styles/Omnibox.css';
 
 interface OmniboxProps {
     searchQuery: string;
@@ -65,7 +64,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
                             onSearchChange('');
                             inputRef.current?.focus();
                         }}
-                        className="search-clear-btn omnibox-style-1"
+                        className="search-clear-btn absolute right-9 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-slate-500 dark:text-slate-400 p-1 flex items-center justify-center rounded-full"
                         
                         title="Effacer"
                     >

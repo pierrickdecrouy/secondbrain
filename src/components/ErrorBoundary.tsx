@@ -1,6 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Warning, ArrowClockwise, House } from '@phosphor-icons/react';
-import './styles/ErrorBoundary.css';
 
 interface Props {
   children?: ReactNode;
@@ -41,25 +40,25 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="errorboundary-style-1" >
-          <div className="errorboundary-style-2" >
+        <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-xl" >
+          <div className="bg-red-500/10 text-red-500 p-4 rounded-full mb-6" >
             <Warning size={48} weight="duotone" />
           </div>
-          <h2 className="errorboundary-style-3" >Oups ! Une erreur est survenue.</h2>
-          <p className="errorboundary-style-4" >
+          <h2 className="mb-4 text-2xl font-bold" >Oups ! Une erreur est survenue.</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-[400px]" >
             L'application a rencontré un problème inattendu. Rassurez-vous, vos données sont sauvegardées.
           </p>
           
           {this.state.error && (
-            <div className="errorboundary-style-5" >
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-lg text-sm text-red-500 max-w-[600px] overflow-auto text-left mb-8 font-mono" >
               {this.state.error.message}
             </div>
           )}
 
-          <div className="errorboundary-style-6" >
+          <div className="flex gap-4" >
             <button
               onClick={this.handleReset}
-              className="settings-btn secondary errorboundary-style-7"
+              className="settings-btn secondary flex items-center gap-2"
               
             >
               <ArrowClockwise size={18} />
@@ -67,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="settings-btn primary errorboundary-style-8"
+              className="settings-btn primary flex items-center gap-2"
               
             >
               <House size={18} />

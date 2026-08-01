@@ -10,7 +10,6 @@ import { Brain, CaretDown, CaretUp, Sparkle } from '@phosphor-icons/react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useTheme } from '../context/ThemeContext';
 import { DynamicIcon } from './DynamicIcon';
-import './styles/SearchSynthesis.css';
 
 interface SearchSynthesisProps {
     query: string;
@@ -56,7 +55,7 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
             {/* Shimmer effect at the top */}
             {/* Shimmer effect at the top */}
             <div 
-                className="absolute top-0 left-0 right-0 h-[3px] bg-[linear-gradient(90deg,#38bdf8,#818cf8,#c084fc,#38bdf8)] bg-[length:200%_100%] searchsynthesis-style-1"
+                className="absolute top-0 left-0 right-0 h-[3px] bg-[linear-gradient(90deg,#38bdf8,#818cf8,#c084fc,#38bdf8)] bg-[length:200%_100%] animate-[shimmer_3s_infinite_linear]"
                  
             />
 
@@ -71,7 +70,7 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[15px] font-bold text-[color:var(--color-text)] tracking-[-0.01em]">
+                            <span className="text-[15px] font-bold text-slate-900 dark:text-slate-100 tracking-[-0.01em]">
                                 Synthèse IA
                             </span>
                             {!isCollapsed && (
@@ -80,7 +79,7 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
                                 </span>
                             )}
                         </div>
-                        <span className="text-[12px] text-[color:var(--color-text-muted)] block mt-0.5 font-medium">
+                        <span className="text-[12px] text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
                             Analyse de {matchedCards.length} sources pertinentes
                         </span>
                     </div>
@@ -119,7 +118,7 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
                                     {point.source.type === 'relation' ? <Sparkle size={12} weight="fill" /> : <DynamicIcon name={typeIcon} size={12} />}
                                     {point.source.title.length > 20 ? point.source.title.substring(0, 18) + '...' : point.source.title}
                                 </div>
-                                <div className="text-[0.9rem] leading-relaxed text-[color:var(--color-text)] flex-1">
+                                <div className="text-[0.9rem] leading-relaxed text-slate-900 dark:text-slate-100 flex-1">
                                     <MarkdownRenderer 
                                         content={point.text.replace(`**${point.source.title}** : `, '').replace(`📌 **${point.source.title}** : `, '')} 
                                         className="inline" 

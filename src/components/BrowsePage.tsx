@@ -15,7 +15,6 @@ import { CardSidePanel } from './CardSidePanel';
 import { DetailModal } from './DetailModal';
 import { BrowseSelectionBar } from './BrowseSelectionBar';
 import { useFilteredCards } from '../hooks/useFilteredCards';
-import './styles/BrowsePage.css';
 
 interface BrowsePageProps {
     // Optional: Render prop for Network View to reuse existing component
@@ -155,9 +154,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 sortOption={sortOption}
                 setSortOption={setSortOption}
                 exportToAnki={exportToAnki}
-                darkMode={darkMode}
             />
-            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} pt-5 pb-6 browse-content-area-styled`}>
+            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} pt-5 pb-6 flex-1 flex flex-col min-h-0 overflow-hidden`}>
 
                 {/* Search Synthesis */}
                 {/* Search Synthesis */}
@@ -177,9 +175,9 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             onCardClick={setSynthesisPanelCardId}
                         />
                         {isSearching && (
-                            <div className="absolute top-4 right-4 flex items-center gap-2 bg-[color:var(--color-surface)] py-1.5 px-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+                            <div className="absolute top-4 right-4 flex items-center gap-2 bg-white dark:bg-slate-900 py-1.5 px-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
                                 <div className="w-4 h-4 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
-                                <span className="text-[0.8rem] text-[color:var(--color-text-muted)]">Recherche en cours...</span>
+                                <span className="text-[0.8rem] text-slate-500 dark:text-slate-400">Recherche en cours...</span>
                             </div>
                         )}
                     </motion.div>
@@ -215,7 +213,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             </div>
                             {/* Network side panel: shown when a node is clicked in the graph */}
                             {networkPanelCard && (
-                                <div className="w-[450px] shrink-0 border-l border-[color:var(--border-light)] flex flex-col overflow-hidden bg-[color:var(--color-surface)]">
+                                <div className="w-[450px] shrink-0 border-l border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
                                     <CardSidePanel
                                         card={networkPanelCard}
                                         allCards={cards}
@@ -255,7 +253,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
         
             {synthesisPanelCard && expandedCardId !== synthesisPanelCard.id && (
-                <div key={`synthesis-container-${synthesisPanelCard.id}`} className={`top-4 right-4 bottom-4 max-w-[100vw] bg-[color:var(--color-surface)] z-[1000] shadow-[var(--shadow-2xl)] border border-[color:var(--border-light)] rounded-2xl flex flex-col overflow-hidden animate-[slideInRight_0.3s_cubic-bezier(0.16,1,0.3,1)] ${viewMode === 'split' ? 'absolute w-[calc(50%-32px)]' : 'fixed w-[500px]'} h-[calc(100%-32px)]`}>
+                <div key={`synthesis-container-${synthesisPanelCard.id}`} className={`top-4 right-4 bottom-4 max-w-[100vw] bg-white dark:bg-slate-900 z-[1000] shadow-2xl border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col overflow-hidden animate-[slideInRight_0.3s_cubic-bezier(0.16,1,0.3,1)] ${viewMode === 'split' ? 'absolute w-[calc(50%-32px)]' : 'fixed w-[500px]'} h-[calc(100%-32px)]`}>
                     <CardSidePanel
                         key={`synthesis-${synthesisPanelCard.id}`}
                         card={synthesisPanelCard}
