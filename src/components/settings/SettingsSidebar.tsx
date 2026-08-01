@@ -2,6 +2,7 @@ import React from 'react';
 import type { SettingsTab } from '../SettingsPage';
 import { S } from './SettingsUI';
 import { useUIStore as useUI } from '../../store/useUIStore';
+import './styles/SettingsSidebar.css';
 
 interface SettingsSidebarProps {
     activeTab: SettingsTab;
@@ -18,22 +19,11 @@ const NavItem: React.FC<{
 }> = ({ label, icon, isActive, onClick, accent = S.primary }) => (
     <button
         onClick={onClick}
-        style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '9px 12px',
-            borderRadius: 12,
-            fontSize: 13.5,
-            fontWeight: isActive ? 700 : 500,
-            border: 'none',
-            backgroundColor: isActive ? `${accent}18` : 'transparent',
-            color: isActive ? accent : S.muted,
-            cursor: 'pointer',
-            transition: 'all 0.12s ease',
-            textAlign: 'left',
-        }}
+        className="settingssidebar-style-1" style={{
+  fontWeight: isActive ? 700 : 500,
+  backgroundColor: isActive ? `${accent}18` : 'transparent',
+  color: isActive ? accent : S.muted
+}}
         onMouseEnter={e => {
             if (!isActive) {
                 e.currentTarget.style.backgroundColor = S.surfaceHover;
@@ -47,7 +37,10 @@ const NavItem: React.FC<{
             }
         }}
     >
-        <span style={{ flexShrink: 0, opacity: isActive ? 1 : 0.6, color: isActive ? accent : 'inherit' }}>{icon}</span>
+        <span className="settingssidebar-style-2" style={{
+  opacity: isActive ? 1 : 0.6,
+  color: isActive ? accent : 'inherit'
+}}>{icon}</span>
         <span>{label}</span>
     </button>
 );
@@ -67,16 +60,9 @@ const Icon = {
 
 // Section label separator
 const SectionLabel: React.FC<{ label: string }> = ({ label }) => (
-    <div style={{
-        fontSize: 10,
-        fontWeight: 800,
-        color: S.muted,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        padding: '0 12px',
-        marginTop: 4,
-        marginBottom: 4,
-    }}>
+    <div className="settingssidebar-style-3" style={{
+  color: S.muted
+}}>
         {label}
     </div>
 );
@@ -85,75 +71,58 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
     const { userName } = useUI();
 
     return (
-        <aside style={{
-            width: 232,
-            flexShrink: 0,
-            background: S.surface,
-            borderRight: `1px solid ${S.border}`,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-        }}>
+        <aside className="settingssidebar-style-4" style={{
+  background: S.surface,
+  borderRight: `1px solid ${S.border}`
+}}>
             {/* Header */}
-            <div style={{
-                padding: '18px 16px',
-                borderBottom: `1px solid ${S.border}`,
-            }}>
-                <img src="/Logo-linear.svg" alt="Extnd" style={{ height: 26, width: 'auto' }} />
-                <div style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: S.muted,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    marginTop: 10,
-                }}>
+            <div className="settingssidebar-style-5" style={{
+  borderBottom: `1px solid ${S.border}`
+}}>
+                <img src="/Logo-linear.svg" alt="Extnd" className="settingssidebar-style-6"  />
+                <div className="settingssidebar-style-7" style={{
+  color: S.muted
+}}>
                     Paramètres
                 </div>
             </div>
 
             {/* Nav */}
-            <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <nav className="settingssidebar-style-8" >
                 <SectionLabel label="Contenu" />
                 <NavItem label="Abréviations" isActive={activeTab === 'dictionary'} onClick={() => setActiveTab('dictionary')} icon={<Icon.Book />} accent="#6366f1" />
                 <NavItem label="Intelligence IA" isActive={activeTab === 'intelligence'} onClick={() => setActiveTab('intelligence')} icon={<Icon.Brain />} accent="#8b5cf6" />
 
-                <div style={{ height: 12 }} />
+                <div className="settingssidebar-style-9"  />
                 <SectionLabel label="Application" />
                 <NavItem label="Apparence" isActive={activeTab === 'appearance'} onClick={() => setActiveTab('appearance')} icon={<Icon.Palette />} accent="#0ea5e9" />
                 <NavItem label="Révision" isActive={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} icon={<Icon.Calendar />} accent="#f59e0b" />
                 <NavItem label="Données" isActive={activeTab === 'data'} onClick={() => setActiveTab('data')} icon={<Icon.Database />} accent="#10b981" />
                 <NavItem label="Statistiques" isActive={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<Icon.BarChart />} accent="#06b6d4" />
 
-                <div style={{ height: 12 }} />
+                <div className="settingssidebar-style-10"  />
                 <SectionLabel label="Compte" />
                 <NavItem label="Profil" isActive={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<Icon.User />} accent="#f43f5e" />
                 <NavItem label="Abonnement" isActive={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')} icon={<Icon.Card />} accent="#f59e0b" />
             </nav>
 
             {/* User footer */}
-            <div style={{
-                padding: '12px 14px',
-                borderTop: `1px solid ${S.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-            }}>
-                <div style={{
-                    width: 34, height: 34, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #10b981, #2dd4bf)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontWeight: 800, fontSize: 14, flexShrink: 0,
-                    boxShadow: '0 2px 8px #10b98130',
-                }}>
+            <div className="settingssidebar-style-11" style={{
+  borderTop: `1px solid ${S.border}`
+}}>
+                <div className="settingssidebar-style-12" >
                     {userName.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: S.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div className="settingssidebar-style-13" >
+                    <div className="settingssidebar-style-14" style={{
+  color: S.text
+}}>
                         {userName}
                     </div>
-                    <div style={{ fontSize: 11, color: S.muted, display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b98180' }} />
+                    <div className="settingssidebar-style-15" style={{
+  color: S.muted
+}}>
+                        <span className="settingssidebar-style-16"  />
                         Connecté
                     </div>
                 </div>

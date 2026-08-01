@@ -26,6 +26,7 @@ import { MedicalAlert } from './CourseEditor'; // Reusing the same node!
 import { ClozeExtension } from './editor/ClozeExtension';
 import { CardSuggestionPlugin } from './editor/CardSuggestionPlugin';
 import { getSuggestionOptions } from './editor/suggestionConfig';
+import './styles/FullCourseEditor.css';
 
 interface FullCourseEditorProps {
     course: Card;
@@ -211,21 +212,23 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
 
     const filteredCards = existingCards.filter(c => c.title.toLowerCase().includes(cardSearch.toLowerCase())).slice(0, 10);
 
-    if (!editor) return <div style={{padding: '50px', color: 'red'}}>Chargement de l'éditeur... (si ce message reste, c'est que l'éditeur a planté)</div>;
+    if (!editor) return <div className="fullcourseeditor-style-1" >Chargement de l'éditeur... (si ce message reste, c'est que l'éditeur a planté)</div>;
 
     return (
-        <div ref={editorContainerRef} className="full-course-editor" style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: isFullscreen ? 'var(--color-surface)' : 'var(--color-bg)', overflow: 'hidden' }}>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '32px 16px', display: 'flex', justifyContent: 'center' }}>
-                <div style={{ width: '100%', maxWidth: '1200px', backgroundColor: 'var(--color-surface)', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
+        <div ref={editorContainerRef} className="full-course-editor fullcourseeditor-style-2" style={{
+  backgroundColor: isFullscreen ? 'var(--color-surface)' : 'var(--color-bg)'
+}}>
+            <div className="fullcourseeditor-style-3" >
+                <div className="fullcourseeditor-style-4" >
                     
                     {/* Course Meta (Title, Tags) */}
-                    <div style={{ padding: '24px 24px 16px 24px', borderBottom: '1px solid var(--color-bg)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                    <div className="fullcourseeditor-style-5" >
+                        <div className="fullcourseeditor-style-6" >
                             <button onClick={() => {
                                 isExplicitlyClosedRef.current = true;
                                 handleSave(); // Save one last time before leaving
                                 onCancel();
-                            }} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontWeight: 600, padding: '6px 12px', borderRadius: '8px', marginLeft: '-12px' }}
+                            }} className="fullcourseeditor-style-7" 
                             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg)'; e.currentTarget.style.color = 'var(--color-text)'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
                             >
@@ -233,12 +236,12 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                 Retour
                             </button>
 
-                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                            <span className="fullcourseeditor-style-8" >
                                 (Sauvegarde auto activée)
                             </span>
 
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={toggleFullscreen} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', cursor: 'pointer', fontWeight: 600, padding: '6px 12px', borderRadius: '8px' }}
+                            <div className="fullcourseeditor-style-9" >
+                                <button onClick={toggleFullscreen} className="fullcourseeditor-style-10" 
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-surface)'; }}
                                 title="Mode Focus (Cmd+Shift+F)"
@@ -248,7 +251,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                 </button>
                                 <button onClick={() => {
                                     handleSave();
-                                }} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', cursor: 'pointer', fontWeight: 600, padding: '6px 12px', borderRadius: '8px', marginRight: '-12px' }}
+                                }} className="fullcourseeditor-style-11" 
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-surface)'; }}
                                 >
@@ -263,37 +266,37 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Titre du cours..."
-                            style={{ width: '100%', border: 'none', outline: 'none', fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '16px', backgroundColor: 'transparent' }}
+                            className="fullcourseeditor-style-12" 
                         />
-                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 250px' }}>
-                                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Matière:</span>
+                        <div className="fullcourseeditor-style-13" >
+                            <div className="fullcourseeditor-style-14" >
+                                <span className="fullcourseeditor-style-15" >Matière:</span>
                                 <input 
                                     type="text"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
                                     placeholder="Ex: Cardiologie..."
-                                    style={{ flex: 1, minWidth: '150px', border: 'none', outline: 'none', fontSize: '0.9rem', color: 'var(--color-text)', backgroundColor: 'var(--color-bg)', padding: '6px 12px', borderRadius: '6px' }}
+                                    className="fullcourseeditor-style-16" 
                                 />
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: '1 1 300px', flexDirection: 'column' }}>
-                                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Tags:</span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                            <div className="fullcourseeditor-style-17" >
+                                <span className="fullcourseeditor-style-18" >Tags:</span>
+                                <div className="fullcourseeditor-style-19" >
                                     {tags.map(tag => (
-                                        <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--color-bg)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.85rem', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+                                        <span key={tag} className="fullcourseeditor-style-20" >
                                             #{tag}
-                                            <X size={12} weight="bold" style={{ cursor: 'pointer', color: 'var(--color-text-muted)' }} onClick={() => removeTag(tag)} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'} />
+                                            <X size={12} weight="bold" className="fullcourseeditor-style-21"  onClick={() => removeTag(tag)} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'} />
                                         </span>
                                     ))}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-bg)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-                                        <Plus size={14} style={{ cursor: 'pointer', color: 'var(--color-text-muted)' }} onClick={addTag} />
+                                    <div className="fullcourseeditor-style-22" >
+                                        <Plus size={14} className="fullcourseeditor-style-23"  onClick={addTag} />
                                         <input 
                                             type="text"
                                             value={tagInput}
                                             onChange={(e) => setTagInput(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && addTag()}
                                             placeholder="Nouveau tag..."
-                                            style={{ border: 'none', outline: 'none', fontSize: '0.85rem', color: 'var(--color-text)', backgroundColor: 'transparent', width: '100px' }}
+                                            className="fullcourseeditor-style-24" 
                                         />
                                     </div>
                                 </div>
@@ -302,7 +305,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                     </div>
 
                     {/* Toolbar */}
-                    <div className="course-editor-toolbar" style={{ padding: '12px 24px', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap', backgroundColor: 'var(--color-surface)', position: 'sticky', top: 0, zIndex: 5 }}>
+                    <div className="course-editor-toolbar fullcourseeditor-style-25" >
                         <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
                             <TextB size={18} />
                         </button>
@@ -322,7 +325,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                             type="color" 
                             onInput={(event) => editor.chain().focus().setColor((event.target as HTMLInputElement).value).run()}
                             value={editor.getAttributes('textStyle').color || 'var(--color-text)'}
-                            style={{ width: '28px', height: '28px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '4px' }}
+                            className="fullcourseeditor-style-26" 
                             title="Couleur du texte"
                         />
                         
@@ -370,49 +373,44 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                         <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="toolbar-btn" title="Insérer un tableau">
                             <TableIcon size={18} />
                         </button>
-                        <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="toolbar-btn" title="Lier une carte existante" style={{ position: 'relative' }}>
+                        <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="toolbar-btn fullcourseeditor-style-27" title="Lier une carte existante" >
                             <Cards size={18} />
                         </button>
 
                         <div className="toolbar-divider" />
 
                         {/* Blocs Médicaux Spécifiques */}
-                        <button type="button" onClick={() => addAlert('definition')} className="toolbar-btn" style={{ color: '#2563eb' }} title="Définition">
-                            <Info size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Déf.</span>
+                        <button type="button" onClick={() => addAlert('definition')} className="toolbar-btn fullcourseeditor-style-28"  title="Définition">
+                            <Info size={18} weight="bold" /> <span className="fullcourseeditor-style-29" >Déf.</span>
                         </button>
-                        <button type="button" onClick={() => addAlert('concours')} className="toolbar-btn" style={{ color: '#d97706' }} title="À connaître (Concours)">
-                            <GraduationCap size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Concours</span>
+                        <button type="button" onClick={() => addAlert('concours')} className="toolbar-btn fullcourseeditor-style-30"  title="À connaître (Concours)">
+                            <GraduationCap size={18} weight="bold" /> <span className="fullcourseeditor-style-31" >Concours</span>
                         </button>
-                        <button type="button" onClick={() => addAlert('vigilance')} className="toolbar-btn" style={{ color: '#dc2626' }} title="Vigilance">
-                            <Warning size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Vigi.</span>
+                        <button type="button" onClick={() => addAlert('vigilance')} className="toolbar-btn fullcourseeditor-style-32"  title="Vigilance">
+                            <Warning size={18} weight="bold" /> <span className="fullcourseeditor-style-33" >Vigi.</span>
                         </button>
-                        <button type="button" onClick={() => addAlert('expert')} className="toolbar-btn" style={{ color: 'var(--color-text)' }} title="Expert">
-                            <Brain size={18} weight="bold" /> <span style={{fontSize: 12, marginLeft: 4, fontWeight: 600}}>Expert</span>
+                        <button type="button" onClick={() => addAlert('expert')} className="toolbar-btn fullcourseeditor-style-34"  title="Expert">
+                            <Brain size={18} weight="bold" /> <span className="fullcourseeditor-style-35" >Expert</span>
                         </button>
                     </div>
 
                     {showCardSelector && (
-                        <div ref={selectorRef} className="card-selector-popup" style={{
-                            position: 'absolute', top: '230px', left: '50%', transform: 'translateX(-50%)',
-                            background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', 
-                            padding: '8px', zIndex: 50, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                            width: '300px', display: 'flex', flexDirection: 'column', gap: '8px'
-                        }}>
+                        <div ref={selectorRef} className="card-selector-popup fullcourseeditor-style-36" >
                             <input 
                                 type="text" 
                                 autoFocus
                                 placeholder="Rechercher une carte..." 
                                 value={cardSearch}
                                 onChange={(e) => setCardSearch(e.target.value)}
-                                style={{ padding: '6px 8px', border: '1px solid var(--color-border)', borderRadius: '4px', outline: 'none', backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
+                                className="fullcourseeditor-style-37" 
                             />
-                            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                            <div className="fullcourseeditor-style-38" >
                                 {filteredCards.length > 0 ? filteredCards.map(c => (
                                     <button 
                                         key={c.id} 
                                         type="button" 
                                         onClick={() => insertCardLink(c)}
-                                        style={{ padding: '6px 8px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text)' }}
+                                        className="fullcourseeditor-style-39" 
                                         onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
                                         onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                                         onFocus={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
@@ -420,13 +418,13 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                     >
                                         {c.title}
                                     </button>
-                                )) : <div style={{ padding: '8px', fontSize: '14px', color: 'var(--color-text-muted)', textAlign: 'center' }}>Aucune carte trouvée</div>}
+                                )) : <div className="fullcourseeditor-style-40" >Aucune carte trouvée</div>}
                             </div>
                         </div>
                     )}
 
                     {editor && (
-                        <BubbleMenu editor={editor} className="course-editor-toolbar bubble-menu" style={{ padding: '8px', border: '1px solid var(--color-border)', borderRadius: '8px', backgroundColor: 'var(--color-surface)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                        <BubbleMenu editor={editor} className="course-editor-toolbar bubble-menu fullcourseeditor-style-41" >
                             <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-btn ${editor.isActive('bold') ? 'is-active' : ''}`} title="Gras">
                                 <TextB size={18} />
                             </button>
@@ -449,7 +447,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                     )}
 
                     {/* Editor Content Area */}
-                    <div className="course-editor-content" style={{ padding: '16px 48px 64px 48px', flex: 1, overflowY: 'visible', minHeight: '500px' }}>
+                    <div className="course-editor-content fullcourseeditor-style-42" >
                         <EditorContent editor={editor} />
                     </div>
                 </div>

@@ -19,6 +19,7 @@ import { useUIStore as useUI } from '../store/useUIStore';
 import { useAuth } from '../context/AuthContext';
 import { exportAllData } from '../storage';
 import { PomodoroTimer } from './PomodoroTimer';
+import './styles/GlobalHeader.css';
 
 interface GlobalHeaderProps {
     isHomeSection: boolean;
@@ -62,7 +63,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
             {!isHomeSection && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pointer-events-none" style={{ zIndex: -1 }} />
             )}
-            <div className="w-full px-8 sm:px-12 flex items-center justify-between" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}>
+            <div className="w-full px-8 sm:px-12 flex items-center justify-between globalheader-style-1" >
             <div className="flex items-center gap-6">
                 {!isHomeSection && (
                     <button 
@@ -110,8 +111,8 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                         <MagnifyingGlass size={24} className="absolute left-4 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" weight="bold" />
                         <input 
                             type="text" 
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-full text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none"
-                            style={{ padding: '14px 80px 14px 56px' }}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl text-[18px] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm group-hover:shadow-md group-hover:border-slate-300 dark:group-hover:border-slate-600 pointer-events-none globalheader-style-2"
+                            
                             placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]} 
                             readOnly
                         />
@@ -145,12 +146,11 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     style={isHomeSection ? { marginRight: '24px', marginTop: '24px' } : { marginLeft: '8px' }}
                 >
                     <button 
-                        className="p-0 bg-transparent cursor-pointer rounded-full" 
-                        style={{ 
-                            border: isProfileMenuOpen ? '2px solid var(--color-drug)' : '2px solid transparent', 
-                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', 
-                            transform: isProfileMenuOpen ? 'scale(0.95)' : 'scale(1)' 
-                        }} 
+                        className="p-0 bg-transparent cursor-pointer rounded-full globalheader-style-3" 
+                        style={{
+  border: isProfileMenuOpen ? '2px solid var(--color-drug)' : '2px solid transparent',
+  transform: isProfileMenuOpen ? 'scale(0.95)' : 'scale(1)'
+}} 
                         onClick={() => setProfileMenuOpen(!isProfileMenuOpen)}
                         aria-label="Mon compte"
                         title="Mon compte"
@@ -172,77 +172,93 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                 aria-hidden="true"
                                 onClick={() => setProfileMenuOpen(false)}></div>
                             <div 
-                                className="absolute right-0 z-[1100] animate-in fade-in slide-in-from-top-4 duration-200"
+                                className="absolute right-0 z-[1100] animate-in fade-in slide-in-from-top-4 duration-200 globalheader-style-4"
                                 style={{
-                                    top: 'calc(100% + 12px)',
-                                    width: 380,
-                                    backgroundColor: darkMode ? '#0f1420' : '#ffffff',
-                                    border: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`,
-                                    borderRadius: 24,
-                                    boxShadow: darkMode ? '0 20px 50px rgba(0, 0, 0, 0.5)' : '0 10px 40px rgba(0, 0, 0, 0.1)',
-                                    overflow: 'hidden',
-                                    display: 'flex',
-                                    flexDirection: 'column'
-                                }}
+  backgroundColor: darkMode ? '#0f1420' : '#ffffff',
+  border: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`,
+  boxShadow: darkMode ? '0 20px 50px rgba(0, 0, 0, 0.5)' : '0 10px 40px rgba(0, 0, 0, 0.1)'
+}}
                             >
-                                <div style={{ padding: '24px', borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`, backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                        <div style={{
-                                            width: 56, height: 56, borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 'bold', flexShrink: 0, border: '1px solid rgba(16, 185, 129, 0.3)', overflow: 'hidden'
-                                        }}>
+                                <div className="globalheader-style-5" style={{
+  borderBottom: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`,
+  backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc'
+}}>
+                                    <div className="globalheader-style-6" >
+                                        <div className="globalheader-style-7" >
                                             {user?.photoURL ? (
                                                 <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
                                                 userName.charAt(0).toUpperCase()
                                             )}
                                         </div>
-                                        <div style={{ flex: 1, minWidth: 0, paddingLeft: 4 }}>
-                                            <span style={{ color: darkMode ? '#f8fafc' : '#0f172a', fontSize: 18, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                        <div className="globalheader-style-8" >
+                                            <span className="globalheader-style-9" style={{
+  color: darkMode ? '#f8fafc' : '#0f172a'
+}}>
                                                 {user?.displayName || userName}
                                             </span>
-                                            <p style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 14, margin: '4px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                                            <p className="globalheader-style-10" style={{
+  color: darkMode ? '#94a3b8' : '#64748b'
+}}>
                                                 {user?.email || 'Mode local (non connecté)'}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
-                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <div className="globalheader-style-11" >
                                     <button 
-                                        className="profile-menu-item"
-                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: darkMode ? '#e2e8f0' : '#334155', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        className="profile-menu-item globalheader-style-12"
+                                        style={{
+  color: darkMode ? '#e2e8f0' : '#334155'
+}}
                                         onClick={() => { onNavigateSettings(); setProfileMenuOpen(false); }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                                        <div className="globalheader-style-13" style={{
+  backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
+  color: darkMode ? '#94a3b8' : '#64748b'
+}}>
                                             <GearSix size={20} weight="duotone" />
                                         </div>
                                         Paramètres du compte
                                     </button>
 
                                     <button 
-                                        className="profile-menu-item"
-                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: darkMode ? '#e2e8f0' : '#334155', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        className="profile-menu-item globalheader-style-14"
+                                        style={{
+  color: darkMode ? '#e2e8f0' : '#334155'
+}}
                                         onClick={() => { setThemeMode(darkMode ? 'light' : 'dark'); setProfileMenuOpen(false); }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                                        <div className="globalheader-style-15" style={{
+  backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
+  color: darkMode ? '#94a3b8' : '#64748b'
+}}>
                                             {darkMode ? <Sun size={20} weight="duotone" /> : <Moon size={20} weight="duotone" />} 
                                         </div>
                                         {darkMode ? 'Passer au Mode Clair' : 'Passer au Mode Sombre'}
                                     </button>
 
                                     <button 
-                                        className="profile-menu-item"
-                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: darkMode ? '#e2e8f0' : '#334155', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        className="profile-menu-item globalheader-style-16"
+                                        style={{
+  color: darkMode ? '#e2e8f0' : '#334155'
+}}
                                         onClick={() => { setThemeMode('system'); setProfileMenuOpen(false); }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                                        <div className="globalheader-style-17" style={{
+  backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
+  color: darkMode ? '#94a3b8' : '#64748b'
+}}>
                                             <Monitor size={20} weight="duotone" />
                                         </div>
                                         Thème Système
                                     </button>
 
                                     <button 
-                                        className="profile-menu-item"
-                                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: darkMode ? '#e2e8f0' : '#334155', fontSize: 15, fontWeight: 500, transition: 'background-color 0.2s', textAlign: 'left' }}
+                                        className="profile-menu-item globalheader-style-18"
+                                        style={{
+  color: darkMode ? '#e2e8f0' : '#334155'
+}}
                                         onClick={async () => { 
                                             const data = await exportAllData();
                                             const blob = new Blob([data], { type: "application/json" });
@@ -257,38 +273,44 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                             setProfileMenuOpen(false); 
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: darkMode ? '#1e293b' : '#f1f5f9', color: darkMode ? '#94a3b8' : '#64748b' }}>
+                                        <div className="globalheader-style-19" style={{
+  backgroundColor: darkMode ? '#1e293b' : '#f1f5f9',
+  color: darkMode ? '#94a3b8' : '#64748b'
+}}>
                                             <DownloadSimple size={20} weight="duotone" />
                                         </div>
                                         Sauvegarder mes données
                                     </button>
                                 </div>
 
-                                <div style={{ padding: '12px', backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc', borderTop: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}` }}>
+                                <div className="globalheader-style-20" style={{
+  backgroundColor: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#f8fafc',
+  borderTop: `1px solid ${darkMode ? '#1e293b' : '#e2e8f0'}`
+}}>
                                     {!user ? (
                                         <button 
-                                            className="profile-menu-item"
-                                            style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#10b981', fontSize: 15, fontWeight: 700, transition: 'background-color 0.2s', textAlign: 'left', width: '100%' }}
+                                            className="profile-menu-item globalheader-style-21"
+                                            
                                             onClick={async () => {
                                                 await signInWithGoogle();
                                                 setProfileMenuOpen(false);
                                             }}
                                         >
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                                            <div className="globalheader-style-22" >
                                                 <Command size={20} weight="duotone" />
                                             </div>
                                             Se connecter avec Google
                                         </button>
                                     ) : (
                                         <button 
-                                            className="profile-menu-item"
-                                            style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', borderRadius: 16, border: 'none', background: 'transparent', cursor: 'pointer', color: '#f87171', fontSize: 15, fontWeight: 700, transition: 'background-color 0.2s', textAlign: 'left', width: '100%' }}
+                                            className="profile-menu-item globalheader-style-23"
+                                            
                                             onClick={async () => {
                                                 await logout();
                                                 setProfileMenuOpen(false);
                                             }}
                                         >
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '50%', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#f87171' }}>
+                                            <div className="globalheader-style-24" >
                                                 <SignOut size={20} weight="duotone" />
                                             </div>
                                             Déconnexion

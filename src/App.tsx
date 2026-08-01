@@ -36,7 +36,7 @@ import { ReviewHubPage } from "./components/ReviewHubPage";
 import { ConfirmDeleteModal } from "./components/ConfirmDeleteModal";
 import { PomodoroModal } from "./components/PomodoroModal";
 import { GlobalOmnibox } from "./components/GlobalOmnibox";
-import { PencilSimple, Trash, CircleNotch } from "@phosphor-icons/react";
+import { CircleNotch } from "@phosphor-icons/react";
 import { ThemeProvider } from "./context/ThemeContext";
 
 // Lazy load heavy components
@@ -399,24 +399,8 @@ function AppContent() {
           allCards={cards}
           onClose={() => setSelectedCardId(null)}
           onLinkClick={(id) => setSelectedCardId(id)}
-          actions={
-            <div className="modal-actions">
-              <button
-                className="btn-icon"
-                onClick={() => handleEditCard(selectedCard)}
-                title="Modifier"
-              >
-                <PencilSimple size={18} />
-              </button>
-              <button
-                className="btn-icon"
-                onClick={() => handleDeleteCard(selectedCard)}
-                title="Supprimer"
-              >
-                <Trash size={18} />
-              </button>
-            </div>
-          }
+          onEdit={() => handleEditCard(selectedCard)}
+          onDelete={() => handleDeleteCard(selectedCard)}
           onNext={() => {
             const idx = filteredCards.findIndex((c) => c.id === selectedCardId);
             if (idx >= 0 && idx < filteredCards.length - 1) {

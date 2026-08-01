@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { DynamicIcon } from './DynamicIcon';
 import type { Card } from '../types';
 import { PencilSimple, Trash } from '@phosphor-icons/react';
+import './styles/BrowseListItem.css';
 
 interface BrowseListItemProps {
     card: Card;
@@ -78,8 +79,10 @@ export const BrowseListItem: React.FC<BrowseListItemProps> = React.memo(({
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="relative flex items-center gap-5 py-4 px-7 cursor-pointer transition-colors duration-100 border-b border-[color:var(--color-border)]"
-            style={{ background: bg }}
+            className="relative flex items-center cursor-pointer transition-colors duration-100 border-b border-[color:var(--color-border)] browselistitem-style-1"
+            style={{
+  background: bg
+}}
         >
             {/* ── Left accent bar ── */}
             <div 
@@ -92,7 +95,7 @@ export const BrowseListItem: React.FC<BrowseListItemProps> = React.memo(({
 
             {/* ── Checkbox ── */}
             <div
-                style={{ flexShrink: 0 }}
+                className="browselistitem-style-2" 
                 onClick={(e) => { e.stopPropagation(); onToggleSelect(card.id, e); }}
             >
                 <div 

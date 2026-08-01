@@ -4,6 +4,7 @@ const fs = require('fs');
 const isDev = require('electron-is-dev');
 const crypto = require('crypto');
 const db = require('./database.cjs');
+const { generatePdf } = require('./pdfGenerator.cjs');
 
 // Suppress security warnings in dev mode (unsafe-eval is needed for Vite)
 if (isDev) {
@@ -70,7 +71,12 @@ function createWindow() {
             contextIsolation: true,
             nodeIntegration: false,
         },
-        titleBarStyle: 'hiddenInset', // macOS style
+        backgroundColor: '#0d1117',
+        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+        titleBarOverlay: process.platform !== 'darwin' ? {
+            color: '#0d1117',
+            symbolColor: '#ffffff'
+        } : false,
         show: false,
     });
 
@@ -178,6 +184,16 @@ ipcMain.handle('save-cards', async (event, cards) => {
     } catch (error) {
         console.error('Error saving cards to DB:', error);
         return { success: false, error: error.message };
+    }
+});
+
+// FTS5 Search Handler
+ipcMain.handle('search-cards-fts', async (event, query, limit = 50) => {
+    try {
+        return db.searchCardsFTS(query, limit);
+    } catch (error) {
+        console.error('Error searching FTS5:', error);
+        return [];
     }
 });
 
@@ -407,9 +423,13 @@ ipcMain.handle('download-model', async (event, { url, filename }) => {
 
                 file.on('finish', () => {
                     file.close(() => {
-                        // Verify file is not too small (corrupted)
+                        // Verify file integrity using content-length if available, else fallback to 1MB check
                         const stats = fs.statSync(dest);
-                        if (stats.size < 1000000) { // Less than 1MB = likely error page
+                        if (totalSize > 0 && stats.size !== totalSize) {
+                            fs.unlinkSync(dest);
+                            reject(new Error(`Downloaded file corrupted: expected ${totalSize} bytes, got ${stats.size} bytes`));
+                            return;
+                        } else if (totalSize === 0 && stats.size < 1000000) {
                             fs.unlinkSync(dest);
                             reject(new Error('Downloaded file too small, likely corrupted'));
                             return;
@@ -438,6 +458,10 @@ ipcMain.handle('download-model', async (event, { url, filename }) => {
         }
         throw error;
     }
+});
+
+ipcMain.handle('generate-course-pdf', async (event, courseData) => {
+    return await generatePdf(courseData, mainWindow);
 });
 
 app.on('window-all-closed', () => {

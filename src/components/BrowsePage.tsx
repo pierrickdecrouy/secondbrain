@@ -1,8 +1,4 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import {
-    PencilSimple,
-    Trash,
-} from '@phosphor-icons/react';
 import { exportToAnki } from '../utils/ankiExport';
 import type { Card } from '../types';
 import SearchSynthesis from './SearchSynthesis';
@@ -19,7 +15,7 @@ import { CardSidePanel } from './CardSidePanel';
 import { DetailModal } from './DetailModal';
 import { BrowseSelectionBar } from './BrowseSelectionBar';
 import { useFilteredCards } from '../hooks/useFilteredCards';
-
+import './styles/BrowsePage.css';
 
 interface BrowsePageProps {
     // Optional: Render prop for Network View to reuse existing component
@@ -161,7 +157,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 exportToAnki={exportToAnki}
                 darkMode={darkMode}
             />
-            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} pt-5 pb-6`} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+            <main className={`browse-content-area ${viewMode === 'network' ? 'browse-content-area--network' : ''} pt-5 pb-6 browse-content-area-styled`}>
 
                 {/* Search Synthesis */}
                 {/* Search Synthesis */}
@@ -190,7 +186,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 )}
                 </AnimatePresence>
 
-                <div className={`w-full px-4 sm:px-8 self-center ${(viewMode === 'split' || viewMode === 'network' || isNetworkOnly) ? 'max-w-[1600px] mx-auto' : ''}`} style={{ display: 'flex', flexDirection: (viewMode === 'split' && !isNetworkOnly) ? 'row' : 'column', gap: (viewMode === 'split' && !isNetworkOnly) ? 0 : '2rem', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <div className={`w-full px-10 self-center max-w-[1600px] mx-auto flex flex-1 min-h-0 overflow-hidden ${(viewMode === 'split' && !isNetworkOnly) ? 'flex-row gap-0' : 'flex-col gap-8'}`}>
                     
                     {!isNetworkOnly && (
                         <BrowseMainContent
@@ -213,13 +209,13 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     )}
 
                     {(viewMode === 'split' || viewMode === 'network' || isNetworkOnly) && (
-                        <div className="flex-1 rounded-[16px] overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm" style={{ marginRight: '40px', marginLeft: '40px' }}>
-                            <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
+                        <div className="flex-1 rounded-[16px] overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm mx-10">
+                            <div className="flex-1 relative flex flex-col h-full min-h-0 min-w-0">
                                 {renderNetworkView && renderNetworkView(selectedCardId)}
                             </div>
                             {/* Network side panel: shown when a node is clicked in the graph */}
                             {networkPanelCard && (
-                                <div className="w-[380px] shrink-0 border-l border-[color:var(--border-light)] flex flex-col overflow-hidden bg-[color:var(--color-surface)]">
+                                <div className="w-[450px] shrink-0 border-l border-[color:var(--border-light)] flex flex-col overflow-hidden bg-[color:var(--color-surface)]">
                                     <CardSidePanel
                                         card={networkPanelCard}
                                         allCards={cards}
@@ -250,16 +246,8 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     onLinkClick={(id) => setSelectedCardId(id)}
                     onNext={handleNextCard}
                     onPrev={handlePrevCard}
-                    actions={
-                        <div className="modal-actions">
-                            <button className="btn-icon" onClick={() => { setEditingCard(selectedCard); setAddDataMode('edit'); }} title="Modifier">
-                                <PencilSimple size={18} />
-                            </button>
-                            <button className="btn-icon" onClick={() => setCardToDelete(selectedCard)} title="Supprimer">
-                                <Trash size={18} />
-                            </button>
-                        </div>
-                    }
+                    onEdit={() => { setEditingCard(selectedCard); setAddDataMode('edit'); }}
+                    onDelete={() => setCardToDelete(selectedCard)}
                 />
             )}
 
@@ -267,7 +255,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
 
         
             {synthesisPanelCard && expandedCardId !== synthesisPanelCard.id && (
-                <div key={`synthesis-container-${synthesisPanelCard.id}`} className={`top-4 right-4 bottom-4 max-w-[100vw] bg-[color:var(--color-surface)] z-[1000] shadow-[var(--shadow-2xl)] border border-[color:var(--border-light)] rounded-2xl flex flex-col overflow-hidden animate-[slideInRight_0.3s_cubic-bezier(0.16,1,0.3,1)] ${viewMode === 'split' ? 'absolute w-[calc(50%-32px)]' : 'fixed w-[500px]'}`} style={{ height: 'calc(100% - 32px)' }}>
+                <div key={`synthesis-container-${synthesisPanelCard.id}`} className={`top-4 right-4 bottom-4 max-w-[100vw] bg-[color:var(--color-surface)] z-[1000] shadow-[var(--shadow-2xl)] border border-[color:var(--border-light)] rounded-2xl flex flex-col overflow-hidden animate-[slideInRight_0.3s_cubic-bezier(0.16,1,0.3,1)] ${viewMode === 'split' ? 'absolute w-[calc(50%-32px)]' : 'fixed w-[500px]'} h-[calc(100%-32px)]`}>
                     <CardSidePanel
                         key={`synthesis-${synthesisPanelCard.id}`}
                         card={synthesisPanelCard}
@@ -280,14 +268,6 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                             setSynthesisPanelCardId(id);
                         }}
                     />
-                    <style>
-                        {`
-                        @keyframes slideInRight {
-                            from { transform: translateX(100%); }
-                            to { transform: translateX(0); }
-                        }
-                        `}
-                    </style>
                 </div>
             )}
             {/* Barre de multi-sélection flottante */}

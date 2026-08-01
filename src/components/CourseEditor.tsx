@@ -14,13 +14,13 @@ import { Markdown } from 'tiptap-markdown';
 import { CardSuggestionPlugin } from './editor/CardSuggestionPlugin';
 import { getSuggestionOptions } from './editor/suggestionConfig';
 import { 
-    TextB, TextItalic, ListBullets, ListNumbers, 
-    TextHOne, TextHTwo, TextHThree, HighlighterCircle, 
+    TextB, TextItalic, ListBullets, ListNumbers, HighlighterCircle,
     Table as TableIcon, Link as LinkIcon, Info, Warning, GraduationCap, Brain, Cards, EyeSlash
 } from '@phosphor-icons/react';
 import { ClozeExtension } from './editor/ClozeExtension';
 import type { NodeViewProps } from '@tiptap/core';
 import type { Card } from '../types';
+import './styles/CourseEditor.css';
 
 // --- Custom Node for Medical Alerts ---
 
@@ -179,94 +179,92 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
     const filteredCards = existingCards.filter(c => c.title.toLowerCase().includes(cardSearch.toLowerCase())).slice(0, 10);
 
     return (
-        <div className="flex flex-col flex-1 h-full border border-[var(--color-border)] rounded-2xl overflow-hidden bg-[var(--color-surface)] shadow-sm" style={{ position: 'relative' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', padding: '14px 24px', background: 'transparent', borderBottom: '1px solid var(--color-border)' }}>
-                <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('bold') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Gras">
-                    <TextB size={18} />
+        <div className="flex flex-col flex-1 h-full relative group">
+            {/* Toolbar */}
+            <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 p-1.5 rounded-xl bg-[#1E293B]/80 backdrop-blur-md border border-slate-700/80 shadow-lg mb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+                <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('bold') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Gras (Cmd+B)">
+                    <TextB size={16} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('italic') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Italique">
-                    <TextItalic size={18} />
+                <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('italic') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Italique">
+                    <TextItalic size={16} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('highlight') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Surligner">
-                    <HighlighterCircle size={18} />
+                <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('highlight') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Surligner">
+                    <HighlighterCircle size={16} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleCloze().run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('cloze') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Texte à trou (Cmd+E)">
-                    <EyeSlash size={18} />
-                </button>
-                
-                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 4px' }} />
-
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('heading', { level: 1 }) ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Titre 1">
-                    <TextHOne size={18} />
-                </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('heading', { level: 2 }) ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Titre 2">
-                    <TextHTwo size={18} />
-                </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('heading', { level: 3 }) ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Titre 3">
-                    <TextHThree size={18} />
-                </button>
-
-                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 4px' }} />
-
-                <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('bulletList') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Liste à puces">
-                    <ListBullets size={18} />
-                </button>
-                <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('orderedList') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Liste numérotée">
-                    <ListNumbers size={18} />
+                <button type="button" onClick={() => editor.chain().focus().toggleCloze().run()} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('cloze') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Texte à trou (Cmd+E)">
+                    <EyeSlash size={16} />
                 </button>
                 
-                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 4px' }} />
+                <div className="w-px h-5 bg-slate-700 mx-1" />
+
+                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={`px-2 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors border-none outline-none cursor-pointer ${editor.isActive('heading', { level: 1 }) ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Titre 1">
+                    H1
+                </button>
+                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors border-none outline-none cursor-pointer ${editor.isActive('heading', { level: 2 }) ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Titre 2">
+                    H2
+                </button>
+                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={`px-2 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors border-none outline-none cursor-pointer ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Titre 3">
+                    H3
+                </button>
+
+                <div className="w-px h-5 bg-slate-700 mx-1" />
+
+                <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('bulletList') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Liste à puces">
+                    <ListBullets size={16} />
+                </button>
+                <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('orderedList') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Liste numérotée">
+                    <ListNumbers size={16} />
+                </button>
                 
-                <button type="button" onClick={setLink} className={`bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] ${editor.isActive('link') ? 'bg-[var(--color-border)] text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`} style={{ padding: '8px', borderRadius: '8px' }} title="Lien">
-                    <LinkIcon size={18} />
+                <div className="w-px h-5 bg-slate-700 mx-1" />
+                
+                <button type="button" onClick={setLink} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border-none outline-none cursor-pointer ${editor.isActive('link') ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`} title="Lien">
+                    <LinkIcon size={16} />
                 </button>
-                <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-text-muted)]" style={{ padding: '8px', borderRadius: '8px' }} title="Insérer un tableau">
-                    <TableIcon size={18} />
+                <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-white border-none outline-none cursor-pointer" title="Insérer un tableau">
+                    <TableIcon size={16} />
                 </button>
-                <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-text-muted)]" title="Lier une carte existante" style={{ position: 'relative', padding: '8px', borderRadius: '8px' }}>
-                    <Cards size={18} />
+                <button type="button" onClick={() => setShowCardSelector(!showCardSelector)} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-slate-400 hover:bg-slate-700 hover:text-white relative border-none outline-none cursor-pointer" title="Lier une carte existante">
+                    <Cards size={16} />
                 </button>
 
-                <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', margin: '0 4px' }} />
+                <div className="w-px h-5 bg-slate-700 mx-1" />
 
-                {/* Blocs Médicaux Spécifiques */}
-                <button type="button" onClick={() => addAlert('definition')} className="bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-blue-600" style={{ padding: '6px 12px', borderRadius: '8px' }} title="Définition">
-                    <Info size={18} weight="bold" /> <span style={{fontSize: 13, marginLeft: 6, fontWeight: 600}}>Déf.</span>
-                </button>
-                <button type="button" onClick={() => addAlert('concours')} className="bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-warning)]" style={{ padding: '6px 12px', borderRadius: '8px' }} title="À connaître (Concours)">
-                    <GraduationCap size={18} weight="bold" /> <span style={{fontSize: 13, marginLeft: 6, fontWeight: 600}}>Concours</span>
-                </button>
-                <button type="button" onClick={() => addAlert('vigilance')} className="bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-danger)]" style={{ padding: '6px 12px', borderRadius: '8px' }} title="Vigilance">
-                    <Warning size={18} weight="bold" /> <span style={{fontSize: 13, marginLeft: 6, fontWeight: 600}}>Vigi.</span>
-                </button>
-                <button type="button" onClick={() => addAlert('expert')} className="bg-transparent border-none cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[var(--color-border)] hover:text-[var(--color-text)] text-[var(--color-text)]" style={{ padding: '6px 12px', borderRadius: '8px' }} title="Expert">
-                    <Brain size={18} weight="bold" /> <span style={{fontSize: 13, marginLeft: 6, fontWeight: 600}}>Expert</span>
-                </button>
+                {/* Custom Alerts (Colored) */}
+                <div className="flex items-center gap-1 ml-1 overflow-x-auto custom-scrollbar">
+                    <button type="button" onClick={() => addAlert('definition')} className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-blue-400 hover:bg-blue-500/10 transition-colors border-none outline-none cursor-pointer" title="Définition">
+                        <Info size={14} weight="bold" /> DÉF.
+                    </button>
+                    <button type="button" onClick={() => addAlert('concours')} className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-amber-400 hover:bg-amber-500/10 transition-colors border-none outline-none cursor-pointer" title="À connaître (Concours)">
+                        <GraduationCap size={14} weight="bold" /> CONCOURS
+                    </button>
+                    <button type="button" onClick={() => addAlert('vigilance')} className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-colors border-none outline-none cursor-pointer" title="Vigilance">
+                        <Warning size={14} weight="bold" /> VIGI.
+                    </button>
+                    <button type="button" onClick={() => addAlert('expert')} className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[10px] font-extrabold uppercase tracking-widest text-slate-300 hover:bg-slate-700 transition-colors border-none outline-none cursor-pointer" title="Expert">
+                        <Brain size={14} weight="bold" /> EXPERT
+                    </button>
+                </div>
             </div>
             
             
             {showCardSelector && (
-                <div ref={selectorRef} className="card-selector-popup" style={{
-                    position: 'absolute', top: '70px', left: '50%', transform: 'translateX(-50%)',
-                    background: 'var(--color-surface)', border: '1px solid #e2e8f0', borderRadius: '8px', 
-                    padding: '8px', zIndex: 50, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    width: '300px', display: 'flex', flexDirection: 'column', gap: '8px'
-                }}>
+                <div ref={selectorRef} className="card-selector-popup courseeditor-style-1" >
                     <input 
                         type="text" 
                         autoFocus
                         placeholder="Rechercher une carte..." 
                         value={cardSearch}
                         onChange={(e) => setCardSearch(e.target.value)}
-                        style={{ padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', outline: 'none' }}
+                        className="courseeditor-style-2" 
                     />
-                    <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                    <div className="courseeditor-style-3" >
                         {filteredCards.length > 0 ? filteredCards.map(c => (
                             <button 
                                 key={c.id} 
                                 type="button" 
                                 onClick={() => insertCardLink(c)}
-                                style={{ padding: '6px 8px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                                className="courseeditor-style-4" 
                                 onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
                                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                                 onFocus={(e) => e.currentTarget.style.background = 'var(--color-bg)'}
@@ -274,7 +272,7 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
                             >
                                 {c.title}
                             </button>
-                        )) : <div style={{ padding: '8px', fontSize: '14px', color: 'var(--color-text-muted)', textAlign: 'center' }}>Aucune carte trouvée</div>}
+                        )) : <div className="courseeditor-style-5" >Aucune carte trouvée</div>}
                     </div>
                 </div>
             )}
@@ -299,21 +297,9 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
                 </BubbleMenu>
             )}
 
-            <div 
-                className="course-editor-content"
-                style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    padding: '24px 32px',
-                    cursor: 'text'
-                }}
-                onClick={() => {
-                    if (editor && !editor.isFocused) {
-                        editor.commands.focus('end');
-                    }
-                }}
-            >
-                <EditorContent editor={editor} style={{ minHeight: '100%' }} />
+            {/* Editor Area */}
+            <div className="flex-1 w-full bg-transparent overflow-y-auto custom-scrollbar relative pb-20">
+                <EditorContent editor={editor} className="h-full prose prose-invert max-w-none text-slate-300 placeholder:text-slate-600" />
             </div>
         </div>
     );

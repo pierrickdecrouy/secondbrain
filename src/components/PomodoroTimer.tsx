@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { usePomodoroStore } from '../store/usePomodoroStore';
+import './styles/PomodoroTimer.css';
 
 export const PomodoroTimer: React.FC = () => {
     const {
@@ -158,12 +159,10 @@ export const PomodoroTimer: React.FC = () => {
                     title="Ouvrir le Pomodoro"
                 >
                     {/* Mode dot */}
-                    <span style={{
-                        width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0,
-                        backgroundColor: dotColor,
-                        boxShadow: isRunning ? `0 0 0 3px ${dotColor}25` : 'none',
-                        transition: 'all 0.4s ease',
-                    }} />
+                    <span className="pomodorotimer-style-1" style={{
+  backgroundColor: dotColor,
+  boxShadow: isRunning ? `0 0 0 3px ${dotColor}25` : 'none'
+}} />
 
                     {/* Time */}
                     <span className={`pomo-time ${isUrgent ? 'urgent' : isRunning ? 'running' : 'idle'}`}>
@@ -171,20 +170,14 @@ export const PomodoroTimer: React.FC = () => {
                     </span>
 
                     {/* Cycle dots */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <div className="pomodorotimer-style-2" >
                         {[0, 1, 2, 3].map(i => (
                             <span
                                 key={i}
-                                style={{
-                                    display: 'block',
-                                    borderRadius: '99px',
-                                    transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-                                    width:  i < completedInRound ? '10px' : '4px',
-                                    height: '4px',
-                                    backgroundColor: i < completedInRound
-                                        ? dotColor
-                                        : 'var(--pomo-dot-empty)',
-                                }}
+                                className="pomodorotimer-style-3" style={{
+  width: i < completedInRound ? '10px' : '4px',
+  backgroundColor: i < completedInRound ? dotColor : 'var(--pomo-dot-empty)'
+}}
                             />
                         ))}
                     </div>
@@ -194,7 +187,7 @@ export const PomodoroTimer: React.FC = () => {
                 <div className="pomo-divider" />
 
                 {/* Controls */}
-                <div style={{ display: 'flex', alignItems: 'center', padding: '4px 4px 4px 6px', gap: '0px' }}>
+                <div className="pomodorotimer-style-4" >
                     <button
                         className={`pomo-ctrl-btn ${isUrgent ? 'urgent-play' : ''}`}
                         onClick={isRunning ? pause : start}
@@ -206,7 +199,7 @@ export const PomodoroTimer: React.FC = () => {
                                 <rect x="14" y="4" width="5" height="16" rx="1.5" />
                             </svg>
                         ) : (
-                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" style={{ marginLeft: '1px' }}>
+                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" className="pomodorotimer-style-5" >
                                 <path d="M8 5v14l11-7z" />
                             </svg>
                         )}
@@ -223,7 +216,7 @@ export const PomodoroTimer: React.FC = () => {
                     </button>
                 </div>
 
-                <div style={{ width: '4px' }} />
+                <div className="pomodorotimer-style-6"  />
             </div>
         </>
     );

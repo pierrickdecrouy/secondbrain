@@ -4,6 +4,7 @@ import type { Card } from '../../types';
 import type { QualityAssessment } from '../../algorithms/qualityScoring';
 import { BrowseGridItem } from '../BrowseGridItem';
 import { BrowseListItem } from '../BrowseListItem';
+import './styles/BrowseMainContent.css';
 
 interface BrowseMainContentProps {
     sortedCards: Card[];
@@ -61,7 +62,7 @@ const CustomListList = React.forwardRef((props: any, ref) => {
 
 // ── Header columns (shared widths must match BrowseListItem layout) ────────────
 const ListHeader: React.FC = () => (
-    <div className="flex items-center gap-5 py-3 px-7 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)] shrink-0 select-none">
+    <div className="flex items-center border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)] shrink-0 select-none browsemaincontent-style-1" >
         {/* checkbox spacer */}
         <div className="shrink-0 w-[18px]" />
         {/* icon spacer */}
@@ -93,7 +94,7 @@ export const BrowseMainContent: React.FC<BrowseMainContentProps> = ({
 
     const gridColumns = viewMode === 'split'
         ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2'
-        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
 
     return (
         <div

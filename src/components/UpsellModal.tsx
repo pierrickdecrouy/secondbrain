@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import './styles/UpsellModal.css';
 
 interface UpsellModalProps {
     isOpen: boolean;
@@ -58,11 +59,11 @@ export const UpsellModal: React.FC<UpsellModalProps> = ({ isOpen, onClose, onSig
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.94, y: 20 }}
                         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1001] w-[calc(100%-40px)] max-w-[400px] border border-white/10 rounded-[24px] py-9 px-8 text-center font-sans shadow-[0_32px_80px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)]"
-                        style={{ background: 'linear-gradient(135deg, #1e1b4b, #1a1a4e)' }}
+                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1001] w-[calc(100%-40px)] max-w-[400px] border border-white/10 rounded-[24px] py-9 px-8 text-center font-sans shadow-[0_32px_80px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.1)] upsellmodal-style-1"
+                        
                     >
                         {/* Accent */}
-                        <div className="h-[1.5px] rounded-[1px] mb-7" style={{ background: 'linear-gradient(90deg, transparent, #10b981 30%, #6366f1 70%, transparent)' }} />
+                        <div className="h-[1.5px] rounded-[1px] mb-7 upsellmodal-style-2"  />
 
                         {/* Icon */}
                         <div className="text-[2.5rem] mb-4 leading-none">{info.icon}</div>
@@ -79,8 +80,8 @@ export const UpsellModal: React.FC<UpsellModalProps> = ({ isOpen, onClose, onSig
                             onClick={onSignIn}
                             whileHover={{ scale: 1.02, boxShadow: '0 0 32px rgba(16,185,129,0.4)' }}
                             whileTap={{ scale: 0.97 }}
-                            className="w-full text-white border-none rounded-[14px] p-3.5 text-[0.95rem] font-bold cursor-pointer font-inherit shadow-[0_4px_20px_rgba(16,185,129,0.3)] mb-3"
-                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                            className="w-full text-white border-none rounded-[14px] p-3.5 text-[0.95rem] font-bold cursor-pointer font-inherit shadow-[0_4px_20px_rgba(16,185,129,0.3)] mb-3 upsellmodal-style-3"
+                            
                         >
                             Créer un compte gratuit
                         </motion.button>

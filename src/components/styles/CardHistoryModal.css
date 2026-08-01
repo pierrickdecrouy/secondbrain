@@ -1,0 +1,163 @@
+.cardhistorymodal-style-1 {
+    z-index: 1100;
+}
+
+.cardhistorymodal-style-2 {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    max-width: 600px;
+    max-height: 80vh;
+}
+
+.cardhistorymodal-style-3 {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.cardhistorymodal-style-4 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cardhistorymodal-style-5 {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cardhistorymodal-style-6 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+}
+
+.cardhistorymodal-style-7 {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.cardhistorymodal-style-8 {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+}
+
+.cardhistorymodal-style-9 {
+    padding: 24px 32px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.cardhistorymodal-style-10 {
+    color: var(--color-text-muted);
+    text-align: center;
+    margin: 40px 0;
+}
+
+.cardhistorymodal-style-11 {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.cardhistorymodal-style-12 {
+    display: flex;
+    gap: 16px;
+}
+
+.cardhistorymodal-style-13 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cardhistorymodal-style-14 {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 6px;
+}
+
+.cardhistorymodal-style-15 {
+    width: 2px;
+    flex: 1;
+    background: var(--color-border);
+    margin: 4px 0;
+}
+
+.cardhistorymodal-style-16 {
+    flex: 1;
+}
+
+.cardhistorymodal-style-17 {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.cardhistorymodal-style-18 {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text);
+}
+
+.cardhistorymodal-style-19 {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.cardhistorymodal-style-20 {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+}
+
+.cardhistorymodal-style-21 {
+    margin-top: 12px;
+    background: var(--color-bg);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+}
+
+.cardhistorymodal-style-22 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.cardhistorymodal-style-23 {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cardhistorymodal-style-24 {
+    font-size: 0.85rem;
+    color: #f43f5e;
+    background: rgba(244, 63, 94, 0.05);
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-decoration: line-through;
+}
+
+.cardhistorymodal-style-25 {
+    font-size: 0.85rem;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+    padding: 6px 10px;
+    border-radius: 4px;
+}

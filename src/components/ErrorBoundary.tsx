@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Warning, ArrowClockwise, House } from '@phosphor-icons/react';
+import './styles/ErrorBoundary.css';
 
 interface Props {
   children?: ReactNode;
@@ -40,58 +41,34 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          width: '100%',
-          padding: '2rem',
-          textAlign: 'center',
-          background: 'var(--color-bg)',
-          color: 'var(--color-text)',
-          borderRadius: '12px'
-        }}>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '1rem', borderRadius: '50%', marginBottom: '1.5rem' }}>
+        <div className="errorboundary-style-1" >
+          <div className="errorboundary-style-2" >
             <Warning size={48} weight="duotone" />
           </div>
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>Oups ! Une erreur est survenue.</h2>
-          <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem', maxWidth: '400px' }}>
+          <h2 className="errorboundary-style-3" >Oups ! Une erreur est survenue.</h2>
+          <p className="errorboundary-style-4" >
             L'application a rencontré un problème inattendu. Rassurez-vous, vos données sont sauvegardées.
           </p>
           
           {this.state.error && (
-            <div style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              padding: '1rem',
-              borderRadius: '8px',
-              fontSize: '0.8rem',
-              color: '#ef4444',
-              maxWidth: '600px',
-              overflow: 'auto',
-              textAlign: 'left',
-              marginBottom: '2rem',
-              fontFamily: 'monospace'
-            }}>
+            <div className="errorboundary-style-5" >
               {this.state.error.message}
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="errorboundary-style-6" >
             <button
               onClick={this.handleReset}
-              className="settings-btn secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              className="settings-btn secondary errorboundary-style-7"
+              
             >
               <ArrowClockwise size={18} />
               Réessayer
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="settings-btn primary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              className="settings-btn primary errorboundary-style-8"
+              
             >
               <House size={18} />
               Recharger l'application

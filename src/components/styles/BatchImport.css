@@ -1,0 +1,72 @@
+/* Format Selector in Batch Import */
+.batch-format-selector {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem;
+    background-color: var(--color-surface-hover);
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border);
+    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+}
+
+.batch-format-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--color-text-muted);
+}
+
+.batch-format-btn:hover:not(.active) {
+    color: var(--color-text);
+}
+
+.batch-format-btn.active {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Textarea Dropzone */
+.batch-dropzone {
+    flex: 1;
+    position: relative;
+    border-radius: 1rem;
+    border: 2px solid var(--color-border);
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+    background-color: var(--color-surface);
+    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+}
+
+.batch-dropzone.drag-over {
+    border-style: solid;
+    border-color: var(--active-color, var(--color-border-hover));
+    background-color: var(--active-bg, var(--color-surface-hover));
+}
+
+/* Card Preview Item */
+.batch-preview-item {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background-color: var(--color-surface-hover);
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    transition: border-color 0.2s ease-in-out;
+}
+
+.batch-preview-item:hover {
+    border-color: var(--color-border-hover);
+}

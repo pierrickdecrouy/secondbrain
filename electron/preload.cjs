@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Import cards (Safe Upsert)
     importCards: (cards) => ipcRenderer.invoke('import-cards', cards),
 
+    // Search cards using FTS5 (Lexical)
+    searchCardsFTS: (query, limit) => ipcRenderer.invoke('search-cards-fts', query, limit),
+
     // Get database path (for debugging)
     getDbPath: () => ipcRenderer.invoke('get-db-path'),
 
@@ -39,4 +42,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Check if running in Electron
     isElectron: true,
+
+    // PDF Export
+    generateCoursePdf: (courseData) => ipcRenderer.invoke('generate-course-pdf', courseData),
 });

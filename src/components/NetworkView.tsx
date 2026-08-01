@@ -21,6 +21,7 @@ import { useTheme } from '../context/ThemeContext';
 import type { ClusterInfo } from '../utils/clustering';
 import ClusteringWorker from '../workers/clustering.worker?worker';
 import { NetworkControls } from './NetworkControls';
+import './styles/NetworkView.css';
 
 // Lazy-load the 3D graph (heavy Three.js bundle)
 const ForceGraph3D = lazy(() => import('react-force-graph-3d'));
@@ -802,13 +803,10 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                                 }}
                                 className={`text-left p-3 rounded-lg border-l-4 cursor-pointer transition-all hover:-translate-y-[2px] hover:shadow-md
                                     ${isDark ? 'bg-slate-900/50 hover:bg-slate-800 border-slate-700' : 'bg-slate-50 hover:bg-white border-slate-200'}
-                                `}
+                                 networkview-style-1`}
                                 style={{
-                                    borderLeftColor: getClusterColor(cluster.id),
-                                    borderTopColor: 'transparent',
-                                    borderRightColor: 'transparent',
-                                    borderBottomColor: 'transparent',
-                                }}
+  borderLeftColor: getClusterColor(cluster.id)
+}}
                             >
                                 <div className={`font-semibold text-sm mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                                     {cluster.mainSubject} ({cluster.nodeIds.length} fiches)

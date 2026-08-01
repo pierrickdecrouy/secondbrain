@@ -199,6 +199,38 @@ export function useGraphPaint({
 
         ctx.stroke();
 
+        // Draw biological directional arrows
+        const isStimulates = link.type === 'stimulates';
+        const isInhibits = link.type === 'inhibits';
+
+        if (isStimulates || isInhibits) {
+            const angle = Math.atan2((target.y as number) - (source.y as number), (target.x as number) - (source.x as number));
+            const targetRadius = Math.max(2, Math.min(target.val || 2, 8));
+            
+            // Position arrow just outside the node radius
+            const arrowX = (target.x as number) - Math.cos(angle) * (targetRadius + 2 / globalScale);
+            const arrowY = (target.y as number) - Math.sin(angle) * (targetRadius + 2 / globalScale);
+
+            ctx.beginPath();
+            
+            if (isStimulates) {
+                const ARROW_LENGTH = 6 / globalScale;
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX - ARROW_LENGTH * Math.cos(angle - Math.PI / 6), arrowY - ARROW_LENGTH * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(arrowX - ARROW_LENGTH * Math.cos(angle + Math.PI / 6), arrowY - ARROW_LENGTH * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fillStyle = '#10b981'; // Green for stimulates
+                ctx.fill();
+            } else if (isInhibits) {
+                const BAR_WIDTH = 5 / globalScale;
+                ctx.moveTo(arrowX - BAR_WIDTH * Math.cos(angle - Math.PI / 2), arrowY - BAR_WIDTH * Math.sin(angle - Math.PI / 2));
+                ctx.lineTo(arrowX - BAR_WIDTH * Math.cos(angle + Math.PI / 2), arrowY - BAR_WIDTH * Math.sin(angle + Math.PI / 2));
+                ctx.strokeStyle = '#ef4444'; // Red for inhibits
+                ctx.lineWidth = 2.5 / globalScale;
+                ctx.stroke();
+            }
+        }
+
         // Reset Context
         ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;

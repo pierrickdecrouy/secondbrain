@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import './styles/LoginPage.css';
 
 interface LoginPageProps {
     onBypass: () => void;
@@ -106,27 +107,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
     };
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0,
-            background: 'linear-gradient(135deg, #0f0c29, #1a1a4e, #0d1b2a)',
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Inter, system-ui, sans-serif',
-            overflow: 'hidden',
-        }}>
+        <div className="loginpage-style-1" >
             {/* Canvas */}
-            <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} />
+            <canvas ref={canvasRef} className="loginpage-style-2"  />
 
             {/* Orbs */}
             <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ position: 'absolute', top: '-15%', left: '-10%', width: '55vw', height: '55vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.32) 0%, transparent 70%)', filter: 'blur(70px)', zIndex: 1, pointerEvents: 'none' }} />
+                className="loginpage-style-3"  />
             <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.25, 0.45, 0.25] }} transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-                style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '65vw', height: '65vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.38) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 1, pointerEvents: 'none' }} />
+                className="loginpage-style-4"  />
             <motion.div animate={{ y: [0, -30, 0], opacity: [0.15, 0.3, 0.15] }} transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-                style={{ position: 'absolute', top: '30%', right: '10%', width: '35vw', height: '35vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: 1, pointerEvents: 'none' }} />
+                className="loginpage-style-5"  />
 
             {/* Layout — tout centré en colonne serrée */}
-            <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 420, padding: '0 20px', gap: '20px' }}>
+            <div className="loginpage-style-6" >
 
                 {/* Logo */}
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}>
@@ -135,28 +129,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                         alt="Extnd."
                         animate={{ y: [0, -5, 0] }}
                         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                        style={{ height: 'clamp(40px, 7vw, 60px)', filter: 'brightness(0) invert(1)', opacity: 0.9, display: 'block', userSelect: 'none', pointerEvents: 'none' }}
+                        className="loginpage-style-7" 
                     />
                 </motion.div>
 
                 {/* Slogan */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} style={{ textAlign: 'center' }}>
-                    <h1 style={{
-                        fontSize: 'clamp(1.6rem, 5.5vw, 2.4rem)',
-                        fontWeight: 800,
-                        letterSpacing: '-0.03em',
-                        lineHeight: 1.15,
-                        margin: 0,
-                        background: 'linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #6ee7b7 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                    }}>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="loginpage-style-8" >
+                    <h1 className="loginpage-style-9" >
                         Your Mind.<br />Without limits.
                     </h1>
                     <AnimatePresence mode="wait">
                         <motion.p key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-                            style={{ color: 'rgba(255,255,255,0.38)', fontSize: '0.82rem', margin: '8px 0 0', fontWeight: 400, lineHeight: 1.5 }}>
+                            className="loginpage-style-10" >
                             {subtitles[mode]}
                         </motion.p>
                     </AnimatePresence>
@@ -167,24 +151,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                     initial={{ opacity: 0, y: 24, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 0.28, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    style={{
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.13)',
-                        borderRadius: '24px',
-                        backdropFilter: 'blur(30px)',
-                        WebkitBackdropFilter: 'blur(30px)',
-                        padding: '28px 32px',
-                        boxShadow: '0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)',
-                    }}
+                    className="loginpage-style-11" 
                 >
                     {/* Accent */}
-                    <div style={{ height: '1.5px', background: 'linear-gradient(90deg, transparent, #10b981 30%, #6366f1 70%, transparent)', borderRadius: '1px', marginBottom: '22px' }} />
+                    <div className="loginpage-style-12"  />
 
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <form onSubmit={handleSubmit} className="loginpage-style-13" >
                         <AnimatePresence>
                             {mode === 'signup' && (
-                                <motion.div key="name" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} style={{ overflow: 'hidden' }}>
+                                <motion.div key="name" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} className="loginpage-style-14" >
                                     <input type="text" placeholder={t('auth.name_placeholder')} value={name} onChange={e => setName(e.target.value)} required style={inp}
                                         onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
                                         onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.11)')} />
@@ -198,7 +173,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
 
                         <AnimatePresence>
                             {mode !== 'reset' && (
-                                <motion.div key="pwd" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} style={{ overflow: 'hidden' }}>
+                                <motion.div key="pwd" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} className="loginpage-style-15" >
                                     <input type="password" placeholder={t('auth.password_placeholder')} value={password} onChange={e => setPassword(e.target.value)} required style={inp}
                                         onFocus={e => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
                                         onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.11)')} />
@@ -207,9 +182,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                         </AnimatePresence>
 
                         {mode === 'login' && (
-                            <div style={{ textAlign: 'right', marginTop: '-2px' }}>
+                            <div className="loginpage-style-16" >
                                 <button type="button" onClick={() => { setMode('reset'); setError(''); setSuccess(''); }}
-                                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                                    className="loginpage-style-17" >
                                     {t('auth.switch_reset')}
                                 </button>
                             </div>
@@ -218,27 +193,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                         <AnimatePresence>
                             {(error || success) && (
                                 <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                                    style={{ color: error ? '#f87171' : '#34d399', fontSize: '0.75rem', margin: 0, padding: '7px 11px', background: error ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: '8px', border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}` }}>
+                                    className="loginpage-style-18" style={{
+  color: error ? '#f87171' : '#34d399',
+  background: error ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+  border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`
+}}>
                                     {error || success}
                                 </motion.p>
                             )}
                         </AnimatePresence>
 
                         <motion.button type="submit" whileHover={{ scale: 1.02, boxShadow: '0 0 36px rgba(16,185,129,0.4)' }} whileTap={{ scale: 0.97 }} disabled={loading}
-                            style={{ width: '100%', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', padding: '13px', fontSize: '0.9rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, fontFamily: 'inherit', marginTop: '2px', boxShadow: '0 4px 20px rgba(16,185,129,0.35)', transition: 'opacity 0.2s' }}>
+                            className="loginpage-style-19" style={{
+  cursor: loading ? 'not-allowed' : 'pointer',
+  opacity: loading ? 0.6 : 1
+}}>
                             {loading ? '…' : mode === 'login' ? t('auth.btn_login') : mode === 'signup' ? t('auth.btn_signup') : t('auth.btn_reset')}
                         </motion.button>
                     </form>
 
                     {mode !== 'reset' && (
                         <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '16px 0' }}>
-                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.09)' }} />
-                                <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: '0.68rem', letterSpacing: '0.05em' }}>OU</span>
-                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.09)' }} />
+                            <div className="loginpage-style-20" >
+                                <div className="loginpage-style-21"  />
+                                <span className="loginpage-style-22" >OU</span>
+                                <div className="loginpage-style-23"  />
                             </div>
                             <motion.button onClick={handleGoogle} whileHover={{ background: 'rgba(255,255,255,0.1)' }} whileTap={{ scale: 0.97 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: '12px', padding: '12px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.2s' }}>
+                                className="loginpage-style-24" >
                                 <svg width="17" height="17" viewBox="0 0 24 24">
                                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -251,33 +233,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                     )}
 
                     {/* Toggle + Offline */}
-                    <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div className="loginpage-style-25" >
                         {mode === 'login' && (
-                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', margin: 0 }}>
+                            <p className="loginpage-style-26" >
                                 {t('auth.no_account')}{' '}
                                 <button type="button" onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
-                                    style={{ background: 'none', border: 'none', color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit' }}>
+                                    className="loginpage-style-27" >
                                     {t('auth.btn_signup')}
                                 </button>
                             </p>
                         )}
                         {mode === 'signup' && (
-                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', margin: 0 }}>
+                            <p className="loginpage-style-28" >
                                 {t('auth.has_account')}{' '}
                                 <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
-                                    style={{ background: 'none', border: 'none', color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit' }}>
+                                    className="loginpage-style-29" >
                                     {t('auth.btn_login')}
                                 </button>
                             </p>
                         )}
                         {mode === 'reset' && (
                             <button type="button" onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
-                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                className="loginpage-style-30" >
                                 ← {t('auth.back')}
                             </button>
                         )}
                         <button type="button" onClick={onBypass}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.18)', fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.02em' }}>
+                            className="loginpage-style-31" >
                             {t('auth.bypass')} →
                         </button>
                     </div>
@@ -285,9 +267,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
 
                 {/* Tags discrets */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
-                    style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }}>
+                    className="loginpage-style-32" >
                     {['Graphe de connaissances', 'Répétition FSRS', 'Export Anki', 'Cloud'].map(tag => (
-                        <span key={tag} style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.65rem', fontWeight: 500, padding: '3px 10px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <span key={tag} className="loginpage-style-33" >
                             {tag}
                         </span>
                     ))}

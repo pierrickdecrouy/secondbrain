@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Badge } from '../Badge';
+import './styles/SuggestionList.css';
 
 interface SuggestionListProps {
   items: any[];
@@ -63,45 +64,25 @@ export const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: rect.bottom + 4,
-        left: rect.left,
-        zIndex: 9999,
-        background: 'var(--color-surface, #ffffff)',
-        border: '1px solid var(--color-border, #e2e8f0)',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        overflow: 'hidden',
-        minWidth: '250px',
-        maxHeight: '300px',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="suggestionlist-style-1" style={{
+  top: rect.bottom + 4,
+  left: rect.left
+}}
     >
-      <div style={{ padding: '8px 12px', fontSize: '0.8rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)' }}>
+      <div className="suggestionlist-style-2" >
         Insérer un lien...
       </div>
-      <div style={{ overflowY: 'auto' }}>
+      <div className="suggestionlist-style-3" >
         {props.items.map((item, index) => (
           <button
             key={item.id}
             onClick={() => selectItem(index)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              padding: '8px 12px',
-              border: 'none',
-              background: index === selectedIndex ? 'var(--color-surface-hover, #f1f5f9)' : 'transparent',
-              color: 'var(--color-text, #1e293b)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              gap: '8px',
-            }}
+            className="suggestionlist-style-4" style={{
+  background: index === selectedIndex ? 'var(--color-surface-hover, #f1f5f9)' : 'transparent'
+}}
           >
             <Badge type={item.type} />
-            <span style={{ fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span className="suggestionlist-style-5" >
               {item.title}
             </span>
           </button>

@@ -59,7 +59,7 @@ export interface Link {
     source: string | Node;
     target: string | Node;
     value?: number;
-    type?: string;
+    type?: 'stimulates' | 'inhibits' | 'relates' | string;
     reason?: string;
     quality?: 'boost' | 'match' | 'neutral';
 }
@@ -96,6 +96,7 @@ declare global {
       isElectron: boolean;
       loadCards: () => Promise<Card[]>;
       saveCards: (cards: Card[]) => Promise<void>;
+      searchCardsFTS: (query: string, limit?: number) => Promise<{id: string, highlight: string}[]>;
       loadSetting: <T>(key: string) => Promise<T | undefined>;
       saveSetting: <T>(key: string, value: T) => Promise<void>;
       removeSetting: (key: string) => Promise<void>;

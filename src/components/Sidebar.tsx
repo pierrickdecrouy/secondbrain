@@ -10,6 +10,7 @@ import { TagManagerModal } from './TagManagerModal';
 import { useTranslation } from 'react-i18next';
 import { useCardStore } from '../store/useCardStore';
 import { useMemo } from 'react';
+import './styles/Sidebar.css';
 
 export interface SidebarProps {
   pausedTasks: PausedTask[];
@@ -91,33 +92,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
     <div className="workspace-sidebar-container" ref={sidebarRef}>
       {sidebarOpen && (
         <div
-          className="sidebar-overlay"
-          style={{ position: 'fixed', inset: 0, zIndex: 90, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          className="sidebar-overlay sidebar-style-1"
+          
           onClick={() => setSidebarOpen(false)}
         />
       )}
       <aside
-        className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''} ${isHomeSection ? 'home-overlay' : ''}`}
-        style={{ zIndex: 100 }}
+        className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} ${shouldCollapseSidebar ? 'collapsed' : ''} ${isHomeSection ? 'home-overlay' : ''} sidebar-style-2`}
+        
       >
         {/* Header */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: shouldCollapseSidebar ? 'center' : 'space-between',
-            padding: shouldCollapseSidebar ? '16px 0 12px' : '16px 12px 12px',
-            borderBottom: '1px solid var(--color-border)',
-            minHeight: 56,
-            flexShrink: 0,
-          }}
+          className="sidebar-style-3" style={{
+  justifyContent: shouldCollapseSidebar ? 'center' : 'space-between',
+  padding: shouldCollapseSidebar ? '16px 0 12px' : '16px 12px 12px'
+}}
         >
           {!shouldCollapseSidebar && (
-            <img src="/Logo-linear.svg" alt="Extnd" style={{ height: 28, width: 'auto', marginLeft: 4 }} />
+            <img src="/Logo-linear.svg" alt="Extnd" className="sidebar-style-4"  />
           )}
           <button
-            className="workspace-btn"
-            style={{ borderRadius: 10 }}
+            className="workspace-btn sidebar-style-5"
+            
             onClick={() => {
               if (shouldCollapseSidebar) {
                 setSidebarCollapsed(false);
@@ -148,31 +144,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
                   color: item.accent,
                 } : {}}
               >
-                <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', color: isActive ? item.accent : undefined }}>
+                <span className="sidebar-style-6" style={{
+  color: isActive ? item.accent : undefined
+}}>
                   {item.icon}
                 </span>
                 {!shouldCollapseSidebar && (
-                  <span style={{ flex: 1 }}>{item.label}</span>
+                  <span className="sidebar-style-7" >{item.label}</span>
                 )}
                 {/* Due badge on review item */}
                 {item.id === 'review' && dueCount > 0 && (
-                  <span style={{
-                    minWidth: 18, height: 18,
-                    borderRadius: 9,
-                    background: '#f59e0b',
-                    color: '#fff',
-                    fontSize: '0.6rem',
-                    fontWeight: 800,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '0 4px',
-                    marginLeft: shouldCollapseSidebar ? undefined : 'auto',
-                    position: shouldCollapseSidebar ? 'absolute' : 'static',
-                    top: shouldCollapseSidebar ? 4 : undefined,
-                    right: shouldCollapseSidebar ? 4 : undefined,
-                    lineHeight: 1,
-                    boxShadow: '0 1px 4px rgba(245,158,11,0.4)',
-                    flexShrink: 0,
-                  }}>
+                  <span className="sidebar-style-8" style={{
+  marginLeft: shouldCollapseSidebar ? undefined : 'auto',
+  position: shouldCollapseSidebar ? 'absolute' : 'static',
+  top: shouldCollapseSidebar ? 4 : undefined,
+  right: shouldCollapseSidebar ? 4 : undefined
+}}>
                     {dueCount > 99 ? '99+' : dueCount}
                   </span>
                 )}
@@ -182,15 +169,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
 
           {/* Tags button — visible only when expanded */}
           {!shouldCollapseSidebar && (
-            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--color-border)' }}>
+            <div className="sidebar-style-9" >
               <button
                 onClick={() => setIsTagManagerOpen(true)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-                  background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12,
-                  color: 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: 500,
-                  width: '100%', transition: 'all 0.15s ease',
-                }}
+                className="sidebar-style-10" 
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
               >
@@ -201,36 +183,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
 
           {/* Paused tasks */}
           {!shouldCollapseSidebar && pausedTasks.length > 0 && (
-            <div style={{ marginTop: 16, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)', marginBottom: 8, paddingLeft: 12 }}>
+            <div className="sidebar-style-11" >
+              <div className="sidebar-style-12" >
                 {t('sidebar.active_tasks')}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="sidebar-style-13" >
                 {pausedTasks.map(task => {
                   let TaskIcon = Pause;
                   if (task.type === 'card_edit') TaskIcon = PencilSimple;
                   else if (task.type === 'course_edit') TaskIcon = BookOpen;
                   else if (task.type === 'review_session') TaskIcon = ClockCounterClockwise;
                   return (
-                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 8px', borderRadius: 10, backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', margin: '0 4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', flex: 1 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div key={task.id} className="sidebar-style-14" >
+                      <div className="sidebar-style-15" >
+                        <div className="sidebar-style-16" >
                           <TaskIcon size={13} color="var(--color-primary)" />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }} title={task.title}>
+                        <div className="sidebar-style-17" >
+                          <span className="sidebar-style-18"  title={task.title}>
                             {task.title}
                           </span>
-                          <span style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)' }}>
+                          <span className="sidebar-style-19" >
                             {formatTaskTime(task.timestamp)}
                           </span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, marginLeft: 4 }}>
-                        <button onClick={() => onResumeTask(task.id)} style={{ background: 'var(--color-primary)', border: 'none', cursor: 'pointer', padding: '5px', color: 'white', borderRadius: 6 }} title="Reprendre">
+                      <div className="sidebar-style-20" >
+                        <button onClick={() => onResumeTask(task.id)} className="sidebar-style-21"  title="Reprendre">
                           <Play size={12} weight="bold" />
                         </button>
-                        <button onClick={() => onRemoveTask(task.id)} style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer', padding: '5px', color: 'var(--color-text-muted)', borderRadius: 6 }} title="Abandonner">
+                        <button onClick={() => onRemoveTask(task.id)} className="sidebar-style-22"  title="Abandonner">
                           <Trash size={12} />
                         </button>
                       </div>
@@ -243,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
         </nav>
 
         {/* Stats at bottom */}
-        <div style={{ borderTop: '1px solid var(--color-border)', padding: '8px', flexShrink: 0 }}>
+        <div className="sidebar-style-23" >
           {navItems.filter(i => i.id === 'stats').map(item => {
             const isActive = location.pathname === item.path;
             return (
@@ -254,7 +236,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
                 title={shouldCollapseSidebar ? item.label : undefined}
                 style={isActive ? { background: `${item.accent}18`, color: item.accent } : {}}
               >
-                <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', color: isActive ? item.accent : undefined }}>
+                <span className="sidebar-style-24" style={{
+  color: isActive ? item.accent : undefined
+}}>
                   {item.icon}
                 </span>
                 {!shouldCollapseSidebar && <span>{item.label}</span>}

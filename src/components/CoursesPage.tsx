@@ -11,6 +11,7 @@ import { CourseViewer } from './CourseViewer';
 import { AddDataModal } from './AddDataModal';
 import { DetailModal } from './DetailModal';
 import { useCardStore as useCards } from '../store/useCardStore';
+import './styles/CoursesPage.css';
 
 interface CoursesPageProps {
     onPause?: (draft: Partial<Card>) => void;
@@ -203,17 +204,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                         allCards={cards}
                         onClose={() => setViewingConcept(null)}
                         onLinkClick={() => {}}
-                        actions={
-                            <div className="modal-actions">
-                                <button
-                                    className="btn-icon"
-                                    onClick={() => { setViewingConcept(null); setIsCreating(false); setEditingCourse(viewingConcept); }}
-                                    title="Modifier"
-                                >
-                                    <PencilSimple size={18} />
-                                </button>
-                            </div>
-                        }
+                        onEdit={() => { setViewingConcept(null); setIsCreating(false); setEditingCourse(viewingConcept); }}
                     />
                 )}
             </>
@@ -305,7 +296,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
                                 : 'Créez votre premier cours pour commencer.'}
                         </p>
                         {!search && !selectedTag && (
-                            <button onClick={handleCreate} className="courses-create-btn" style={{ marginTop: 20 }}>
+                            <button onClick={handleCreate} className="courses-create-btn coursespage-style-1" >
                                 <Plus size={17} weight="bold" />
                                 Nouveau cours
                             </button>

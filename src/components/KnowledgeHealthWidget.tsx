@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { Brain, WarningCircle, Clock } from '@phosphor-icons/react';
 import type { Card } from '../types';
 import { calculateQualityScore } from '../algorithms/qualityScoring';
+import './styles/KnowledgeHealthWidget.css';
 
 interface KnowledgeHealthWidgetProps {
     cards: Card[];
@@ -122,126 +123,83 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
     };
 
     return (
-        <div style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '16px',
-            padding: '24px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-            width: '100%',
-            maxWidth: '480px',
-            boxSizing: 'border-box'
-        }}>
+        <div className="knowledgehealthwidget-style-1" >
             {/* Header */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '24px'
-            }}>
-                <div style={{
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    color: 'var(--color-text)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                }}>
+            <div className="knowledgehealthwidget-style-2" >
+                <div className="knowledgehealthwidget-style-3" >
                     <Brain size={24} color="var(--color-drug)" />
                     Solidité des Connaissances
                 </div>
-                <span style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--color-text-muted)',
-                    fontWeight: 600,
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    padding: '4px 10px',
-                    borderRadius: '20px'
-                }}>
+                <span className="knowledgehealthwidget-style-4" >
                     {stats.total} fiches
                 </span>
             </div>
 
             {/* Stats Bars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="knowledgehealthwidget-style-5" >
 
                 {/* Excellence */}
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Excellence</div>
-                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%',
-                            background: 'var(--color-warning)',
-                            width: getWidth(stats.counts.excellence),
-                            transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }} />
+                <div className="knowledgehealthwidget-style-6" >
+                    <div className="knowledgehealthwidget-style-7" >Excellence</div>
+                    <div className="knowledgehealthwidget-style-8" >
+                        <div className="knowledgehealthwidget-style-9" style={{
+  width: getWidth(stats.counts.excellence)
+}} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
+                    <div className="knowledgehealthwidget-style-10" >
                         {stats.counts.excellence}
                     </div>
                 </div>
 
                 {/* Robuste */}
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Robuste</div>
-                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%',
-                            background: 'var(--color-success)',
-                            width: getWidth(stats.counts.robuste),
-                            transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }} />
+                <div className="knowledgehealthwidget-style-11" >
+                    <div className="knowledgehealthwidget-style-12" >Robuste</div>
+                    <div className="knowledgehealthwidget-style-13" >
+                        <div className="knowledgehealthwidget-style-14" style={{
+  width: getWidth(stats.counts.robuste)
+}} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
+                    <div className="knowledgehealthwidget-style-15" >
                         {stats.counts.robuste}
                     </div>
                 </div>
 
                 {/* Correct */}
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Correct</div>
-                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%',
-                            background: 'var(--color-physio)',
-                            width: getWidth(stats.counts.correct),
-                            transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }} />
+                <div className="knowledgehealthwidget-style-16" >
+                    <div className="knowledgehealthwidget-style-17" >Correct</div>
+                    <div className="knowledgehealthwidget-style-18" >
+                        <div className="knowledgehealthwidget-style-19" style={{
+  width: getWidth(stats.counts.correct)
+}} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
+                    <div className="knowledgehealthwidget-style-20" >
                         {stats.counts.correct}
                     </div>
                 </div>
 
                 {/* Incomplet */}
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Incomplet</div>
-                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%',
-                            background: '#f97316', // Orange stays orange or uses warning
-                            width: getWidth(stats.counts.incomplet),
-                            transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }} />
+                <div className="knowledgehealthwidget-style-21" >
+                    <div className="knowledgehealthwidget-style-22" >Incomplet</div>
+                    <div className="knowledgehealthwidget-style-23" >
+                        <div className="knowledgehealthwidget-style-24" style={{
+  // Orange stays orange or uses warning
+  width: getWidth(stats.counts.incomplet)
+}} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
+                    <div className="knowledgehealthwidget-style-25" >
                         {stats.counts.incomplet}
                     </div>
                 </div>
 
                 {/* Ebauche */}
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
-                    <div style={{ width: '85px', fontWeight: 500, color: 'var(--color-text)' }}>Ébauche</div>
-                    <div style={{ flex: 1, height: '8px', background: 'var(--color-bg)', borderRadius: '4px', margin: '0 16px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%',
-                            background: 'var(--color-text-muted)',
-                            width: getWidth(stats.counts.ebauche),
-                            transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }} />
+                <div className="knowledgehealthwidget-style-26" >
+                    <div className="knowledgehealthwidget-style-27" >Ébauche</div>
+                    <div className="knowledgehealthwidget-style-28" >
+                        <div className="knowledgehealthwidget-style-29" style={{
+  width: getWidth(stats.counts.ebauche)
+}} />
                     </div>
-                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 600, color: 'var(--color-text)' }}>
+                    <div className="knowledgehealthwidget-style-30" >
                         {stats.counts.ebauche}
                     </div>
                 </div>
@@ -250,41 +208,18 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
 
             {/* Proactive weak-node suggestions (SRS-based) */}
             {topWeakNodes.length > 0 && (
-                <div style={{
-                    marginTop: '24px',
-                    paddingTop: '20px',
-                    borderTop: '1px solid var(--color-border)',
-                }}>
-                    <div style={{
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: 'var(--color-text-muted)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        marginBottom: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                    }}>
+                <div className="knowledgehealthwidget-style-31" >
+                    <div className="knowledgehealthwidget-style-32" >
                         <Clock size={13} />
                         Nœuds à réviser en priorité
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div className="knowledgehealthwidget-style-33" >
                         {topWeakNodes.map(node => (
-                            <div key={node.id} style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                background: 'var(--color-bg)',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: '8px',
-                                padding: '8px 12px',
-                                fontSize: '0.82rem',
-                            }}>
-                                <span style={{ fontWeight: 600, color: 'var(--color-text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div key={node.id} className="knowledgehealthwidget-style-34" >
+                                <span className="knowledgehealthwidget-style-35" >
                                     {node.title}
                                 </span>
-                                <span style={{ color: '#ef4444', marginLeft: '8px', flexShrink: 0, fontSize: '0.78rem' }}>
+                                <span className="knowledgehealthwidget-style-36" >
                                     {node.detail}
                                 </span>
                             </div>
@@ -295,29 +230,12 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
 
             {/* Footer / Actions */}
             {stats.weakCount > 0 && (
-                <div style={{
-                    marginTop: '20px',
-                    paddingTop: '20px',
-                    borderTop: topWeakNodes.length > 0 ? 'none' : '1px solid var(--color-border)',
-                    display: 'flex',
-                    justifyContent: 'flex-end'
-                }}>
+                <div className="knowledgehealthwidget-style-37" style={{
+  borderTop: topWeakNodes.length > 0 ? 'none' : '1px solid var(--color-border)'
+}}>
                     <button
                         onClick={onReviewLowQuality}
-                        style={{
-                            backgroundColor: 'var(--color-bg)',
-                            color: '#ef4444',
-                            border: '1px solid var(--color-border)',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s ease'
-                        }}
+                        className="knowledgehealthwidget-style-38" 
                         onMouseOver={(e) => {
                             e.currentTarget.style.backgroundColor = 'var(--color-surface)';
                             e.currentTarget.style.transform = 'translateY(-1px)';
@@ -334,15 +252,7 @@ export const KnowledgeHealthWidget: React.FC<KnowledgeHealthWidgetProps> = ({ ca
             )}
 
             {stats.weakCount === 0 && stats.total > 0 && topWeakNodes.length === 0 && (
-                <div style={{
-                    marginTop: '28px',
-                    paddingTop: '20px',
-                    borderTop: '1px solid var(--color-border)',
-                    textAlign: 'center',
-                    color: 'var(--color-success)',
-                    fontSize: '0.9rem',
-                    fontWeight: 500
-                }}>
+                <div className="knowledgehealthwidget-style-39" >
                     ✨ Votre cerveau est en pleine forme !
                 </div>
             )}

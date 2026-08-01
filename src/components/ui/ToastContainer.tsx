@@ -2,6 +2,7 @@ import React from 'react';
 import { X, CheckCircle, WarningCircle, Info, Warning } from '@phosphor-icons/react';
 import { useToastStore } from '../../store/useToastStore';
 import type { ToastVariant } from '../../store/useToastStore';
+import './styles/ToastContainer.css';
 
 const VARIANT_STYLES: Record<ToastVariant, { bg: string; border: string; icon: React.ReactNode }> = {
   success: {
@@ -33,17 +34,7 @@ export const ToastContainer: React.FC = () => {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        bottom: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        zIndex: 10000,
-        pointerEvents: 'none',
-      }}
+      className="toastcontainer-style-1" 
       aria-live="polite"
       aria-label="Notifications"
     >
@@ -53,26 +44,13 @@ export const ToastContainer: React.FC = () => {
           <div
             key={t.id}
             role="status"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: style.bg,
-              color: 'white',
-              padding: '12px 18px',
-              borderRadius: '12px',
-              fontSize: '14px',
-              fontWeight: 600,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              boxShadow: `0 8px 24px ${style.border.replace('0.3', '0.4')}`,
-              pointerEvents: 'all',
-              animation: 'toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-              maxWidth: '420px',
-              minWidth: '240px',
-            }}
+            className="toastcontainer-style-2" style={{
+  background: style.bg,
+  boxShadow: `0 8px 24px ${style.border.replace('0.3', '0.4')}`
+}}
           >
             {style.icon}
-            <span style={{ flex: 1 }}>{t.message}</span>
+            <span className="toastcontainer-style-3" >{t.message}</span>
             {t.action && (
               <button
                 onClick={(e) => {
@@ -80,18 +58,7 @@ export const ToastContainer: React.FC = () => {
                   t.action!.onClick();
                   dismiss(t.id);
                 }}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: '1px solid rgba(255,255,255,0.4)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  marginLeft: '8px',
-                  transition: 'background 0.2s',
-                }}
+                className="toastcontainer-style-4" 
                 onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
                 onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
               >
@@ -101,15 +68,7 @@ export const ToastContainer: React.FC = () => {
             <button
               onClick={() => dismiss(t.id)}
               aria-label="Fermer la notification"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                padding: '2px',
-                display: 'flex',
-                opacity: 0.8,
-              }}
+              className="toastcontainer-style-5" 
             >
               <X size={14} weight="bold" />
             </button>

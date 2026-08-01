@@ -4,6 +4,7 @@ import { isExamModeActive, EXAM_MODE_WINDOW_DAYS } from '../../algorithms/srs';
 import { clearSrsSettingsCache } from '../../algorithms/fsrs';
 import { loadSettingAsync, loadSettingSync, saveSettingAsync } from '../../persistentSettings';
 import { S, SettingsCard, CardSection, CardBody, SettingsRow, FieldLabel } from './SettingsUI';
+import './styles/RevisionTab.css';
 
 export const SRS_SETTINGS_KEY = 'pharmabrain_srs_settings';
 
@@ -53,7 +54,7 @@ export const RevisionTab: React.FC = () => {
     });
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="revisiontab-style-1" >
             {/* Exam mode */}
             <SettingsCard>
                 <CardSection
@@ -61,12 +62,11 @@ export const RevisionTab: React.FC = () => {
                     subtitle={`Intensifie les révisions dans les ${EXAM_MODE_WINDOW_DAYS} jours précédant un examen.`}
                     action={
                         examActive ? (
-                            <span style={{
-                                padding: '2px 10px', borderRadius: 99, fontSize: 11,
-                                fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
-                                background: S.warningDim, color: S.warning,
-                                border: `1px solid ${S.warning}44`,
-                            }}>
+                            <span className="revisiontab-style-2" style={{
+  background: S.warningDim,
+  color: S.warning,
+  border: `1px solid ${S.warning}44`
+}}>
                                 ACTIF
                             </span>
                         ) : undefined
@@ -84,7 +84,9 @@ export const RevisionTab: React.FC = () => {
                     />
                 </SettingsRow>
 
-                <div style={{ padding: '16px 20px', borderTop: `1px solid ${S.border}` }}>
+                <div className="revisiontab-style-3" style={{
+  borderTop: `1px solid ${S.border}`
+}}>
                     <FieldLabel>Date de l'examen</FieldLabel>
                     <input
                         type="date"
@@ -92,46 +94,33 @@ export const RevisionTab: React.FC = () => {
                         min={new Date().toISOString().split('T')[0]}
                         onChange={e => handleChange({ examDate: e.target.value })}
                         disabled={!srsSettings.examModeEnabled}
-                        style={{
-                            padding: '9px 14px',
-                            border: `1px solid ${srsSettings.examModeEnabled ? S.primary : S.border}`,
-                            borderRadius: 10,
-                            fontSize: 14,
-                            color: srsSettings.examModeEnabled ? S.text : S.muted,
-                            background: S.bg,
-                            outline: 'none',
-                            cursor: srsSettings.examModeEnabled ? 'pointer' : 'not-allowed',
-                            opacity: srsSettings.examModeEnabled ? 1 : 0.5,
-                        }}
+                        className="revisiontab-style-4" style={{
+  border: `1px solid ${srsSettings.examModeEnabled ? S.primary : S.border}`,
+  color: srsSettings.examModeEnabled ? S.text : S.muted,
+  background: S.bg,
+  cursor: srsSettings.examModeEnabled ? 'pointer' : 'not-allowed',
+  opacity: srsSettings.examModeEnabled ? 1 : 0.5
+}}
                     />
 
                     {/* Status banner */}
                     {srsSettings.examModeEnabled && srsSettings.examDate && (
-                        <div style={{
-                            marginTop: 12,
-                            padding: '10px 14px',
-                            borderRadius: 10,
-                            fontSize: 13,
-                            background: examActive ? S.warningDim : S.primaryDim,
-                            color: examActive ? S.warning : S.primary,
-                            border: `1px solid ${examActive ? S.warning + '44' : S.primary + '44'}`,
-                            lineHeight: 1.5,
-                        }}>
+                        <div className="revisiontab-style-5" style={{
+  background: examActive ? S.warningDim : S.primaryDim,
+  color: examActive ? S.warning : S.primary,
+  border: `1px solid ${examActive ? S.warning + '44' : S.primary + '44'}`
+}}>
                             {examActive
                                 ? `⚡ Examen dans moins de ${EXAM_MODE_WINDOW_DAYS} jours — intervalles limités à 14 jours.`
                                 : `✓ Examen planifié le ${new Date(srsSettings.examDate).toLocaleDateString('fr-FR')}. Le mode s'activera à J-${EXAM_MODE_WINDOW_DAYS}.`}
                         </div>
                     )}
                     {srsSettings.examModeEnabled && !srsSettings.examDate && (
-                        <div style={{
-                            marginTop: 12,
-                            padding: '10px 14px',
-                            borderRadius: 10,
-                            fontSize: 13,
-                            background: S.warningDim,
-                            color: S.warning,
-                            border: `1px solid ${S.warning}44`,
-                        }}>
+                        <div className="revisiontab-style-6" style={{
+  background: S.warningDim,
+  color: S.warning,
+  border: `1px solid ${S.warning}44`
+}}>
                             Sélectionnez une date pour activer le mode examen.
                         </div>
                     )}
@@ -163,7 +152,7 @@ export const RevisionTab: React.FC = () => {
                         max={100}
                         value={srsSettings.maxNewCardsPerSession}
                         onChange={e => handleChange({ maxNewCardsPerSession: parseInt(e.target.value) || 10 })}
-                        style={{ width: '80px', padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', textAlign: 'center' }}
+                        className="revisiontab-style-7" 
                     />
                 </SettingsRow>
                 <SettingsRow
@@ -182,14 +171,16 @@ export const RevisionTab: React.FC = () => {
             <SettingsCard>
                 <CardSection title="Comment ça fonctionne ?" />
                 <CardBody>
-                    <ul style={{ margin: 0, padding: '0 0 0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <ul className="revisiontab-style-8" >
                         {[
                             `En mode normal, l'algorithme SRS peut programmer une révision dans 30, 60 ou 90 jours.`,
                             `Quand l'examen est proche (J-${EXAM_MODE_WINDOW_DAYS}), l'intervalle maximum est réduit à 14 jours.`,
                             `Les cartes difficiles (faible easeFactor) continuent d'être révisées plus fréquemment.`,
                             `Le mode se désactive automatiquement une fois l'examen passé.`,
                         ].map((item, i) => (
-                            <li key={i} style={{ fontSize: 13, color: S.muted, lineHeight: 1.6 }}>{item}</li>
+                            <li key={i} className="revisiontab-style-9" style={{
+  color: S.muted
+}}>{item}</li>
                         ))}
                     </ul>
                 </CardBody>

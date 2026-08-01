@@ -42,6 +42,38 @@ function initDB(dbPath) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(type);`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_next_review ON cards(next_review);`);
 
+    // Create FTS5 Virtual Table for full-text search
+    db.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS cards_fts USING fts5(
+        id UNINDEXED,
+        title,
+        subtitle,
+        content,
+        tags,
+        tokenize='porter unicode61'
+    );
+    `);
+
+    // Create Triggers to keep FTS5 table in sync with cards table
+    db.exec(`
+    CREATE TRIGGER IF NOT EXISTS cards_ai AFTER INSERT ON cards BEGIN
+        INSERT INTO cards_fts(rowid, id, title, subtitle, content, tags)
+        VALUES (new.rowid, new.id, new.title, new.subtitle, new.content, new.tags);
+    END;
+    
+    CREATE TRIGGER IF NOT EXISTS cards_ad AFTER DELETE ON cards BEGIN
+        INSERT INTO cards_fts(cards_fts, rowid, id, title, subtitle, content, tags)
+        VALUES('delete', old.rowid, old.id, old.title, old.subtitle, old.content, old.tags);
+    END;
+    
+    CREATE TRIGGER IF NOT EXISTS cards_au AFTER UPDATE ON cards BEGIN
+        INSERT INTO cards_fts(cards_fts, rowid, id, title, subtitle, content, tags)
+        VALUES('delete', old.rowid, old.id, old.title, old.subtitle, old.content, old.tags);
+        INSERT INTO cards_fts(rowid, id, title, subtitle, content, tags)
+        VALUES (new.rowid, new.id, new.title, new.subtitle, new.content, new.tags);
+    END;
+    `);
+
     console.log(`[DB] Initialized at ${dbPath}`);
 }
 
@@ -109,10 +141,15 @@ function saveCardsTransaction(cards, options = {}) {
             const existingIdsStmt = db.prepare('SELECT id FROM cards');
             const existingIds = existingIdsStmt.all().map(row => row.id);
             
-            const deleteStmt = db.prepare('DELETE FROM cards WHERE id = ?');
-            for (const id of existingIds) {
-                if (!keepIds.has(id)) {
-                    deleteStmt.run(id);
+            const idsToDelete = existingIds.filter(id => !keepIds.has(id));
+            if (idsToDelete.length > 0) {
+                // SQLite max variables is 999, we use chunks of 900
+                const chunkSize = 900;
+                for (let i = 0; i < idsToDelete.length; i += chunkSize) {
+                    const chunk = idsToDelete.slice(i, i + chunkSize);
+                    const placeholders = chunk.map(() => '?').join(',');
+                    const deleteStmt = db.prepare(`DELETE FROM cards WHERE id IN (${placeholders})`);
+                    deleteStmt.run(...chunk);
                 }
             }
         } else {
@@ -152,11 +189,40 @@ function importCardsTransaction(cards) {
     console.log(`[DB] Imported ${cards.length} cards safely (Upsert only).`);
 }
 
+function searchCardsFTS(query, limit = 50) {
+    if (!query || !query.trim()) return [];
+    
+    // SQLite FTS5 requires quotes or specific syntax for some characters.
+    // A simple robust way for basic search is to append * to the last word.
+    // For safety, we can just pass the query directly, or sanitize it.
+    // We'll replace non-alphanumeric with spaces, except for spaces and quotes.
+    const sanitized = query.replace(/[^\w\s"'-]/gi, ' ').trim();
+    if (!sanitized) return [];
+
+    // FTS5 MATCH syntax: we can append * to each word for prefix matching
+    const terms = sanitized.split(/\s+/).map(t => `"${t}"*`).join(' AND ');
+    
+    try {
+        const stmt = db.prepare(`
+            SELECT id, snippet(cards_fts, -1, '<b>', '</b>', '...', 64) as highlight 
+            FROM cards_fts 
+            WHERE cards_fts MATCH ? 
+            ORDER BY rank 
+            LIMIT ?
+        `);
+        return stmt.all(terms, limit);
+    } catch (e) {
+        console.error('[DB] FTS5 Search Error:', e);
+        return [];
+    }
+}
+
 module.exports = {
     initDB,
     getAllCards,
     saveCardsTransaction,
     importCardsTransaction,
     upsertCard,
-    deleteCard
+    deleteCard,
+    searchCardsFTS
 };

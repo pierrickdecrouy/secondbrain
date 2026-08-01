@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, GearSix, ArrowLeft } from '@phosphor-icons/react';
 import { usePomodoroStore, type PomodoroMode } from '../store/usePomodoroStore';
 import { useTheme } from '../context/ThemeContext';
+import './styles/PomodoroModal.css';
 
 // ─── SVG Progress Ring ────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ size, stroke, progress, col
     const circ = 2 * Math.PI * r;
     const offset = circ * (1 - Math.max(0, Math.min(1, progress)));
     return (
-        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', position: 'absolute', top: 0, left: 0 }}>
+        <svg width={size} height={size} className="pomodoromodal-style-1" >
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth={stroke} />
             <circle
                 cx={size / 2} cy={size / 2} r={r}
@@ -26,7 +27,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ size, stroke, progress, col
                 strokeLinecap="round"
                 strokeDasharray={circ}
                 strokeDashoffset={offset}
-                style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.6s ease' }}
+                className="pomodoromodal-style-2" 
             />
         </svg>
     );
@@ -44,12 +45,11 @@ const ModeTab: React.FC<{
     return (
         <button
             onClick={onClick}
-            className={`flex-1 py-2 px-1 text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 relative border-none ${active && !darkMode ? 'shadow-sm' : ''}`}
+            className={`flex-1 py-2 px-1 text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 relative border-none ${active && !darkMode ? 'shadow-sm' : ''} pomodoromodal-style-3`}
             style={{
-                background: active ? activeBg : 'transparent',
-                color: active ? activeColor : inactiveColor,
-                letterSpacing: '0.04em',
-            }}
+  background: active ? activeBg : 'transparent',
+  color: active ? activeColor : inactiveColor
+}}
         >
             {label}
             {active && (
@@ -211,12 +211,10 @@ export const PomodoroModal: React.FC = () => {
 
     return (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-[pomo-backdrop-in_0.25s_ease]"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-[pomo-backdrop-in_0.25s_ease] pomodoromodal-style-4"
             style={{
-                background: t.backdrop,
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-            }}
+  background: t.backdrop
+}}
         >
             <style>{`
                 @keyframes pomo-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
@@ -245,12 +243,9 @@ export const PomodoroModal: React.FC = () => {
                 }}
             >
                 {/* Glow */}
-                <div style={{
-                    position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
-                    width: '200px', height: '200px', borderRadius: '50%',
-                    background: t.glowBg(color),
-                    pointerEvents: 'none', transition: 'background 0.6s ease',
-                }} />
+                <div className="pomodoromodal-style-5" style={{
+  background: t.glowBg(color)
+}} />
 
                 {view === 'settings' ? (
                     /* ─── SETTINGS ─── */
@@ -290,13 +285,10 @@ export const PomodoroModal: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleSave}
-                                style={{
-                                    flex: 1, padding: '12px', borderRadius: '14px',
-                                    background: color, border: 'none',
-                                    color: '#fff', fontSize: '14px', fontWeight: 700,
-                                    cursor: 'pointer', transition: 'all 0.15s',
-                                    boxShadow: `0 4px 20px ${color}50`,
-                                }}
+                                className="pomodoromodal-style-6" style={{
+  background: color,
+  boxShadow: `0 4px 20px ${color}50`
+}}
                             >
                                 Appliquer
                             </button>

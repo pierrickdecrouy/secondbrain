@@ -10,8 +10,9 @@ import { useCardStore as useCards } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
 import { stripMarkdown } from '../utils';
 import { DynamicIcon } from './DynamicIcon';
-import { hybridSearch } from '../searchIndex';
+import { hybridSearch, fastLexicalSearch } from '../searchIndex';
 import type { Card } from '../types';
+import './styles/GlobalOmnibox.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +59,9 @@ export const GlobalOmnibox: React.FC = () => {
     const listRef = useRef<HTMLDivElement>(null);
     const [localQuery, setLocalQuery] = useState(searchQuery);
     const [results, setResults] = useState<Card[]>([]);
+    const [highlights, setHighlights] = useState<Record<string, string>>({});
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [isDeepSearch, setIsDeepSearch] = useState(false);
 
     const { isSlash, isSystem, slashCmd, afterColon, isFilterMode } = useMemo(
         () => parseQuery(localQuery),
@@ -186,6 +189,7 @@ export const GlobalOmnibox: React.FC = () => {
         if (isOmniboxOpen) {
             setLocalQuery(searchQuery);
             setResults([]);
+            setHighlights({});
             setSelectedIndex(0);
             setTimeout(() => inputRef.current?.focus(), 80);
         }
@@ -197,13 +201,44 @@ export const GlobalOmnibox: React.FC = () => {
 
     // Live search
     useEffect(() => {
-        if (!localQuery.trim() || isSlash || isSystem) { setResults([]); return; }
+        if (!localQuery.trim() || isSlash || isSystem) { setResults([]); setHighlights({}); return; }
         let cancelled = false;
-        hybridSearch(localQuery).then(ids => {
-            if (cancelled) return;
-            setResults(ids.map(id => allCardsMap.get(id)).filter((c): c is Card => c !== undefined && c.type !== 'course').slice(0, 6));
-            setSelectedIndex(0);
-        });
+        
+        const wordCount = localQuery.trim().split(/\s+/).length;
+        
+        if (wordCount > 3) {
+            setIsDeepSearch(true);
+            hybridSearch(localQuery).then(ids => {
+                if (cancelled) return;
+                setResults(ids.map(id => allCardsMap.get(id)).filter((c): c is Card => c !== undefined && c.type !== 'course').slice(0, 6));
+                setHighlights({});
+                setSelectedIndex(0);
+            });
+        } else {
+            setIsDeepSearch(false);
+            fastLexicalSearch(localQuery).then(ftsResults => {
+                if (cancelled) return;
+                
+                const mapped = ftsResults.map(res => {
+                    const card = allCardsMap.get(res.id);
+                    if (card && card.type !== 'course') {
+                        return { card, highlight: res.highlight };
+                    }
+                    return null;
+                }).filter(item => item !== null) as { card: Card, highlight: string }[];
+                
+                const justCards = mapped.map(m => m.card).slice(0, 6);
+                const justHighlights = mapped.reduce((acc, m) => {
+                    acc[m.card.id] = m.highlight;
+                    return acc;
+                }, {} as Record<string, string>);
+                
+                setResults(justCards);
+                setHighlights(justHighlights);
+                setSelectedIndex(0);
+            });
+        }
+        
         return () => { cancelled = true; };
     }, [localQuery, allCardsMap, isSlash, isSystem]);
 
@@ -259,116 +294,118 @@ export const GlobalOmnibox: React.FC = () => {
     };
 
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '13vh' }}>
+        <div className="globalomnibox-style-1" >
             {/* Backdrop */}
             <div
-                style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }}
+                className="globalomnibox-style-2" 
                 onClick={() => setOmniboxOpen(false)}
             />
 
             {/* Panel */}
-            <div style={{
-                position: 'relative', width: '100%', maxWidth: 680,
-                display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                borderRadius: 20, boxShadow: '0 25px 60px rgba(0,0,0,0.35)',
-                border: '1px solid var(--color-border)', background: 'var(--color-surface)',
-                animation: 'omniboxIn 0.14s ease-out'
-            }}>
+            <div className="globalomnibox-style-3" >
 
                 {/* ── Input ── */}
-                <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', gap: 12 }}>
+                <div className="globalomnibox-style-4" >
                     {isSlash
-                        ? <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--color-primary)', minWidth: 22, textAlign: 'center', lineHeight: 1 }}>/</span>
+                        ? <span className="globalomnibox-style-5" >/</span>
                         : isSystem
-                            ? <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--color-text-muted)', minWidth: 22, textAlign: 'center', lineHeight: 1 }}>{'>'}</span>
-                            : <MagnifyingGlass size={20} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                            ? <span className="globalomnibox-style-6" >{'>'}</span>
+                            : <MagnifyingGlass size={20} className="globalomnibox-style-7"  />
                     }
                     <input
                         ref={inputRef}
                         type="text"
-                        style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '1.05rem', fontWeight: 600, color: 'var(--color-text)' }}
+                        className="globalomnibox-style-8" 
                         placeholder={
                             isSlash ? 'carte · cours · flash · cloze · revision · tag: · type:…'
                             : isSystem ? 'Commande système…'
-                            : 'Rechercher…  ou  /  pour créer,  >  pour les commandes'
+                            : 'Rechercher (Lexical < 4 mots, Sémantique ≥ 4 mots)'
                         }
                         value={localQuery}
                         onChange={e => { setLocalQuery(e.target.value); setSelectedIndex(0); }}
                     />
                     {localQuery && (
-                        <button onClick={() => setLocalQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center' }}>
+                        <button onClick={() => setLocalQuery('')} className="globalomnibox-style-9" >
                             <X size={17} />
                         </button>
                     )}
                     {isSlash && (
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 20, background: 'rgba(99,102,241,0.1)', color: '#6366f1', letterSpacing: '0.05em', flexShrink: 0 }}>CRÉATION</span>
+                        <span className="globalomnibox-style-10" >CRÉATION</span>
                     )}
                     {isSystem && (
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 20, background: 'var(--color-bg)', color: 'var(--color-text-muted)', letterSpacing: '0.05em', flexShrink: 0 }}>SYSTÈME</span>
+                        <span className="globalomnibox-style-11" >SYSTÈME</span>
                     )}
                 </div>
 
                 {/* ── Results ── */}
-                <div style={{ maxHeight: '56vh', overflowY: 'auto' }} className="custom-scrollbar" ref={listRef}>
+                <div  className="custom-scrollbar globalomnibox-style-12" ref={listRef}>
 
                     {/* Empty state */}
                     {localQuery.trim() === '' && (
-                        <div style={{ padding: '20px 16px 18px' }}>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+                        <div className="globalomnibox-style-13" >
+                            <div className="globalomnibox-style-14" >
                                 {[
                                     { label: '/ Créer', color: '#6366f1', bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.2)', action: () => setLocalQuery('/') },
                                     { label: '> Commande', color: 'var(--color-text-muted)', bg: 'var(--color-bg)', border: 'var(--color-border)', action: () => setLocalQuery('>') },
                                 ].map(p => (
-                                    <button key={p.label} onClick={p.action} style={{ padding: '6px 16px', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, background: p.bg, color: p.color, border: `1px solid ${p.border}`, cursor: 'pointer' }}>{p.label}</button>
+                                    <button key={p.label} onClick={p.action} className="globalomnibox-style-15" style={{
+  background: p.bg,
+  color: p.color,
+  border: `1px solid ${p.border}`
+}}>{p.label}</button>
                                 ))}
                                 {dueCount > 0 && (
-                                    <button onClick={() => { setOmniboxOpen(false); navigate('/review'); }} style={{ padding: '6px 14px', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', cursor: 'pointer' }}>
+                                    <button onClick={() => { setOmniboxOpen(false); navigate('/review'); }} className="globalomnibox-style-16" >
                                         🧠 {dueCount} à réviser
                                     </button>
                                 )}
                             </div>
-                            <p style={{ fontSize: '0.83rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>Tapez pour rechercher dans votre base de connaissances</p>
+                            <p className="globalomnibox-style-17" >Tapez pour rechercher dans votre base de connaissances</p>
                         </div>
                     )}
 
                     {/* Slash mode */}
                     {isSlash && !isFilterMode && (
-                        <div style={{ padding: '8px' }}>
+                        <div className="globalomnibox-style-18" >
                             <div style={s.sectionLabel}>Créer</div>
                             {slashCommands.length === 0
-                                ? <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>Commande inconnue — <kbd style={s.kbd}>/carte</kbd> <kbd style={s.kbd}>/cours</kbd> <kbd style={s.kbd}>/flash</kbd></div>
+                                ? <div className="globalomnibox-style-19" >Commande inconnue — <kbd style={s.kbd}>/carte</kbd> <kbd style={s.kbd}>/cours</kbd> <kbd style={s.kbd}>/flash</kbd></div>
                                 : slashCommands.map((cmd, idx) => {
                                     const sel = idx === selectedIndex;
                                     return (
                                         <div key={cmd.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)} onClick={() => cmd.action()}>
                                             <div style={s.icon(cmd.color, sel)}>{cmd.icon}</div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--color-text)' }}>{cmd.label}</div>
-                                                <div style={{ fontSize: '0.77rem', color: 'var(--color-text-muted)', marginTop: 1 }}>{cmd.description}</div>
+                                            <div className="globalomnibox-style-20" >
+                                                <div className="globalomnibox-style-21" >{cmd.label}</div>
+                                                <div className="globalomnibox-style-22" >{cmd.description}</div>
                                             </div>
-                                            <div style={{ display: 'flex', gap: 4 }}>
+                                            <div className="globalomnibox-style-23" >
                                                 {cmd.aliases.slice(0, 2).map(a => <kbd key={a} style={s.kbd}>/{a}</kbd>)}
                                             </div>
-                                            {sel && <ArrowElbowDownLeft size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />}
+                                            {sel && <ArrowElbowDownLeft size={13} className="globalomnibox-style-24"  />}
                                         </div>
                                     );
                                 })
                             }
 
-                            <div style={{ ...s.sectionLabel, marginTop: 8 }}>Filtrer</div>
+                            <div className="globalomnibox-style-25" style={{
+  ...s.sectionLabel
+}}>Filtrer</div>
                             {[
                                 { label: '/tag:', desc: 'Filtrer par étiquette', icon: <Tag size={16} />, color: '#14b8a6' },
                                 { label: '/type:', desc: 'Filtrer par catégorie', icon: <Funnel size={16} />, color: '#f97316' },
                             ].map(f => (
-                                <div key={f.label} style={{ ...s.row(false), transition: 'none' }} onClick={() => setLocalQuery(f.label)}
+                                <div key={f.label} className="globalomnibox-style-26" style={{
+  ...s.row(false)
+}} onClick={() => setLocalQuery(f.label)}
                                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg)')}
                                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                     <div style={s.icon(f.color, false)}>{f.icon}</div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-text)' }}>
-                                            {f.label}<span style={{ opacity: 0.45 }}>valeur</span>
+                                    <div className="globalomnibox-style-27" >
+                                        <div className="globalomnibox-style-28" >
+                                            {f.label}<span className="globalomnibox-style-29" >valeur</span>
                                         </div>
-                                        <div style={{ fontSize: '0.77rem', color: 'var(--color-text-muted)' }}>{f.desc}</div>
+                                        <div className="globalomnibox-style-30" >{f.desc}</div>
                                     </div>
                                 </div>
                             ))}
@@ -377,17 +414,17 @@ export const GlobalOmnibox: React.FC = () => {
 
                     {/* Filter mode */}
                     {isSlash && isFilterMode && (
-                        <div style={{ padding: '8px' }}>
+                        <div className="globalomnibox-style-31" >
                             <div style={s.sectionLabel}>{slashCmd.startsWith('tag:') ? 'Étiquettes' : 'Catégories'}</div>
                             {filterCommands.length === 0
-                                ? <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>Aucun résultat</div>
+                                ? <div className="globalomnibox-style-32" >Aucun résultat</div>
                                 : filterCommands.map((cmd, idx) => {
                                     const sel = idx === selectedIndex;
                                     return (
                                         <div key={cmd.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)} onClick={cmd.action}>
-                                            <span style={{ color: 'var(--color-text-muted)' }}>{cmd.icon}</span>
-                                            <span style={{ flex: 1, fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)' }}>{cmd.label}</span>
-                                            {sel && <ArrowElbowDownLeft size={13} style={{ color: 'var(--color-text-muted)' }} />}
+                                            <span className="globalomnibox-style-33" >{cmd.icon}</span>
+                                            <span className="globalomnibox-style-34" >{cmd.label}</span>
+                                            {sel && <ArrowElbowDownLeft size={13} className="globalomnibox-style-35"  />}
                                         </div>
                                     );
                                 })
@@ -397,17 +434,17 @@ export const GlobalOmnibox: React.FC = () => {
 
                     {/* System mode */}
                     {isSystem && (
-                        <div style={{ padding: '8px' }}>
+                        <div className="globalomnibox-style-36" >
                             <div style={s.sectionLabel}>Commandes système</div>
                             {filteredSystemCommands.length === 0
-                                ? <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.88rem' }}>Commande inconnue</div>
+                                ? <div className="globalomnibox-style-37" >Commande inconnue</div>
                                 : filteredSystemCommands.map((cmd, idx) => {
                                     const sel = idx === selectedIndex;
                                     return (
                                         <div key={cmd.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)} onClick={() => { cmd.action(); setOmniboxOpen(false); }}>
-                                            <span style={{ color: 'var(--color-text-muted)' }}>{cmd.icon}</span>
-                                            <span style={{ flex: 1, fontWeight: 600, color: 'var(--color-text)' }}>{cmd.label}</span>
-                                            {sel && <ArrowElbowDownLeft size={13} style={{ color: 'var(--color-text-muted)' }} />}
+                                            <span className="globalomnibox-style-38" >{cmd.icon}</span>
+                                            <span className="globalomnibox-style-39" >{cmd.label}</span>
+                                            {sel && <ArrowElbowDownLeft size={13} className="globalomnibox-style-40"  />}
                                         </div>
                                     );
                                 })
@@ -417,12 +454,12 @@ export const GlobalOmnibox: React.FC = () => {
 
                     {/* Search results */}
                     {!isSlash && !isSystem && localQuery.trim() !== '' && (
-                        <div style={{ padding: '8px' }}>
+                        <div className="globalomnibox-style-41" >
                             {results.length === 0 ? (
-                                <div style={{ padding: '32px 24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                                    <MagnifyingGlass size={28} style={{ opacity: 0.25, display: 'block', margin: '0 auto 10px' }} />
-                                    <p style={{ fontSize: '0.9rem' }}>Aucun résultat pour « {localQuery} »</p>
-                                    <p style={{ fontSize: '0.78rem', marginTop: 6 }}>Tapez <kbd style={s.kbd}>/carte</kbd> pour créer une nouvelle fiche</p>
+                                <div className="globalomnibox-style-42" >
+                                    <MagnifyingGlass size={28} className="globalomnibox-style-43"  />
+                                    <p className="globalomnibox-style-44" >Aucun résultat pour « {localQuery} »</p>
+                                    <p className="globalomnibox-style-45" >Tapez <kbd style={s.kbd}>/carte</kbd> pour créer une nouvelle fiche</p>
                                 </div>
                             ) : (
                                 <>
@@ -432,30 +469,45 @@ export const GlobalOmnibox: React.FC = () => {
                                         return (
                                             <div key={card.id} style={s.row(sel)} onMouseEnter={() => setSelectedIndex(idx)}
                                                 onClick={() => { setSearchQuery(localQuery); setOmniboxOpen(false); navigate('/browse'); }}>
-                                                <div style={{ width: 34, height: 34, borderRadius: 9, background: getCategoryColor(card.type), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+                                                <div className="globalomnibox-style-46" style={{
+  background: getCategoryColor(card.type)
+}}>
                                                     <DynamicIcon name={getCategoryIcon(card.type)} size={15} />
                                                 </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.title}</span>
-                                                        {card.subtitle && <span style={{ fontSize: '0.7rem', padding: '2px 7px', borderRadius: 5, background: 'var(--color-border)', color: 'var(--color-text-muted)', flexShrink: 0 }}>{card.subtitle}</span>}
+                                                <div className="globalomnibox-style-47" >
+                                                    <div className="globalomnibox-style-48" >
+                                                        <span className="globalomnibox-style-49" >{card.title}</span>
+                                                        {card.subtitle && <span className="globalomnibox-style-50" >{card.subtitle}</span>}
                                                     </div>
-                                                    {card.content && <p style={{ fontSize: '0.77rem', color: 'var(--color-text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stripMarkdown(card.content)}</p>}
+                                                    
+                                                    {highlights[card.id] ? (
+                                                        <p 
+                                                            className="globalomnibox-style-51" 
+                                                            dangerouslySetInnerHTML={{ __html: highlights[card.id] }}
+                                                        />
+                                                    ) : (
+                                                        card.content && <p className="globalomnibox-style-52" >{stripMarkdown(card.content)}</p>
+                                                    )}
                                                 </div>
                                                 {card.tags && card.tags.length > 0 && (
-                                                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                                                        {card.tags.slice(0, 2).map(t => <span key={t} style={{ fontSize: '0.66rem', padding: '2px 7px', borderRadius: 10, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>#{t}</span>)}
+                                                    <div className="globalomnibox-style-53" >
+                                                        {card.tags.slice(0, 2).map(t => <span key={t} className="globalomnibox-style-54" >#{t}</span>)}
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })}
-                                    <div style={{ margin: '4px 2px', borderTop: '1px solid var(--color-border)' }} />
-                                    <div style={{ ...s.row(selectedIndex === results.length), justifyContent: 'space-between' }}
+                                    <div className="globalomnibox-style-55"  />
+                                    <div className="globalomnibox-style-56" style={{
+  ...s.row(selectedIndex === results.length)
+}}
                                         onMouseEnter={() => setSelectedIndex(results.length)}
                                         onClick={() => { setSearchQuery(localQuery); setOmniboxOpen(false); navigate('/browse'); }}>
-                                        <span style={{ fontWeight: 600, fontSize: '0.87rem', color: 'var(--color-text)' }}>Voir tous les résultats pour « {localQuery} »</span>
-                                        <ArrowRight size={15} style={{ color: 'var(--color-text-muted)' }} />
+                                        <div className="globalomnibox-style-57" >
+                                            <span className="globalomnibox-style-58" >Voir tous les résultats pour « {localQuery} »</span>
+                                            {isDeepSearch && <span className="globalomnibox-style-59" >SÉMANTIQUE RRF</span>}
+                                        </div>
+                                        <ArrowRight size={15} className="globalomnibox-style-60"  />
                                     </div>
                                 </>
                             )}
@@ -464,22 +516,24 @@ export const GlobalOmnibox: React.FC = () => {
                 </div>
 
                 {/* ── Footer ── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 18px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div className="globalomnibox-style-61" >
+                    <div className="globalomnibox-style-62" >
+                        <span className="globalomnibox-style-63" >
                             <kbd style={s.kbd}>↑</kbd><kbd style={s.kbd}>↓</kbd> Naviguer
                         </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span className="globalomnibox-style-64" >
                             <kbd style={s.kbd}>↵</kbd> Confirmer
                         </span>
                         {!isSlash && !isSystem && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <kbd style={{ ...s.kbd, color: 'var(--color-primary)', borderColor: 'var(--color-primary)', opacity: 0.8 }}>/</kbd>
+                            <span className="globalomnibox-style-65" >
+                                <kbd className="globalomnibox-style-66" style={{
+  ...s.kbd
+}}>/</kbd>
                                 Créer
                             </span>
                         )}
                     </div>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span className="globalomnibox-style-67" >
                         <kbd style={s.kbd}>Esc</kbd> Fermer
                     </span>
                 </div>

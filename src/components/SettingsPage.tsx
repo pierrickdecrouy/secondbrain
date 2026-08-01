@@ -13,6 +13,7 @@ import { updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useLicense } from '../lib/useLicense';
 import { ArrowSquareOut, CheckCircle, Warning, Timer, Crown, Key } from '@phosphor-icons/react';
+import './styles/SettingsPage.css';
 
 export type SettingsTab = 'dictionary' | 'advanced' | 'stats' | 'appearance' | 'data' | 'intelligence' | 'profile' | 'subscription';
 
@@ -322,17 +323,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
 
                 {/* Content */}
                 <main
-                    className="flex-1 flex flex-col overflow-hidden"
-                    style={{
-                        backgroundColor: 'var(--color-bg)',
-                        backgroundImage: 'radial-gradient(var(--color-border) 1px, transparent 1px)',
-                        backgroundSize: '40px 40px',
-                    }}
+                    className="flex-1 flex flex-col overflow-hidden settingspage-style-1"
+                    
                 >
                     {/* Top bar */}
                     <header
-                        className="h-14 shrink-0 border-b border-[color:var(--color-border)] flex items-center justify-between px-8"
-                        style={{ backgroundColor: 'var(--color-surface)' }}
+                        className="h-14 shrink-0 border-b border-[color:var(--color-border)] flex items-center justify-between px-8 settingspage-style-2"
+                        
                     >
                         {/* Breadcrumb */}
                         <div className="flex items-center gap-2 text-[13px]">

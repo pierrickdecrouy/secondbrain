@@ -1,111 +1,82 @@
 import React from 'react';
 import type { Card } from '../../types';
+import { CourseEditor } from '../CourseEditor';
+import { EyeSlash, ArrowsLeftRight } from '@phosphor-icons/react';
 
 interface FlashcardEditorProps {
     formData: Partial<Card>;
     setFormData: (data: Partial<Card>) => void;
+    existingCards: Card[];
 }
 
-export const FlashcardEditor: React.FC<FlashcardEditorProps> = ({ formData, setFormData }) => {
+export const FlashcardEditor: React.FC<FlashcardEditorProps> = ({ formData, setFormData, existingCards }) => {
     return (
-        <div style={{ padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: 32, flex: 1, overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
-                    Contenu de la carte
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-bg)', padding: '6px 16px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Format</span>
-                    <select
-                        value={formData.format || 'q&a'}
-                        onChange={(e) => setFormData({ ...formData, format: e.target.value as any })}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}
+        <div className="flex flex-col flex-1 h-full p-6 sm:p-8 gap-6 overflow-y-auto custom-scrollbar bg-[color:var(--color-bg)]">
+            {/* Format Selector */}
+            <div className="flex items-center justify-between shrink-0">
+                <h3 className="text-xl font-bold text-[color:var(--color-text)] m-0">Contenu de la Flashcard</h3>
+                <div className="add-data-segmented-control">
+                    <button
+                        onClick={() => setFormData({ ...formData, format: 'q&a' })}
+                        className={`segmented-btn ${formData.format !== 'cloze' ? 'active-emerald' : ''}`}
                     >
-                        <option value="q&a">Question / Réponse</option>
-                        <option value="cloze">Texte à trous</option>
-                    </select>
+                        <ArrowsLeftRight size={16} weight="bold" />
+                        Question / Réponse
+                    </button>
+                    <button
+                        onClick={() => setFormData({ ...formData, format: 'cloze' })}
+                        className={`segmented-btn ${formData.format === 'cloze' ? 'active-emerald' : ''}`}
+                    >
+                        <EyeSlash size={16} weight="bold" />
+                        Texte à trous
+                    </button>
                 </div>
             </div>
 
             {formData.format === 'cloze' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Texte à trous <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 8 }}>— Entourez les mots à cacher avec {'{accolades}'}</span>
-                    </label>
-                    <textarea
-                        value={formData.content || ''}
-                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                        placeholder={`Exemple: L'enzyme {Troponine} s'élève lors d'un IDM.`}
-                        style={{
-                            flex: 1,
-                            minHeight: 200,
-                            padding: '24px',
-                            fontSize: '1.2rem',
-                            lineHeight: 1.6,
-                            border: '1px solid var(--color-border)',
-                            borderRadius: 16,
-                            background: 'var(--color-bg)',
-                            color: 'var(--color-text)',
-                            outline: 'none',
-                            resize: 'none',
-                            fontFamily: 'inherit',
-                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-                        }}
-                    />
+                <div className="flex flex-col gap-3 flex-1 min-h-[400px]">
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                            Texte à trous (Cloze)
+                        </label>
+                        <span className="text-xs text-[color:var(--color-text-muted)]">Utilisez l'outil "Texte à trou" dans la barre d'outils ou entourez avec {'{accolades}'}</span>
+                    </div>
+                    <div className="flex-1 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-2xl overflow-hidden shadow-inner focus-within:border-indigo-500/50 transition-colors p-4">
+                        <CourseEditor
+                            value={formData.content || ''}
+                            onChange={(val) => setFormData({ ...formData, content: val })}
+                            existingCards={existingCards}
+                        />
+                    </div>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, flex: 1 }}>
+                <div className="flex flex-col gap-6 flex-1">
                     {/* Recto / Question */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Question <span style={{ fontWeight: 400, textTransform: 'none', color: 'var(--color-text-muted)', fontSize: '0.8rem', marginLeft: 8 }}>(Recto)</span>
+                    <div className="flex flex-col gap-3 flex-1 min-h-[200px]">
+                        <label className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                            Question <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px]">Recto</span>
                         </label>
-                        <textarea
-                            value={formData.title || ''}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            placeholder="Quelle est la question ?"
-                            style={{
-                                width: '100%',
-                                minHeight: 100,
-                                padding: '20px 24px',
-                                fontSize: '1.4rem',
-                                fontWeight: 700,
-                                border: '1px solid var(--color-border)',
-                                borderRadius: 16,
-                                background: 'var(--color-bg)',
-                                color: 'var(--color-text)',
-                                outline: 'none',
-                                resize: 'none',
-                                fontFamily: 'inherit',
-                                lineHeight: 1.4,
-                            }}
-                        />
+                        <div className="flex-1 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-2xl overflow-hidden shadow-inner focus-within:border-indigo-500/50 transition-colors p-4">
+                            <CourseEditor
+                                value={formData.title || ''}
+                                onChange={(val) => setFormData({ ...formData, title: val })}
+                                existingCards={existingCards}
+                            />
+                        </div>
                     </div>
 
                     {/* Verso / Réponse */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-                        <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Réponse <span style={{ fontWeight: 400, textTransform: 'none', color: 'var(--color-text-muted)', fontSize: '0.8rem', marginLeft: 8 }}>(Verso)</span>
+                    <div className="flex flex-col gap-3 flex-1 min-h-[250px]">
+                        <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            Réponse <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px]">Verso</span>
                         </label>
-                        <textarea
-                            value={formData.details || ''}
-                            onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                            placeholder="Écrivez la réponse détaillée ici..."
-                            style={{
-                                width: '100%',
-                                flex: 1,
-                                minHeight: 160,
-                                padding: '20px 24px',
-                                fontSize: '1.1rem',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: 16,
-                                background: 'var(--color-bg)',
-                                color: 'var(--color-text)',
-                                outline: 'none',
-                                resize: 'none',
-                                fontFamily: 'inherit',
-                                lineHeight: 1.6,
-                            }}
-                        />
+                        <div className="flex-1 bg-[color:var(--color-surface)] border border-[color:var(--color-border)] rounded-2xl overflow-hidden shadow-inner focus-within:border-emerald-500/50 transition-colors p-4">
+                            <CourseEditor
+                                value={formData.details || ''}
+                                onChange={(val) => setFormData({ ...formData, details: val })}
+                                existingCards={existingCards}
+                            />
+                        </div>
                     </div>
                 </div>
             )}

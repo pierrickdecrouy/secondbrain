@@ -6,6 +6,7 @@ import { COURSE_TYPE } from '../../types';
 import { useCardStore as useCards } from '../../store/useCardStore';
 import { S, SettingsCard, CardSection, CardBody, SectionHeading, GhostButton, PrimaryButton } from './SettingsUI';
 import { useTranslation } from 'react-i18next';
+import './styles/AppearanceTab.css';
 
 interface AppearanceTabProps {
     onCloseSettings: () => void;
@@ -22,26 +23,18 @@ const ThemeOption: React.FC<{
     return (
         <button
             onClick={() => setThemeMode(mode)}
-            style={{
-                flex: 1,
-                minWidth: 100,
-                padding: '14px 12px',
-                borderRadius: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 8,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                background: active ? S.primaryDim : 'transparent',
-                border: `1.5px solid ${active ? S.primary : S.border}`,
-                color: active ? S.primary : S.muted,
-            }}
+            className="appearancetab-style-1" style={{
+  background: active ? S.primaryDim : 'transparent',
+  border: `1.5px solid ${active ? S.primary : S.border}`,
+  color: active ? S.primary : S.muted
+}}
             onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = S.muted; e.currentTarget.style.color = S.text; } }}
             onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted; } }}
         >
             <div style={{ color: active ? S.primary : S.text }}>{icon}</div>
-            <span style={{ fontSize: '0.8rem', fontWeight: active ? 600 : 500 }}>{label}</span>
+            <span className="appearancetab-style-2" style={{
+  fontWeight: active ? 600 : 500
+}}>{label}</span>
         </button>
     );
 };
@@ -70,12 +63,12 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
     ])).sort();
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div className="appearancetab-style-3" >
             {/* Theme */}
             <SettingsCard>
                 <CardSection title={t('settings.theme')} subtitle="Apparence globale de l'interface." />
                 <CardBody>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div className="appearancetab-style-4" >
                         <ThemeOption mode="light" label={t('settings.light')} icon={<Sun size={24} />} themeMode={themeMode} setThemeMode={setThemeMode} />
                         <ThemeOption mode="dark" label={t('settings.dark')} icon={<Moon size={24} />} themeMode={themeMode} setThemeMode={setThemeMode} />
                         <ThemeOption mode="system" label={t('settings.system')} icon={<Monitor size={24} />} themeMode={themeMode} setThemeMode={setThemeMode} />
@@ -87,28 +80,26 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
             <SettingsCard>
                 <CardSection title={t('settings.language')} subtitle="Langue de l'application." />
                 <CardBody>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div className="appearancetab-style-5" >
                         <button
                             onClick={() => i18n.changeLanguage('fr')}
-                            style={{
-                                flex: 1, minWidth: 100, padding: '14px 12px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 0.15s',
-                                background: i18n.language.startsWith('fr') ? S.primaryDim : 'transparent',
-                                border: `1.5px solid ${i18n.language.startsWith('fr') ? S.primary : S.border}`,
-                                color: i18n.language.startsWith('fr') ? S.primary : S.muted,
-                            }}
+                            className="appearancetab-style-6" style={{
+  background: i18n.language.startsWith('fr') ? S.primaryDim : 'transparent',
+  border: `1.5px solid ${i18n.language.startsWith('fr') ? S.primary : S.border}`,
+  color: i18n.language.startsWith('fr') ? S.primary : S.muted
+}}
                         >
-                            <span style={{ fontSize: 13, fontWeight: 600 }}>{t('settings.lang_fr')}</span>
+                            <span className="appearancetab-style-7" >{t('settings.lang_fr')}</span>
                         </button>
                         <button
                             onClick={() => i18n.changeLanguage('en')}
-                            style={{
-                                flex: 1, minWidth: 100, padding: '14px 12px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', transition: 'all 0.15s',
-                                background: i18n.language.startsWith('en') ? S.primaryDim : 'transparent',
-                                border: `1.5px solid ${i18n.language.startsWith('en') ? S.primary : S.border}`,
-                                color: i18n.language.startsWith('en') ? S.primary : S.muted,
-                            }}
+                            className="appearancetab-style-8" style={{
+  background: i18n.language.startsWith('en') ? S.primaryDim : 'transparent',
+  border: `1.5px solid ${i18n.language.startsWith('en') ? S.primary : S.border}`,
+  color: i18n.language.startsWith('en') ? S.primary : S.muted
+}}
                         >
-                            <span style={{ fontSize: 13, fontWeight: 600 }}>{t('settings.lang_en')}</span>
+                            <span className="appearancetab-style-9" >{t('settings.lang_en')}</span>
                         </button>
                     </div>
                 </CardBody>
@@ -116,7 +107,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
 
             {/* Categories & Colors */}
             <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div className="appearancetab-style-10" >
                     <SectionHeading
                         title="Catégories & Couleurs"
                         subtitle="Personnalisez l'apparence de chaque type de fiche."
@@ -131,68 +122,65 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
                     </GhostButton>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                <div className="appearancetab-style-11" >
                     {categoriesToDisplay.map(type => (
                         <SettingsCard key={type}>
                             <CardBody>
                                 {/* Preview header */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                                    <div style={{
-                                        width: 40, height: 40, borderRadius: 12,
-                                        background: getCategoryColor(type),
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: '#fff', flexShrink: 0,
-                                    }}>
+                                <div className="appearancetab-style-12" >
+                                    <div className="appearancetab-style-13" style={{
+  background: getCategoryColor(type)
+}}>
                                         <DynamicIcon name={categoryIcons[type]} size={20} />
                                     </div>
-                                    <span style={{ fontWeight: 600, color: S.text, fontSize: 15 }}>
+                                    <span className="appearancetab-style-14" style={{
+  color: S.text
+}}>
                                         {categoryLabels[type] || type}
                                     </span>
                                 </div>
 
                                 {/* Color */}
-                                <div style={{ marginBottom: 16 }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                                <div className="appearancetab-style-15" >
+                                    <div className="appearancetab-style-16" style={{
+  color: S.muted
+}}>
                                         Couleur
                                     </div>
-                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                        <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
+                                    <div className="appearancetab-style-17" >
+                                        <div className="appearancetab-style-18" >
                                             <input
                                                 type="color"
                                                 value={getCategoryColor(type)}
                                                 onChange={e => setCategoryColor(type, e.target.value)}
-                                                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                                                className="appearancetab-style-19" 
                                             />
-                                            <div style={{
-                                                width: '100%', height: '100%',
-                                                background: getCategoryColor(type),
-                                                borderRadius: 8,
-                                                border: `2px solid ${S.border}`,
-                                                boxSizing: 'border-box',
-                                                cursor: 'pointer',
-                                            }} />
+                                            <div className="appearancetab-style-20" style={{
+  background: getCategoryColor(type),
+  border: `2px solid ${S.border}`
+}} />
                                         </div>
                                         <input
                                             type="text"
                                             value={getCategoryColor(type)}
                                             onChange={e => setCategoryColor(type, e.target.value)}
-                                            style={{
-                                                flex: 1, padding: '7px 12px',
-                                                border: `1px solid ${S.border}`,
-                                                borderRadius: 8, fontSize: 13,
-                                                color: S.text, fontFamily: 'monospace',
-                                                background: S.bg, outline: 'none',
-                                            }}
+                                            className="appearancetab-style-21" style={{
+  border: `1px solid ${S.border}`,
+  color: S.text,
+  background: S.bg
+}}
                                         />
                                     </div>
                                 </div>
 
                                 {/* Icons */}
                                 <div>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                                    <div className="appearancetab-style-22" style={{
+  color: S.muted
+}}>
                                         Icône
                                     </div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                    <div className="appearancetab-style-23" >
                                         {AVAILABLE_ICONS.map(iconName => {
                                             const active = getCategoryIcon(type) === iconName;
                                             const color = getCategoryColor(type);
@@ -201,17 +189,11 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
                                                     key={iconName}
                                                     onClick={() => setCategoryIcon(type, iconName)}
                                                     title={iconName}
-                                                    style={{
-                                                        border: active ? `1.5px solid ${color}` : `1px solid ${S.border}`,
-                                                        background: active ? `${color}18` : 'transparent',
-                                                        color: active ? color : S.muted,
-                                                        width: 34, height: 34,
-                                                        borderRadius: 8,
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.15s',
-                                                        boxSizing: 'border-box',
-                                                    }}
+                                                    className="appearancetab-style-24" style={{
+  border: active ? `1.5px solid ${color}` : `1px solid ${S.border}`,
+  background: active ? `${color}18` : 'transparent',
+  color: active ? color : S.muted
+}}
                                                 >
                                                     <DynamicIcon name={iconName} size={17} />
                                                 </button>
@@ -227,10 +209,14 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ onCloseSettings })
 
             {/* Tutorial */}
             <SettingsCard>
-                <CardBody style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
+                <CardBody className="appearancetab-style-25" >
                     <div>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: S.text, marginBottom: 4 }}>Tutoriel interactif</div>
-                        <div style={{ fontSize: 13, color: S.muted, lineHeight: 1.5 }}>
+                        <div className="appearancetab-style-26" style={{
+  color: S.text
+}}>Tutoriel interactif</div>
+                        <div className="appearancetab-style-27" style={{
+  color: S.muted
+}}>
                             Redécouvrez les fonctionnalités principales d'Extnd pas à pas.
                         </div>
                     </div>

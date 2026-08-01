@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Books, MagnifyingGlass, Trash } from '@phosphor-icons/react';
 import { loadCustomAbbreviations, saveCustomAbbreviations } from '../../storage';
 import { S, SettingsCard, CardSection, CardBody, SettingsInput, PrimaryButton, Badge } from './SettingsUI';
+import './styles/DictionaryTab.css';
 
 export const DictionaryTab: React.FC = () => {
     const [abbreviations, setAbbreviations] = useState<{ [key: string]: string }>({});
@@ -43,7 +44,7 @@ export const DictionaryTab: React.FC = () => {
     const canSubmit = abbrvKey.trim() && abbrvValue.trim();
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="dictionarytab-style-1" >
             {/* Add form */}
             <SettingsCard>
                 <CardSection
@@ -51,9 +52,11 @@ export const DictionaryTab: React.FC = () => {
                     subtitle="Ajoutez un terme et sa définition complète."
                 />
                 <CardBody>
-                    <form onSubmit={handleAdd} style={{ display: 'grid', gridTemplateColumns: '2fr 5fr auto', gap: 12, alignItems: 'flex-end' }}>
+                    <form onSubmit={handleAdd} className="dictionarytab-style-2" >
                         <div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                            <div className="dictionarytab-style-3" style={{
+  color: S.muted
+}}>
                                 Abréviation
                             </div>
                             <SettingsInput
@@ -65,7 +68,9 @@ export const DictionaryTab: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: S.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                            <div className="dictionarytab-style-4" style={{
+  color: S.muted
+}}>
                                 Signification
                             </div>
                             <SettingsInput
@@ -86,97 +91,68 @@ export const DictionaryTab: React.FC = () => {
             {/* List */}
             <SettingsCard>
                 {/* Toolbar */}
-                <div style={{
-                    padding: '14px 20px',
-                    borderBottom: `1px solid ${S.border}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                }}>
-                    <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
-                        <MagnifyingGlass size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: S.muted, pointerEvents: 'none' }} />
+                <div className="dictionarytab-style-5" style={{
+  borderBottom: `1px solid ${S.border}`
+}}>
+                    <div className="dictionarytab-style-6" >
+                        <MagnifyingGlass size={15} className="dictionarytab-style-7" style={{
+  color: S.muted
+}} />
                         <input
                             type="text"
                             placeholder="Rechercher…"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '8px 12px 8px 34px',
-                                border: `1px solid ${S.border}`,
-                                borderRadius: 8,
-                                fontSize: 13,
-                                color: S.text,
-                                background: S.bg,
-                                outline: 'none',
-                                boxSizing: 'border-box',
-                            }}
+                            className="dictionarytab-style-8" style={{
+  border: `1px solid ${S.border}`,
+  color: S.text,
+  background: S.bg
+}}
                         />
                     </div>
                     <Badge>{filtered.length} entrée{filtered.length !== 1 ? 's' : ''}</Badge>
                 </div>
 
                 {/* Rows */}
-                <div style={{ maxHeight: 480, overflowY: 'auto' }}>
+                <div className="dictionarytab-style-9" >
                     {filtered.length === 0 ? (
-                        <div style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, color: S.muted }}>
-                            <Books size={40} weight="duotone" style={{ opacity: 0.3 }} />
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>Aucune abréviation</div>
-                            <div style={{ fontSize: 13, opacity: 0.7 }}>Utilisez le formulaire ci-dessus pour en ajouter.</div>
+                        <div className="dictionarytab-style-10" style={{
+  color: S.muted
+}}>
+                            <Books size={40} weight="duotone" className="dictionarytab-style-11"  />
+                            <div className="dictionarytab-style-12" >Aucune abréviation</div>
+                            <div className="dictionarytab-style-13" >Utilisez le formulaire ci-dessus pour en ajouter.</div>
                         </div>
                     ) : (
                         filtered.map(([key, value], i) => (
                             <div
                                 key={key}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '12px 20px',
-                                    borderBottom: i < filtered.length - 1 ? `1px solid ${S.border}` : 'none',
-                                    transition: 'background 0.1s',
-                                    gap: 16,
-                                }}
+                                className="dictionarytab-style-14" style={{
+  borderBottom: i < filtered.length - 1 ? `1px solid ${S.border}` : 'none'
+}}
                                 onMouseEnter={e => { e.currentTarget.style.background = S.surfaceHover; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
-                                    <code style={{
-                                        fontFamily: 'monospace',
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        color: S.primary,
-                                        background: S.primaryDim,
-                                        border: `1px solid ${S.primaryBorder}`,
-                                        padding: '2px 10px',
-                                        borderRadius: 6,
-                                        textTransform: 'uppercase',
-                                        flexShrink: 0,
-                                        minWidth: 60,
-                                        textAlign: 'center',
-                                    }}>
+                                <div className="dictionarytab-style-15" >
+                                    <code className="dictionarytab-style-16" style={{
+  color: S.primary,
+  background: S.primaryDim,
+  border: `1px solid ${S.primaryBorder}`
+}}>
                                         {key}
                                     </code>
-                                    <span style={{ fontSize: 14, color: S.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <span className="dictionarytab-style-17" style={{
+  color: S.text
+}}>
                                         {value}
                                     </span>
                                 </div>
                                 <button
                                     onClick={() => handleDelete(key)}
                                     title="Supprimer"
-                                    style={{
-                                        padding: 6,
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: S.muted,
-                                        cursor: 'pointer',
-                                        borderRadius: 6,
-                                        flexShrink: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        transition: 'color 0.15s',
-                                    }}
+                                    className="dictionarytab-style-18" style={{
+  color: S.muted
+}}
                                     onMouseEnter={e => { e.currentTarget.style.color = S.danger; }}
                                     onMouseLeave={e => { e.currentTarget.style.color = S.muted; }}
                                 >
@@ -189,20 +165,17 @@ export const DictionaryTab: React.FC = () => {
 
                 {/* Footer */}
                 {filtered.length > 0 && (
-                    <div style={{
-                        padding: '10px 20px',
-                        borderTop: `1px solid ${S.border}`,
-                        fontSize: 12,
-                        color: S.muted,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                    }}>
+                    <div className="dictionarytab-style-19" style={{
+  borderTop: `1px solid ${S.border}`,
+  color: S.muted
+}}>
                         <span>{filtered.length} sur {Object.keys(abbreviations).length} entrée{Object.keys(abbreviations).length !== 1 ? 's' : ''}</span>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                style={{ background: 'none', border: 'none', color: S.primary, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                                className="dictionarytab-style-20" style={{
+  color: S.primary
+}}
                             >
                                 Effacer filtre
                             </button>

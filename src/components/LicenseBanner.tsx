@@ -1,6 +1,7 @@
 import React from 'react';
 import { Warning, ArrowSquareOut, X, Timer, Crown, CheckCircle } from '@phosphor-icons/react';
 import type { LicenseInfo } from '../lib/useLicense';
+import './styles/LicenseBanner.css';
 
 interface LicenseBannerProps {
     licenseInfo: LicenseInfo;
@@ -64,31 +65,26 @@ export const LicenseBanner: React.FC<LicenseBannerProps> = ({
     if (!c) return null;
 
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 16px',
-            background: c.bg,
-            borderBottom: `1px solid ${c.border}`,
-            flexShrink: 0,
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: c.color, display: 'flex', alignItems: 'center' }}>{c.icon}</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text)' }}>
+        <div className="licensebanner-style-1" style={{
+  background: c.bg,
+  borderBottom: `1px solid ${c.border}`
+}}>
+            <div className="licensebanner-style-2" >
+                <span className="licensebanner-style-3" style={{
+  color: c.color
+}}>{c.icon}</span>
+                <span className="licensebanner-style-4" >
                     {c.text}
                 </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="licensebanner-style-5" >
                 {c.cta && onUpgrade && (
                     <button
                         onClick={onUpgrade}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 5,
-                            padding: '5px 14px', borderRadius: 8,
-                            background: c.color, border: 'none',
-                            color: '#fff', fontWeight: 600, fontSize: 12,
-                            cursor: 'pointer',
-                        }}
+                        className="licensebanner-style-6" style={{
+  background: c.color
+}}
                     >
                         <ArrowSquareOut size={13} /> {c.cta}
                     </button>
@@ -96,7 +92,7 @@ export const LicenseBanner: React.FC<LicenseBannerProps> = ({
                 {onDismiss && (
                     <button
                         onClick={onDismiss}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', padding: 4 }}
+                        className="licensebanner-style-7" 
                     >
                         <X size={14} />
                     </button>

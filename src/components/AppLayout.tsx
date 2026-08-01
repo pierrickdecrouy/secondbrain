@@ -7,6 +7,7 @@ import { useTaskStore } from '../store/useTaskStore';
 import { LicenseBanner } from './LicenseBanner';
 import { useLicense } from '../lib/useLicense';
 import { useMemo } from 'react';
+import './styles/AppLayout.css';
 
 type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
 
@@ -48,8 +49,8 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
         <aside className={`workspace-sidebar ${sidebarOpen ? 'open' : ''} home-overlay`}>
           <div className={`workspace-sidebar-header ${sidebarOpen ? 'open' : 'collapsed'}`}>
             {sidebarOpen && (
-              <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px', color: 'var(--color-primary)' }}>
-                <img src="/Logo-linear.svg" alt="Extnd" className="brand-logo-img" style={{ height: '48px' }} />
+              <div className="applayout-style-1" >
+                <img src="/Logo-linear.svg" alt="Extnd" className="brand-logo-img applayout-style-2"  />
               </div>
             )}
             <div className="workspace-sidebar-actions">
@@ -63,33 +64,23 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
             {navItems.filter(i => i.id !== 'stats').map(item => (
               <button
                 key={item.id}
-                className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''} ${sidebarOpen ? '' : 'collapsed'}`}
+                className={`workspace-nav-item ${activeSection === item.id ? 'active' : ''} ${sidebarOpen ? '' : 'collapsed'} applayout-style-3`}
                 onClick={() => {
                   onNavigate(item.id as AppSection);
                   if (window.innerWidth <= 980) setSidebarOpen(false);
                 }}
-                style={{ position: 'relative' }}
+                
               >
                 {item.icon}
                 <span>{item.label}</span>
                 {/* U-8: due badge on review item */}
                 {item.id === 'review' && dueCount > 0 && (
-                  <span style={{
-                    position: sidebarOpen ? 'static' : 'absolute',
-                    top: sidebarOpen ? undefined : 4,
-                    right: sidebarOpen ? undefined : 4,
-                    minWidth: 18, height: 18,
-                    borderRadius: 9,
-                    background: '#8b5cf6',
-                    color: '#fff',
-                    fontSize: '0.6rem',
-                    fontWeight: 800,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '0 4px',
-                    marginLeft: sidebarOpen ? 'auto' : undefined,
-                    lineHeight: 1,
-                    boxShadow: '0 1px 4px rgba(139,92,246,0.4)',
-                  }}>
+                  <span className="applayout-style-4" style={{
+  position: sidebarOpen ? 'static' : 'absolute',
+  top: sidebarOpen ? undefined : 4,
+  right: sidebarOpen ? undefined : 4,
+  marginLeft: sidebarOpen ? 'auto' : undefined
+}}>
                     {dueCount > 99 ? '99+' : dueCount}
                   </span>
                 )}
@@ -133,7 +124,7 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
             </div>
           )}
           
-          <div className="workspace-nav-bottom" style={{ marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginBottom: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div className="workspace-nav-bottom applayout-style-5" >
             {navItems.filter(i => i.id === 'stats').map(item => (
               <button
                 key={item.id}
@@ -153,7 +144,7 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
         </aside>
       </div>
 
-      <main className="workspace-main" style={{ display: 'flex', flexDirection: 'column' }}>
+      <main className="workspace-main applayout-style-6" >
         <GlobalHeader 
           isHomeSection={isHomeSection} 
           onNavigateSettings={onNavigateSettings} 
@@ -166,7 +157,7 @@ export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClu
         <div className="workspace-content-scroll" style={(isHomeSection || activeSection === 'add') ? { padding: 0 } : {}}>
           {pendingClusterReview && activeSection === 'network' && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300">
-              <div className="bg-indigo-600 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-3">
+              <div className="bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-lg font-bold text-sm flex items-center gap-3">
                 <Graph size={20} weight="bold" />
                 Veuillez sélectionner un noeud central pour réviser son cluster
                 <button onClick={onCancelClusterReview} className="ml-2 hover:bg-indigo-700 p-1 rounded-full transition-colors">

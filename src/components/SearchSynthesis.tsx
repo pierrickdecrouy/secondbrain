@@ -10,6 +10,7 @@ import { Brain, CaretDown, CaretUp, Sparkle } from '@phosphor-icons/react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useTheme } from '../context/ThemeContext';
 import { DynamicIcon } from './DynamicIcon';
+import './styles/SearchSynthesis.css';
 
 interface SearchSynthesisProps {
     query: string;
@@ -55,8 +56,8 @@ export const SearchSynthesis: React.FC<SearchSynthesisProps> = ({ query, matched
             {/* Shimmer effect at the top */}
             {/* Shimmer effect at the top */}
             <div 
-                className="absolute top-0 left-0 right-0 h-[3px] bg-[linear-gradient(90deg,#38bdf8,#818cf8,#c084fc,#38bdf8)] bg-[length:200%_100%]"
-                style={{ animation: 'shimmer 3s infinite linear' }} 
+                className="absolute top-0 left-0 right-0 h-[3px] bg-[linear-gradient(90deg,#38bdf8,#818cf8,#c084fc,#38bdf8)] bg-[length:200%_100%] searchsynthesis-style-1"
+                 
             />
 
             {/* Collapsible header */}

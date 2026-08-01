@@ -1,0 +1,90 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{tikz}
+
+% Define colors
+\definecolor{primary}{HTML}{0D6EFD}
+\definecolor{secondary}{HTML}{6C757D}
+\definecolor{success}{HTML}{198754}
+\definecolor{danger}{HTML}{DC3545}
+\definecolor{warning}{HTML}{FFC107}
+\definecolor{info}{HTML}{0DCAF0}
+\definecolor{light}{HTML}{F8F9FA}
+\definecolor{dark}{HTML}{212529}
+
+% Customize section headings
+\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{dark}}{\thesubsection}{1em}{}
+
+% Box styles for specific card types
+\newtcolorbox{medicinebox}[1][]{
+    colback=info!5!white,
+    colframe=info!75!black,
+    title=#1,
+    fonttitle=\bfseries,
+    arc=4mm,
+    boxrule=1pt
+}
+
+\newtcolorbox{pathologybox}[1][]{
+    colback=danger!5!white,
+    colframe=danger!75!black,
+    title=#1,
+    fonttitle=\bfseries,
+    arc=4mm,
+    boxrule=1pt
+}
+
+\newtcolorbox{databox}[1][]{
+    colback=success!5!white,
+    colframe=success!75!black,
+    title=#1,
+    fonttitle=\bfseries,
+    arc=4mm,
+    boxrule=1pt
+}
+
+\newtcolorbox{standardbox}[1][]{
+    colback=secondary!5!white,
+    colframe=secondary!75!black,
+    title=#1,
+    fonttitle=\bfseries,
+    arc=4mm,
+    boxrule=1pt
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.8em}
+
+% -----------------------------------------------------------
+% DOCUMENT METADATA INJECTED HERE
+\title{\textbf{{{TITLE}}}}
+\author{PharmaBrain - Génération Tectonic}
+\date{\today}
+% -----------------------------------------------------------
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\textit{{{DESCRIPTION}}}
+\end{center}
+
+\vspace{1cm}
+
+% -----------------------------------------------------------
+% COURSE CONTENT INJECTED HERE
+{{CONTENT}}
+% -----------------------------------------------------------
+
+\end{document}

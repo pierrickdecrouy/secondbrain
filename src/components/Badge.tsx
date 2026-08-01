@@ -1,37 +1,39 @@
+import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { DynamicIcon } from './DynamicIcon';
 import { getTypeColor } from '../theme';
+import './styles/Badge.css';
 
 interface BadgeProps {
     type: string;
     className?: string;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+    const clean = hex.replace('#', '');
+    const r = parseInt(clean.substring(0, 2), 16);
+    const g = parseInt(clean.substring(2, 4), 16);
+    const b = parseInt(clean.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export const Badge: React.FC<BadgeProps> = ({ type, className }) => {
     const { getCategoryIcon, getCategoryColor } = useTheme();
     const iconName = getCategoryIcon(type);
-
-    // Use context color if available, fallback to theme util
     const color = getCategoryColor ? getCategoryColor(type) : getTypeColor(type);
-
-    const style = {
-        backgroundColor: color,
-        color: 'white',
-        fontWeight: 600,
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px'
-    };
 
     return (
         <span
             key={`badge-${type}`}
-            className={`card-badge ${className || ''}`}
+            className={`${className || ''} badge-style-1`}
             data-type={type}
-            style={style}
+            style={{
+  backgroundColor: hexToRgba(color, 0.12),
+  color: color
+}}
         >
-            <DynamicIcon name={iconName} size={12} />
-            <span>{type.toUpperCase()}</span>
+            <DynamicIcon name={iconName} size={14} weight="fill" />
+            <span>{type}</span>
         </span>
     );
 };

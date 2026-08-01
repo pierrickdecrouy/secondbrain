@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X, CaretDown } from '@phosphor-icons/react';
+import '../styles/CardForm.css';
 
 interface TagInputProps {
     tags: string[];
@@ -35,32 +36,38 @@ export const TagInput: React.FC<TagInputProps> = ({ tags, uniqueTags, onAddTag, 
     };
 
     return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 4 }}>
+        <div className="flex flex-wrap items-center gap-2">
             {tags.map(tag => (
-                <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', fontSize: '0.85rem', fontWeight: 600, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 24, color: 'var(--color-text)' }}>
-                    #{tag}<X size={12} onClick={() => onRemoveTag(tag)} style={{ cursor: 'pointer', opacity: 0.6 }} />
+                <span key={tag} className="text-[11px] font-semibold py-1 px-2.5 bg-[color:var(--color-surface-hover)] border border-[color:var(--color-border)] rounded-md flex items-center gap-1.5 text-[color:var(--color-text)]">
+                    #{tag}
+                    <X size={12} weight="bold" onClick={() => onRemoveTag(tag)} className="cursor-pointer text-[color:var(--color-text-muted)] hover:text-red-500 transition-colors" />
                 </span>
             ))}
-            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-bg)', borderRadius: 24, overflow: 'hidden', height: 28, border: '1px dashed var(--color-border)', padding: '0 8px' }}>
+            
+            <div className="flex items-center gap-1.5 py-1 px-1 text-[12px] font-medium text-[color:var(--color-text-muted)] w-48 bg-transparent">
+                <span className="font-bold">+</span>
                 <input
                     type="text"
-                    placeholder="+ Tag (Enter, virgule...)"
+                    placeholder="Tag (Enter, virgule...)"
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
                     onKeyDown={handleTagKeyDown}
-                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.85rem', width: 140, height: '100%', color: 'var(--color-text-muted)' }}
+                    className="bg-transparent border-none outline-none w-full text-[color:var(--color-text)] placeholder-[color:var(--color-text-muted)] placeholder-opacity-70"
                 />
                 {uniqueTags.filter(t => !tags.includes(t)).length > 0 && (
-                    <select
-                        onChange={handleTagSelect}
-                        defaultValue=""
-                        style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.75rem', color: 'var(--color-text-muted)', cursor: 'pointer', height: '100%', padding: '0 4px' }}
-                    >
-                        <option value="" disabled>↓</option>
-                        {uniqueTags.filter(t => !tags.includes(t)).map(t => (
-                            <option key={t} value={t}>{t}</option>
-                        ))}
-                    </select>
+                    <div className="relative flex items-center shrink-0">
+                        <select
+                            onChange={handleTagSelect}
+                            defaultValue=""
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        >
+                            <option value="" disabled>↓</option>
+                            {uniqueTags.filter(t => !tags.includes(t)).map(t => (
+                                <option key={t} value={t}>{t}</option>
+                            ))}
+                        </select>
+                        <CaretDown size={12} weight="bold" className="pointer-events-none text-slate-500" />
+                    </div>
                 )}
             </div>
         </div>

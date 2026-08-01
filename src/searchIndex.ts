@@ -1,144 +1,67 @@
-import FlexSearch from 'flexsearch';
 import type { Card } from './types';
 import { semanticSearch, isSemanticSearchReady } from './semanticSearch';
 import { expandMedicalQuery } from './medicalAbbreviations';
 
-// FlexSearch Document Index for cards
-// Using 'any' to avoid TypeScript issues with FlexSearch's complex generics
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const index = new (FlexSearch as any).Document({
-    document: {
-        id: 'id',
-        index: ['title', 'subtitle', 'content', 'details'],
-        store: ['id']
-    },
-    tokenize: 'full', // Index all substrings for robust matching
-    charset: 'latin:extra',
-    minlength: 2, // Ensure short terms like "IV" or "dt1" are indexed
-    optimize: true,
-    cache: 100,
-    context: {
-        depth: 1,
-        resolution: 3,
-        bidirectional: true
-    }
-});
-
-let indexedCardIds = new Set<string>();
-
-// Rebuild the entire index with new cards
-export function rebuildIndex(cards: Card[]): void {
-    const nextIds = new Set(cards.map(card => card.id));
-
-    // Remove cards that no longer exist
-    indexedCardIds.forEach((existingId) => {
-        if (!nextIds.has(existingId)) {
-            try {
-                index.remove(existingId);
-            } catch {
-                // Ignore if not exists
-            }
-        }
-    });
-
-    // Upsert current cards
-    cards.forEach(card => {
-        index.add({
-            id: card.id,
-            title: card.title,
-            subtitle: card.subtitle,
-            content: card.content,
-            details: card.details,
-        });
-    });
-
-    indexedCardIds = nextIds;
+// Legacy functions for compatibility (no-op since FTS5 handles indexing via SQLite triggers)
+export function rebuildIndex(_cards: Card[]): void {
+    // No-op
 }
 
-// Add a single card to the index
-export function addToIndex(card: Card): void {
-    index.add({
-        id: card.id,
-        title: card.title,
-        subtitle: card.subtitle,
-        content: card.content,
-        details: card.details,
-    });
-    indexedCardIds.add(card.id);
+export function addToIndex(_card: Card): void {
+    // No-op
 }
 
-export function updateIndex(card: Card): void {
-    try {
-        index.remove(card.id);
-    } catch {
-        // Ignore if not exists
-    }
-    index.add({
-        id: card.id,
-        title: card.title,
-        subtitle: card.subtitle,
-        content: card.content,
-        details: card.details,
-    });
-    indexedCardIds.add(card.id);
+export function updateIndex(_card: Card): void {
+    // No-op
 }
 
-// Remove a card from the index
-export function removeFromIndex(cardId: string): void {
-    try {
-        index.remove(cardId);
-    } catch {
-        // Ignore if not exists
-    }
-    indexedCardIds.delete(cardId);
+export function removeFromIndex(_cardId: string): void {
+    // No-op
 }
 
-// Search and return matching card IDs (keyword-based)
-export function searchCards(query: string, limit = 50): string[] {
-    if (!query.trim()) return [];
-
-    // FlexSearch Document.search() returns synchronously in this setup
-    const results = index.search(query, {
-        limit,
-        enrich: true,
-    });
-
-    // Collect unique IDs from all field results
-    const idSet = new Set<string>();
-    if (Array.isArray(results)) {
-        results.forEach((fieldResult: { field: string; result: { id: string }[] }) => {
-            if (fieldResult.result && Array.isArray(fieldResult.result)) {
-                fieldResult.result.forEach((item) => {
-                    if (typeof item === 'string') {
-                        idSet.add(item);
-                    } else if (item && typeof item === 'object' && 'id' in item) {
-                        idSet.add(item.id);
-                    }
-                });
-            }
-        });
-    }
-
-    return Array.from(idSet);
+export interface FTSResult {
+    id: string;
+    highlight: string;
 }
 
 /**
- * Hybrid search: combines keyword (FlexSearch) and semantic search
+ * Fast Lexical Search using SQLite FTS5.
+ * Returns both the ID and a highlighted snippet of the match.
+ */
+export async function fastLexicalSearch(query: string, limit = 50): Promise<FTSResult[]> {
+    if (!query.trim()) return [];
+    
+    if (window.electronAPI?.searchCardsFTS) {
+        try {
+            return await window.electronAPI.searchCardsFTS(query, limit);
+        } catch (e) {
+            console.error("FTS5 search error:", e);
+            return [];
+        }
+    }
+    return [];
+}
+
+/**
+ * Hybrid search: combines FTS5 (Lexical) and semantic search (Voy-search).
  * Also expands medical abbreviations (DT1 -> Diabete type 1, HTA -> Hypertension, etc.)
  */
 export async function hybridSearch(query: string, limit = 50): Promise<string[]> {
+    if (!query.trim()) return [];
+
     // Expand medical abbreviations to get all search variants
     const queryVariants = expandMedicalQuery(query);
 
-    // Get keyword results for all variants (instant)
+    // Get keyword results for all variants via FTS5
     const keywordResults: string[] = [];
     const seenKeyword = new Set<string>();
+    
     for (const variant of queryVariants) {
-        const results = searchCards(variant, limit);
-        for (const id of results) {
-            if (!seenKeyword.has(id)) {
-                keywordResults.push(id);
-                seenKeyword.add(id);
+        const results = await fastLexicalSearch(variant, limit);
+        for (const res of results) {
+            if (!seenKeyword.has(res.id)) {
+                keywordResults.push(res.id);
+                seenKeyword.add(res.id);
             }
         }
     }
@@ -149,7 +72,6 @@ export async function hybridSearch(query: string, limit = 50): Promise<string[]>
     }
 
     try {
-        // Get semantic results for all query variants (async)
         // Get semantic results for all query variants (async parallel)
         const semanticPromises = queryVariants.map(variant => semanticSearch(variant, limit));
         const resultsArrays = await Promise.all(semanticPromises);
@@ -192,5 +114,3 @@ export async function hybridSearch(query: string, limit = 50): Promise<string[]>
         return keywordResults.slice(0, limit);
     }
 }
-
-export { index };

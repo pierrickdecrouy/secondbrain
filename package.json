@@ -18,7 +18,8 @@
     "preview": "vite preview",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5174 && electron .\"",
     "electron:build": "npm run build && cross-env DEBUG=electron-builder electron-builder build --publish never",
-    "dist": "npm run build && electron-builder --mac --win"
+    "dist": "npm run build && electron-builder --mac --win",
+    "postinstall": "node scripts/download-tectonic.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -156,6 +157,13 @@
     "files": [
       "dist/**/*",
       "electron/**/*.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin",
+        "to": "bin",
+        "filter": ["**/*"]
+      }
     ],
     "mac": {
       "target": [
