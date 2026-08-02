@@ -214,9 +214,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
     if (!editor) return <div className="p-12 text-red-500" >Chargement de l'éditeur... (si ce message reste, c'est que l'éditeur a planté)</div>;
 
     return (
-        <div ref={editorContainerRef} className="full-course-editor flex flex-col h-full overflow-hidden" style={{
-  backgroundColor: isFullscreen ? 'var(--color-surface)' : 'var(--color-bg)'
-}}>
+        <div ref={editorContainerRef} className={`full-course-editor flex flex-col h-full overflow-hidden ${isFullscreen ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950'}`}>
             <div className="flex-1 overflow-y-auto px-4 py-8 flex justify-center" >
                 <div className="w-full max-w-[1200px] bg-white dark:bg-slate-900 rounded-xl shadow-md flex flex-col" >
                     
@@ -246,7 +244,7 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
                                 title="Mode Focus (Cmd+Shift+F)"
                                 >
                                     {isFullscreen ? <CornersIn size={18} weight="bold" /> : <CornersOut size={18} weight="bold" />}
-                                    <span style={{ display: isFullscreen ? 'none' : 'inline' }}>Focus</span>
+                                    <span className={isFullscreen ? 'hidden' : 'inline'}>Focus</span>
                                 </button>
                                 <button onClick={() => {
                                     handleSave();

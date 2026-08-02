@@ -168,11 +168,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                         <div className="mt-2.5 relative" >
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setFsrsTagPickerOpen(!fsrsTagPickerOpen); }}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer" style={{
-  background: fsrsTags.length > 0 ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
-  border: fsrsTags.length > 0 ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)',
-  color: fsrsTags.length > 0 ? '#10b981' : 'var(--color-text-muted)'
-}}
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer border ${fsrsTags.length > 0 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'}`}
                                             >
                                                 <Funnel size={12} weight={fsrsTags.length > 0 ? "fill" : "regular"} />
                                                 {fsrsTags.length > 0 ? `${fsrsTags.length} tag(s) actif(s)` : 'Filtrer la session'}
@@ -186,11 +182,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                                             <button
                                                                 key={tag}
                                                                 onClick={() => setFsrsTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                                                                className="px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer" style={{
-  border: fsrsTags.includes(tag) ? '1px solid #10b981' : '1px solid var(--color-border)',
-  background: fsrsTags.includes(tag) ? 'rgba(16,185,129,0.1)' : 'var(--color-bg)',
-  color: fsrsTags.includes(tag) ? '#10b981' : 'var(--color-text-muted)'
-}}
+                                                                className={`px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer border ${fsrsTags.includes(tag) ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'}`}
                                                             >
                                                                 #{tag}
                                                             </button>
@@ -209,12 +201,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                             <button
                                 onClick={() => onSelectFSRS(fsrsTags)}
                                 disabled={fsrsDueCount === 0}
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl border-none font-bold text-sm shrink-0 transition-all duration-200" style={{
-  background: fsrsDueCount > 0 ? '#10b981' : 'var(--color-bg)',
-  color: fsrsDueCount > 0 ? '#fff' : 'var(--color-text-muted)',
-  cursor: fsrsDueCount > 0 ? 'pointer' : 'not-allowed',
-  boxShadow: fsrsDueCount > 0 ? '0 4px 10px rgba(16,185,129,0.2)' : 'none'
-}}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl border-none font-bold text-sm shrink-0 transition-all duration-200 ${fsrsDueCount > 0 ? 'bg-emerald-500 text-white cursor-pointer shadow-[0_4px_10px_rgba(16,185,129,0.2)]' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none'}`}
                             >
                                 {fsrsDueCount > 0 ? (
                                     <><Play size={16} weight="fill" /> Démarrer ({fsrsDueCount})</>
@@ -261,9 +248,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                 <div className="relative" >
                                     <button
                                         onClick={() => setCoursePickerOpen(v => !v)}
-                                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-[10px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 cursor-pointer text-[13px] font-medium" style={{
-  color: selectedCourse ? 'var(--color-text)' : 'var(--color-text-muted)'
-}}
+                                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-[10px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 cursor-pointer text-[13px] font-medium ${selectedCourse ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}
                                     >
                                         <span className="overflow-hidden text-ellipsis whitespace-nowrap" >
                                             {selectedCourse ? selectedCourse.title : 'Choisir un cours...'}
@@ -301,13 +286,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                         <button
                             onClick={() => selectedCourseId && onSelectCourse(selectedCourseId)}
                             disabled={!selectedCourseId || coursesWithFlashcards.length === 0}
-                            className="flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] border-none font-bold text-sm transition-all duration-200 mt-auto" style={{
-  background: selectedCourseId ? '#3b82f6' : 'var(--color-bg)',
-  color: selectedCourseId ? '#fff' : 'var(--color-text-muted)',
-  cursor: selectedCourseId ? 'pointer' : 'not-allowed'
-}}
-                            onMouseEnter={e => { if (selectedCourseId) e.currentTarget.style.filter = 'brightness(0.9)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
+                            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] border-none font-bold text-sm transition-all duration-200 mt-auto ${selectedCourseId ? 'bg-blue-500 text-white cursor-pointer hover:brightness-90' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 cursor-not-allowed'}`}
                         >
                             {selectedCourseId ? (
                                 <><Play size={16} weight="fill" /> Démarrer ({selectedCourseFlashcards.length})</>
@@ -431,11 +410,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                         <button
                                             key={tag}
                                             onClick={() => handleToggleCustomTag(tag)}
-                                            className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 flex items-center gap-1.5" style={{
-  border: customConfig.tags.includes(tag) ? '1px solid #8b5cf6' : '1px solid var(--color-border)',
-  background: customConfig.tags.includes(tag) ? 'rgba(139,92,246,0.1)' : 'var(--color-surface)',
-  color: customConfig.tags.includes(tag) ? '#8b5cf6' : 'var(--color-text-muted)'
-}}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 flex items-center gap-1.5 border ${customConfig.tags.includes(tag) ? 'border-violet-500 bg-violet-500/10 text-violet-500' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400'}`}
                                         >
                                             {customConfig.tags.includes(tag) ? <Check size={12} weight="bold" /> : '#'}
                                             {tag}
@@ -508,13 +483,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                     }}
                                     disabled={!hasCustomFilters || customDeckMatchCount === 0}
                                     title={!hasCustomFilters ? 'Sélectionnez au moins un filtre' : customDeckMatchCount === 0 ? 'Aucune carte ne correspond' : undefined}
-                                    className="px-6 py-2.5 border-none rounded-[10px] font-bold text-sm transition-all duration-150" style={{
-  background: hasCustomFilters && customDeckMatchCount > 0 ? '#8b5cf6' : 'var(--color-border)',
-  color: hasCustomFilters && customDeckMatchCount > 0 ? 'white' : 'var(--color-text-muted)',
-  cursor: hasCustomFilters && customDeckMatchCount > 0 ? 'pointer' : 'not-allowed',
-  boxShadow: hasCustomFilters && customDeckMatchCount > 0 ? '0 4px 12px rgba(139,92,246,0.3)' : 'none',
-  opacity: hasCustomFilters && customDeckMatchCount > 0 ? 1 : 0.6
-}}
+                                    className={`px-6 py-2.5 border-none rounded-[10px] font-bold text-sm transition-all duration-150 ${hasCustomFilters && customDeckMatchCount > 0 ? 'bg-violet-500 text-white cursor-pointer shadow-[0_4px_12px_rgba(139,92,246,0.3)] opacity-100' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none opacity-60'}`}
                                 >
                                     Démarrer · {customDeckMatchCount} carte{customDeckMatchCount !== 1 ? 's' : ''}
                                 </button>
@@ -614,10 +583,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
             <button
                 onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
                 disabled={disabled}
-                className="flex items-center justify-center gap-1.5 py-2 px-0 border-none bg-transparent font-bold text-[13px] transition-colors duration-200 shrink-0" style={{
-  color: disabled ? 'var(--color-text-muted)' : 'var(--color-text)',
-  cursor: disabled ? 'not-allowed' : 'pointer'
-}}
+                className={`flex items-center justify-center gap-1.5 py-2 px-0 border-none bg-transparent font-bold text-[13px] transition-colors duration-200 shrink-0 ${disabled ? 'text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'text-slate-900 dark:text-slate-100 cursor-pointer'}`}
                 onMouseEnter={e => { if (!disabled) e.currentTarget.style.color = iconColor; }}
                 onMouseLeave={e => { if (!disabled) e.currentTarget.style.color = 'var(--color-text)'; }}
             >

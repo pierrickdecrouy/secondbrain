@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SettingsTab } from '../SettingsPage';
 import { useUIStore as useUI } from '../../store/useUIStore';
+import { Avatar } from '../Avatar';
 import { 
     Book, Brain, Palette, Database, Calendar, ChartBar, User, CreditCard
 } from '@phosphor-icons/react';
@@ -40,7 +41,7 @@ const SectionLabel: React.FC<{ label: string }> = ({ label }) => (
 );
 
 export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, setActiveTab }) => {
-    const { userName } = useUI();
+    const { userName, avatarConfig } = useUI();
 
     return (
         <aside className="w-[240px] shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col h-full z-10">
@@ -129,8 +130,12 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
             {/* User footer */}
             <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-400 flex items-center justify-center text-white font-extrabold text-base shadow-sm shrink-0">
-                        {userName.charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-base shadow-sm shrink-0 overflow-hidden border border-slate-200/50 dark:border-white/10">
+                        <Avatar
+                            config={avatarConfig}
+                            userName={userName}
+                            style={{ width: '100%', height: '100%', borderRadius: 0, fontSize: '18px' }}
+                        />
                     </div>
                     <div className="min-w-0">
                         <div className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">

@@ -5,7 +5,7 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { calculateFsrsProgress } from '../algorithms/fsrs';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTheme } from '../context/ThemeContext';
-import './ReviewSessionModal.css';
+
 
 export type CategoryType = 'drug' | 'patho' | 'physio' | 'data';
 export type CardMode = 'flashcard' | 'course';
@@ -32,18 +32,11 @@ const COURSE_REVIEW_ACTIONS: Array<{ rating: 1 | 2 | 3 | 4; label: string; class
     { rating: 3, label: 'J\'ai compris, suivant', className: 'review-btn-3' }
 ];
 
-const LIGHT_THEME_MAP: Record<string, { bubble: string, text: string, bg: string, tag: string }> = {
-    drug: { bubble: 'bg-emerald-100', text: 'text-emerald-600', bg: 'bg-emerald-50', tag: 'bg-emerald-100 text-emerald-700 border border-emerald-200' },
-    patho: { bubble: 'bg-red-100', text: 'text-red-600', bg: 'bg-red-50', tag: 'bg-red-100 text-red-700 border border-red-200' },
-    physio: { bubble: 'bg-indigo-100', text: 'text-indigo-600', bg: 'bg-indigo-50', tag: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
-    data: { bubble: 'bg-orange-100', text: 'text-orange-600', bg: 'bg-orange-50', tag: 'bg-orange-100 text-orange-700 border border-orange-200' }
-};
-
-const DARK_THEME_MAP: Record<string, { bubble: string, text: string, bg: string, tag: string }> = {
-    drug: { bubble: 'bg-emerald-900/30', text: 'text-emerald-400', bg: 'bg-emerald-400/5', tag: 'bg-emerald-400/10 text-emerald-400 border border-emerald-500/20' },
-    patho: { bubble: 'bg-red-900/30', text: 'text-red-400', bg: 'bg-red-400/5', tag: 'bg-red-400/10 text-red-400 border border-red-500/20' },
-    physio: { bubble: 'bg-indigo-900/30', text: 'text-indigo-400', bg: 'bg-indigo-400/5', tag: 'bg-indigo-400/10 text-indigo-400 border border-indigo-500/20' },
-    data: { bubble: 'bg-orange-900/30', text: 'text-orange-400', bg: 'bg-orange-400/5', tag: 'bg-orange-400/10 text-orange-400 border border-orange-500/20' }
+const THEME_MAP: Record<string, { bubble: string, text: string, bg: string, tag: string }> = {
+    drug: { bubble: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-400/5', tag: 'bg-emerald-100 dark:bg-emerald-400/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' },
+    patho: { bubble: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-400/5', tag: 'bg-red-100 dark:bg-red-400/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20' },
+    physio: { bubble: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-400/5', tag: 'bg-indigo-100 dark:bg-indigo-400/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20' },
+    data: { bubble: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-400/5', tag: 'bg-orange-100 dark:bg-orange-400/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20' }
 };
 
 const getLinkedCardIds = (card: Card, allCards: Card[]): string[] => {
@@ -129,6 +122,13 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
         }, 1000);
         return () => clearInterval(timer);
     }, [quizTimeLeft, isPaused]);
+
+    // Reset timer on new card
+    useEffect(() => {
+        if (title === 'Quiz Express') {
+            setQuizTimeLeft(30);
+        }
+    }, [index, title]);
 
     const card = cards[index];
 
@@ -218,8 +218,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
     const progressPercent = ((index + 1) / cards.length) * 100;
 
     const category = ((card as any).category || 'drug') as CategoryType;
-    const themeMap = darkMode ? DARK_THEME_MAP : LIGHT_THEME_MAP;
-    const theme = themeMap[category] || themeMap.drug;
+    const theme = THEME_MAP[category] || THEME_MAP.drug;
 
     const getCategoryIcon = (cat: string, type: string) => {
         if (type === 'course') return <BookBookmark size={22} weight="bold" />;
@@ -240,29 +239,32 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
     return (
         <div
-            className={`review-modal-overlay ${darkMode ? 'dark' : 'light'}`}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6"
             aria-modal="true"
             role="dialog"
         >
             <div 
                 ref={modalRef} 
-                className={`review-modal-container ${darkMode ? 'dark' : 'light'}`}
+                className={`relative w-full max-w-6xl h-full max-h-[90vh] rounded-3xl shadow-2xl flex flex-col border bg-white/90 border-slate-200/50 dark:bg-slate-900/90 dark:border-slate-700/50 backdrop-blur-xl`}
             >
-                {/* Category Color Bubble (Top Right) */}
-                <div className={`absolute -top-32 -right-32 w-[500px] h-[500px] ${theme.bubble} rounded-full z-0 pointer-events-none transition-colors duration-500 blur-[100px] opacity-60`}></div>
+                {/* Background layer for clipping the blurred bubble properly */}
+                <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
+                    {/* Category Color Bubble (Top Right) */}
+                    <div className={`absolute -top-32 -right-32 w-[500px] h-[500px] ${theme.bubble} rounded-full pointer-events-none transition-colors duration-500 blur-[100px] opacity-60`}></div>
+                </div>
 
-                <div className="relative z-10 flex flex-col h-full overflow-hidden">
+                <div className="relative z-10 flex flex-col h-full overflow-hidden rounded-3xl">
                     {/* Header Toolbar */}
-                    <div className="review-modal-header">
+                    <div className={`flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 z-10`}>
                         <div className="flex items-center gap-3">
                             <div className={`${theme.text}`}>
                                 <Brain size={26} weight="duotone" />
                             </div>
-                            <h2 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-slate-800'} tracking-tight flex items-center gap-3 m-0`}>
+                            <h2 className={`text-base font-bold text-slate-800 dark:text-white tracking-tight flex items-center gap-3 m-0`}>
                                 {title || 'Révision planifiée (FSRS)'}
                             </h2>
                             {title === 'Bachotage Intensif' && (
-                                <span className={`hidden sm:inline-block ml-2 text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <span className={`hidden sm:inline-block ml-2 text-xs font-medium text-slate-500 dark:text-slate-400`}>
                                     Mode Entraînement
                                 </span>
                             )}
@@ -271,7 +273,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                         <div className="flex items-center gap-3 md:gap-5">
                             {/* Timer Display */}
                             {quizTimeLeft !== null ? (
-                                <div className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all border ${quizTimeLeft <= 10 ? "bg-red-50 border-red-200 text-red-600 shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse" : (darkMode ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-500")}`}>
+                                <div className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all border ${quizTimeLeft <= 10 ? "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300"}`}>
                                     <Timer size={16} weight={quizTimeLeft <= 10 ? "bold" : "duotone"} />
                                     <span className="font-mono tracking-wide">{quizTimeLeft}s</span>
                                 </div>
@@ -282,31 +284,31 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                 </div>
                             )}
 
-                            <div className={`hidden sm:flex items-center gap-2 rounded-xl px-3 py-1.5 text-base font-bold tracking-wide border ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                            <div className={`hidden sm:flex items-center gap-2 rounded-xl px-3 py-1.5 text-base font-bold tracking-wide border bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300`}>
                                 <Stack size={18} weight="duotone" />
                                 {index + 1} <span className="opacity-50 mx-1">/</span> {cards.length}
                             </div>
 
-                            <div className={`w-px h-6 mx-2 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
+                            <div className={`w-px h-6 mx-2 bg-slate-200 dark:bg-slate-700`}></div>
 
                             <div className="flex items-center gap-3">
                                 <button 
                                     onClick={() => setShowStats(!showStats)} 
-                                    className={`p-2.5 rounded-xl transition-colors border-none outline-none flex items-center justify-center ${showStats ? (darkMode ? 'bg-slate-800 text-emerald-400' : 'bg-emerald-50 text-emerald-600') : (darkMode ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800')}`}
+                                    className={`p-2.5 rounded-xl transition-colors border-none outline-none flex items-center justify-center ${showStats ? 'bg-emerald-50 text-emerald-600 dark:bg-slate-800 dark:text-emerald-400' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-white'}`}
                                     title="Statistiques de la carte"
                                 >
                                     <ChartBar size={22} weight={showStats ? "fill" : "regular"} />
                                 </button>
                                 <button 
                                     onClick={() => setIsPaused(!isPaused)} 
-                                    className={`p-2.5 rounded-xl transition-colors border-none outline-none flex items-center justify-center ${isPaused ? (darkMode ? 'bg-slate-800 text-amber-400' : 'bg-amber-50 text-amber-600') : (darkMode ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800')}`}
+                                    className={`p-2.5 rounded-xl transition-colors border-none outline-none flex items-center justify-center ${isPaused ? 'bg-amber-50 text-amber-600 dark:bg-slate-800 dark:text-amber-400' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-white'}`}
                                     title="Faire une pause"
                                 >
                                     <Coffee size={22} weight={isPaused ? "fill" : "regular"} />
                                 </button>
                                 <button 
                                     onClick={handleClose} 
-                                    className={`p-2.5 rounded-xl transition-colors border-none outline-none flex items-center justify-center ml-2 ${darkMode ? 'hover:bg-red-500/20 text-slate-400 hover:text-red-400' : 'hover:bg-red-50 text-slate-500 hover:text-red-600'}`}
+                                    className={`p-2.5 rounded-xl transition-colors border-none outline-none flex items-center justify-center ml-2 hover:bg-red-50 text-slate-500 hover:text-red-600 dark:hover:bg-red-500/20 dark:text-slate-400 dark:hover:text-red-400`}
                                     title="Fermer"
                                 >
                                     <X size={24} weight="bold" />
@@ -316,7 +318,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     </div>
 
                     {/* Progress Bar (slim) */}
-                    <div className="w-full h-1 bg-slate-100 dark:bg-slate-800">
+                    <div className={`w-full h-1 bg-slate-100 dark:bg-slate-800`}>
                         <div 
                             className={`h-full bg-emerald-500 transition-all duration-500 ${darkMode ? 'shadow-[0_0_8px_rgba(16,185,129,0.5)]' : ''}`}
                             style={{ width: `${progressPercent}%` }}
@@ -324,45 +326,45 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     </div>
 
                     {/* Main Content Area */}
-                    <div className={`review-modal-content-area ${isCourseType ? 'custom-scrollbar' : '!overflow-hidden'}`}>
+                    <div className={`flex-1 relative flex flex-col w-full h-full z-10 ${isCourseType ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
                         {isPaused ? (
                             <div className="flex-1 flex flex-col items-center justify-center text-center py-10 px-4 overflow-y-auto custom-scrollbar">
-                                <div className={`w-24 h-24 rounded-full ${darkMode ? 'bg-slate-800' : 'bg-slate-50'} flex items-center justify-center mb-6 shadow-sm`}>
-                                    <Coffee size={48} className={darkMode ? 'text-emerald-400' : 'text-emerald-500'} />
+                                <div className={`w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-6 shadow-sm`}>
+                                    <Coffee size={48} className={'text-emerald-500 dark:text-emerald-400'} />
                                 </div>
-                                <h3 className={`text-4xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-800'}`}>Session en pause</h3>
-                                <p className={`max-w-lg text-lg ${darkMode ? 'text-slate-400' : 'text-slate-500'} mb-12 leading-relaxed`}>
+                                <h3 className={`text-4xl font-bold mb-4 text-slate-800 dark:text-white`}>Session en pause</h3>
+                                <p className={`max-w-lg text-lg text-slate-500 dark:text-slate-400 mb-12 leading-relaxed`}>
                                     Prenez votre temps. La science prouve que de courtes pauses améliorent la rétention mnésique.
                                 </p>
                                 
                                 {/* FSRS Stats integrated in Pause Screen */}
-                                <div className={`w-full max-w-xl mb-12 p-8 rounded-[32px] border shadow-md ${darkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200'}`}>
-                                    <h4 className={`text-sm font-bold uppercase tracking-[0.2em] mb-8 flex items-center justify-center gap-3 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <div className={`w-full max-w-xl mb-12 p-8 rounded-[32px] border shadow-md bg-white border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/50`}>
+                                    <h4 className={`text-sm font-bold uppercase tracking-[0.2em] mb-8 flex items-center justify-center gap-3 text-slate-500 dark:text-slate-400`}>
                                         <ChartBar size={20} /> Statistiques FSRS
                                     </h4>
                                     <div className="grid grid-cols-3 gap-6">
                                         <div className="text-center">
-                                            <div className={`text-xs uppercase font-semibold tracking-wider mb-3 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Stabilité</div>
-                                            <div className={`font-mono text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{card.progress?.stability?.toFixed(1) || '0.0'}</div>
-                                            <div className={`text-sm font-medium mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>jours</div>
+                                            <div className={`text-xs uppercase font-semibold tracking-wider mb-3 text-slate-400 dark:text-slate-500`}>Stabilité</div>
+                                            <div className={`font-mono text-3xl font-extrabold text-slate-800 dark:text-white`}>{card.progress?.stability?.toFixed(1) || '0.0'}</div>
+                                            <div className={`text-sm font-medium mt-1 text-slate-400 dark:text-slate-500`}>jours</div>
                                         </div>
-                                        <div className={`text-center border-l border-r ${darkMode ? 'border-slate-700/50' : 'border-slate-200'}`}>
-                                            <div className={`text-xs uppercase font-semibold tracking-wider mb-3 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Difficulté</div>
-                                            <div className={`font-mono text-3xl font-extrabold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{qualityScore.toFixed(0)}%</div>
+                                        <div className={`text-center border-l border-r border-slate-200 dark:border-slate-700/50`}>
+                                            <div className={`text-xs uppercase font-semibold tracking-wider mb-3 text-slate-400 dark:text-slate-500`}>Difficulté</div>
+                                            <div className={`font-mono text-3xl font-extrabold text-slate-800 dark:text-white`}>{qualityScore.toFixed(0)}%</div>
                                             <div className="px-6 mt-3">
-                                                <div className={`h-2 w-full rounded-full overflow-hidden ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                                                <div className={`h-2 w-full rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700`}>
                                                     <div className="h-full bg-blue-500 rounded-full" style={{ width: `${qualityScore}%` }}></div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-center">
-                                            <div className={`text-xs uppercase font-semibold tracking-wider mb-3 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Historique</div>
-                                            <div className={`font-mono text-3xl font-extrabold flex items-center justify-center gap-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                                            <div className={`text-xs uppercase font-semibold tracking-wider mb-3 text-slate-400 dark:text-slate-500`}>Historique</div>
+                                            <div className={`font-mono text-3xl font-extrabold flex items-center justify-center gap-2 text-slate-800 dark:text-white`}>
                                                 <span className="text-emerald-500">{card.progress?.reps || 0}</span>
                                                 <span className={`text-xl opacity-30`}>/</span>
                                                 <span className="text-red-500">{card.progress?.lapses || 0}</span>
                                             </div>
-                                            <div className={`text-sm font-medium mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>révs / oublis</div>
+                                            <div className={`text-sm font-medium mt-1 text-slate-400 dark:text-slate-500`}>révs / oublis</div>
                                         </div>
                                     </div>
                                 </div>
@@ -386,40 +388,40 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
                                 {/* Question Area */}
                                 <div className="w-full text-center transition-all duration-500 z-10 mb-16 mt-12">
-                                    <h3 className={`m-0 text-3xl md:text-5xl font-bold leading-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>{card.title}</h3>
-                                    {card.subtitle && <p className={`mt-6 mb-0 text-xl md:text-2xl font-mono ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{card.subtitle}</p>}
+                                    <h3 className={`m-0 text-3xl md:text-5xl font-bold leading-tight text-slate-900 dark:text-white`}>{card.title}</h3>
+                                    {card.subtitle && <p className={`mt-6 mb-0 text-xl md:text-2xl font-mono text-slate-500 dark:text-slate-400`}>{card.subtitle}</p>}
                                 </div>
 
                                 {/* Answer Area */}
                                 <div className={`w-full transition-all duration-500 transform ${shouldReveal ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none hidden'}`}>
                                     {card.content && card.format !== 'cloze' && (
-                                        <div className={`prose prose-lg md:prose-xl max-w-none text-center leading-relaxed ${darkMode ? 'prose-invert' : ''} ${card.details ? 'mb-16' : 'mb-0'}`}>
+                                        <div className={`prose prose-lg md:prose-xl max-w-none text-center leading-relaxed dark:prose-invert ${card.details ? 'mb-16' : 'mb-0'}`}>
                                             <MarkdownRenderer content={card.content} />
                                         </div>
                                     )}
                                     
                                     {card.details && (
-                                        <div className={`p-10 sm:p-12 rounded-[32px] border ${darkMode ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'} mb-16 shadow-sm`}>
-                                            <div className={`text-sm uppercase font-extrabold tracking-[0.2em] mb-8 flex items-center gap-3 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                                        <div className={`p-10 sm:p-12 rounded-[32px] border bg-slate-50 border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/50 mb-16 shadow-sm`}>
+                                            <div className={`text-sm uppercase font-extrabold tracking-[0.2em] mb-8 flex items-center gap-3 text-emerald-600 dark:text-emerald-400`}>
                                                 <Brain size={26} weight="duotone" />
                                                 Détails de la réponse
                                             </div>
-                                            <div className={`prose prose-base md:prose-lg max-w-none leading-relaxed ${darkMode ? 'prose-invert' : ''}`}>
+                                            <div className="prose prose-base md:prose-lg max-w-none leading-relaxed dark:prose-invert">
                                                 <MarkdownRenderer content={card.details} />
                                             </div>
                                         </div>
                                     )}
                                     
                                     {linkedRecommendations.length > 0 && (
-                                        <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-slate-700/50' : 'border-slate-200'}`}>
-                                            <div className={`text-sm font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        <div className={`mt-8 pt-6 border-t border-slate-200 dark:border-slate-700/50`}>
+                                            <div className={`text-sm font-semibold mb-4 flex items-center gap-2 text-slate-500 dark:text-slate-400`}>
                                                 Parcours logique recommandé
                                             </div>
                                             <div className="flex gap-2 flex-wrap">
                                                 {linkedRecommendations.map(rec => (
                                                     <button 
                                                         key={rec.id} 
-                                                        className={`px-4 py-1.5 text-sm rounded-full cursor-pointer font-medium transition-all duration-200 outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400' : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-400 hover:text-emerald-600'}`} 
+                                                        className={`px-4 py-1.5 text-sm rounded-full cursor-pointer font-medium transition-all duration-200 outline-none border bg-white border-slate-200 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400`} 
                                                         onClick={() => onJumpToCard?.(rec.id)}
                                                     >
                                                         {rec.title}
@@ -435,59 +437,67 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
                     {/* Stats Panel (Overlay) */}
                     {showStats && !isPaused && (
-                        <div className={`absolute right-8 top-8 w-64 p-5 rounded-2xl border shadow-xl z-50 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                            <h4 className={`text-sm font-bold uppercase tracking-wider mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Statistiques (FSRS)</h4>
+                        <div className={`absolute right-8 top-8 w-64 p-5 rounded-2xl border shadow-xl z-50 bg-white border-slate-100 dark:bg-slate-800 dark:border-slate-700`}>
+                            <h4 className={`text-sm font-bold uppercase tracking-wider mb-4 text-slate-500 dark:text-slate-400`}>Statistiques (FSRS)</h4>
                             <div className="space-y-3">
                                 <div>
-                                    <div className={`text-xs mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Stabilité mnésique</div>
-                                    <div className={`font-mono text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{card.progress?.stability?.toFixed(2) || '0.00'} jours</div>
+                                    <div className={`text-xs mb-1 text-slate-400 dark:text-slate-500`}>Stabilité mnésique</div>
+                                    <div className={`font-mono text-sm font-bold text-slate-800 dark:text-white`}>{card.progress?.stability?.toFixed(2) || '0.00'} jours</div>
                                 </div>
                                 <div>
-                                    <div className={`text-xs mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Difficulté intrinsèque</div>
+                                    <div className={`text-xs mb-1 text-slate-400 dark:text-slate-500`}>Difficulté intrinsèque</div>
                                     <div className="flex items-center gap-2">
-                                        <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                                        <div className={`flex-1 h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700`}>
                                             <div className="h-full bg-blue-500 rounded-full" style={{ width: `${qualityScore}%` }}></div>
                                         </div>
-                                        <div className={`font-mono text-xs font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{qualityScore.toFixed(0)}%</div>
+                                        <div className={`font-mono text-xs font-bold text-slate-800 dark:text-white`}>{qualityScore.toFixed(0)}%</div>
                                     </div>
                                 </div>
                                 <div>
-                                    <div className={`text-xs mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Historique</div>
-                                    <div className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{card.progress?.reps || 0} révisions, {card.progress?.lapses || 0} oublis</div>
+                                    <div className={`text-xs mb-1 text-slate-400 dark:text-slate-500`}>Historique</div>
+                                    <div className={`text-sm font-semibold text-slate-800 dark:text-white`}>{card.progress?.reps || 0} révisions, {card.progress?.lapses || 0} oublis</div>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {/* Footer Actions */}
-                    <div className="review-modal-footer">
+                    <div className={`flex flex-col items-center justify-center p-6 border-t border-slate-100 bg-white/50 dark:border-slate-800 dark:bg-slate-900/50 backdrop-blur-md z-10`}>
                         {!shouldReveal && !isPaused ? (
                             <div className="flex justify-center">
                                 <button 
                                     onClick={() => setIsAnswerRevealed(true)}
-                                    className={`w-full max-w-md py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 border-none outline-none cursor-pointer ${darkMode ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20' : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'}`}
+                                    className={`w-full max-w-md py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 border-none outline-none cursor-pointer bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:text-white dark:shadow-emerald-500/20`}
                                 >
                                     Révéler la réponse
                                 </button>
                             </div>
                         ) : shouldReveal && !isPaused ? (
                             <div className="flex justify-center flex-col items-center">
-                                <div className="flex w-full max-w-2xl gap-3 sm:gap-4 flex-col sm:flex-row">
-                                    {(isCourseType ? COURSE_REVIEW_ACTIONS : REVIEW_ACTIONS)
-                                        .map(action => (
-                                        <button
-                                            key={action.rating}
-                                            className={`review-action-btn ${action.className}`}
-                                            onClick={() => handleRate(action.rating)}
-                                        >
-                                            <div className="text-[15px] mb-1">{action.label}</div>
-                                            <div className="text-[12px] font-medium opacity-80">
-                                                {nextIntervals[action.rating]}
-                                            </div>
-                                        </button>
-                                    ))}
+                                <div className="flex w-full max-w-3xl gap-3 sm:gap-5 flex-col sm:flex-row">
+                                {(isCourseType ? COURSE_REVIEW_ACTIONS : REVIEW_ACTIONS)
+                                                                                                                        .map(action => {
+                                            const getActionClass = (rating: number) => {
+                                                if (rating === 1) return 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20 border border-red-100 hover:border-red-300 dark:border-red-500/20 dark:hover:border-red-500/40 shadow-sm hover:shadow-red-500/20';
+                                                if (rating === 2) return 'bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:hover:bg-orange-500/20 border border-orange-100 hover:border-orange-300 dark:border-orange-500/20 dark:hover:border-orange-500/40 shadow-sm hover:shadow-orange-500/20';
+                                                if (rating === 3) return 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20 border border-emerald-100 hover:border-emerald-300 dark:border-emerald-500/20 dark:hover:border-emerald-500/40 shadow-sm hover:shadow-emerald-500/20';
+                                                return 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 border border-blue-100 hover:border-blue-300 dark:border-blue-500/20 dark:hover:border-blue-500/40 shadow-sm hover:shadow-blue-500/20';
+                                            };
+                                            return (
+                                                <button
+                                                    key={action.rating}
+                                                    className={`flex-1 flex flex-col items-center justify-center py-5 px-4 sm:px-6 rounded-2xl transition-all duration-300 active:scale-[0.98] outline-none cursor-pointer ${getActionClass(action.rating)}`}
+                                                    onClick={() => handleRate(action.rating)}
+                                                >
+                                                    <div className="text-[16px] font-bold mb-1.5">{action.label}</div>
+                                                    <div className="text-[13px] font-semibold opacity-80">
+                                                        {nextIntervals[action.rating]}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                 </div>
-                                <div className={`mt-5 text-[11px] font-bold uppercase tracking-widest ${darkMode ? 'text-slate-600' : 'text-slate-400'}`}>
+                                <div className={`mt-5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600`}>
                                     Utilisez les touches {isCourseType ? '1, 3' : '1, 2, 3, 4'}
                                 </div>
                             </div>

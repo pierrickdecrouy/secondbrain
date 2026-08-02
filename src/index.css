@@ -1,17 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
-@source "../src";
-@plugin "@tailwindcss/typography";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
   --color-settings-bg: #0b0f17;
   --color-settings-sidebar: #0f1420;
   --color-settings-border: #1e293b;
-  --color-settings-input: #161f30;
-  --color-settings-card: #111827;
-  --color-settings-input-border: #243242;
+  --color-settings-border-hover: #334155;
+  --color-settings-text: #f8fafc;
+  --color-settings-text-muted: #94a3b8;
 }
 
-@import './styles/base.css';
-@import './styles/layout.css';
-@import './styles/components.css';
-@import './styles/pages.css';
+@layer base {
+  body {
+    @apply font-sans antialiased bg-slate-50 text-slate-900;
+  }
+}
+
+/* Utilitaires spécifiques d'animation ou scrollbar pour donner un aspect premium */
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 dark:bg-slate-900/50 dark:border-slate-700/50;
+  }
+  
+  .glass-panel-strong {
+    @apply bg-white/90 backdrop-blur-xl border border-slate-200/50 dark:bg-[#0B1120]/90 dark:border-slate-800/80;
+  }
+
+  /* Custom scrollbar discrète */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 dark:bg-slate-800 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-300 dark:bg-slate-700;
+  }
+}

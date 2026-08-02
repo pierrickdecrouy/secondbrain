@@ -2,7 +2,7 @@ import React from 'react';
 import { X, CheckCircle, WarningCircle, Info, Warning } from '@phosphor-icons/react';
 import { useToastStore } from '../../store/useToastStore';
 import type { ToastVariant } from '../../store/useToastStore';
-import './styles/ToastContainer.css';
+
 
 const VARIANT_STYLES: Record<ToastVariant, { bg: string; border: string; icon: React.ReactNode }> = {
   success: {

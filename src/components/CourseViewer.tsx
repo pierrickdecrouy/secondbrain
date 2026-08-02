@@ -125,9 +125,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             <div className="no-print flex flex-col h-full" >
             
             {/* ── Top Bar ─────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-6 h-16 shrink-0 bg-slate-50 dark:bg-slate-950 transition-colors duration-200 z-20" style={{
-  borderBottom: `1px solid ${headerElevated ? 'var(--color-border)' : 'transparent'}`
-}}>
+            <div className={`flex items-center justify-between px-6 h-16 shrink-0 bg-slate-50 dark:bg-slate-950 transition-colors duration-200 z-20 border-b ${headerElevated ? 'border-slate-200 dark:border-slate-800' : 'border-transparent'}`}>
                 {/* Back */}
                 <button
                     onClick={onBack}
@@ -209,9 +207,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-50 dark:from-slate-950 to-transparent"  />
                     </div>
 
-                    <article className="w-full max-w-[760px] px-10 pb-20 relative z-10" style={{
-  marginTop: -60
-}}>
+                    <article className="w-full max-w-[760px] px-10 pb-20 relative z-10 -mt-[60px]">
                         {/* Document header */}
                         <div className="mb-10" >
                             <h1 className="text-5xl font-extrabold tracking-tight leading-tight text-slate-900 dark:text-slate-100 mb-5" >
@@ -354,7 +350,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
                         {/* Flashcards List */}
                         {flashcardCards.length > 0 && (
-                            <div style={{ marginTop: flashcardCards.length > 0 ? 0 : 24 }}>
+                            <div className={flashcardCards.length > 0 ? 'mt-0' : 'mt-6'}>
                                 <div className="flex justify-between items-center mb-4" >
                                     <h3 className="text-base font-bold m-0 text-slate-900 dark:text-slate-100" >
                                         Flashcards liées
@@ -391,9 +387,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                                 <div className="font-semibold text-[13px] text-slate-900 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap" >
                                                     {fc.format === 'cloze' ? 'Texte à trou' : fc.title}
                                                 </div>
-                                                <div className="text-[11px] font-semibold mt-1" style={{
-  color: fc.progress?.status === 'review' ? '#ef4444' : fc.progress?.status === 'learning' ? '#f59e0b' : '#6366f1'
-}}>
+                                                <div className={`text-[11px] font-semibold mt-1 ${fc.progress?.status === 'review' ? 'text-red-500' : fc.progress?.status === 'learning' ? 'text-amber-500' : 'text-indigo-500'}`}>
                                                     {fc.progress?.status === 'review' ? 'À réviser' : fc.progress?.status === 'learning' ? 'En cours' : 'Nouvelle'}
                                                 </div>
                                             </div>

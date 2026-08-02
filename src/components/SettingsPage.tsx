@@ -11,8 +11,10 @@ import { saveSettingAsync } from '../persistentSettings';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { useLicense } from '../lib/useLicense';
-import { ArrowSquareOut, CheckCircle, Warning, Timer, Crown, Key } from '@phosphor-icons/react';
+import { ArrowSquareOut, CheckCircle, Warning, Timer, Crown, Key, User, ImageSquare, MagicWand, Shapes, Palette } from '@phosphor-icons/react';
+import { Avatar } from './Avatar';
+import { DynamicIcon } from './DynamicIcon';
+import type { AvatarConfig } from '../store/useUIStore';
 
 export type SettingsTab = 'dictionary' | 'advanced' | 'stats' | 'appearance' | 'data' | 'intelligence' | 'profile' | 'subscription';
 
@@ -32,7 +34,7 @@ const TAB_LABELS: Record<SettingsTab, string> = {
 }/* ── Profile Tab ─────────────────────────────────────────────────────────── */
 const ProfileTab: React.FC = () => {
     const { user } = useAuth();
-    const { userName, setUserName } = useUI();
+    const { userName, setUserName, avatarConfig, setAvatarConfig } = useUI();
 
     // Source of truth: Firebase user if connected, localStorage otherwise
     const initialName = user?.displayName || userName || '';
@@ -76,17 +78,14 @@ const ProfileTab: React.FC = () => {
                 />
                 <CardBody>
                     <div className="flex items-center gap-4 mb-6">
-                        {photoURL ? (
-                            <img
-                                src={photoURL}
-                                alt={displayName}
-                                className="w-[60px] h-[60px] rounded-full object-cover shrink-0"
+                        <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-2xl font-bold shrink-0 border border-slate-200/50 dark:border-white/10 overflow-hidden shadow-sm">
+                            <Avatar
+                                config={avatarConfig}
+                                userName={displayName}
+                                photoURL={photoURL}
+                                style={{ width: '100%', height: '100%', fontSize: '24px' }}
                             />
-                        ) : (
-                            <div className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-white font-extrabold text-2xl shrink-0">
-                                {initial}
-                            </div>
-                        )}
+                        </div>
                         <div>
                             <div className="text-base font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px]">
                                 {displayName}
@@ -128,6 +127,114 @@ const ProfileTab: React.FC = () => {
                         >
                             {saving ? 'Sauvegarde...' : 'Enregistrer'}
                         </PrimaryButton>
+                    </div>
+                </CardBody>
+            </SettingsCard>
+
+            {/* Avatar customization card */}
+            <SettingsCard>
+                <CardSection title="Personnalisation de l'avatar" subtitle="Choisissez comment vous apparaissez dans Extnd." />
+                <CardBody>
+                    <div className="flex flex-col gap-6">
+                        
+                        {/* Option: Automatique */}
+                        <div>
+                            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-900 dark:text-slate-100 mb-3">
+                                <User size={16} /> Par défaut
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setAvatarConfig({ type: 'auto' })}
+                                    className={`w-14 h-14 rounded-full border-2 transition-all p-0.5 flex items-center justify-center ${avatarConfig.type === 'auto' ? 'border-teal-500 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
+                                    title="Automatique"
+                                >
+                                    <div className="w-full h-full rounded-full border-2 border-white dark:border-slate-900 overflow-hidden bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 font-bold text-xl">
+                                        {photoURL ? (
+                                            <img src={photoURL} alt="Google Photo" className="w-full h-full object-cover" />
+                                        ) : (
+                                            initial
+                                        )}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Option: Gradients */}
+                        <div>
+                            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-900 dark:text-slate-100 mb-3">
+                                <Palette size={16} /> Dégradés
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {[
+                                    'linear-gradient(135deg, #10b981, #14b8a6)', // emerald to teal
+                                    'linear-gradient(135deg, #f43f5e, #fb923c)', // rose to orange
+                                    'linear-gradient(135deg, #8b5cf6, #d946ef)', // violet to fuchsia
+                                    'linear-gradient(135deg, #0ea5e9, #3b82f6)', // sky to blue
+                                    'linear-gradient(135deg, #f59e0b, #eab308)', // amber to yellow
+                                    'linear-gradient(135deg, #64748b, #334155)', // slate
+                                ].map((gradient, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setAvatarConfig({ type: 'gradient', value: gradient })}
+                                        className={`w-12 h-12 rounded-full border-2 transition-all p-0.5 flex items-center justify-center ${avatarConfig.type === 'gradient' && avatarConfig.value === gradient ? 'border-teal-500 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
+                                    >
+                                        <div className="w-full h-full rounded-full border-2 border-white dark:border-slate-900" style={{ background: gradient }} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Option: Icônes */}
+                        <div>
+                            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-900 dark:text-slate-100 mb-3">
+                                <Shapes size={16} /> Icônes
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {[
+                                    { icon: 'Robot', color: '#8b5cf6' },
+                                    { icon: 'Ghost', color: '#14b8a6' },
+                                    { icon: 'Smiley', color: '#f59e0b' },
+                                    { icon: 'Alien', color: '#10b981' },
+                                    { icon: 'Ninja', color: '#ef4444' },
+                                    { icon: 'Brain', color: '#ec4899' },
+                                ].map((item, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setAvatarConfig({ type: 'icon', value: item.icon, color: item.color })}
+                                        className={`w-12 h-12 rounded-full border-2 transition-all p-0.5 flex items-center justify-center ${avatarConfig.type === 'icon' && avatarConfig.value === item.icon ? 'border-teal-500 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
+                                    >
+                                        <div 
+                                            className="w-full h-full rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center" 
+                                            style={{ background: `${item.color}15`, color: item.color }}
+                                        >
+                                            <DynamicIcon name={item.icon} size={20} weight="fill" />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Option: Illustrés (Dicebear) */}
+                        <div>
+                            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-900 dark:text-slate-100 mb-3">
+                                <MagicWand size={16} /> Illustrés (Robots)
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {[
+                                    'extnd1', 'extnd2', 'extnd3', 'extnd4', 'extnd5', 'extnd6'
+                                ].map((seed, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setAvatarConfig({ type: 'dicebear', value: seed })}
+                                        className={`w-12 h-12 rounded-full border-2 transition-all p-0.5 flex items-center justify-center ${avatarConfig.type === 'dicebear' && avatarConfig.value === seed ? 'border-teal-500 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
+                                    >
+                                        <div className="w-full h-full rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
+                                            <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=transparent`} alt="bot" className="w-full h-full object-cover" />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </CardBody>
             </SettingsCard>

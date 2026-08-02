@@ -7,7 +7,7 @@ import { calculateQualityScore } from '../algorithms/qualityScoring';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTheme } from '../context/ThemeContext';
 import { DynamicIcon } from './DynamicIcon';
-import { Eye, EyeSlash, X, PencilSimple, Trash, Link } from '@phosphor-icons/react';
+import { Eye, EyeSlash, X, PencilSimple, Trash, Link, CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 // --- THEME MAP ---
 const lightThemeMap: Record<string, { bubble: string, tagBg: string, tagText: string, title: string, examBtn: string, fill: string }> = {
@@ -96,10 +96,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 }) => {
     const [isExamMode, setIsExamMode] = useState(false);
     const [backlinks, setBacklinks] = useState<Card[]>([]);
-    const { darkMode, getCategoryIcon } = useTheme();
+    const { darkMode, getCategoryIcon, getCategoryColor } = useTheme();
 
     const themeMap = darkMode ? darkThemeMap : lightThemeMap;
     const theme = themeMap[card.type] || themeMap.default;
+    const cardColor = getCategoryColor(card.type);
 
     // Handle clicking outside to close
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -150,7 +151,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity z-40 flex items-center justify-center p-4 sm:p-6 gap-4 sm:gap-8"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity z-[100] flex items-center justify-center p-4 sm:p-6 gap-4 sm:gap-8"
             onClick={handleBackdropClick}
             aria-modal="true"
             role="dialog"
@@ -165,7 +166,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         className="hidden sm:flex shrink-0 p-4 md:p-6 rounded-2xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all shadow-lg hover:scale-105 active:scale-95"
                         aria-label="Fiche précédente"
                     >
-                        <svg className="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7"></path></svg>
+                        <CaretLeft className="w-8 h-8 md:w-10 md:h-10" weight="bold" />
                     </motion.button>
                 )}
             </AnimatePresence>
@@ -184,15 +185,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 ].join(' ')}
             >
                 {/* Category Color Bubble (Top Right) */}
-                <div className={`absolute -top-32 -right-32 w-80 h-80 ${theme.bubble} rounded-full z-0 pointer-events-none transition-colors duration-500`}></div>
+                <div 
+                    className="absolute -top-32 -right-32 w-80 h-80 rounded-full z-0 pointer-events-none transition-colors duration-500"
+                    style={{ backgroundColor: cardColor, opacity: darkMode ? 0.15 : 0.1 }}
+                ></div>
 
-                <div className="relative z-10 flex flex-col flex-1 h-full w-full">
+                <div className="relative z-10 flex flex-col flex-1 min-h-0 h-full w-full">
 
                     {/* Header Actions & Tags */}
                     <div  className="flex flex-wrap gap-4 items-start justify-between shrink-0 pt-10 px-12 pb-4">
                         <div className="flex items-center gap-3">
                             {/* Category Tag */}
-                            <span className={`inline-flex items-center gap-2.5 ${theme.tagText} ${theme.tagBg} px-4 py-2 rounded-xl text-[14px] font-semibold tracking-wide`}>
+                            <span className={`inline-flex items-center gap-2.5 ${theme.tagText} ${theme.tagBg} px-4 py-2 rounded-xl text-sm font-semibold tracking-wide`}>
                                 <DynamicIcon name={getCategoryIcon(card.type)} size={18} color="currentColor" weight="bold" />
                                 {card.type}
                             </span>
@@ -208,12 +212,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         <div className={`${['flex items-center gap-1.5 rounded-xl border shadow-sm ml-auto', darkMode ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white border-slate-200/80'].join(' ')} detailmodal-style-2`} >
                             {onEdit && (
                                 <button onClick={onEdit} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`} aria-label="Éditer" title="Éditer">
-                                    <PencilSimple size={18} weight="light" />
+                                    <PencilSimple size={18} weight="bold" />
                                 </button>
                             )}
                             {onDelete && (
                                 <button onClick={onDelete} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-red-900/40 text-slate-400 hover:text-red-400' : 'text-slate-400 hover:bg-red-50 hover:text-red-400'}`} aria-label="Supprimer" title="Supprimer">
-                                    <Trash size={18} weight="light" />
+                                    <Trash size={18} weight="bold" />
                                 </button>
                             )}
 
@@ -221,7 +225,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
                             <button
                                 onClick={() => setIsExamMode(v => !v)}
-                                className={`flex items-center gap-2 px-3 py-1.5 text-[13px] font-bold rounded-lg transition-colors uppercase tracking-widest ${theme.examBtn} ${isExamMode ? (darkMode ? 'bg-slate-700/50' : 'bg-slate-100') : ''}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold rounded-lg transition-colors uppercase tracking-widest ${theme.examBtn} ${isExamMode ? (darkMode ? 'bg-slate-700/50' : 'bg-slate-100') : ''}`}
                             >
                                 {isExamMode ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
                                 Examen
@@ -230,23 +234,23 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             <div className={`w-[1px] h-6 mx-1 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
 
                             <button onClick={onClose} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`} aria-label="Fermer">
-                                <X size={18} weight="light" />
+                                <X size={18} weight="bold" />
                             </button>
                         </div>
                     </div>
 
                     <div  className="shrink-0 mt-2 px-12 pb-6">
-                        <h2 className={`text-[26px] md:text-[36px] font-bold leading-tight mb-2 ${theme.title}`}>
+                        <h2 className={`text-3xl md:text-4xl font-bold leading-tight mb-2 ${theme.title}`}>
                             {card.title}
                         </h2>
                         {card.subtitle && (
-                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
                                 {card.subtitle}
                             </p>
                         )}
                     </div>
 
-                    <div  className={`overflow-y-auto flex-1 ${isExamMode ? 'exam-mode' : ''} detailmodal-style-4`}>
+                    <div  className={`px-12 overflow-y-auto flex-1 min-h-0 ${isExamMode ? 'exam-mode' : ''}`}>
                         <div className={`prose prose-slate prose-lg max-w-none leading-relaxed font-normal ${darkMode ? 'text-slate-300 prose-invert' : 'text-slate-600'}`}>
                             {card.imageUrl && (
                                 <div className="mb-6 not-prose">
@@ -268,7 +272,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             {card.details && (
                                 <div className={card.content && card.content.trim() !== card.details?.trim() ? 'mt-6' : ''}>
                                     {card.content && card.content.trim() !== card.details?.trim() && (
-                                        <p className="not-prose uppercase text-[10px] tracking-[0.08em] font-semibold mb-3 text-slate-400">
+                                        <p className="not-prose uppercase text-xs tracking-[0.08em] font-semibold mb-3 text-slate-400">
                                             Détails
                                         </p>
                                     )}
@@ -287,17 +291,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
                     {/* Fixed Footer */}
                     {(forwardLinks.length > 0 || backlinks.length > 0 || (card.tags && card.tags.length > 0)) && (
-                        <div  className={`shrink-0 border-t flex flex-col gap-8 relative z-20 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'} detailmodal-style-5`}>
+                        <div  className={`px-12 py-8 shrink-0 border-t flex flex-col gap-8 relative z-20 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
                             {/* Outgoing Links */}
                             {forwardLinks.length > 0 && (
                                 <div>
-                                    <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
                                         <Link size={16} weight="bold" />
                                         Liens sortants ({forwardLinks.length})
                                     </h3>
                                     <div className="flex flex-wrap gap-3">
                                         {forwardLinks.map(link => (
-                                            <button key={link.id} onClick={() => onLinkClick(link.id)} className={`inline-flex items-center px-7 py-3.5 rounded-[14px] border text-[15px] font-semibold transition-all ${darkMode ? 'border-slate-700 text-slate-300 bg-slate-800 hover:bg-slate-700' : 'border-slate-200/80 text-slate-700 bg-white hover:border-slate-300'}`}>
+                                            <button key={link.id} onClick={() => onLinkClick(link.id)} className={`inline-flex items-center px-7 py-3.5 rounded-[14px] border text-base font-semibold transition-all ${darkMode ? 'border-slate-700 text-slate-300 bg-slate-800 hover:bg-slate-700' : 'border-slate-200/80 text-slate-700 bg-white hover:border-slate-300'}`}>
                                                 {link.title}
                                             </button>
                                         ))}
@@ -308,13 +312,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             {/* Backlinks */}
                             {backlinks.length > 0 && (
                                 <div>
-                                    <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
                                         <Link size={16} weight="bold" />
                                         Mentionné dans ({backlinks.length})
                                     </h3>
                                     <div className="flex flex-wrap gap-3">
                                         {backlinks.map(link => (
-                                            <button key={link.id} onClick={() => onLinkClick(link.id)} className={`inline-flex items-center px-7 py-3.5 rounded-[14px] border text-[15px] font-semibold transition-all ${darkMode ? 'border-slate-700 text-slate-300 bg-slate-800 hover:bg-slate-700' : 'border-slate-200/80 text-slate-700 bg-white hover:border-slate-300'}`}>
+                                            <button key={link.id} onClick={() => onLinkClick(link.id)} className={`inline-flex items-center px-7 py-3.5 rounded-[14px] border text-base font-semibold transition-all ${darkMode ? 'border-slate-700 text-slate-300 bg-slate-800 hover:bg-slate-700' : 'border-slate-200/80 text-slate-700 bg-white hover:border-slate-300'}`}>
                                                 {link.title}
                                             </button>
                                         ))}
@@ -326,7 +330,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             {card.tags && card.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-3">
                                     {card.tags.map(tag => (
-                                        <span key={tag} className={`inline-flex items-center px-6 py-3 rounded-[14px] text-[14px] font-bold uppercase tracking-wide transition-colors ${darkMode ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100/70 text-slate-500 hover:bg-slate-200'}`}>
+                                        <span key={tag} className={`inline-flex items-center px-6 py-3 rounded-[14px] text-sm font-bold uppercase tracking-wide transition-colors ${darkMode ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100/70 text-slate-500 hover:bg-slate-200'}`}>
                                             #{tag}
                                         </span>
                                     ))}
@@ -347,7 +351,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         className="hidden sm:flex shrink-0 p-4 md:p-6 rounded-2xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all shadow-lg hover:scale-105 active:scale-95"
                         aria-label="Fiche suivante"
                     >
-                        <svg className="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
+                        <CaretRight className="w-8 h-8 md:w-10 md:h-10" weight="bold" />
                     </motion.button>
                 )}
             </AnimatePresence>
@@ -357,11 +361,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 <div className="fixed bottom-6 left-0 right-0 z-50 flex sm:hidden justify-center gap-4 px-4 pointer-events-none">
                     <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md rounded-xl p-1 pointer-events-auto shadow-xl">
                         <button disabled={!onPrev} onClick={onPrev} className={`p-3 rounded-lg text-white transition-colors ${onPrev ? 'hover:bg-white/20' : 'opacity-30 cursor-not-allowed'}`} aria-label="Fiche précédente">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                            <CaretLeft className="w-5 h-5" weight="bold" />
                         </button>
                         <div className="w-px h-6 bg-white/20"></div>
                         <button disabled={!onNext} onClick={onNext} className={`p-3 rounded-lg text-white transition-colors ${onNext ? 'hover:bg-white/20' : 'opacity-30 cursor-not-allowed'}`} aria-label="Fiche suivante">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                            <CaretRight className="w-5 h-5" weight="bold" />
                         </button>
                     </div>
                 </div>

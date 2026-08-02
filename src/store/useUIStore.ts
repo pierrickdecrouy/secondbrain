@@ -5,6 +5,12 @@ type ViewMode = 'grid' | 'list' | 'network' | 'split';
 type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
 type SyncStatus = 'synced' | 'pending' | 'error';
 
+export type AvatarConfig = {
+  type: 'auto' | 'gradient' | 'dicebear' | 'icon';
+  value?: string;
+  color?: string;
+};
+
 interface UIState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -20,6 +26,9 @@ interface UIState {
   
   userName: string;
   setUserName: (name: string) => void;
+  
+  avatarConfig: AvatarConfig;
+  setAvatarConfig: (config: AvatarConfig) => void;
   
   addDataMode: AddDataMode;
   setAddDataMode: (mode: AddDataMode) => void;
@@ -64,6 +73,19 @@ export const useUIStore = create<UIState>((set) => ({
   
   userName: 'Pierrick',
   setUserName: (name) => set({ userName: name }),
+  
+  avatarConfig: (() => {
+    try {
+        const stored = localStorage.getItem('extnd_avatar_config');
+        return stored ? JSON.parse(stored) : { type: 'auto' };
+    } catch {
+        return { type: 'auto' };
+    }
+  })(),
+  setAvatarConfig: (config) => {
+    localStorage.setItem('extnd_avatar_config', JSON.stringify(config));
+    set({ avatarConfig: config });
+  },
   
   addDataMode: 'none',
   setAddDataMode: (mode) => set({ addDataMode: mode }),

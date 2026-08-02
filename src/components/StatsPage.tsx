@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
-import 'react-calendar-heatmap/dist/styles.css';
-import { BookOpen, Brain, ChartBar, ClockCounterClockwise, Lightning, X, Timer, CheckCircle } from '@phosphor-icons/react';
+import { BookOpen, Brain, ChartBar, ClockCounterClockwise, Lightning, X, Timer, CheckCircle, TrendUp } from '@phosphor-icons/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { LeechHunter } from './LeechHunter';
@@ -18,7 +17,7 @@ const hasHeatmapCount = (value: unknown): value is HeatmapValue =>
 
 const asPercent = (value: number) => `${Math.round(value * 100)}%`;
 
-const COLORS = ['#4fb286', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
 
 export const StatsPage: React.FC = () => {
     const { cards } = useCards();
@@ -36,7 +35,6 @@ export const StatsPage: React.FC = () => {
         const { heatmapValues } = (() => {
             const heatmapDataMap = new Map<string, number>();
             cards.forEach((card) => {
-                // M-4 fix: for old cards with createdAt=0 or missing, fall back to updatedAt
                 const effectiveCreate = (card.createdAt && card.createdAt > 0) ? card.createdAt : card.updatedAt;
                 const createDay = effectiveCreate ? new Date(effectiveCreate).toISOString().split('T')[0] : null;
                 if (createDay) {
@@ -62,16 +60,17 @@ export const StatsPage: React.FC = () => {
         const nowMs = Date.now();
 
         let sumStability = 0;
-        let cardsWithStability = 0;
+        let sumDifficulty = 0;
+        let cardsWithFSRS = 0;
         
         cards.forEach(c => {
             if (c.progress?.stability) {
                 sumStability += c.progress.stability;
-                cardsWithStability++;
+                sumDifficulty += (c.progress.difficulty || 0);
+                cardsWithFSRS++;
                 
                 if (c.progress.lastReview) {
                     const elapsedDays = Math.max(0, (nowMs - new Date(c.progress.lastReview).getTime()) / (1000 * 60 * 60 * 24));
-                    // FSRS Retrievability formula: 90% retention at elapsed == stability
                     const R = Math.exp(Math.log(0.9) * elapsedDays / c.progress.stability);
                     sumRetrievability += Math.max(0, Math.min(1, R));
                     cardsWithRetrievability++;
@@ -80,9 +79,10 @@ export const StatsPage: React.FC = () => {
         });
         
         const retentionRate = cardsWithRetrievability > 0 ? sumRetrievability / cardsWithRetrievability : 0;
-        const avgStability = cardsWithStability > 0 ? (sumStability / cardsWithStability).toFixed(1) : 'N/A';
+        const avgStability = cardsWithFSRS > 0 ? (sumStability / cardsWithFSRS).toFixed(1) : 'N/A';
+        const avgDifficulty = cardsWithFSRS > 0 ? (sumDifficulty / cardsWithFSRS).toFixed(1) : 'N/A';
 
-        return { heatmapValues, retentionRate, leechCards, matureCards, estimatedReviewTimeMin, avgStability };
+        return { heatmapValues, retentionRate, leechCards, matureCards, estimatedReviewTimeMin, avgStability, avgDifficulty };
     }, [cards, dueCards.length]);
 
     const byType = useMemo(() => {
@@ -132,11 +132,11 @@ export const StatsPage: React.FC = () => {
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-lg shadow-lg" >
-                    <p className="m-0 font-semibold text-slate-900 dark:text-slate-100" >{payload[0].name || payload[0].payload.day}</p>
-                    <p className="m-0" style={{
-  color: payload[0].color || 'var(--color-drug)'
-}}>{payload[0].value} cartes</p>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-xl shadow-xl flex flex-col gap-1">
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{payload[0].name || payload[0].payload.day}</span>
+                    <span className="text-sm font-medium" style={{ color: payload[0].color || COLORS[0] }}>
+                        {payload[0].value} cartes
+                    </span>
                 </div>
             );
         }
@@ -144,164 +144,211 @@ export const StatsPage: React.FC = () => {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-slate-950 px-8 py-5 flex flex-col">
-            <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0 gap-6">
-            <header className="stats-header app-drag-region">
-                <div className="stats-title-wrap app-no-drag">
-                    <div className="stats-title-icon">
-                        <ChartBar size={18} weight="duotone" />
-                    </div>
-                    <div>
-                        <h1>Statistiques & Progression</h1>
-                        <p>Suivez l'efficacité de vos révisions FSRS</p>
-                    </div>
-                </div>
-            </header>
+        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-[#09090b] px-4 sm:px-8 py-8 flex flex-col">
+            <style>
+                {`
+                /* Overrides for react-calendar-heatmap */
+                .react-calendar-heatmap rect {
+                    rx: 3;
+                    ry: 3;
+                }
+                .react-calendar-heatmap text {
+                    fill: #94a3b8;
+                    font-size: 8px;
+                }
+                :is(.dark *) .react-calendar-heatmap text {
+                    fill: #475569;
+                }
+                `}
+            </style>
 
-            {cards.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[400px] text-center px-4 mt-[10vh]" >
-                    <div className="w-24 h-24 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-6 mx-auto">
-                        <ChartBar size={48} weight="duotone" />
+            <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0 gap-10">
+                {/* Header */}
+                <header className="app-drag-region flex items-center gap-4">
+                    <div className="app-no-drag w-12 h-12 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0">
+                        <ChartBar size={24} weight="duotone" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Statistiques à venir</h2>
-                    <p className="text-slate-500 dark:text-slate-400 max-w-md text-lg mx-auto">
-                        Commencez à réviser pour voir vos statistiques. Vos progrès FSRS s'afficheront ici.
-                    </p>
-                </div>
-            ) : (
-                <div className="stats-content flex flex-col gap-6">
-                <section className="stats-kpi-grid">
-                    <article className="stats-kpi-card color-accent-1">
-                        <div className="stats-kpi-label"><BookOpen size={16} /> Total fiches</div>
-                        <div className="stats-kpi-value">{cards.length}</div>
-                    </article>
-                    <article className="stats-kpi-card color-accent-2">
-                        <div className="stats-kpi-label"><Brain size={16} /> Apprentissage</div>
-                        <div className="stats-kpi-value">{learningCards.length}</div>
-                    </article>
-                    <article className="stats-kpi-card highlight">
-                        <div className="stats-kpi-label"><ClockCounterClockwise size={16} /> À revoir</div>
-                        <div className="stats-kpi-value">{dueCards.length}</div>
-                    </article>
-                    <article className="stats-kpi-card color-accent-3">
-                        <div className="stats-kpi-label"><Timer size={16} /> Temps estimé</div>
-                        <div className="stats-kpi-value">{estimatedReviewTimeMin > 0 ? `${estimatedReviewTimeMin} min` : 'Terminé'}</div>
-                    </article>
-                    
-                    <article className="stats-kpi-card color-accent-4">
-                        <div className="stats-kpi-label"><ChartBar size={16} /> Rétention</div>
-                        <div className="stats-kpi-value">{asPercent(retentionRate)}</div>
-                    </article>
-                    <article className="stats-kpi-card color-accent-5">
-                        <div className="stats-kpi-label"><CheckCircle size={16} /> Fiches matures</div>
-                        <div className="stats-kpi-value">{matureCards}</div>
-                    </article>
-                    <article className="stats-kpi-card warning">
-                        <div className="stats-kpi-label"><X size={16} /> Cartes critiques</div>
-                        <div className="stats-kpi-value">{leechCards}</div>
-                    </article>
-                    <article className="stats-kpi-card color-accent-6">
-                        <div className="stats-kpi-label"><Lightning size={16} /> Stabilité moy.</div>
-                        <div className="stats-kpi-value">{avgStability} j</div>
-                    </article>
-                </section>
+                    <div className="app-no-drag">
+                        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white m-0">Statistiques & Progression</h1>
+                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 m-0 mt-0.5">Suivez l'efficacité de vos révisions FSRS</p>
+                    </div>
+                </header>
 
-                <section className="stats-grid">
-                    <article className="stats-panel glass-panel pb-8" >
-                        <h3>Prévisions de révision (7 jours)</h3>
-                        <div className="flex-1 min-h-0 w-full mt-4" >
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={forecastData} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-                                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} allowDecimals={false} />
-                                    <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
-                                    <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                {cards.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center mt-20">
+                        <div className="w-24 h-24 bg-slate-200/50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 rounded-full flex items-center justify-center mb-6">
+                            <ChartBar size={48} weight="duotone" />
                         </div>
-                    </article>
-
-                    <article className="stats-panel glass-panel pb-8" >
-                        <h3>Répartition par type</h3>
-                        <div className="flex-1 min-h-0 w-full flex items-center mt-4" >
-                            <div className="flex-1 min-w-0 h-full" >
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                    <Pie
-                                        data={byType}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius="60%"
-                                        outerRadius="80%"
-                                        paddingAngle={6}
-                                        cornerRadius={10}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {byType.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="drop-shadow-[0px_2px_4px_rgba(0,0,0,0.1)]"  />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip content={<CustomTooltip />} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Statistiques à venir</h2>
+                        <p className="text-slate-500 dark:text-slate-400 max-w-md text-lg">
+                            Commencez à réviser pour voir vos statistiques. Vos progrès s'afficheront ici.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-10 pb-10">
+                        {/* KPI Grid */}
+                        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wider mb-3">
+                                    <BookOpen size={18} weight="bold" /> Total Fiches
+                                </div>
+                                <div className="text-4xl font-extrabold text-slate-900 dark:text-white">{cards.length}</div>
                             </div>
-                            <div className="pie-legend">
-                                {byType.map((entry, index) => (
-                                    <div key={entry.name} className="legend-item">
-                                        <span className="legend-color" style={{ background: COLORS[index % COLORS.length] }} />
-                                        <span className="legend-label">{entry.name}</span>
-                                        <span className="legend-value">{entry.value}</span>
+
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-center gap-2 text-blue-500 dark:text-blue-400 text-sm font-bold uppercase tracking-wider mb-3">
+                                    <Brain size={18} weight="bold" /> Apprentissage
+                                </div>
+                                <div className="text-4xl font-extrabold text-slate-900 dark:text-white">{learningCards.length}</div>
+                            </div>
+
+                            <div className="bg-emerald-500 text-white rounded-3xl p-5 shadow-lg shadow-emerald-500/20">
+                                <div className="flex items-center gap-2 text-emerald-100 text-sm font-bold uppercase tracking-wider mb-3">
+                                    <ClockCounterClockwise size={18} weight="bold" /> À Revoir
+                                </div>
+                                <div className="text-4xl font-extrabold">{dueCards.length}</div>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-center gap-2 text-orange-500 dark:text-orange-400 text-sm font-bold uppercase tracking-wider mb-3">
+                                    <Timer size={18} weight="bold" /> Temps Estimé
+                                </div>
+                                <div className="text-4xl font-extrabold text-slate-900 dark:text-white">
+                                    {estimatedReviewTimeMin > 0 ? `${estimatedReviewTimeMin}m` : '0m'}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Secondary FSRS KPIs */}
+                        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col justify-center">
+                                <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">
+                                    <CheckCircle size={14} weight="bold" /> Fiches Matures
+                                </div>
+                                <div className="text-xl font-bold text-slate-700 dark:text-slate-300">{matureCards}</div>
+                            </div>
+                            <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col justify-center">
+                                <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">
+                                    <TrendUp size={14} weight="bold" /> Rétention Est.
+                                </div>
+                                <div className="text-xl font-bold text-slate-700 dark:text-slate-300">{asPercent(retentionRate)}</div>
+                            </div>
+                            <div className="bg-white/50 dark:bg-slate-900/50 border border-slate-200/40 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col justify-center">
+                                <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">
+                                    <Lightning size={14} weight="bold" /> Stabilité Moy.
+                                </div>
+                                <div className="text-xl font-bold text-slate-700 dark:text-slate-300">{avgStability} j</div>
+                            </div>
+                            <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 rounded-2xl p-4 flex flex-col justify-center">
+                                <div className="flex items-center gap-1.5 text-red-500 dark:text-red-400 text-xs font-bold uppercase tracking-widest mb-1">
+                                    <X size={14} weight="bold" /> Cartes Critiques
+                                </div>
+                                <div className="text-xl font-bold text-red-600 dark:text-red-400">{leechCards}</div>
+                            </div>
+                        </section>
+
+                        {/* Main Charts */}
+                        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Forecast Chart */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col h-[350px]">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Prévisions (7 jours)</h3>
+                                <div className="flex-1 min-h-0 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={forecastData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                                            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={10} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} allowDecimals={false} />
+                                            <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
+                                            <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {/* Category Pie Chart */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col h-[350px]">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Répartition par Catégorie</h3>
+                                <div className="flex-1 min-h-0 w-full flex flex-col sm:flex-row items-center gap-6">
+                                    <div className="flex-1 min-w-0 h-full w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={byType}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius="55%"
+                                                    outerRadius="80%"
+                                                    paddingAngle={4}
+                                                    cornerRadius={8}
+                                                    dataKey="value"
+                                                    stroke="none"
+                                                >
+                                                    {byType.map((_, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip content={<CustomTooltip />} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
                                     </div>
-                                ))}
+                                    <div className="flex flex-row sm:flex-col flex-wrap justify-center gap-3 shrink-0">
+                                        {byType.map((entry, index) => (
+                                            <div key={entry.name} className="flex items-center gap-2">
+                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{entry.name}</span>
+                                                <span className="text-sm font-bold text-slate-900 dark:text-white ml-auto">{entry.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </article>
-                </section>
+                        </section>
 
-                <section className="stats-grid mt-2" >
-                    <article className="stats-panel glass-panel">
-                        <h3>Activité (6 derniers mois)</h3>
-                        <div className="home-heatmap-wrap">
-                            <CalendarHeatmap
-                                startDate={startDate}
-                                endDate={new Date()}
-                                values={heatmapValues}
-                                classForValue={(value) => {
-                                    if (!value) return 'color-empty';
-                                    const count = hasHeatmapCount(value) ? value.count || 0 : 0;
-                                    return `color-scale-${Math.min(count, 4)}`;
-                                }}
-                            />
-                        </div>
-                    </article>
-                    
-                    <article className="stats-panel glass-panel stats-progress-panel">
-                        <h3>Progression d'apprentissage</h3>
-                        <div className="flex-1 flex flex-col justify-center" >
-                            <div className="stats-progress-row">
-                                <span className="text-slate-500 dark:text-slate-400" >Fiches découvertes</span>
-                                <strong className="text-[1.2rem] text-slate-900 dark:text-slate-100" >{asPercent(reviewedRatio)}</strong>
+                        {/* Activity Heatmap & Progress */}
+                        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm overflow-hidden flex flex-col">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Activité (6 derniers mois)</h3>
+                                <div className="w-full overflow-x-auto pb-2 flex-1">
+                                    <div className="min-w-[600px] h-full">
+                                        <CalendarHeatmap
+                                            startDate={startDate}
+                                            endDate={new Date()}
+                                            values={heatmapValues}
+                                            classForValue={(value) => {
+                                                if (!value) return 'fill-slate-100 dark:fill-slate-800/50';
+                                                const count = hasHeatmapCount(value) ? value.count || 0 : 0;
+                                                if (count === 1) return 'fill-emerald-200 dark:fill-emerald-900/60';
+                                                if (count === 2) return 'fill-emerald-400 dark:fill-emerald-700/80';
+                                                if (count === 3) return 'fill-emerald-500 dark:fill-emerald-500';
+                                                return 'fill-emerald-600 dark:fill-emerald-400';
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="stats-progress-track h-3 bg-slate-50 dark:bg-slate-950 rounded-xl overflow-hidden" >
-                                <div className="stats-progress-fill bg-gradient-to-r from-emerald-500 to-blue-500 h-full rounded-xl" style={{
-  width: asPercent(reviewedRatio)
-}} />
+
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-center">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Progression globale</h3>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Fiches découvertes</span>
+                                        <strong className="text-3xl font-extrabold text-slate-900 dark:text-white">{asPercent(reviewedRatio)}</strong>
+                                    </div>
+                                    <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-1000 ease-out" 
+                                            style={{ width: asPercent(reviewedRatio) }} 
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between mt-3 text-[0.85rem]" >
-                                <span className="text-slate-500 dark:text-slate-400" >0%</span>
-                                <span className="text-slate-500 dark:text-slate-400" >100%</span>
-                            </div>
-                        </div>
-                    </article>
-                    
-                    <LeechHunter cards={cards} onNavigate={(id) => navigate(`/browse?searchQuery=${encodeURIComponent(id)}`)} />
-                </section>
-                </div>
-            )}
+                        </section>
+
+                        {/* Leech Hunter */}
+                        <LeechHunter cards={cards} onNavigate={(id) => navigate(`/browse?searchQuery=${encodeURIComponent(id)}`)} />
+                    </div>
+                )}
             </div>
         </div>
     );
 };
-
