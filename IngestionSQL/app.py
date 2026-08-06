@@ -19,6 +19,10 @@ app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1 Go max au lieu de 50 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
+# Purge uploads folder on startup
+for f in os.listdir(app.config['UPLOAD_FOLDER']):
+    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+
 # Simple in-memory task tracking
 tasks = {}
 
@@ -78,6 +82,15 @@ def worker_loop():
             tasks[task_id]['error'] = str(e)
             tasks[task_id]['message'] = 'Erreur lors du traitement'
             
+        finally:
+            # Purge the uploaded files for this task to save space and protect privacy
+            for file_path in file_paths:
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    print(f"Failed to delete {file_path}: {e}")
+
         task_queue.task_done()
 
 # Start background worker thread
@@ -186,4 +199,4 @@ def download_file(filename):
     return jsonify({'error': 'Fichier introuvable'}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=False, port=5001)
