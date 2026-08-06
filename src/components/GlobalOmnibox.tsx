@@ -5,6 +5,7 @@ import {
     ChartBar, Brain, Lightning, Cards, BookOpen, Tag, Funnel,
     ArrowElbowDownLeft
 } from '@phosphor-icons/react';
+import DOMPurify from 'dompurify';
 import { useUIStore as useUI } from '../store/useUIStore';
 import { useCardStore as useCards } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
@@ -482,7 +483,7 @@ export const GlobalOmnibox: React.FC = () => {
                                                     {highlights[card.id] ? (
                                                         <p 
                                                             className="text-[0.77rem] text-slate-400 dark:text-slate-500 mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap" 
-                                                            dangerouslySetInnerHTML={{ __html: highlights[card.id] }}
+                                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlights[card.id]) }}
                                                         />
                                                     ) : (
                                                         card.content && <p className="text-[0.77rem] text-slate-400 dark:text-slate-500 mt-[2px] overflow-hidden text-ellipsis whitespace-nowrap" >{stripMarkdown(card.content)}</p>

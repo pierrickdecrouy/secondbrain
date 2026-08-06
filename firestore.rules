@@ -7,7 +7,20 @@ service cloud.firestore {
       
       match /cards/{cardId} {
         allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow create, update: if request.auth != null && request.auth.uid == userId && request.resource.size < 1000000;
+        
+        function isValidCard() {
+          let data = request.resource.data;
+          return data.keys().hasAll(['id', 'title', 'type', 'nodeType']) &&
+                 data.id is string &&
+                 data.title is string &&
+                 data.type is string &&
+                 data.nodeType is string;
+        }
+
+        allow create, update: if request.auth != null && 
+                              request.auth.uid == userId && 
+                              request.resource.size < 1000000 && 
+                              isValidCard();
       }
       
       match /settings/{settingId} {

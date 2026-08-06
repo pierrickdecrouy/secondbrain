@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import {
     BookOpen, Plus, Trash,
-    MagnifyingGlass, PencilSimple
+    MagnifyingGlass, PencilSimple,
+    CheckCircle, SquaresFour, List, Fire
 } from '@phosphor-icons/react';
-import { CheckCircle2, LayoutGrid, List, Flame } from 'lucide-react';
 import type { Card } from '../types';
 import { COURSE_TYPE, generateId } from '../types';
 import { FullCourseEditor } from './FullCourseEditor';
@@ -88,12 +88,12 @@ const CourseCard: React.FC<{
            <div className="w-24 flex justify-end hidden sm:flex">
               {hasDueCards ? (
                 <div className="flex items-center text-amber-500 text-xs font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-[6px] shadow-sm">
-                  <Flame size={14} className="mr-1" />
+                  <Fire size={14} className="mr-1" />
                   À réviser
                 </div>
               ) : (
-                <div className="flex items-center text-teal-600 dark:text-teal-400 text-xs font-bold bg-teal-600 dark:bg-teal-500/10 border border-teal-600 dark:border-teal-500/20 px-2 py-1 rounded-[6px]">
-                  <CheckCircle2 size={14} className="mr-1" />
+                <div className="flex items-center text-teal-600 dark:text-teal-400 text-xs font-bold bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 px-2 py-1 rounded-[6px]">
+                  <CheckCircle size={14} className="mr-1" />
                   À jour
                 </div>
               )}
@@ -137,7 +137,7 @@ const CourseCard: React.FC<{
             </span>
           ))}
           {course.subject && (
-            <span className="px-2.5 py-1 bg-teal-600 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-600 dark:border-teal-500/20 rounded-[6px] text-xs font-bold uppercase tracking-wider">
+            <span className="px-2.5 py-1 bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-500/20 rounded-[6px] text-xs font-bold uppercase tracking-wider">
               {course.subject}
             </span>
           )}
@@ -167,12 +167,12 @@ const CourseCard: React.FC<{
           <div className="flex items-center gap-2">
             {hasDueCards ? (
               <div className="flex items-center text-amber-600 text-sm font-semibold bg-amber-50 px-2 py-0.5 rounded-[6px] border border-amber-200">
-                <Flame size={14} className="mr-1" />
+                <Fire size={14} className="mr-1" />
                 À réviser
               </div>
             ) : (
-              <div className="flex items-center text-teal-600 dark:text-teal-400 text-sm font-medium bg-teal-600 dark:bg-teal-500/10 px-2 py-1 rounded-[6px] border border-teal-600 dark:border-teal-500/20">
-                <CheckCircle2 size={14} className="mr-1.5" />
+              <div className="flex items-center text-teal-600 dark:text-teal-400 text-sm font-medium bg-teal-50 dark:bg-teal-500/10 px-2 py-1 rounded-[6px] border border-teal-200 dark:border-teal-500/20">
+                <CheckCircle size={14} className="mr-1.5" />
                 {pct > 0 ? 'En cours' : 'Non commencé'}
               </div>
             )}
@@ -395,13 +395,13 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
               <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-sm">
                 <button 
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-teal-600 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'}`}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'}`}
                 >
-                  <LayoutGrid size={18} />
+                  <SquaresFour size={18} />
                 </button>
                 <button 
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-teal-600 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'}`}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'}`}
                 >
                   <List size={18} />
                 </button>

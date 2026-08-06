@@ -1,5 +1,5 @@
 import React from 'react';
-import DOMPurify from 'dompurify';
+
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -40,11 +40,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     // with '  \n' which ensures a hard break in Markdown.
     const processedContent = React.useMemo(() => {
         if (!content) return '';
-        // Sanitize the raw content first (prevent XSS before processing)
-        let processed = DOMPurify.sanitize(content, {
-            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'span', 'mark', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'img'],
-            ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target']
-        });
+        let processed = content;
         
         // Handle custom line breaks using '\'
         processed = processed.replace(/(?<!\\)\\(?=\s|$)/g, '  \n');
@@ -114,7 +110,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                             const element = firstChild as React.ReactElement<{ children?: React.ReactNode }>;
                             if (element.props.children) {
                                 const text = String(Array.isArray(element.props.children)
-                                    ? (element.props.children as any[])[0]
+                                    ? (element.props.children as unknown[])[0]
                                     : element.props.children || '');
 
                                 if (text.startsWith('[!NOTE]')) {

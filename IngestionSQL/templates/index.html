@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingestion PDF vers Extnd.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-slate-800">
+
+    <div class="glass-panel rounded-3xl p-8 w-full max-w-xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-500 to-emerald-500 mb-2">Ingestion de Cours</h1>
+            <p class="text-slate-500 text-sm">Transformez vos PDF (avec schémas) en fiches intelligentes pour Extnd. grâce à l'IA multimodale.</p>
+        </div>
+
+        <form id="uploadForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Clé API Gemini</label>
+                <input type="password" id="apiKey" required 
+                       class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                       placeholder="AIzaSy...">
+                <p class="text-xs text-slate-500 mt-2">Nécessaire pour l'analyse visuelle des schémas (Gemini 1.5 Flash).</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de la base de données (Optionnel)</label>
+                <input type="text" id="dbName" 
+                       class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                       placeholder="ex: medecine_generale" value="extnd_knowledge_base">
+                <p class="text-xs text-slate-500 mt-2">Permet de créer différentes bases. Si le fichier existe, les cours y seront ajoutés.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Modèle Ollama (Traitement Local Texte)</label>
+                <input type="text" id="ollamaModel" 
+                       class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                       placeholder="ex: llama3.1, qwen2:7b" value="llama3.1">
+                <p class="text-xs text-slate-500 mt-2">Ce modèle structurera gratuitement vos pages de texte pur. (Recommandé : llama3.1)</p>
+            </div>
+
+            <div class="flex items-center space-x-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                <input type="checkbox" id="hybridMode" class="w-5 h-5 text-indigo-600 rounded border-indigo-300 focus:ring-indigo-500" checked>
+                <div>
+                    <label for="hybridMode" class="block text-sm font-bold text-indigo-900">Mode Hybride Dédupliqué (Recommandé)</label>
+                    <p class="text-xs text-indigo-700 mt-0.5">Texte traité en local. Images/Schémas envoyés à l'API Gemini. Protection anti-doublons activée.</p>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Fichiers PDF</label>
+                <div class="relative border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-teal-500 hover:bg-teal-50/50 transition-colors cursor-pointer" id="dropZone">
+                    <input type="file" id="pdfFile" accept=".pdf" multiple required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div id="fileInfo">
+                        <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="text-sm text-slate-600">Cliquez ou glissez vos fichiers PDF ici</p>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full py-4 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-teal-200">
+                <span id="btnText">Démarrer l'ingestion</span>
+                <svg id="spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
+
+        <div id="progressSection" class="hidden mt-8 p-6 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="flex justify-between items-end mb-1">
+                <span id="statusText" class="text-sm font-semibold text-teal-700">Préparation...</span>
+                <span id="progressPercent" class="text-xs font-medium text-slate-500">0%</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div id="progressBar" class="bg-gradient-to-r from-teal-500 to-emerald-500 h-2.5 rounded-full w-0 transition-all duration-300"></div>
+            </div>
+            <p id="progressText" class="text-xs text-slate-500 mt-2 text-center"></p>
+        </div>
+
+        <div id="error" class="hidden mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg text-center"></div>
+
+        <!-- Bloc des bases de données -->
+        <div id="databasesSection" class="hidden mt-8 pt-6 border-t border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-4">Vos bases de données :</h3>
+            <div id="databasesList" class="space-y-3">
+                <!-- Les bases seront injectées ici -->
+            </div>
+        </div>
+
+        <!-- Succès -->
+        <div id="success" class="hidden mt-8 text-center bg-green-50 rounded-xl p-6 border border-green-100">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Fichiers ajoutés avec succès !</h3>
+            <p class="text-slate-600 mb-6">Les connaissances de ces cours ont été extraites et fusionnées dans votre base globale sans créer de doublons.</p>
+            <button onclick="location.reload()" class="text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors">
+                Traiter d'autres fichiers
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('pdfFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressPercent = document.getElementById('progressPercent');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+        const dbNameInput = document.getElementById('dbName');
+        const apiKeyInput = document.getElementById('apiKey');
+
+        // Charger la clé API sauvegardée si elle existe
+        const savedApiKey = localStorage.getItem('extndApiKey');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+
+        const databasesSection = document.getElementById('databasesSection');
+        const databasesList = document.getElementById('databasesList');
+
+        // Check databases on load
+        async function loadDatabases() {
+            try {
+                const res = await fetch('/databases');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.databases && data.databases.length > 0) {
+                        databasesSection.classList.remove('hidden');
+                        databasesList.innerHTML = '';
+                        data.databases.forEach(db => {
+                            databasesList.innerHTML += `
+                                <div class="flex items-center justify-between p-4 bg-teal-50 border border-teal-100 rounded-xl">
+                                    <div>
+                                        <h4 class="font-semibold text-teal-900">${db.name}</h4>
+                                        <p class="text-sm text-teal-700 mt-1">Taille : ${db.size_mb} Mo</p>
+                                    </div>
+                                    <a href="/download/${db.name}" class="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        <span>Télécharger</span>
+                                    </a>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log("Impossible de charger les bases", e);
+            }
+        }
+        
+        loadDatabases();
+
+        // Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-teal-500', 'bg-teal-50/50');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-teal-500', 'bg-teal-50/50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-teal-500', 'bg-teal-50/50');
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                if (e.target.files.length === 1) {
+                    fileInfo.innerHTML = `<p class="font-medium text-teal-600">${e.target.files[0].name}</p>`;
+                } else {
+                    fileInfo.innerHTML = `<p class="font-medium text-teal-600">${e.target.files.length} fichiers sélectionnés</p>`;
+                }
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const files = fileInput.files;
+            const apiKey = apiKeyInput.value;
+            const dbName = dbNameInput.value;
+            const ollamaModel = document.getElementById('ollamaModel').value;
+            const hybridMode = document.getElementById('hybridMode').checked;
+            
+            if (files.length === 0 || !apiKey) return;
+
+            // Sauvegarder la clé API pour les prochaines sessions
+            localStorage.setItem('extndApiKey', apiKey);
+
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+            formData.append('api_key', apiKey);
+            formData.append('db_name', dbName);
+            formData.append('ollama_model', ollamaModel);
+            formData.append('hybrid_mode', hybridMode);
+
+            submitBtn.disabled = true;
+            btnText.textContent = "Démarrage...";
+            spinner.classList.remove('hidden');
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    progressSection.classList.remove('hidden');
+                    form.classList.add('opacity-50', 'pointer-events-none');
+                    pollStatus(data.task_id);
+                } else {
+                    showError(data.error);
+                }
+            } catch (err) {
+                showError("Erreur de connexion au serveur local. (Est-ce que 'python app.py' tourne bien ?)");
+            }
+        });
+
+        async function pollStatus(taskId) {
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/status/${taskId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'error') {
+                        clearInterval(pollInterval);
+                        showError(data.error);
+                    } else if (data.status === 'queued') {
+                        progressBar.style.width = `100%`;
+                        progressBar.classList.replace('from-teal-500', 'from-amber-400');
+                        progressBar.classList.replace('to-emerald-500', 'to-amber-500');
+                        progressText.textContent = data.message;
+                        progressPercent.textContent = `En attente`;
+                        document.getElementById('statusText').textContent = "File d'attente...";
+                        document.getElementById('statusText').classList.replace('text-teal-700', 'text-amber-700');
+                    } else {
+                        // processing
+                        progressBar.classList.replace('from-amber-400', 'from-teal-500');
+                        progressBar.classList.replace('to-amber-500', 'to-emerald-500');
+                        document.getElementById('statusText').textContent = "Traitement en cours...";
+                        document.getElementById('statusText').classList.replace('text-amber-700', 'text-teal-700');
+
+                        progressBar.style.width = `${data.progress}%`;
+                        progressText.textContent = data.message;
+                        progressPercent.textContent = `${data.progress}%`;
+                        
+                        if (data.status === 'completed') {
+                            clearInterval(pollInterval);
+                            progressSection.classList.add('hidden');
+                            form.classList.add('hidden');
+                            successDiv.classList.remove('hidden');
+                            // Refresh DB list
+                            loadDatabases();
+                        }
+                    }
+                } catch (err) {
+                    clearInterval(pollInterval);
+                    showError("Connexion perdue avec le serveur.");
+                }
+            }, 1000);
+        }
+
+        function showError(msg) {
+            errorDiv.textContent = msg;
+            errorDiv.classList.remove('hidden');
+            submitBtn.disabled = false;
+            btnText.textContent = 'Démarrer l\'ingestion';
+            spinner.classList.add('hidden');
+            form.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        function resetForm() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Démarrer l\'ingestion';
+        }
+    </script>
+</body>
+</html>

@@ -43,7 +43,6 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false, typ
             };
 
             workerRef.current.onerror = (err) => {
-                console.error('Graph worker error:', err);
                 setError('Erreur de génération du graphe. Réessayez dans quelques secondes.');
                 setIsLoading(false);
             };
@@ -102,7 +101,6 @@ export function useGraphData({ cards, vetoPairs = [], semanticReady = false, typ
                 setSemanticLinks(formattedLinks);
             })
             .catch(err => {
-                console.error('[Graph] Semantic compute error:', err);
                 setError('Erreur de calcul sémantique du graphe.');
             });
 

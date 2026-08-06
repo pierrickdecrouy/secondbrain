@@ -35,7 +35,6 @@ export async function fastLexicalSearch(query: string, limit = 50): Promise<FTSR
         try {
             return await window.electronAPI.searchCardsFTS(query, limit);
         } catch (e) {
-            console.error("FTS5 search error:", e);
             return [];
         }
     }
@@ -110,7 +109,6 @@ export async function hybridSearch(query: string, limit = 50): Promise<string[]>
 
         return sortedIds.slice(0, limit);
     } catch (error) {
-        console.error('Hybrid search error:', error);
         return keywordResults.slice(0, limit);
     }
 }

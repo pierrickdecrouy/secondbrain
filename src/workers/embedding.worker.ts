@@ -46,11 +46,10 @@ async function initModel() {
 
     try {
         // Try WebGPU first (fastest)
-        // @ts-ignore
         extractor = await pipeline('feature-extraction', MODEL_ID, {
             device: 'webgpu',
-            // @ts-ignore
-            progress_callback: (progress: any) => {
+
+            progress_callback: (progress: { status: string; name?: string; file?: string; progress?: number; }) => {
                 if (typeof progress?.progress === 'number') {
                     self.postMessage({ type: 'progress', progress: progress.progress } as WorkerResponse);
                 }
@@ -60,8 +59,6 @@ async function initModel() {
 
         self.postMessage({ type: 'ready' } as WorkerResponse);
     } catch (webGpuError) {
-        console.warn('[Embedding Worker] WebGPU failed, falling back to WASM (CPU):', webGpuError);
-
         try {
             // Fallback to WASM (q8 quantization for efficiency)
             // @ts-ignore
@@ -69,7 +66,7 @@ async function initModel() {
                 device: 'wasm',
                 // quantized: true, // Removed as it's not a valid property, dtype handles it
                 // @ts-ignore
-                progress_callback: (progress: any) => {
+                progress_callback: (progress: { status: string; name?: string; file?: string; progress?: number; }) => {
                     if (typeof progress?.progress === 'number') {
                         self.postMessage({ type: 'progress', progress: progress.progress } as WorkerResponse);
                     }
@@ -79,7 +76,6 @@ async function initModel() {
 
             self.postMessage({ type: 'ready' } as WorkerResponse);
         } catch (cpuError) {
-            console.error('[Embedding Worker] All backends failed:', cpuError);
             self.postMessage({ type: 'error', error: String(cpuError) } as WorkerResponse);
         }
     } finally {

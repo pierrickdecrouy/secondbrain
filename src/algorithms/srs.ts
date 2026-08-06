@@ -107,7 +107,6 @@ export const calculateSrsData = (
 
     if (status === 'review' && interval < 2 && easeFactor > 1.5) {
         const minExpectedInterval = Math.max(2, Math.round(easeFactor));
-        console.warn(`SRS Data Recovery: interval=${interval} too low for EF=${easeFactor}. Recalculating to ${minExpectedInterval}`);
         interval = minExpectedInterval;
     }
 

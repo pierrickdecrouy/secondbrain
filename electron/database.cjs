@@ -1,22 +1,24 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
-const { app } = require('electron');
 
 let db;
+let isExternalWorkspaceActive = false;
 
 function initDB(dbPath) {
+    if (db) {
+        db.close();
+    }
+
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
 
     db = new Database(dbPath); // verbose: console.log
-
-    // Enable WAL mode for better concurrency/performance
     db.pragma('journal_mode = WAL');
 
-    // Create Cards Table
+    // Create Main Cards Table (for local cards and metadata of external cards)
     db.exec(`
     CREATE TABLE IF NOT EXISTS cards (
         id TEXT PRIMARY KEY,
@@ -34,9 +36,7 @@ function initDB(dbPath) {
     // Add Virtual Column for FSRS next_review and create Index
     try {
         db.exec(`ALTER TABLE cards ADD COLUMN next_review DATETIME AS (json_extract(metadata, '$.fsrs.next_review')) VIRTUAL;`);
-    } catch (e) {
-        // Column might already exist, ignore error
-    }
+    } catch (e) {}
 
     // Create Index on Type for filtering
     db.exec(`CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(type);`);
@@ -74,7 +74,67 @@ function initDB(dbPath) {
     END;
     `);
 
-    console.log(`[DB] Initialized at ${dbPath}`);
+    isExternalWorkspaceActive = false;
+}
+
+function switchWorkspace(dbPath) {
+    if (!db) return;
+
+    // 1. Detach previously attached external workspace if any
+    try {
+        db.exec(`DROP VIEW IF EXISTS temp.ext_cards;`);
+        db.exec(`DROP TABLE IF EXISTS temp.ext_fts;`);
+        db.exec(`DETACH DATABASE ext;`);
+    } catch (e) {
+        // Ignore if 'ext' was not attached
+    }
+    
+    isExternalWorkspaceActive = false;
+
+    // 2. If it's the main db, we just stop here (already initialized)
+    if (db.name === dbPath || dbPath.endsWith('pharma-brain.db')) {
+        return;
+    }
+
+    // 3. Attach the external database
+    db.exec(`ATTACH DATABASE '${dbPath}' AS ext;`);
+    isExternalWorkspaceActive = true;
+
+    // 4. Create the Virtual View merging external read-only content with local mutable metadata
+    // We assume external databases use the 'documents' table scheme from IngestionSQL
+    db.exec(`
+        CREATE TEMP VIEW ext_cards AS
+        SELECT 
+            d.id, 
+            d.content_type as type, 
+            d.title, 
+            d.course_name as subtitle, 
+            d.content, 
+            COALESCE(c.tags, '[]') as tags, 
+            COALESCE(c.metadata, '{}') as metadata, 
+            d.created_at as createdAt, 
+            COALESCE(c.updatedAt, d.created_at) as updatedAt
+        FROM ext.documents d
+        LEFT JOIN main.cards c ON d.id = c.id;
+    `);
+
+    // 5. Create a temporary FTS5 table for fast searching on the external workspace
+    db.exec(`
+        CREATE VIRTUAL TABLE temp.ext_fts USING fts5(
+            id UNINDEXED,
+            title,
+            subtitle,
+            content,
+            tags,
+            tokenize='porter unicode61'
+        );
+    `);
+
+    // Populate FTS5 table from the view
+    db.exec(`
+        INSERT INTO temp.ext_fts (rowid, id, title, subtitle, content, tags)
+        SELECT rowid, id, title, subtitle, content, tags FROM temp.ext_cards;
+    `);
 }
 
 // Transform DB row to Card object
@@ -83,8 +143,8 @@ function rowToCard(row) {
     const metadata = row.metadata ? JSON.parse(row.metadata) : {};
     return {
         id: row.id,
-        type: row.type,
-        title: row.title,
+        type: row.type || 'concept',
+        title: row.title || '',
         subtitle: row.subtitle || '',
         content: row.content || '',
         tags: row.tags ? JSON.parse(row.tags) : [],
@@ -94,13 +154,13 @@ function rowToCard(row) {
     };
 }
 
-// Transform Card object to DB parameters
+// Transform Card object to DB parameters (always saves to main.cards)
 function cardToParams(card) {
     const { id, type, title, subtitle, content, tags, createdAt, updatedAt, ...rest } = card;
     return {
         id,
-        type,
-        title,
+        type: type || 'concept',
+        title: title || '',
         subtitle: subtitle || '',
         content: content || '',
         tags: JSON.stringify(tags || []),
@@ -111,16 +171,19 @@ function cardToParams(card) {
 }
 
 function getAllCards() {
-    const stmt = db.prepare('SELECT * FROM cards');
+    // If an external workspace is active, read from the merged view
+    const query = isExternalWorkspaceActive ? 'SELECT * FROM temp.ext_cards' : 'SELECT * FROM main.cards';
+    const stmt = db.prepare(query);
     const rows = stmt.all();
     return rows.map(rowToCard);
 }
 
 function saveCardsTransaction(cards, options = {}) {
     const { allowDeleteAll = false } = options;
-
+    
+    // Always insert/update into the main 'cards' table to preserve local progress
     const insert = db.prepare(`
-        INSERT OR REPLACE INTO cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
+        INSERT OR REPLACE INTO main.cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
         VALUES (@id, @type, @title, @subtitle, @content, @tags, @metadata, @createdAt, @updatedAt)
     `);
 
@@ -134,26 +197,27 @@ function saveCardsTransaction(cards, options = {}) {
             insert.run(cardToParams(card));
         }
 
-        if (cards.length > 0) {
-            // Find ids to delete instead of using NOT IN with thousands of params
-            // which crashes SQLite due to SQLITE_MAX_VARIABLE_NUMBER
-            const keepIds = new Set(cards.map(c => c.id));
-            const existingIdsStmt = db.prepare('SELECT id FROM cards');
-            const existingIds = existingIdsStmt.all().map(row => row.id);
-            
-            const idsToDelete = existingIds.filter(id => !keepIds.has(id));
-            if (idsToDelete.length > 0) {
-                // SQLite max variables is 999, we use chunks of 900
-                const chunkSize = 900;
-                for (let i = 0; i < idsToDelete.length; i += chunkSize) {
-                    const chunk = idsToDelete.slice(i, i + chunkSize);
-                    const placeholders = chunk.map(() => '?').join(',');
-                    const deleteStmt = db.prepare(`DELETE FROM cards WHERE id IN (${placeholders})`);
-                    deleteStmt.run(...chunk);
+        // Only process deletions if we are on the main workspace
+        // We shouldn't delete local progress just because an external DB changed its cards
+        if (!isExternalWorkspaceActive) {
+            if (cards.length > 0) {
+                const keepIds = new Set(cards.map(c => c.id));
+                const existingIdsStmt = db.prepare('SELECT id FROM main.cards');
+                const existingIds = existingIdsStmt.all().map(row => row.id);
+                
+                const idsToDelete = existingIds.filter(id => !keepIds.has(id));
+                if (idsToDelete.length > 0) {
+                    const chunkSize = 900;
+                    for (let i = 0; i < idsToDelete.length; i += chunkSize) {
+                        const chunk = idsToDelete.slice(i, i + chunkSize);
+                        const placeholders = chunk.map(() => '?').join(',');
+                        const deleteStmt = db.prepare(`DELETE FROM main.cards WHERE id IN (${placeholders})`);
+                        deleteStmt.run(...chunk);
+                    }
                 }
+            } else {
+                db.prepare('DELETE FROM main.cards').run();
             }
-        } else {
-            db.prepare('DELETE FROM cards').run();
         }
     });
 
@@ -162,20 +226,23 @@ function saveCardsTransaction(cards, options = {}) {
 
 function upsertCard(card) {
     const stmt = db.prepare(`
-        INSERT OR REPLACE INTO cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
+        INSERT OR REPLACE INTO main.cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
         VALUES (@id, @type, @title, @subtitle, @content, @tags, @metadata, @createdAt, @updatedAt)
     `);
     stmt.run(cardToParams(card));
 }
 
 function deleteCard(id) {
-    const stmt = db.prepare('DELETE FROM cards WHERE id = ?');
+    if (isExternalWorkspaceActive) {
+        throw new Error('[DB] Impossible de supprimer une fiche d\'un pack de contenu externe.');
+    }
+    const stmt = db.prepare('DELETE FROM main.cards WHERE id = ?');
     stmt.run(id);
 }
 
 function importCardsTransaction(cards) {
     const insert = db.prepare(`
-        INSERT OR REPLACE INTO cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
+        INSERT OR REPLACE INTO main.cards (id, type, title, subtitle, content, tags, metadata, createdAt, updatedAt)
         VALUES (@id, @type, @title, @subtitle, @content, @tags, @metadata, @createdAt, @updatedAt)
     `);
 
@@ -186,39 +253,34 @@ function importCardsTransaction(cards) {
     });
 
     transaction(cards);
-    console.log(`[DB] Imported ${cards.length} cards safely (Upsert only).`);
 }
 
 function searchCardsFTS(query, limit = 50) {
     if (!query || !query.trim()) return [];
     
-    // SQLite FTS5 requires quotes or specific syntax for some characters.
-    // A simple robust way for basic search is to append * to the last word.
-    // For safety, we can just pass the query directly, or sanitize it.
-    // We'll replace non-alphanumeric with spaces, except for spaces and quotes.
     const sanitized = query.replace(/[^\w\s"'-]/gi, ' ').trim();
     if (!sanitized) return [];
 
-    // FTS5 MATCH syntax: we can append * to each word for prefix matching
     const terms = sanitized.split(/\s+/).map(t => `"${t}"*`).join(' AND ');
     
     try {
+        const tableName = isExternalWorkspaceActive ? 'temp.ext_fts' : 'main.cards_fts';
         const stmt = db.prepare(`
-            SELECT id, snippet(cards_fts, -1, '<b>', '</b>', '...', 64) as highlight 
-            FROM cards_fts 
-            WHERE cards_fts MATCH ? 
+            SELECT id, snippet(${tableName}, -1, '<b>', '</b>', '...', 64) as highlight 
+            FROM ${tableName} 
+            WHERE ${tableName} MATCH ? 
             ORDER BY rank 
             LIMIT ?
         `);
         return stmt.all(terms, limit);
     } catch (e) {
-        console.error('[DB] FTS5 Search Error:', e);
         return [];
     }
 }
 
 module.exports = {
     initDB,
+    switchWorkspace,
     getAllCards,
     saveCardsTransaction,
     importCardsTransaction,

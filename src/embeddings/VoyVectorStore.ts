@@ -87,9 +87,7 @@ export class VoyVectorStore {
                     }
                 }
             } catch (e) {
-                console.error(`Voy index add error for shard ${shardId}:`, e);
                 if (e instanceof Error && (e.message.includes('recursive') || e.message.includes('unreachable'))) {
-                    console.warn(`Voy index corrupted for shard ${shardId}, resetting...`);
                     this.indices.set(shardId, new Voy());
                 }
             }
@@ -125,7 +123,6 @@ export class VoyVectorStore {
                 .slice(0, k);
 
         } catch (e) {
-            console.error("Voy search error:", e);
             return [];
         }
     }
@@ -142,7 +139,6 @@ export class VoyVectorStore {
             const serialized = index.serialize();
             indexData = new TextEncoder().encode(serialized);
         } catch (e) {
-            console.error(`Voy serialize error for shard ${shardId}:`, e);
             return new Uint8Array(0);
         }
 
@@ -203,11 +199,9 @@ export class VoyVectorStore {
                     this.cardShardMap.set(cardId, shardId);
                 }
             } catch (e) {
-                console.error(`[Voy] Failed to deserialize shard ${shardId}, recreating:`, e);
                 this.indices.set(shardId, new Voy());
             }
         } else if (hasHeader(headerV1)) {
-            console.warn(`[Voy] Found V1 index for shard ${shardId} incompatible with new model. Recreating.`);
             this.indices.set(shardId, new Voy());
         } else {
             // Legacy monolithic format (assume it's the global shard)
@@ -219,7 +213,6 @@ export class VoyVectorStore {
                     this.indices.set(shardId, new Voy());
                 }
             } catch (e) {
-                console.error(`[Voy] Failed to deserialize legacy index for shard ${shardId}:`, e);
                 this.indices.set(shardId, new Voy());
             }
         }
@@ -265,7 +258,6 @@ export class VoyVectorStore {
                     return true;
                 }
             } catch (e) {
-                console.error(`[Voy] Failed to load shard ${shardId}:`, e);
             }
         } else {
             // IndexedDB Fallback for Web
@@ -277,7 +269,6 @@ export class VoyVectorStore {
                     return true;
                 }
             } catch (e) {
-                console.error(`[Voy] Failed to load shard ${shardId} from IndexedDB:`, e);
             }
         }
         
@@ -297,7 +288,6 @@ export class VoyVectorStore {
             try {
                 await window.electronAPI.saveVectorIndex(data, shardId);
             } catch (e) {
-                console.error(`[Voy] Failed to save shard ${shardId}:`, e);
             }
         } else {
             // IndexedDB Fallback for Web
@@ -305,7 +295,6 @@ export class VoyVectorStore {
                 const db = getDB();
                 await db.vectorIndices.put({ shardId, data });
             } catch (e) {
-                console.error(`[Voy] Failed to save shard ${shardId} to IndexedDB:`, e);
             }
         }
     }

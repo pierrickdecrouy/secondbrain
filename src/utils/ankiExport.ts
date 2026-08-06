@@ -1,8 +1,11 @@
 import { Model, Deck, Package } from 'genanki-js';
 import initSqlJs from 'sql.js';
-import { marked } from 'marked';
 import { saveAs } from 'file-saver';
 import type { Card } from '../types';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 /**
  * Locates the sql-wasm.wasm file in different environments:
@@ -58,7 +61,11 @@ export async function exportToAnki(deckName: string, cards: Card[]): Promise<voi
             </div>
         `;
 
-        const htmlContent = await Promise.resolve(marked.parse(card.content || ''));
+        const htmlContent = renderToStaticMarkup(
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {card.content || ''}
+            </ReactMarkdown>
+        );
         const back = `
             <div style="font-family: -apple-system, sans-serif; text-align: left; line-height: 1.6; padding: 8px 16px;">
                 ${htmlContent}

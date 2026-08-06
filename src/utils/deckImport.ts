@@ -17,7 +17,7 @@ export async function importDeckFromJson(file: File): Promise<Card[]> {
                 const idMap = new Map<string, string>(); // oldId -> newId
                 
                 // First pass: Generate new IDs for all cards and validate
-                const mappedCards: Card[] = parsed.map((cardData: any) => {
+                const mappedCards: Card[] = parsed.map((cardData: Record<string, unknown>) => {
                     const parsedCard = CardSchema.parse(cardData) as Card;
                     const newId = generateId();
                     idMap.set(parsedCard.id, newId);
@@ -48,7 +48,6 @@ export async function importDeckFromJson(file: File): Promise<Card[]> {
                 
                 resolve(mappedCards);
             } catch (err) {
-                console.error("Erreur lors de l'import du deck:", err);
                 reject(err);
             }
         };

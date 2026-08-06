@@ -6,7 +6,7 @@ import {
     getDocs,
     writeBatch,
 } from 'firebase/firestore';
-import { db, sanitizeForFirebase } from '../lib/firebase';
+import { db, prepareForFirebase } from '../lib/firebase';
 import { useCardStore } from '../store/useCardStore';
 import { useAuth } from '../context/AuthContext';
 import type { Card } from '../types';
@@ -52,24 +52,7 @@ export const useFirebaseSync = () => {
                 let migratedCount = 0;
                 
                 if (offlineCards.length > 0 && !sessionStorage.getItem('extnd_ignore_offline')) {
-                    const shouldAdopt = window.confirm(
-                        `Vous avez ${offlineCards.length} fiche(s) créée(s) hors-ligne.\n\nVoulez-vous les fusionner avec votre compte synchronisé ?`
-                    );
-                    
-                    if (shouldAdopt) {
-                        for (const localCard of offlineCards) {
-                            const adopted: Card = { ...localCard, ownerUid: user.uid };
-                            const idx = mergedCards.findIndex(c => c.id === adopted.id);
-                            if (idx >= 0) mergedCards[idx] = adopted;
-                            const cardRef = doc(db, `users/${user.uid}/cards`, adopted.id);
-                            batch.set(cardRef, sanitizeForFirebase(adopted));
-                            batchCount++;
-                            migratedCount++;
-                            hasLocalChanges = true;
-                        }
-                    } else {
-                        sessionStorage.setItem('extnd_ignore_offline', 'true');
-                    }
+                    useUIStore.getState().setPendingOfflineCards(offlineCards);
                 }
 
                 // ── Push local cards newer than remote ────────────────────
@@ -77,11 +60,11 @@ export const useFirebaseSync = () => {
                     if (localCard.ownerUid === null || localCard.ownerUid === undefined) continue; // already handled above
                     if (!remoteCards[localCard.id]) {
                         const cardRef = doc(db, `users/${user.uid}/cards`, localCard.id);
-                        batch.set(cardRef, sanitizeForFirebase(localCard));
+                        batch.set(cardRef, prepareForFirebase(localCard));
                         batchCount++;
                     } else if ((localCard.updatedAt || 0) > (remoteCards[localCard.id].updatedAt || 0)) {
                         const cardRef = doc(db, `users/${user.uid}/cards`, localCard.id);
-                        batch.set(cardRef, sanitizeForFirebase(localCard));
+                        batch.set(cardRef, prepareForFirebase(localCard));
                         batchCount++;
                     }
                 }
@@ -92,6 +75,8 @@ export const useFirebaseSync = () => {
                     toast.success(`✓ ${migratedCount} fiche${migratedCount > 1 ? 's' : ''} hors-ligne migrée${migratedCount > 1 ? 's' : ''} vers votre compte.`);
                 }
 
+                let conflictsCount = 0;
+
                 // ── Pull remote cards into local ──────────────────────────
                 for (const [id, remoteCard] of Object.entries(remoteCards)) {
                     const localIndex = mergedCards.findIndex(c => c.id === id);
@@ -101,7 +86,12 @@ export const useFirebaseSync = () => {
                     } else if ((remoteCard.updatedAt || 0) > (mergedCards[localIndex].updatedAt || 0)) {
                         mergedCards[localIndex] = remoteCard;
                         hasLocalChanges = true;
+                        conflictsCount++;
                     }
+                }
+
+                if (conflictsCount > 0) {
+                    toast.info(`Une version plus récente a été restaurée depuis le serveur (${conflictsCount} fiche${conflictsCount > 1 ? 's' : ''}).`);
                 }
 
                 if (hasLocalChanges) {
@@ -109,7 +99,6 @@ export const useFirebaseSync = () => {
                 }
                 useUIStore.getState().setSyncStatus('synced');
             } catch (error) {
-                console.error('Erreur lors de la synchro initiale Firebase:', error);
                 useUIStore.getState().setSyncStatus('error');
                 toast.error('Erreur de synchronisation Firebase', 0, {
                     label: 'Réessayer',
@@ -140,6 +129,7 @@ export const useFirebaseSync = () => {
                                 // C-3 fix: skipSave=true — Firebase is the source of truth here,
                                 // saving back to IndexedDB would cause a write→snapshot→write loop.
                                 setCards(newCards, true);
+                                toast.info('Une version plus récente a été restaurée depuis le serveur.');
                             }
                         } else {
                             setCards([...currentCards, data], true); // C-3 fix: skipSave=true

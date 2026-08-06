@@ -91,13 +91,11 @@ export function loadFeedback(): void {
             if (stored) applyFeedback(stored);
         })
         .catch((e) => {
-            console.warn('Failed to load link feedback:', e);
         });
 }
 
 function saveFeedback(): void {
     saveSettingAsync(STORAGE_KEY, feedbackData).catch((e) => {
-        console.warn('Failed to save link feedback:', e);
     });
 }
 

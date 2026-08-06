@@ -18,6 +18,7 @@ import {
     Table as TableIcon, Link as LinkIcon, Info, Warning, GraduationCap, Brain, Cards, EyeSlash
 } from '@phosphor-icons/react';
 import { ClozeExtension } from './editor/ClozeExtension';
+import { usePromptStore } from '../store/usePromptStore';
 import type { NodeViewProps } from '@tiptap/core';
 import type { Card } from '../types';
 
@@ -137,9 +138,9 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
         }
     }, [value, editor]);
 
-    const setLink = useCallback(() => {
+    const setLink = useCallback(async () => {
         const previousUrl = editor?.getAttributes('link').href;
-        const url = window.prompt('URL', previousUrl);
+        const url = await usePromptStore.getState().openPrompt('URL', previousUrl);
         if (url === null) return;
         if (url === '') {
             editor?.chain().focus().extendMarkRange('link').unsetLink().run();

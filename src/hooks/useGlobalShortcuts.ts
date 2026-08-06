@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useUIStore as useUI } from '../store/useUIStore';
-
-export type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats';
+import type { AppSection } from '../types';
 
 interface UseGlobalShortcutsOptions {
     isNetworkContext: boolean;

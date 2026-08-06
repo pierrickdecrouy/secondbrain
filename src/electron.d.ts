@@ -13,6 +13,10 @@ interface ElectronAPI {
     saveSetting: (key: string, value: unknown) => Promise<{ success: boolean; error?: string }>;
     removeSetting: (key: string) => Promise<{ success: boolean; error?: string }>;
 
+    // Workspaces
+    getWorkspaces: () => Promise<{ workspaces: { id: string; name: string }[]; activeWorkspace: string }>;
+    switchWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>;
+
     // Vector Index
     loadVectorIndex: (shardId?: string) => Promise<Uint8Array | null>;
     saveVectorIndex: (buffer: Uint8Array, shardId?: string) => Promise<{ success: boolean; error?: string }>;

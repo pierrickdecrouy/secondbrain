@@ -45,7 +45,7 @@ export const useCardStore = create<CardState>((set, get) => ({
     set((state) => {
       const newCards = typeof cardsOrUpdater === 'function' ? cardsOrUpdater(state.cards) : cardsOrUpdater;
       if (!skipSave) {
-        saveCardsAsync(newCards).catch(err => console.error("Auto-save failed:", err));
+        saveCardsAsync(newCards).catch(err => toast.error('Erreur lors de la sauvegarde locale.'));
       }
       return { cards: newCards };
     });
@@ -62,8 +62,7 @@ export const useCardStore = create<CardState>((set, get) => ({
       // If cards are empty here after loading, it means this is truly a fresh DB
       // (db_initialized would have seeded already, so we don't double-seed).
       set({ cards, isLoading: false });
-    } catch (err) {
-      console.error("Failed to reload cards from storage:", err);
+    } catch (_err) {
       set({ isLoading: false });
     }
   },
@@ -87,8 +86,7 @@ export const useCardStore = create<CardState>((set, get) => ({
       }
       set({ cards: newCards, isLoading: false });
       toast.success("Cours de démonstration chargé !");
-    } catch (err) {
-      console.error("Failed to load demo data:", err);
+    } catch (_err) {
       set({ isLoading: false });
       toast.error("Erreur lors du chargement des données.");
     }
@@ -104,7 +102,6 @@ export const useCardStore = create<CardState>((set, get) => ({
       const oldCard = newCards[existsIndex];
       const currentUid = auth.currentUser?.uid || null;
       if (oldCard.ownerUid && currentUid && oldCard.ownerUid !== currentUid) {
-        console.error("Permission denied: You do not own this card.", oldCard.ownerUid, currentUid);
         toast.error("Permission refusée: Vous n'êtes pas le propriétaire de cette fiche.");
         return;
       }
@@ -137,7 +134,7 @@ export const useCardStore = create<CardState>((set, get) => ({
     const currentUserId = auth.currentUser?.uid || null;
     if (existsIndex >= 0) {
       const oldCard = newCards[existsIndex];
-      const diff: any = {};
+      const diff: NonNullable<CardHistory['diff']> = {};
       if (oldCard.title !== stampedCard.title) diff.title = { old: oldCard.title, new: stampedCard.title };
       if (oldCard.subtitle !== stampedCard.subtitle) diff.subtitle = { old: oldCard.subtitle, new: stampedCard.subtitle };
       if (oldCard.content !== stampedCard.content) diff.content = { old: oldCard.content, new: stampedCard.content };
@@ -231,7 +228,6 @@ export const useCardStore = create<CardState>((set, get) => ({
       if (result.success) {
         validCards.push(result.data as Card);
       } else {
-        console.warn("Invalid card skipped during batch import:", card.id, result.error);
       }
     });
 
@@ -262,7 +258,6 @@ export const useCardStore = create<CardState>((set, get) => ({
       batch.commit()
         .then(() => useUIStore.getState().setSyncStatus('synced'))
         .catch(err => {
-          console.error('Firebase batch import sync error:', err);
           useUIStore.getState().setSyncStatus('error');
         });
     }

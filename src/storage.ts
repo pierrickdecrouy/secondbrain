@@ -3,6 +3,7 @@ import { COURSE_TYPE } from './types';
 import { CardSchema } from './schema';
 import { initialCards } from './data';
 import { MEDICAL_ABBREVIATIONS } from './medicalAbbreviations';
+import { toast } from './store/useToastStore';
 
 const CUSTOM_ABBREVIATIONS_KEY = 'pharma_brain_custom_abbreviations';
 
@@ -45,7 +46,10 @@ export function setStorageUid(uid: string | null) {
     }
     const dbName = uid ? `PharmaBrainDB_${uid}` : 'PharmaBrainDB_offline';
     dbInstance = new PharmaBrainDB(dbName);
-    dbInstance.open().catch(e => console.error('Failed to open DB after uid switch:', e));
+    dbInstance.open().catch(e => {
+        console.error("Erreur d'ouverture DB:", e);
+        toast.error('Erreur d\'ouverture de la base de données locale.');
+    });
 }
 
 // Convert HTML to plain text/Markdown
@@ -136,7 +140,8 @@ export async function loadCardsAsync(): Promise<Card[]> {
             }
             return cards ? cleanCards(cards) : [];
         } catch (e) {
-            console.error('Error loading cards from Electron:', e);
+            console.error('Failed to load cards (Electron):', e);
+            toast.error('Impossible de charger les fiches depuis le système local.');
             return [];
         }
     }
@@ -152,7 +157,8 @@ export async function loadCardsAsync(): Promise<Card[]> {
         }
         return cleanCards(stored);
     } catch (e) {
-        console.error('Error loading cards from Dexie:', e);
+        console.error('Failed to load cards (Dexie):', e);
+        toast.error('Impossible de charger les fiches depuis le stockage local.');
         return [];
     }
 }
@@ -162,7 +168,8 @@ export async function saveCardsAsync(cards: Card[]): Promise<void> {
         try {
             await window.electronAPI.saveCards(cards);
         } catch (e) {
-            console.error('Error saving cards to Electron:', e);
+            console.error('Failed to save cards (Electron):', e);
+            toast.error('Échec de la sauvegarde locale des fiches.');
         }
         return;
     }
@@ -181,7 +188,8 @@ export async function saveCardsAsync(cards: Card[]): Promise<void> {
             await db.cards.bulkPut(cards);
         });
     } catch (e) {
-        console.error('Error saving cards to Dexie:', e);
+        console.error('Failed to save cards (Dexie):', e);
+        toast.error('Échec de la sauvegarde locale des fiches.');
     }
 }
 
@@ -195,7 +203,7 @@ export async function loadSettingAsync<T>(key: string, defaultValue: T): Promise
         const setting = await db.settings.get(key);
         return setting ? (setting.value as T) : defaultValue;
     } catch (e) {
-        console.error('Dexie read setting error', e);
+        console.error(`Failed to load setting ${key}:`, e);
         return defaultValue;
     }
 }
@@ -209,7 +217,7 @@ export async function saveSettingAsync<T>(key: string, value: T): Promise<void> 
         const db = getDB();
         await db.settings.put({ key, value });
     } catch (e) {
-        console.error('Dexie write setting error', e);
+        console.error(`Failed to save setting ${key}:`, e);
     }
 }
 
@@ -223,7 +231,7 @@ export const loadCustomAbbreviations = (): Record<string, string> => {
             return JSON.parse(stored);
         }
     } catch (e) {
-        console.error("Failed to load custom abbreviations", e);
+        console.error('Failed to parse custom abbreviations:', e);
     }
 
     // Default to the static list if nothing is stored
@@ -241,7 +249,7 @@ export const saveCustomAbbreviations = (abbreviations: Record<string, string>) =
     try {
         localStorage.setItem(CUSTOM_ABBREVIATIONS_KEY, JSON.stringify(abbreviations));
     } catch (e) {
-        console.error("Failed to save abbreviations", e);
+        console.error('Failed to save custom abbreviations:', e);
     }
 };
 
@@ -283,7 +291,9 @@ export async function exportAllData(): Promise<string> {
     try {
         const storedAbbr = localStorage.getItem(CUSTOM_ABBREVIATIONS_KEY);
         if (storedAbbr) backup.abbreviations = JSON.parse(storedAbbr);
-    } catch (e) { console.warn('Failed to load custom abbreviations from localStorage:', e); }
+    } catch (e) {
+        console.error('Failed to parse custom abbreviations during export:', e);
+    }
 
     return JSON.stringify(backup, null, 2);
 }
@@ -302,7 +312,7 @@ export async function importAllData(jsonString: string): Promise<void> {
             if (res.success) {
                 validCards.push(res.data as Card);
             } else {
-                console.warn(`Card skipped during restore due to invalid schema (ID: ${card.id}):`, res.error);
+                console.warn('Skipped invalid card during import:', res.error);
             }
         });
         
@@ -332,7 +342,6 @@ export async function importAllData(jsonString: string): Promise<void> {
         // We reload the page to ensure all React context/state is refreshed from the DB
         window.location.reload();
     } catch (e) {
-        console.error("Failed to import data:", e);
         throw e;
     }
 }

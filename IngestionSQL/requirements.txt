@@ -1,0 +1,9 @@
+Flask
+Werkzeug
+google-genai
+requests
+PyMuPDF
+sqlite-vec
+streamlit
+pandas
+python-dotenv

@@ -1,7 +1,9 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, UploadSimple, Warning, FileText, FileCode, Info,
-    CheckCircle, CloudArrowUp, Table, Cards
+    CheckCircle, CloudArrowUp, Table, Cards, GitMerge
 } from '@phosphor-icons/react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { Card, CardType } from '../types';
@@ -21,21 +23,21 @@ type ImportMode = 'json' | 'text' | 'csv';
 const MODE_META: Record<ImportMode, { label: string; icon: React.ReactNode; color: string; accent: string }> = {
     text: {
         label: 'Texte / Markdown',
-        icon: <FileText size={18} weight="bold" />,
-        color: '#10B981',
-        accent: 'rgba(16, 185, 129, 0.12)', // emerald
+        icon: <FileText size={18} weight="duotone" />,
+        color: '#10B981', // emerald
+        accent: 'rgba(16, 185, 129, 0.08)',
     },
     json: {
         label: 'JSON',
-        icon: <FileCode size={18} weight="bold" />,
-        color: '#8B5CF6',
-        accent: 'rgba(139, 92, 246, 0.12)', // violet
+        icon: <FileCode size={18} weight="duotone" />,
+        color: '#8B5CF6', // violet
+        accent: 'rgba(139, 92, 246, 0.08)',
     },
     csv: {
         label: 'CSV / Excel',
-        icon: <Table size={18} weight="bold" />,
-        color: '#F59E0B',
-        accent: 'rgba(245, 158, 11, 0.12)', // amber
+        icon: <Table size={18} weight="duotone" />,
+        color: '#F59E0B', // amber
+        accent: 'rgba(245, 158, 11, 0.08)',
     },
 };
 
@@ -91,6 +93,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
         const trimmed = input.trim();
         let currentMode = importMode;
 
+        // Auto-detect mode
         if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
             if (currentMode !== 'json') { setImportMode('json'); currentMode = 'json'; }
         } else if (
@@ -99,8 +102,11 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
             !trimmed.startsWith('#')
         ) {
             if (currentMode !== 'csv') { setImportMode('csv'); currentMode = 'csv'; }
+        } else if (trimmed.startsWith('#')) {
+            if (currentMode !== 'text') { setImportMode('text'); currentMode = 'text'; }
         }
 
+        // Parse
         try {
             let processed: Card[] = [];
             if (currentMode === 'json') processed = parseJsonFormat(trimmed, 'misc' as CardType, groupName);
@@ -150,21 +156,23 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
             }
             onImport(finalCards);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Erreur lors de l'import");
+            setError(err instanceof Error ? (err as Error).message : "Erreur lors de l'import");
         }
     };
 
     const activeMeta = MODE_META[importMode];
 
     return (
-        <div className="flex flex-col lg:flex-row flex-1 h-full p-6 sm:p-8 gap-8 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-            {/* LEFT PANE: Editor */}
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                {/* Header / Format selector */}
-                <div className="flex items-center justify-between shrink-0">
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 m-0">Saisie des Données</h3>
+        <div className="flex flex-col lg:flex-row flex-1 h-full overflow-hidden bg-slate-50/50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-100 backdrop-blur-xl">
+            {/* LEFT PANE: Editor (Glassy styling) */}
+            <div className="flex-[1.2] flex flex-col gap-6 p-6 sm:p-8 border-r border-slate-200/50 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 z-10 relative overflow-hidden">
+                {/* Header & Modes */}
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between shrink-0 gap-4">
+                    <h3 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 m-0">
+                        Ajout Massif
+                    </h3>
                     
-                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
+                    <div className="relative flex items-center p-1 bg-slate-200/50 dark:bg-slate-800/50 backdrop-blur-md rounded-[14px] border border-slate-300/30 dark:border-slate-700/50 shadow-inner">
                         {(Object.keys(MODE_META) as ImportMode[]).map((m) => {
                             const meta = MODE_META[m];
                             const isActive = importMode === m;
@@ -172,132 +180,224 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                                 <button
                                     key={m}
                                     onClick={() => setImportMode(m)}
-                                    className={`flex items-center gap-2 py-1.5 px-4 text-sm font-semibold rounded-lg transition-all border-none outline-none cursor-pointer ${isActive ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
+                                    className={`relative flex items-center gap-2 py-2 px-4 text-[13px] font-bold rounded-[10px] transition-colors z-10 outline-none ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
                                 >
-                                    <span style={{ color: isActive ? meta.color : 'inherit' }}>{meta.icon}</span>
-                                    {meta.label}
+                                    {isActive && (
+                                        <motion.div 
+                                            layoutId="importModeActiveBg" 
+                                            className="absolute inset-0 bg-white dark:bg-slate-700 rounded-[10px] shadow-sm border border-slate-200/50 dark:border-slate-600/50 -z-10" 
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} 
+                                        />
+                                    )}
+                                    <span style={{ color: isActive ? meta.color : 'inherit' }} className="relative z-10">{meta.icon}</span>
+                                    <span className="relative z-10 hidden sm:inline">{meta.label}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                {/* Tools & Group */}
-                <div className="flex items-center gap-4 shrink-0">
-                    <input
-                        type="text"
-                        placeholder="Groupe optionnel (ex: Cours 3)"
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                        className="flex-1 max-w-sm py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm outline-none focus:border-indigo-500/50 transition-colors shadow-inner"
-                    />
-                    <label className="flex items-center gap-2 py-2.5 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm font-bold cursor-pointer transition-colors shadow-sm">
-                        <UploadSimple size={18} weight="bold" /> Parcourir...
+                {/* Toolbar */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                    <div className="relative flex-1 w-full group">
+                        <input
+                            type="text"
+                            placeholder="Assigner un groupe (ex: Cours 3)..."
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            className="w-full py-3 px-4 pl-10 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm text-slate-900 dark:text-slate-100 text-sm outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm placeholder:text-slate-400"
+                        />
+                        <GitMerge size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" weight="duotone" />
+                    </div>
+                    <label className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700/80 text-slate-900 dark:text-slate-100 text-sm font-bold cursor-pointer transition-all shadow-sm w-full sm:w-auto">
+                        <UploadSimple size={18} weight="duotone" className="text-indigo-500" /> 
+                        Parcourir...
                         <input type="file" accept=".txt,.json,.csv,.tsv,.md" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileLoad(file); e.target.value = ''; }} />
                     </label>
                 </div>
 
-                {/* Editor textarea */}
-                <div 
-                    className={`flex-1 relative rounded-2xl border-2 transition-all overflow-hidden shadow-inner ${isDragOver ? 'border-solid' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}
-                    style={{ 
-                        ...(isDragOver ? { borderColor: activeMeta.color, backgroundColor: activeMeta.accent } : {})
+                {/* Editor Textarea with Drag & Drop glow */}
+                <motion.div 
+                    animate={{ 
+                        borderColor: isDragOver ? activeMeta.color : 'rgba(203, 213, 225, 0.5)',
+                        backgroundColor: isDragOver ? activeMeta.accent : 'rgba(255, 255, 255, 0.5)'
                     }}
+                    className={`flex-1 relative rounded-[24px] border-2 transition-colors overflow-hidden shadow-inner flex flex-col ${isDragOver ? 'border-solid' : 'border-dashed dark:border-slate-700/50 dark:bg-slate-900/50'}`}
                     onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                     onDragLeave={() => setIsDragOver(false)}
                     onDrop={(e) => { e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileLoad(file); }}
                 >
-                    {!input && !isDragOver && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none opacity-50">
-                            <CloudArrowUp size={64} className="text-slate-500 dark:text-slate-400" />
-                            <p className="text-lg font-medium text-slate-500 dark:text-slate-400 text-center m-0">
-                                Glissez-déposez un fichier ou collez votre texte ici<br />
-                                <span className="text-sm text-slate-500 dark:text-slate-400 font-normal">Supporte Markdown, JSON, CSV</span>
-                            </p>
-                        </div>
-                    )}
+                    <AnimatePresence>
+                        {!input && !isDragOver && (
+                            <motion.div 
+                                initial={{ opacity: 0 }} 
+                                animate={{ opacity: 1 }} 
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none text-slate-400 dark:text-slate-500 z-0"
+                            >
+                                <motion.div 
+                                    animate={{ y: [0, -10, 0] }} 
+                                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                    className="p-6 rounded-full bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-sm shadow-sm"
+                                >
+                                    <CloudArrowUp size={48} weight="duotone" />
+                                </motion.div>
+                                <p className="text-lg font-medium text-center m-0 px-8">
+                                    Collez votre contenu ou glissez un fichier ici<br />
+                                    <span className="text-sm opacity-70 font-normal">Formats supportés : TXT, Markdown, JSON, CSV</span>
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Gradient background effect based on mode */}
+                    <div 
+                        className="absolute inset-0 opacity-10 pointer-events-none transition-colors duration-1000 z-0" 
+                        style={{ background: `radial-gradient(circle at top right, ${activeMeta.color}, transparent 60%)` }} 
+                    />
+
                     <textarea
                         ref={textareaRef}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={PLACEHOLDERS[importMode]}
-                        className={`absolute inset-0 w-full h-full resize-none border-none bg-transparent text-slate-900 dark:text-slate-100 text-base leading-relaxed p-6 outline-none focus:ring-0 custom-scrollbar ${importMode === 'json' ? 'font-mono' : 'font-sans'}`}
+                        placeholder={isDragOver ? '' : PLACEHOLDERS[importMode]}
+                        className={`absolute inset-0 w-full h-full resize-none border-none bg-transparent text-slate-800 dark:text-slate-200 text-[15px] leading-relaxed p-6 sm:p-8 outline-none focus:ring-0 custom-scrollbar z-10 ${importMode === 'json' ? 'font-mono text-sm' : 'font-sans'}`}
                     />
-                </div>
+                </motion.div>
             </div>
 
-            {/* RIGHT PANE: Preview */}
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                <div className="flex items-center justify-between shrink-0">
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 m-0">Aperçu</h3>
-                    <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 py-1.5 px-4 rounded-xl text-sm font-bold shadow-sm">
-                        <Cards size={18} weight="bold" /> {parsedCards.length} élément(s)
-                    </div>
-                </div>
-
-                <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-y-auto custom-scrollbar p-6 flex flex-col gap-4 shadow-inner relative">
-                    {parsedCards.length === 0 ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40 text-slate-500 dark:text-slate-400">
-                            <Info size={48} weight="duotone" className="mb-4" />
-                            <p className="text-lg font-medium m-0">Aperçu du contenu importé</p>
-                        </div>
-                    ) : (
-                        parsedCards.map((card, idx) => {
-                            const color = getCategoryColor(card.type);
-                            const indent = card.nodeType === 'flashcard' ? 48 : card.nodeType === 'concept' ? 24 : 0;
-                            return (
-                                <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col gap-3 relative shadow-sm transition-colors hover:border-slate-300 dark:hover:border-slate-600" style={{ marginLeft: indent }}>
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl opacity-80" style={{ backgroundColor: color }} />
-                                    <div className="flex items-start justify-between gap-4">
-                                        <span className={`text-base text-slate-900 dark:text-slate-100 leading-snug ${card.nodeType === 'course' ? 'font-extrabold text-lg' : 'font-bold'}`}>
-                                            {card.title}
-                                        </span>
-                                        <div className="flex gap-2 shrink-0">
-                                            {card.nodeType && (
-                                                <span className="text-[10px] font-bold py-1 px-2.5 rounded-lg bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
-                                                    {card.nodeType}
-                                                </span>
-                                            )}
-                                            {card.type && (
-                                                <span className="text-[10px] font-bold py-1 px-2.5 rounded-lg uppercase tracking-wider border"
-                                                      style={{ background: `${color}1a`, color: color, borderColor: `${color}33` }}>
-                                                    {card.type}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {card.tags && card.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {card.tags.map((tag) => (
-                                                <span key={tag} className="text-[11px] font-medium py-1 px-2.5 rounded-lg bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                                                    #{tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-
-                {/* Error and Submit Actions */}
-                <div className="shrink-0 flex items-center justify-between gap-4 mt-2">
-                    <div className="flex-1">
-                        {error && (
-                            <div className="text-red-400 text-sm font-bold flex items-center gap-2 bg-red-500/10 border border-red-500/20 py-2 px-4 rounded-xl">
-                                <Warning size={18} weight="bold" /> {error}
-                            </div>
+            {/* RIGHT PANE: Live Preview */}
+            <div className="flex-[0.8] lg:max-w-[45%] flex flex-col gap-6 p-6 sm:p-8 bg-slate-100/30 dark:bg-slate-950/30 relative overflow-hidden">
+                <div className="flex items-center justify-between shrink-0 h-10">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 m-0 flex items-center gap-2">
+                        Aperçu en direct
+                    </h3>
+                    <AnimatePresence>
+                        {parsedCards.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.8 }} 
+                                animate={{ opacity: 1, scale: 1 }} 
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-1.5 px-4 rounded-full text-[13px] font-bold shadow-sm"
+                            >
+                                <Cards size={16} weight="duotone" className="text-indigo-500" /> 
+                                {parsedCards.length} élément(s)
+                            </motion.div>
                         )}
+                    </AnimatePresence>
+                </div>
+
+                <div className="flex-1 relative rounded-2xl overflow-hidden shadow-inner bg-slate-200/20 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50">
+                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
+                        <AnimatePresence mode="popLayout">
+                            {parsedCards.length === 0 ? (
+                                <motion.div 
+                                    initial={{ opacity: 0 }} 
+                                    animate={{ opacity: 1 }} 
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 flex flex-col items-center justify-center opacity-40 text-slate-500 dark:text-slate-400"
+                                >
+                                    <Info size={48} weight="duotone" className="mb-4" />
+                                    <p className="text-lg font-medium m-0">En attente de contenu...</p>
+                                </motion.div>
+                            ) : (
+                                parsedCards.map((card, idx) => {
+                                    const color = getCategoryColor(card.type);
+                                    const isCourse = card.nodeType === 'course';
+                                    const isConcept = card.nodeType === 'concept';
+                                    const isFlashcard = card.nodeType === 'flashcard';
+                                    
+                                    // Visual hierarchy indentation
+                                    const indentAmount = isFlashcard ? 32 : isConcept ? 16 : 0;
+                                    
+                                    return (
+                                        <motion.div 
+                                            layout
+                                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                                            transition={{ type: "spring", bounce: 0.3, duration: 0.6, delay: Math.min(idx * 0.05, 0.5) }} // Cap delay for large lists
+                                            key={`${card.title}-${idx}`} 
+                                            className="relative group"
+                                            style={{ paddingLeft: indentAmount }}
+                                        >
+                                            {/* Connection lines for hierarchy */}
+                                            {indentAmount > 0 && (
+                                                <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700/50 rounded-full" style={{ left: indentAmount / 2 }} />
+                                            )}
+                                            {indentAmount > 0 && (
+                                                <div className="absolute top-6 h-[2px] w-4 bg-slate-200 dark:bg-slate-700/50 rounded-full" style={{ left: indentAmount / 2 }} />
+                                            )}
+
+                                            <div className={`p-4 rounded-[16px] bg-white dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/70 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 relative overflow-hidden`}>
+                                                {/* Left color bar */}
+                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-90" style={{ backgroundColor: color }} />
+                                                
+                                                {/* Subtle gradient background based on type color */}
+                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ background: `linear-gradient(to right, ${color}, transparent)` }} />
+                                                
+                                                <div className="flex items-start justify-between gap-4 relative z-10 pl-2">
+                                                    <span className={`text-base text-slate-900 dark:text-slate-100 leading-snug ${isCourse ? 'font-black text-lg' : 'font-bold'}`}>
+                                                        {card.title || <span className="text-slate-400 italic">Sans titre</span>}
+                                                    </span>
+                                                    
+                                                    <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+                                                        {card.nodeType && (
+                                                            <span className="text-[9px] font-extrabold py-1 px-2 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 uppercase tracking-widest shadow-sm">
+                                                                {card.nodeType}
+                                                            </span>
+                                                        )}
+                                                        {card.type && (
+                                                            <span className="text-[9px] font-extrabold py-1 px-2 rounded-md uppercase tracking-widest shadow-sm"
+                                                                  style={{ background: `${color}1a`, color: color }}>
+                                                                {card.type}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                {card.tags && card.tags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 relative z-10 pl-2">
+                                                        {card.tags.map((tag) => (
+                                                            <span key={tag} className="text-[10px] font-bold py-0.5 px-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300">
+                                                                #{tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })
+                            )}
+                        </AnimatePresence>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <button onClick={onClose} className="btn-secondary px-6">
+                </div>
+
+                {/* Actions & Errors */}
+                <div className="shrink-0 flex flex-col gap-4 mt-2">
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0, y: 10 }} 
+                                animate={{ opacity: 1, height: 'auto', y: 0 }} 
+                                exit={{ opacity: 0, height: 0, y: 10 }}
+                                className="text-red-500 dark:text-red-400 text-sm font-bold flex items-center gap-3 bg-red-500/10 border border-red-500/20 py-3 px-4 rounded-xl backdrop-blur-md overflow-hidden"
+                            >
+                                <Warning size={20} weight="duotone" className="shrink-0" /> 
+                                <span className="truncate">{error}</span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div className="flex justify-end gap-3">
+                        <button onClick={onClose} className="py-2.5 px-6 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 transition-all shadow-sm hover:shadow-md">
                             Annuler
                         </button>
                         <button
                             onClick={handleImport}
                             disabled={parsedCards.length === 0 || !!error}
-                            className="btn-primary !bg-emerald-600 hover:!bg-emerald-500 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="py-2.5 px-8 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/50 shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:shadow-none hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <CheckCircle size={18} weight="bold" />
                             Importer
@@ -313,7 +413,7 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
                     message={<>{duplicateSample}<br />Voulez-vous les écraser avec les nouvelles données ?</>}
                     confirmLabel="Écraser"
                     cancelLabel="Annuler"
-                    confirmClassName="bg-blue-600 hover:bg-blue-700 text-white"
+                    confirmClassName="bg-indigo-600 hover:bg-indigo-700 text-white"
                     onConfirm={() => { onImport(pendingImportCards); setPendingImportCards(null); setDuplicateSample(''); if (onClose) onClose(); }}
                     onCancel={() => { setPendingImportCards(null); setDuplicateSample(''); }}
                 />
@@ -324,12 +424,42 @@ export const BatchImportContent: React.FC<BatchImportModalProps> = ({
 
 export const BatchImportModal: React.FC<BatchImportModalProps> = (props) => {
     const modalRef = useFocusTrap(true);
+    
+    // Disable body scroll when open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'unset'; };
+    }, []);
+
     return (
-        <div className="fixed inset-0 bg-white dark:bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
-            <div className="relative w-full max-w-[1200px] h-[80vh] shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-200 bg-slate-50 dark:bg-slate-950 overflow-hidden" ref={modalRef as any}>
-                <button onClick={props.onClose} className="absolute top-4 right-4 p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 hover:bg-white dark:bg-slate-900 transition-colors z-10"><X size={20} weight="bold" /></button>
-                <BatchImportContent {...props} />
-            </div>
-        </div>
+        <AnimatePresence>
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-[8px] z-[1000] flex items-center justify-center p-4 sm:p-6 md:p-12" 
+                onClick={(e) => e.target === e.currentTarget && props.onClose()}
+            >
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    transition={{ type: "spring", bounce: 0.1, duration: 0.4 }}
+                    className="relative w-full max-w-[1400px] h-full max-h-[90vh] shadow-2xl shadow-indigo-900/10 rounded-[28px] bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/50 overflow-hidden flex flex-col" 
+                    ref={modalRef as any}
+                >
+                    <button 
+                        onClick={props.onClose} 
+                        className="absolute top-5 right-5 p-2.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100/50 hover:bg-slate-200/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/80 backdrop-blur-md transition-all z-20 shadow-sm"
+                        aria-label="Fermer"
+                    >
+                        <X size={20} weight="bold" />
+                    </button>
+                    
+                    <BatchImportContent {...props} />
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 };

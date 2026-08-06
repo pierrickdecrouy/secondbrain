@@ -25,19 +25,7 @@ const sqlitePath = path.join(userDataPath, 'pharma-brain.db');
 const imagesPath = path.join(userDataPath, 'images');
 const settingsPath = path.join(userDataPath, 'settings.json');
 
-// Initialize SQLite
-try {
-    db.initDB(sqlitePath);
-} catch (e) {
-    console.error("Failed to initialize SQLite Database:", e);
-    dialog.showErrorBox('Database Error', `Failed to initialize database:\n${e.message}`);
-}
-
-// Ensure images directory exists
-if (!fs.existsSync(imagesPath)) {
-    fs.mkdirSync(imagesPath, { recursive: true });
-}
-
+// Settings management
 function readSettings() {
     try {
         if (!fs.existsSync(settingsPath)) return {};
@@ -45,7 +33,6 @@ function readSettings() {
         const parsed = JSON.parse(raw);
         return parsed && typeof parsed === 'object' ? parsed : {};
     } catch (error) {
-        console.error('Error reading settings:', error);
         return {};
     }
 }
@@ -55,9 +42,40 @@ function writeSettings(settings) {
         fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
         return { success: true };
     } catch (error) {
-        console.error('Error writing settings:', error);
         return { success: false, error: error.message };
     }
+}
+
+// Workspaces directory
+const workspacesPath = path.join(userDataPath, 'workspaces');
+if (!fs.existsSync(workspacesPath)) {
+    fs.mkdirSync(workspacesPath, { recursive: true });
+}
+
+// Initialize SQLite
+try {
+    db.initDB(sqlitePath);
+    
+    const settings = readSettings();
+    const activeWorkspace = settings.activeWorkspace || 'pharma-brain.db';
+    if (activeWorkspace !== 'pharma-brain.db') {
+        const activeDbPath = path.join(workspacesPath, activeWorkspace);
+        if (fs.existsSync(activeDbPath)) {
+            db.switchWorkspace(activeDbPath);
+        } else {
+            // Fallback if workspace was deleted
+            const s = readSettings();
+            s.activeWorkspace = 'pharma-brain.db';
+            writeSettings(s);
+        }
+    }
+} catch (e) {
+    dialog.showErrorBox('Database Error', `Failed to initialize database:\n${e.message}`);
+}
+
+// Ensure images directory exists
+if (!fs.existsSync(imagesPath)) {
+    fs.mkdirSync(imagesPath, { recursive: true });
 }
 
 function createWindow() {
@@ -83,13 +101,10 @@ function createWindow() {
     // Load the app
     // IMPORTANT: use !app.isPackaged to reliably detect dev mode
     if (!app.isPackaged) {
-        console.log('[Main] Loading development URL');
         mainWindow.loadURL('http://localhost:5174').catch(err => {
             dialog.showErrorBox('Dev URL Load Failed', err.message);
         });
     } else {
-        console.log('[Main] Loading production file');
-
         try {
             // PATH RESOLUTION LOGIC
             const strategies = [
@@ -100,11 +115,7 @@ function createWindow() {
 
             // Use standard loadFile with the primary strategy's confirmed path (or default)
             const bestPath = strategies.find(s => fs.existsSync(s.path))?.path || strategies[0].path;
-
-            console.log(`[Main] Loading: ${bestPath}`);
-
             mainWindow.loadFile(bestPath).catch(err => {
-                console.error('[Main] Failed to load file:', err);
                 dialog.showErrorBox('Failed to load application',
                     `Error loading: ${bestPath}\n\nDetails: ${err.message}\n\nStack: ${err.stack}`
                 );
@@ -145,22 +156,18 @@ ipcMain.handle('load-cards', async () => {
 
         // Migration: If SQLite is empty but Legacy JSON exists
         if (cards.length === 0 && fs.existsSync(legacyDbPath)) {
-            console.log('[Migration] Found Legacy JSON DB, migrating to SQLite...');
             try {
                 const jsonData = fs.readFileSync(legacyDbPath, 'utf-8');
                 const jsonCards = JSON.parse(jsonData);
                 if (Array.isArray(jsonCards) && jsonCards.length > 0) {
                     db.saveCardsTransaction(jsonCards);
                     cards = db.getAllCards(); // Reload from DB
-                    console.log(`[Migration] Successfully migrated ${cards.length} cards.`);
                 }
             } catch (err) {
-                console.error('[Migration] Failed to migrate JSON:', err);
             }
         }
         return cards;
     } catch (error) {
-        console.error('Error loading cards from DB:', error);
         return [];
     }
 });
@@ -171,7 +178,6 @@ ipcMain.handle('import-cards', async (event, cards) => {
         db.importCardsTransaction(cards);
         return { success: true };
     } catch (error) {
-        console.error('Error importing cards to DB:', error);
         return { success: false, error: error.message };
     }
 });
@@ -182,7 +188,6 @@ ipcMain.handle('save-cards', async (event, cards) => {
         db.saveCardsTransaction(cards);
         return { success: true };
     } catch (error) {
-        console.error('Error saving cards to DB:', error);
         return { success: false, error: error.message };
     }
 });
@@ -192,8 +197,51 @@ ipcMain.handle('search-cards-fts', async (event, query, limit = 50) => {
     try {
         return db.searchCardsFTS(query, limit);
     } catch (error) {
-        console.error('Error searching FTS5:', error);
         return [];
+    }
+});
+
+// Workspace Handlers
+ipcMain.handle('get-workspaces', async () => {
+    try {
+        const files = fs.existsSync(workspacesPath) ? fs.readdirSync(workspacesPath) : [];
+        const sqliteFiles = files.filter(f => f.endsWith('.db') || f.endsWith('.sqlite'));
+        const workspaces = [
+            { id: 'pharma-brain.db', name: 'Base Principale' },
+            ...sqliteFiles.map(f => ({ id: f, name: f.replace(/\.(db|sqlite)$/, '') }))
+        ];
+        
+        const settings = readSettings();
+        const activeWorkspace = settings.activeWorkspace || 'pharma-brain.db';
+        
+        return { workspaces, activeWorkspace };
+    } catch (e) {
+        return { workspaces: [{ id: 'pharma-brain.db', name: 'Base Principale' }], activeWorkspace: 'pharma-brain.db' };
+    }
+});
+
+ipcMain.handle('switch-workspace', async (event, workspaceId) => {
+    try {
+        let dbPath;
+        if (workspaceId === 'pharma-brain.db') {
+            dbPath = sqlitePath;
+        } else {
+            dbPath = path.join(workspacesPath, workspaceId);
+        }
+        
+        if (workspaceId !== 'pharma-brain.db' && !fs.existsSync(dbPath)) {
+            throw new Error(`Le fichier ${workspaceId} n'existe pas.`);
+        }
+        
+        db.switchWorkspace(dbPath);
+        
+        const settings = readSettings();
+        settings.activeWorkspace = workspaceId;
+        writeSettings(settings);
+        
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
 });
 
@@ -208,12 +256,9 @@ ipcMain.handle('save-image', async (event, { buffer, name }) => {
 
         // Write file
         fs.writeFileSync(filePath, Buffer.from(buffer));
-        console.log(`Saved image to ${filePath}`);
-
         // Return the protocol URL
         return `safe-file://${filename}`;
     } catch (error) {
-        console.error('Error saving image:', error);
         throw error;
     }
 });
@@ -233,7 +278,6 @@ ipcMain.handle('load-abbreviations', async () => {
         }
         return {};
     } catch (error) {
-        console.error('Error loading abbreviations:', error);
         return {};
     }
 });
@@ -243,7 +287,6 @@ ipcMain.handle('save-abbreviations', async (event, abbreviations) => {
         fs.writeFileSync(abbreviationsPath, JSON.stringify(abbreviations, null, 2), 'utf-8');
         return { success: true };
     } catch (error) {
-        console.error('Error saving abbreviations:', error);
         return { success: false, error: error.message };
     }
 });
@@ -282,7 +325,6 @@ ipcMain.handle('load-vector-index', async (event, shardId = 'global') => {
         }
         return null;
     } catch (error) {
-        console.error(`Error loading vector index for shard ${shardId}:`, error);
         return null;
     }
 });
@@ -293,7 +335,6 @@ ipcMain.handle('save-vector-index', async (event, buffer, shardId = 'global') =>
         fs.writeFileSync(filePath, Buffer.from(buffer));
         return { success: true };
     } catch (error) {
-        console.error(`Error saving vector index for shard ${shardId}:`, error);
         return { success: false, error: error.message };
     }
 });
@@ -308,12 +349,10 @@ app.whenReady().then(() => {
             // Prevent directory traversal
             const safePath = path.normalize(path.join(imagesPath, decodedUrl));
             if (!safePath.startsWith(imagesPath)) {
-                console.error('Blocked safe-file access outside of images directory');
                 return callback({ error: -2 }); // ACCESS_DENIED
             }
             callback({ path: safePath });
         } catch (error) {
-            console.error('Failed to register protocol', error);
             callback({ error: -2 });
         }
     });
@@ -392,7 +431,6 @@ ipcMain.handle('download-model', async (event, { url, filename }) => {
                         reject(new Error('Redirect without location header'));
                         return;
                     }
-                    console.log(`[Download] Redirect to: ${redirectUrl}`);
                     downloadWithRedirects(redirectUrl, maxRedirects - 1)
                         .then(resolve)
                         .catch(reject);

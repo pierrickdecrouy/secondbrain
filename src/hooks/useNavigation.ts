@@ -2,8 +2,10 @@ import { useCallback, useState } from 'react';
 import { useUIStore } from '../store/useUIStore';
 import { useNavigate } from 'react-router-dom';
 
+import type { AppSection } from './useCurrentSection';
+
 export function useNavigation() {
-    const { setSidebarOpen, setViewMode, viewMode, activeSection } = useUIStore();
+    const { setSidebarOpen, setViewMode, viewMode } = useUIStore();
 
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [pendingClusterReview, setPendingClusterReview] = useState(false);
@@ -12,7 +14,7 @@ export function useNavigation() {
 
     const navigate = useNavigate();
 
-    const navigateSection = useCallback((section: typeof activeSection) => {
+    const navigateSection = useCallback((section: AppSection) => {
         let path = '/';
         if (section === 'cards') path = '/cards';
         else if (section === 'courses') path = '/courses';

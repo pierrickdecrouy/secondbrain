@@ -3,6 +3,7 @@ import { X, Tag, PencilSimple, Trash } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { useCardStore as useCards } from '../store/useCardStore';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { usePromptStore } from '../store/usePromptStore';
 
 export const TagManagerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { cards, setCards } = useCards();
@@ -13,8 +14,8 @@ export const TagManagerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
              .filter(t => !t.startsWith('_group:'))
     )).sort((a, b) => a.localeCompare(b));
 
-    const handleRenameTag = (oldTag: string) => {
-        const newTag = window.prompt(`Renommer l'étiquette "${oldTag}" en :`, oldTag);
+    const handleRenameTag = async (oldTag: string) => {
+        const newTag = await usePromptStore.getState().openPrompt(`Renommer l'étiquette "${oldTag}" en :`, oldTag);
         if (newTag && newTag.trim() !== '' && newTag !== oldTag) {
             setCards(prev => prev.map(c => {
                 if (c.tags && c.tags.includes(oldTag)) {

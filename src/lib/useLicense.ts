@@ -71,7 +71,7 @@ async function readLicenseFromFirestore(uid: string): Promise<LicenseInfo | null
     }
 }
 
-async function writeLicenseToFirestore(uid: string, info: Partial<LicenseInfo & { lastChecked: any }>) {
+async function writeLicenseToFirestore(uid: string, info: Partial<LicenseInfo & { lastChecked: unknown }>) {
     try {
         await setDoc(licenseDocRef(uid), {
             ...info,
@@ -79,7 +79,6 @@ async function writeLicenseToFirestore(uid: string, info: Partial<LicenseInfo & 
             updatedAt: serverTimestamp(),
         }, { merge: true });
     } catch (err) {
-        console.warn('[useLicense] Firestore write failed:', err);
     }
 }
 

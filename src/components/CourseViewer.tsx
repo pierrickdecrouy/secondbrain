@@ -104,10 +104,9 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             } else if (!result || !result.canceled) {
                 toast.error('Erreur lors de la génération du PDF.');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.dismiss();
-            toast.error(`Erreur: ${error.message || 'Échec de la génération'}`);
-            console.error(error);
+            toast.error(`Erreur: ${(error as Error).message || 'Échec de la génération'}`);
         } finally {
             setIsGeneratingPdf(false);
         }
@@ -195,10 +194,10 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             </div>
 
             {/* ── Split Layout: Context vs Action ────────────────── */}
-            <div className="course-split-layout">
+            <div className="flex-1 flex min-h-0 w-full overflow-hidden">
                 
                 {/* ── Left Pane (Prose & Concepts) ──────────────── */}
-                <div ref={scrollRef} className="course-left-pane">
+                <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-smooth bg-white dark:bg-[#09090b]">
                     
                     {/* Cover Banner */}
                     <div className="w-full h-[180px] shrink-0 relative" style={{
@@ -275,7 +274,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                 </div>
 
                 {/* ── Right Pane (Sidebar / Action) ─────────────── */}
-                <div className="course-right-pane">
+                <div className="w-[320px] shrink-0 overflow-y-auto border-l border-slate-200/60 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
                     <div className="p-6" >
                         
                         {/* Sticky CTA Révision */}

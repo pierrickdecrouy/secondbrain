@@ -5,7 +5,7 @@ import { auth } from '../lib/firebase';
 import { loadSrsSettings } from '../components/settings/RevisionTab';
 
 export function useReviewSession(cards: Card[]) {
-    const { setActiveSection } = useUIStore();
+    // Removed setActiveSection from useUIStore
     const [reviewSession, setReviewSession] = useState<{ cardIds: string[]; title: string; initialIndex?: number } | null>(null);
 
     const reviewSessionCards = useMemo(() => {
@@ -59,7 +59,7 @@ export function useReviewSession(cards: Card[]) {
             cardIds: fallback.map((c) => c.id),
             title: finalCards.length > 0 ? (tags && tags.length > 0 ? `Révision planifiée (${tags.join(', ')})` : 'Révision planifiée (FSRS)') : 'Session découverte',
         });
-    }, [cards, setActiveSection]);
+    }, [cards]);
 
     const startIntensiveReview = useCallback(() => {
         // Shuffle all workspace cards
@@ -69,7 +69,7 @@ export function useReviewSession(cards: Card[]) {
             cardIds: selected.map((c) => c.id),
             title: 'Bachotage Intensif',
         });
-    }, [cards, setActiveSection]);
+    }, [cards]);
 
     const startCourseReview = useCallback((courseId: string, title: string) => {
         const flashcards = cards.filter(c => c.nodeType === 'flashcard' && c.parentId === courseId);
@@ -84,7 +84,7 @@ export function useReviewSession(cards: Card[]) {
             cardIds: shuffled.map(c => c.id),
             title,
         });
-    }, [cards, setActiveSection]);
+    }, [cards]);
 
     
     const startCustomReview = useCallback((config: { tags: string[]; types: string[]; statuses: string[]; limit: number | null }) => {
@@ -123,7 +123,7 @@ export function useReviewSession(cards: Card[]) {
             cardIds: shuffled.map(c => c.id),
             title: 'Deck Personnalisé',
         });
-    }, [cards, setActiveSection]);
+    }, [cards]);
 
     const startQuizReview = useCallback(() => {
         // Pick 10 random flashcards, prioritizing due/learning ones
@@ -135,7 +135,7 @@ export function useReviewSession(cards: Card[]) {
             cardIds: shuffled.map(c => c.id),
             title: 'Quiz Express',
         });
-    }, [cards, setActiveSection]);
+    }, [cards]);
 
     return {
         reviewSession,

@@ -5,7 +5,7 @@ self.onmessage = (e: MessageEvent) => {
     try {
         const clusters = detectClusters(nodes, links, minSize);
         self.postMessage({ type: 'SUCCESS', clusters, id });
-    } catch (error: any) {
-        self.postMessage({ type: 'ERROR', error: error.message, id });
+    } catch (error: unknown) {
+        self.postMessage({ type: 'ERROR', error: (error as Error).message, id });
     }
 };

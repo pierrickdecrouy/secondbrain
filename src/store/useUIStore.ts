@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-
-export type AddDataMode = 'none' | 'create' | 'edit' | 'import';
+import type { Card } from '../types';
+import type { AddDataMode } from '../types';
 type ViewMode = 'grid' | 'list' | 'network' | 'split';
-type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
 type SyncStatus = 'synced' | 'pending' | 'error';
 
 export type AvatarConfig = {
@@ -42,8 +41,6 @@ interface UIState {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
 
-  activeSection: AppSection;
-  setActiveSection: (section: AppSection) => void;
 
   isZenMode: boolean;
   setZenMode: (isZen: boolean) => void;
@@ -53,6 +50,9 @@ interface UIState {
 
   syncStatus: SyncStatus;
   setSyncStatus: (status: SyncStatus) => void;
+
+  pendingOfflineCards: Card[] | null;
+  setPendingOfflineCards: (cards: Card[] | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -99,8 +99,6 @@ export const useUIStore = create<UIState>((set) => ({
   viewMode: 'grid',
   setViewMode: (mode) => set({ viewMode: mode }),
 
-  activeSection: 'dashboard',
-  setActiveSection: (section) => set({ activeSection: section }),
 
   isZenMode: false,
   setZenMode: (isZen) => set({ isZenMode: isZen }),
@@ -113,4 +111,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   syncStatus: 'synced',
   setSyncStatus: (status) => set({ syncStatus: status }),
+
+  pendingOfflineCards: null,
+  setPendingOfflineCards: (cards) => set({ pendingOfflineCards: cards }),
 }));

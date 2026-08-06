@@ -6,6 +6,7 @@ import type { AppSection } from '../App';
 import { useTheme } from '../context/ThemeContext';
 import { Plus, Command, MagnifyingGlass, Brain, ShareNetwork, BookOpen, ArrowRight, Sparkle } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EmptyState } from './EmptyState';
 
 interface HomePageProps {
     onNavigate: (section: AppSection) => void;
@@ -20,7 +21,7 @@ const SEARCH_PLACEHOLDERS = [
 ];
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => {
-    const { cards } = useCards();
+    const { cards, isLoading } = useCards();
     const { userName, setOmniboxOpen } = useUI();
     const { totalToReview } = useDueCards(cards);
     const { getCategoryColor } = useTheme();
@@ -119,7 +120,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ delay: 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="relative cursor-text group"
                     onClick={() => setOmniboxOpen(true)}
                     role="button"
@@ -159,7 +160,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ delay: 0.1, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="grid grid-cols-1 md:grid-cols-3 gap-4"
                 >
                     {actionCards.map((card) => (
@@ -199,7 +200,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.22, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ delay: 0.15, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="flex flex-col gap-4"
                 >
                     <div className="flex items-center justify-between">
@@ -215,43 +216,57 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {recentCards.map((card) => (
-                            <button
-                                key={card.id}
-                                onClick={() => onNavigate('cards')}
-                                className="group text-left bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer"
-                            >
-                                <div className="flex items-center gap-2 mb-2.5">
-                                    <span
-                                        className="w-2 h-2 rounded-full shrink-0"
-                                        style={{ backgroundColor: getCategoryColor(card.type) }}
-                                    />
-                                    <span
-                                        className="text-[10px] font-bold uppercase tracking-widest truncate"
-                                        style={{ color: getCategoryColor(card.type) }}
-                                    >
-                                        {card.type}
-                                    </span>
-                                </div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                    {card.title}
-                                </h4>
-                                {card.subtitle && (
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">{card.subtitle}</p>
-                                )}
-                            </button>
-                        ))}
+                        {isLoading ? (
+                            <>
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="bg-slate-200 dark:bg-slate-800 animate-pulse h-28 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm" />
+                                ))}
+                            </>
+                        ) : recentCards.length === 0 ? (
+                            <div className="col-span-full">
+                                <EmptyState onAction={onAddCard} />
+                            </div>
+                        ) : (
+                            recentCards.map((card) => (
+                                <button
+                                    key={card.id}
+                                    onClick={() => onNavigate('cards')}
+                                    className="group text-left bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-2 mb-2.5">
+                                        <span
+                                            className="w-2 h-2 rounded-full shrink-0"
+                                            style={{ backgroundColor: getCategoryColor(card.type) }}
+                                        />
+                                        <span
+                                            className="text-[10px] font-bold uppercase tracking-widest truncate"
+                                            style={{ color: getCategoryColor(card.type) }}
+                                        >
+                                            {card.type}
+                                        </span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        {card.title}
+                                    </h4>
+                                    {card.subtitle && (
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">{card.subtitle}</p>
+                                    )}
+                                </button>
+                            ))
+                        )}
 
                         {/* Add new card slot */}
-                        <button
-                            onClick={onAddCard}
-                            className="group bg-transparent p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer flex flex-col items-center justify-center gap-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all duration-200 min-h-[100px]"
-                        >
-                            <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 group-hover:border-indigo-200 dark:group-hover:border-indigo-800 transition-colors">
-                                <Plus size={18} weight="bold" />
-                            </div>
-                            <span className="text-xs font-semibold">Nouvelle fiche</span>
-                        </button>
+                        {!isLoading && recentCards.length > 0 && (
+                            <button
+                                onClick={onAddCard}
+                                className="group bg-transparent p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer flex flex-col items-center justify-center gap-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all duration-200 min-h-[100px]"
+                            >
+                                <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 group-hover:border-indigo-200 dark:group-hover:border-indigo-800 transition-colors">
+                                    <Plus size={18} weight="bold" />
+                                </div>
+                                <span className="text-xs font-semibold">Nouvelle fiche</span>
+                            </button>
+                        )}
                     </div>
                 </motion.div>
             </main>

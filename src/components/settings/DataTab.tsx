@@ -73,8 +73,8 @@ export const DataTab: React.FC = () => {
                                     await saveCardsAsync(newCards);
                                     toast.success(`${imported.length} fiches importées !`);
                                     setTimeout(() => window.location.reload(), 1500);
-                                } catch (err: any) {
-                                    toast.error(err.message || "Erreur lors de l'import Anki");
+                                } catch (err: unknown) {
+                                    toast.error((err as Error).message || "Erreur lors de l'import Anki");
                                     setIsImportingAnki(false);
                                 }
                             }}

@@ -5,7 +5,7 @@ import { useUIStore } from '../store/useUIStore';
 export interface SyncTask {
   id: string; // unique task id
   type: 'SAVE_CARD' | 'DELETE_CARD';
-  payload: any;
+  payload: unknown;
   retryCount: number;
   timestamp: number;
 }
@@ -14,14 +14,22 @@ import { getDB } from '../storage';
 
 class SyncQueue {
   private isProcessing = false;
+  private debounceTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => this.processQueue());
+      window.addEventListener('online', () => this.requestProcessQueue());
       // Check queue every 30 seconds
-      setInterval(() => this.processQueue(), 30000);
+      setInterval(() => this.requestProcessQueue(), 30000);
       this.migrateFromLocalStorage();
     }
+  }
+
+  private requestProcessQueue() {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      this.processQueue();
+    }, 2000); // 2s debounce
   }
 
   private async migrateFromLocalStorage() {
@@ -35,10 +43,10 @@ class SyncQueue {
           await db.syncTasks.bulkAdd(queue);
         }
         localStorage.removeItem(STORAGE_KEY);
-        this.processQueue();
+        this.requestProcessQueue();
       }
     } catch (e) {
-      console.error('Migration failed', e);
+      console.error('Failed to migrate sync queue from localStorage:', e);
     }
   }
 
@@ -60,9 +68,8 @@ class SyncQueue {
         timestamp: Date.now()
       };
       await db.syncTasks.add(task);
-      this.processQueue();
+      this.requestProcessQueue();
     } catch (err) {
-      console.error('Enqueue Save failed', err);
     }
   }
 
@@ -77,9 +84,8 @@ class SyncQueue {
         timestamp: Date.now()
       };
       await db.syncTasks.add(task);
-      this.processQueue();
+      this.requestProcessQueue();
     } catch(err) {
-      console.error('Enqueue Delete failed', err);
     }
   }
 
@@ -111,10 +117,8 @@ class SyncQueue {
           }
           
           await db.syncTasks.delete(task.id);
-        } catch (err: any) {
-          console.error(`Failed to process task ${task.type}`, err);
-          
-          if (err.message === "CONFLICT_SERVER_NEWER") {
+        } catch (err: unknown) {
+          if ((err as Error).message === "CONFLICT_SERVER_NEWER") {
              await db.syncTasks.delete(task.id);
              continue;
           }
@@ -138,7 +142,6 @@ class SyncQueue {
         useUIStore.getState().setSyncStatus('error');
       }
     } catch (err) {
-      console.error('ProcessQueue failed', err);
     } finally {
       this.isProcessing = false;
     }

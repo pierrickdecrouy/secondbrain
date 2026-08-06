@@ -61,7 +61,6 @@ export const OnboardingWizard: React.FC = () => {
             await handleBatchImport(importedCards);
             setImportSuccessCount(importedCards.length);
         } catch (err) {
-            console.error('Erreur import CSV onboarding', err);
             alert("Erreur lors de l'import du fichier.");
         } finally {
             setIsImporting(false);

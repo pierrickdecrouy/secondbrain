@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
 import { useUIStore } from '../store/useUIStore';
 import { useCardStore } from '../store/useCardStore';
+import { useCurrentSection } from '../hooks/useCurrentSection';
 import { GlobalHeader } from './GlobalHeader';
 import { Stack, BookOpen, ShareNetwork, ClockCounterClockwise, ChartBar, List, Graph, X, Pause, PencilSimple } from '@phosphor-icons/react';
 import { useTaskStore } from '../store/useTaskStore';
 import { LicenseBanner } from './LicenseBanner';
 import { useLicense } from '../lib/useLicense';
 import { useMemo } from 'react';
-type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
+import { useTranslation } from 'react-i18next';
+import type { AppSection } from '../types';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,7 +21,8 @@ interface AppLayoutProps {
 }
 
   export function AppLayout({ children, onNavigate, onNavigateSettings, pendingClusterReview, onCancelClusterReview, onResumeTask }: AppLayoutProps) {
-    const { activeSection, sidebarOpen, setSidebarOpen, isProfileMenuOpen } = useUIStore();
+    const { sidebarOpen, setSidebarOpen, isProfileMenuOpen } = useUIStore();
+    const activeSection = useCurrentSection();
     const { pausedTasks, handleRemoveTask } = useTaskStore();
     const { licenseInfo } = useLicense();
     const { cards } = useCardStore();
@@ -41,7 +44,7 @@ interface AppLayoutProps {
     ] as const;
   
     return (
-      <div className="flex h-screen w-full overflow-hidden bg-[#fafafa] dark:bg-[#09090b] relative selection:bg-teal-500/20 selection:text-teal-900 dark:selection:text-teal-100">
+      <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#09090b] relative selection:bg-teal-500/20 selection:text-teal-900 dark:selection:text-teal-100">
         
         {/* Sidebar Container */}
         <div 
@@ -60,9 +63,9 @@ interface AppLayoutProps {
           
           {/* Sidebar */}
           <aside 
-              className={`absolute top-4 left-4 bottom-4 bg-white/80 dark:bg-[#18181b]/70 backdrop-blur-2xl border border-white/50 dark:border-white/5 rounded-[24px] flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-[1300] shadow-[0_8px_32px_-4px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.3)] ${
+              className={`absolute top-4 lg:top-8 left-4 bottom-4 bg-white/80 dark:bg-[#18181b]/70 backdrop-blur-2xl border border-white/50 dark:border-white/5 rounded-[24px] flex flex-col overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-[1300] shadow-[0_8px_32px_-4px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.3)] ${
                   isHomeSection ? 'hidden' : 'flex'
-              } ${isProfileMenuOpen ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'} ${sidebarOpen ? 'w-[260px]' : 'w-[72px]'}`}
+              } opacity-100 translate-x-0 ${sidebarOpen ? 'w-[260px]' : 'w-[72px]'}`}
           >
             {/* Header */}
             <div className={`flex items-center px-4 py-5 transition-all duration-300 h20 ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
@@ -90,6 +93,7 @@ interface AppLayoutProps {
                             onClick={() => {
                                 onNavigate(item.id as AppSection);
                                 setSidebarOpen(false);
+                                useUIStore.getState().setProfileMenuOpen(false);
                             }}
                             className={`relative flex items-center w-full rounded-2xl transition-all duration-300 group border-none cursor-pointer outline-none ${
                                 sidebarOpen ? 'px-4 py-3.5 justify-start gap-4 min-h-[48px]' : 'py-3.5 justify-center min-h-[48px]'
@@ -178,6 +182,7 @@ interface AppLayoutProps {
                             onClick={() => {
                                 onNavigate(item.id as AppSection);
                                 setSidebarOpen(false);
+                                useUIStore.getState().setProfileMenuOpen(false);
                             }}
                             className={`relative flex items-center w-full rounded-2xl transition-all duration-300 group border-none cursor-pointer outline-none ${
                                 sidebarOpen ? 'px-4 py-3.5 justify-start gap-4 min-h-[48px]' : 'py-3.5 justify-center min-h-[48px]'

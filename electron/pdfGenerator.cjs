@@ -121,12 +121,8 @@ const generatePdf = async (courseData, mainWindow) => {
             if (!fs.existsSync(tectonicPath)) {
                 return reject(new Error('Tectonic binary not found at ' + tectonicPath + '. Please run setup script.'));
             }
-            
-            console.log(`[PDF Generator] Running tectonic on ${texFilePath}`);
-            
             const child = child_process.execFile(tectonicPath, ['document.tex'], { cwd: tmpDir }, async (error, stdout, stderr) => {
                 if (error) {
-                    console.error('[PDF Generator] Tectonic error:', stderr);
                     return reject(new Error(`Tectonic compilation failed: ${stderr || error.message}`));
                 }
                 
@@ -154,7 +150,6 @@ const generatePdf = async (courseData, mainWindow) => {
             });
             
         } catch (error) {
-            console.error('[PDF Generator] Error:', error);
             reject(error);
         }
     });

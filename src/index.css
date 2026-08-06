@@ -11,7 +11,15 @@
   --color-settings-border-hover: #334155;
   --color-settings-text: #f8fafc;
   --color-settings-text-muted: #94a3b8;
+
+  /* ── Card type color tokens (source unique de vérité) ── */
+  --color-type-drug: #059669;    /* emerald-600 */
+  --color-type-patho: #f43f5e;   /* rose-500 */
+  --color-type-physio: #6366f1;  /* indigo-500 */
+  --color-type-data: #f59e0b;    /* amber-500 */
+  --color-type-misc: #64748b;    /* slate-500 */
 }
+
 
 @layer base {
   body {

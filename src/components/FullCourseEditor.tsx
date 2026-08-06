@@ -24,6 +24,7 @@ import {
 import type { Card } from '../types';
 import { MedicalAlert } from './CourseEditor'; // Reusing the same node!
 import { ClozeExtension } from './editor/ClozeExtension';
+import { usePromptStore } from '../store/usePromptStore';
 import { CardSuggestionPlugin } from './editor/CardSuggestionPlugin';
 import { getSuggestionOptions } from './editor/suggestionConfig';
 
@@ -81,9 +82,9 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
         content: course.details || course.content || '',
     });
 
-    const setLink = useCallback(() => {
+    const setLink = useCallback(async () => {
         const previousUrl = editor?.getAttributes('link').href;
-        const url = window.prompt('URL', previousUrl);
+        const url = await usePromptStore.getState().openPrompt('URL', previousUrl);
         if (url === null) return;
         if (url === '') {
             editor?.chain().focus().extendMarkRange('link').unsetLink().run();
@@ -92,8 +93,8 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
         editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     }, [editor]);
 
-    const addImage = useCallback(() => {
-        const url = window.prompt('URL de l\'image');
+    const addImage = useCallback(async () => {
+        const url = await usePromptStore.getState().openPrompt('URL de l\'image');
         if (url) {
             editor?.chain().focus().setImage({ src: url }).run();
         }
@@ -166,7 +167,6 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
     const toggleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) {
             editorContainerRef.current?.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable fullscreen: ${err.message}`);
             });
         } else {
             document.exitFullscreen();

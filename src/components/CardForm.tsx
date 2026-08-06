@@ -168,139 +168,139 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
 
     return (
     <>
-        <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 dark:bg-slate-950/50">
             
             {/* SUB-HEADER: Toolbar for Actions */}
-            <div className="h-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 lg:px-12 shrink-0 z-10">
-                <button onClick={onCancel} className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 transition-colors px-4 py-2 rounded-xl hover:bg-white dark:bg-slate-900 border-none outline-none cursor-pointer bg-transparent">
+            <div className="pt-6 pb-2 flex items-center justify-between px-6 lg:px-12 shrink-0 z-10">
+                <button onClick={onCancel} className="flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 transition-colors px-4 py-2.5 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border-none outline-none cursor-pointer bg-transparent">
                     <ArrowLeft size={18} weight="bold" />
                     Retour au deck
                 </button>
                 
                 {headerCenterContent && (
-                    <div className="hidden md:flex flex-1 justify-center">
+                    <div className="hidden lg:flex flex-1 justify-center">
                         {headerCenterContent}
                     </div>
                 )}
                 
                 <div className="flex items-center gap-4">
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm hidden sm:block">
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 bg-white/50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hidden sm:block uppercase tracking-wider">
                         Non enregistré
                     </span>
                     <button 
                         onClick={handleSave} 
                         disabled={(!formData.title?.trim() && formData.nodeType !== 'flashcard') || (formData.nodeType === 'flashcard' && !formData.content?.trim())} 
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-semibold rounded-lg shadow-sm transition-all border-none outline-none cursor-pointer shrink-0 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all border border-indigo-500/50 outline-none cursor-pointer shrink-0 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                     >
-                        <FloppyDisk size={18} weight="fill" />
+                        <FloppyDisk size={18} weight="bold" />
                         Enregistrer
                     </button>
                 </div>
             </div>
 
             {/* MAIN: Scrollable Content Area */}
-            <main className="flex-1 overflow-y-auto custom-scrollbar relative w-full flex justify-center py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950">
+            <main className="flex-1 overflow-y-auto custom-scrollbar relative w-full flex justify-center py-8 px-4 sm:px-6 lg:px-8">
                 
-                <div className="w-full max-w-3xl flex flex-col gap-6 relative">
+                <div className="w-full max-w-[850px] flex flex-col gap-6 relative">
                     
-                    {/* FLOATING SELECTORS */}
-                    <div className="flex items-center justify-between mb-2">
-                        {/* Type/Category Selector */}
-                        <div className="flex items-center relative group">
-                            <select
-                                value={isCustomTypeActive ? '__custom__' : (formData.type || '')}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === '__custom__') {
-                                        setIsCustomTypeActive(true);
-                                        setFormData({ ...formData, type: customTypeInput || '' });
-                                    } else {
-                                        setIsCustomTypeActive(false);
-                                        setCustomTypeInput('');
-                                        setFormData({ ...formData, type: val });
-                                    }
-                                }}
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                            >
-                                {[...allCategories].sort((a, b) => a.localeCompare(b)).map((t) => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                                <option value="__custom__">Autre / Nouveau...</option>
-                            </select>
-
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-wider transition-colors cursor-pointer border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 shadow-sm" style={{ color: categoryColor }}>
-                                <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ background: categoryColor }}></div>
-                                {isCustomTypeActive ? customTypeInput || 'Catégorie...' : formData.type}
-                                <CaretDown size={14} weight="bold" className="ml-1 text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:text-slate-100 transition-colors" />
-                            </div>
-
-                            {isCustomTypeActive && (
-                                <input
-                                    type="text"
-                                    value={customTypeInput}
-                                    onChange={handleCustomTypeChange}
-                                    onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
-                                    placeholder="Nouvelle..."
-                                    autoFocus
-                                    className="ml-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md py-1.5 px-3 text-[13px] outline-none w-[140px] font-medium text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500/50 transition-colors"
-                                />
-                            )}
-                        </div>
-                        
-                        {/* Format Toggle for Flashcards (Text / Q&A) */}
-                        {formData.nodeType === 'flashcard' && (
-                            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner overflow-x-auto mb-4">
-                                <button 
-                                    onClick={() => setFormData({ ...formData, format: 'cloze' })}
-                                    className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all duration-200 border-none outline-none cursor-pointer font-medium ${formData.format === 'cloze' ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-500 font-semibold shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
-                                >
-                                    Texte à trous
-                                </button>
-                                <button 
-                                    onClick={() => setFormData({ ...formData, format: 'q&a' })}
-                                    className={`flex items-center gap-2 py-1.5 px-4 text-sm rounded-lg transition-all duration-200 border-none outline-none cursor-pointer font-medium ${formData.format === 'q&a' ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-500 font-semibold shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
-                                >
-                                    Q / R
-                                </button>
-                            </div>
-                        )}
-                        
-                        {/* Parent Course Selector */}
-                        <div className="relative">
-                            <select
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                value={formData.parentId || ""}
-                                onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value || undefined }))}
-                            >
-                                <option value="">Aucun cours parent</option>
-                                {existingCards
-                                    .filter(c => c.nodeType === 'course' && c.id !== card?.id) // Prevent self-referencing
-                                    .map(c => (
-                                        <option key={c.id} value={c.id}>{c.title || 'Cours sans titre'}</option>
-                                    ))}
-                            </select>
-                            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-[0.05em] transition-all cursor-pointer border border-transparent outline-none bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20">
-                                <Stack size={16} weight="duotone" className="shrink-0" />
-                                {formData.parentId 
-                                    ? existingCards.find(c => c.id === formData.parentId)?.title || 'Cours inconnu' 
-                                    : 'Lier à un cours...'}
-                                <CaretDown size={14} weight="bold" className="ml-1 opacity-70" />
-                            </button>
-                        </div>
-                    </div>
-
                     {/* MAIN CARD (Title & Content) */}
-                    <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-card border border-slate-200 dark:border-slate-700 p-8 md:p-10 flex flex-col relative z-10 min-h-[400px]">
+                    <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-8 md:p-12 flex flex-col relative z-10 min-h-[500px]">
                         
+                        {/* Top Inline Selectors (Inside the card) */}
+                        <div className="flex flex-wrap items-center gap-3 mb-10 pb-6 border-b border-slate-100 dark:border-slate-800">
+                            {/* Type/Category Selector */}
+                            <div className="flex items-center relative group">
+                                <select
+                                    value={isCustomTypeActive ? '__custom__' : (formData.type || '')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === '__custom__') {
+                                            setIsCustomTypeActive(true);
+                                            setFormData({ ...formData, type: customTypeInput || '' });
+                                        } else {
+                                            setIsCustomTypeActive(false);
+                                            setCustomTypeInput('');
+                                            setFormData({ ...formData, type: val });
+                                        }
+                                    }}
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                                >
+                                    {[...allCategories].sort((a, b) => a.localeCompare(b)).map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                    <option value="__custom__">Autre / Nouveau...</option>
+                                </select>
+
+                                <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-extrabold uppercase tracking-widest transition-colors cursor-pointer border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 shadow-sm" style={{ color: categoryColor }}>
+                                    <div className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ background: categoryColor }}></div>
+                                    {isCustomTypeActive ? customTypeInput || 'Catégorie...' : formData.type}
+                                    <CaretDown size={14} weight="bold" className="ml-1 text-slate-400 group-hover:text-slate-900 dark:text-slate-300 transition-colors" />
+                                </div>
+
+                                {isCustomTypeActive && (
+                                    <input
+                                        type="text"
+                                        value={customTypeInput}
+                                        onChange={handleCustomTypeChange}
+                                        onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+                                        placeholder="Nouvelle..."
+                                        autoFocus
+                                        className="ml-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-4 text-[13px] outline-none w-[140px] font-bold text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500/50 transition-colors"
+                                    />
+                                )}
+                            </div>
+                            
+                            {/* Format Toggle for Flashcards (Text / Q&A) */}
+                            {formData.nodeType === 'flashcard' && (
+                                <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-[14px] border border-slate-200 dark:border-slate-700 shadow-inner">
+                                    <button 
+                                        onClick={() => setFormData({ ...formData, format: 'cloze' })}
+                                        className={`flex items-center gap-2 py-1.5 px-4 text-[13px] rounded-lg transition-all duration-200 border-none outline-none cursor-pointer font-bold ${formData.format === 'cloze' ? 'bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-600/50 text-emerald-500 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
+                                    >
+                                        Texte à trous
+                                    </button>
+                                    <button 
+                                        onClick={() => setFormData({ ...formData, format: 'q&a' })}
+                                        className={`flex items-center gap-2 py-1.5 px-4 text-[13px] rounded-lg transition-all duration-200 border-none outline-none cursor-pointer font-bold ${formData.format === 'q&a' ? 'bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-600/50 text-emerald-500 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
+                                    >
+                                        Q / R
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {/* Parent Course Selector */}
+                            <div className="relative">
+                                <select
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    value={formData.parentId || ""}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value || undefined }))}
+                                >
+                                    <option value="">Aucun cours parent</option>
+                                    {existingCards
+                                        .filter(c => c.nodeType === 'course' && c.id !== card?.id)
+                                        .map(c => (
+                                            <option key={c.id} value={c.id}>{c.title || 'Cours sans titre'}</option>
+                                        ))}
+                                </select>
+                                <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-extrabold uppercase tracking-widest transition-all cursor-pointer border border-slate-200 dark:border-slate-700/50 outline-none bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:border-indigo-500/30 dark:hover:text-indigo-400 shadow-sm">
+                                    <Stack size={16} weight="duotone" className="shrink-0 text-indigo-500" />
+                                    {formData.parentId 
+                                        ? existingCards.find(c => c.id === formData.parentId)?.title || 'Cours inconnu' 
+                                        : 'Lier à un cours...'}
+                                    <CaretDown size={14} weight="bold" className="ml-1 opacity-50" />
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Title & Subtitle */}
                         {formData.nodeType !== 'flashcard' && (
-                            <div className="mb-6 border-b border-slate-200 dark:border-slate-700/50 pb-6">
+                            <div className="mb-8">
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                     placeholder={formData.nodeType === 'course' ? "Titre du cours..." : "Titre du concept..."}
-                                    className="w-full bg-transparent border-none outline-none text-[32px] md:text-[40px] font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mb-2 placeholder-slate-400 dark:placeholder-slate-600 focus:ring-0 p-0"
+                                    className="w-full bg-transparent border-none outline-none text-[36px] md:text-[44px] font-black tracking-tight text-slate-900 dark:text-slate-100 mb-4 placeholder-slate-300 dark:placeholder-slate-700 focus:ring-0 p-0 leading-tight"
                                     autoFocus
                                 />
                                 <input
@@ -308,7 +308,7 @@ export const CardFormContent: React.FC<CardFormProps> = ({ card, existingCards, 
                                     value={formData.subtitle}
                                     onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
                                     placeholder="Sous-titre ou contexte (optionnel)..."
-                                    className="w-full bg-transparent border-none outline-none text-base md:text-lg font-medium text-slate-500 dark:text-slate-400 placeholder-slate-400/80 focus:ring-0 p-0"
+                                    className="w-full bg-transparent border-none outline-none text-lg md:text-xl font-medium text-slate-500 dark:text-slate-400 placeholder-slate-300 dark:placeholder-slate-600 focus:ring-0 p-0"
                                 />
                             </div>
                         )}

@@ -41,7 +41,6 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
         setProfileMenuOpen, 
         setOmniboxOpen, 
         userName, 
-        setActiveSection,
         syncStatus,
         sidebarOpen,
         avatarConfig
@@ -59,20 +58,18 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
     }, [isHomeSection]);
 
     return (
-        <header className={`app-drag-region flex items-center justify-center py-5 min-h-[88px] shrink-0 w-full ${isProfileMenuOpen ? 'z-[1500]' : 'z-50'} ${isHomeSection ? 'absolute top-0 left-0' : 'relative'}`}>
-            <div className="w-full px-8 sm:px-12 flex items-center justify-between max-w-[1400px] mx-auto" >
+        <header className={`app-drag-region flex items-center justify-center pb-5 pt-8 lg:pt-10 min-h-[88px] shrink-0 w-full ${isProfileMenuOpen ? 'z-[1500]' : 'z-50'} ${isHomeSection ? 'absolute top-0 left-0' : 'relative'}`}>
+            <div className="w-full px-8 sm:px-12 flex items-center justify-between max-w-[1400px] mx-auto mt-2" >
             <div className={`flex items-center overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                 isHomeSection ? 'max-w-[200px] opacity-100 mr-6' : (sidebarOpen ? 'max-w-0 opacity-0 ml-0 mr-0' : 'max-w-[180px] opacity-100 -ml-8 sm:-ml-12 mr-4')
             }`}>
                 <button
                     className="app-no-drag p-0 bg-transparent border-none cursor-pointer shrink-0"
                     onClick={() => {
-                        setActiveSection('dashboard');
                         navigate('/');
                     }}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                            setActiveSection('dashboard');
                             navigate('/');
                         }
                     }}

@@ -5,6 +5,7 @@
 
 import type { Card } from "./types";
 import { vectorStore } from "./embeddings/VoyVectorStore";
+import { toast } from "./store/useToastStore";
 
 // Worker instance
 let embeddingWorker: Worker | null = null;
@@ -105,7 +106,6 @@ export function initSemanticSearch(
         break;
 
       case "error":
-        console.error("Embedding worker error:", error);
         if (id && pendingQueries.has(id)) {
           const { reject } = pendingQueries.get(id)!;
           pendingQueries.delete(id);
@@ -122,7 +122,6 @@ export function initSemanticSearch(
 
   // Handle worker-level errors (e.g., network issues, module load failures)
   embeddingWorker.onerror = (err) => {
-    console.error("Embedding worker failed:", err.message);
     // Mark as -1 to indicate failure (UI can show "IA offline")
     modelLoadProgress = -1;
     onProgressCallback?.(-1);
@@ -186,7 +185,7 @@ function scheduleSave() {
   saveTimeout = setTimeout(() => {
     vectorStore
       .save()
-      .catch((err) => console.error("Failed to save vector store:", err));
+      .catch((err) => toast.error('Erreur lors de la sauvegarde des embeddings.'));
     saveTimeout = null;
   }, DEBOUNCE_DELAY_MS);
 }
@@ -201,7 +200,6 @@ export function buildCardEmbeddings(
       await processCardEmbeddings(cards, forceUpdate);
     })
     .catch((err) => {
-      console.error("Error in indexing queue:", err);
     });
 
   return indexingQueue;
@@ -217,7 +215,6 @@ async function processCardEmbeddings(
   }
 
   if (!embeddingWorker) {
-    console.warn("[Semantic] Worker failed to initialize.");
     return;
   }
 
@@ -283,8 +280,7 @@ async function processCardEmbeddings(
             vectorStore.add(entries);
             // Trigger debounced save instead of immediate save
             scheduleSave();
-          } catch (err) {
-            console.error("Failed to add embeddings:", err);
+          } catch (_err) {
           }
           resolve();
         },
@@ -316,7 +312,7 @@ async function processCardEmbeddings(
   // Force a final save at the end of the batch
   if (saveTimeout) {
     clearTimeout(saveTimeout);
-    vectorStore.saveAllLoadedShards().catch((err) => console.error("Final save failed:", err));
+    vectorStore.saveAllLoadedShards().catch((err) => toast.error('Erreur lors de la sauvegarde des fragments (shards).'));
     saveTimeout = null;
   }
 
@@ -353,7 +349,6 @@ export async function semanticSearch(
 
     return results.map((r) => r.id);
   } catch (error) {
-    console.error("Semantic search error:", error);
     return [];
   }
 }
@@ -444,7 +439,6 @@ export async function computePrecisionGraph(
         }
       });
     } catch (e) {
-      console.error(e);
     }
 
     // Collect candidates via Keyword Search (if function provided)

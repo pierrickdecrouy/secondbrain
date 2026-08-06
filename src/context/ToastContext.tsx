@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -50,7 +50,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           >
             {toast.type === 'success' && <CheckCircle size={20} className="text-emerald-500 shrink-0" />}
             {toast.type === 'error' && <XCircle size={20} className="text-red-500 shrink-0" />}
-            {toast.type === 'warning' && <AlertTriangle size={20} className="text-amber-500 shrink-0" />}
+            {toast.type === 'warning' && <Warning size={20} className="text-amber-500 shrink-0" />}
             {toast.type === 'info' && <Info size={20} className="text-blue-500 shrink-0" />}
             
             <span className="flex-1 text-[0.9rem] font-medium">{toast.message}</span>

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Trash, Export, CheckSquare, X, DownloadSimple } from '@phosphor-icons/react';
 import type { Card } from '../types';
-import { exportToAnki } from '../utils/ankiExport';
+
+import { toast } from '../store/useToastStore';
 
 interface BrowseSelectionBarProps {
     selectedIds: Set<string>;
@@ -21,8 +22,14 @@ export const BrowseSelectionBar: React.FC<BrowseSelectionBarProps> = ({
     const count = selectedIds.size;
     const selectedCards = allCards.filter(c => selectedIds.has(c.id));
 
-    const handleExportAnki = () => {
-        exportToAnki('Sélection', selectedCards);
+    const handleExportAnki = async () => {
+        try {
+            const { exportToAnki } = await import('../utils/ankiExport');
+            await exportToAnki('Sélection', selectedCards);
+        } catch (error) {
+            console.error('Erreur export Anki:', error);
+            toast.error("Erreur lors de l'export Anki.");
+        }
     };
 
     const handleExportJson = () => {

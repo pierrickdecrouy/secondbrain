@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Listen for save request before app closes
     onRequestSave: (callback) => ipcRenderer.on('request-save', callback),
 
+    // Workspaces
+    getWorkspaces: () => ipcRenderer.invoke('get-workspaces'),
+    switchWorkspace: (workspaceId) => ipcRenderer.invoke('switch-workspace', workspaceId),
+
     // Learned abbreviations
     loadAbbreviations: () => ipcRenderer.invoke('load-abbreviations'),
     saveAbbreviations: (abbrevs) => ipcRenderer.invoke('save-abbreviations', abbrevs),

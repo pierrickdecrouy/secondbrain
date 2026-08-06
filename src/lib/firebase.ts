@@ -24,8 +24,8 @@ export const db = initializeFirestore(app, {
 });
 
 // Helper to remove undefined values before saving to Firestore
-export const sanitizeForFirebase = <T extends Record<string, any>>(obj: T): T => {
-    const sanitized: any = {};
+export const prepareForFirebase = <T extends Record<string, any>>(obj: T): T => {
+    const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(obj)) {
         if (value === undefined) {
             continue;
@@ -36,5 +36,5 @@ export const sanitizeForFirebase = <T extends Record<string, any>>(obj: T): T =>
             sanitized[key] = value;
         }
     }
-    return sanitized;
+    return sanitized as T;
 };

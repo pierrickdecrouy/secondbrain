@@ -43,12 +43,10 @@ export function useAppInitialization() {
         initSemanticSearch(
         (progress) => {
             if (progress >= 100 || progress - lastLog >= 10) {
-            console.log(`Semantic model progress: ${Math.round(progress)}%`);
             lastLog = progress;
             }
         },
         () => {
-            console.log('Semantic search ready!');
             setSemanticReady(true);
         }
         );
@@ -103,7 +101,6 @@ export function useAppInitialization() {
 
                 setCards(finalCards, true);
             } catch (e) {
-                console.error('Error loading cards:', e);
             } finally {
                 setIsLoading(false);
             }

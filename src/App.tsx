@@ -20,8 +20,6 @@ import { useAuth } from "./context/AuthContext";
 
 import { AddDataPage } from "./components/AddDataPage";
 import { AppLayout } from "./components/AppLayout";
-import { DetailModal } from "./components/DetailModal";
-import { AddDataModal } from "./components/AddDataModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginPage } from "./components/LoginPage";
 import { UpsellModal } from "./components/UpsellModal";
@@ -29,17 +27,15 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useTier } from "./lib/useTier";
 import { scheduleLocalNotification } from "./lib/notifications";
 import { HomePage } from "./components/HomePage";
-const CoursesPage = lazy(() => import("./components/CoursesPage").then(m => ({ default: m.CoursesPage })));
 import { StatsPage } from "./components/StatsPage";
-import { ReviewSessionModal } from "./components/ReviewSessionModal";
 import { ReviewHubPage } from "./components/ReviewHubPage";
-import { ConfirmDeleteModal } from "./components/ConfirmDeleteModal";
-import { PomodoroModal } from "./components/PomodoroModal";
-import { GlobalOmnibox } from "./components/GlobalOmnibox";
+import { AppModals } from "./components/AppModals";
 import { CircleNotch } from "@phosphor-icons/react";
 import { ThemeProvider } from "./context/ThemeContext";
+import { useCurrentSection } from "./hooks/useCurrentSection";
 
 // Lazy load heavy components
+const CoursesPage = lazy(() => import("./components/CoursesPage").then(m => ({ default: m.CoursesPage })));
 const NetworkView = lazy(() =>
   import("./components/NetworkView").then((module) => ({
     default: module.NetworkView,
@@ -51,16 +47,6 @@ const BrowsePage = lazy(() =>
     default: module.BrowsePage,
   })),
 );
-
-export type AppSection =
-  | "dashboard"
-  | "cards"
-  | "courses"
-  | "network"
-  | "review"
-  | "settings"
-  | "stats"
-  | "add";
 
 function LoadingFallback() {
   return (
@@ -103,24 +89,13 @@ function AppContent() {
     viewMode,
     addDataMode,
     setAddDataMode,
-    activeSection,
-    setActiveSection,
   } = useUIStore();
+
+  const activeSection = useCurrentSection();
 
   const location = useLocation();
 
-  // Sync URL route to internal activeSection state
-  useEffect(() => {
-    const path = location.pathname;
-    if (path === '/' && activeSection !== 'dashboard') setActiveSection('dashboard');
-    else if (path === '/courses' && activeSection !== 'courses') setActiveSection('courses');
-    else if ((path === '/cards' || path === '/browse') && activeSection !== 'cards') setActiveSection('cards');
-    else if (path === '/network' && activeSection !== 'network') setActiveSection('network');
-    else if (path === '/review' && activeSection !== 'review') setActiveSection('review');
-    else if (path === '/stats' && activeSection !== 'stats') setActiveSection('stats');
-    else if (path === '/settings' && activeSection !== 'settings') setActiveSection('settings');
-    else if (path === '/add' && activeSection !== 'add') setActiveSection('add');
-  }, [location.pathname, activeSection, setActiveSection]);
+
 
   const { embeddingsReady } = useAppInitialization();
 
@@ -216,9 +191,9 @@ function AppContent() {
   const handleBatchImportWrapped = useCallback(
     async (newCards: Card[]) => {
       await handleBatchImport(newCards);
-      setActiveSection("cards");
+      navigateSection("cards");
     },
-    [handleBatchImport, setActiveSection],
+    [handleBatchImport, navigateSection],
   );
 
   const selectedCard = useMemo(() => {
@@ -392,67 +367,29 @@ function AppContent() {
   };
 
   const modals = (
-    <>
-      {selectedCard && !isNetworkContext && (
-        <DetailModal
-          card={selectedCard}
-          allCards={cards}
-          onClose={() => setSelectedCardId(null)}
-          onLinkClick={(id) => setSelectedCardId(id)}
-          onEdit={() => handleEditCard(selectedCard)}
-          onDelete={() => handleDeleteCard(selectedCard)}
-          onNext={() => {
-            const idx = filteredCards.findIndex((c) => c.id === selectedCardId);
-            if (idx >= 0 && idx < filteredCards.length - 1) {
-              setSelectedCardId(filteredCards[idx + 1].id);
-            }
-          }}
-          onPrev={() => {
-            const idx = filteredCards.findIndex((c) => c.id === selectedCardId);
-            if (idx > 0) {
-              setSelectedCardId(filteredCards[idx - 1].id);
-            }
-          }}
-        />
-      )}
-
-      {addDataMode === "edit" && (
-        <AddDataModal
-          mode="edit"
-          card={editingCard}
-          existingCards={cards}
-          onSave={handleSaveCardWrapped}
-          onImport={handleBatchImportWrapped}
-          onClose={() => {
-            setAddDataMode("none");
-            setEditingCard(null);
-          }}
-        />
-      )}
-
-      {cardToDelete && (
-        <ConfirmDeleteModal
-          title={cardToDelete.title}
-          onConfirm={confirmDeleteWrapped}
-          onCancel={() => setCardToDelete(null)}
-        />
-      )}
-
-      {reviewSession && reviewSessionCards.length > 0 && (
-        <ReviewSessionModal
-          cards={reviewSessionCards}
-          allCards={cards}
-          title={reviewSession.title}
-          initialIndex={reviewSession.initialIndex}
-          onClose={() => setReviewSession(null)}
-          onRate={handleRateCard}
-          onJumpToCard={(id) => setSelectedCardId(id)}
-        />
-      )}
-
-      <PomodoroModal />
-      <GlobalOmnibox />
-    </>
+    <AppModals
+      selectedCard={selectedCard}
+      isNetworkContext={isNetworkContext}
+      cards={cards}
+      setSelectedCardId={setSelectedCardId}
+      handleEditCard={handleEditCard}
+      handleDeleteCard={handleDeleteCard}
+      filteredCards={filteredCards}
+      selectedCardId={selectedCardId}
+      addDataMode={addDataMode}
+      editingCard={editingCard}
+      handleSaveCardWrapped={handleSaveCardWrapped}
+      handleBatchImportWrapped={handleBatchImportWrapped}
+      setAddDataMode={setAddDataMode}
+      setEditingCard={setEditingCard}
+      cardToDelete={cardToDelete}
+      confirmDeleteWrapped={confirmDeleteWrapped}
+      setCardToDelete={setCardToDelete}
+      reviewSession={reviewSession}
+      reviewSessionCards={reviewSessionCards}
+      setReviewSession={setReviewSession}
+      handleRateCard={handleRateCard}
+    />
   );
 
   if (!user && !bypassLogin) {

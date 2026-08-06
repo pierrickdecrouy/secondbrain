@@ -48,6 +48,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
+  const [workspaces, setWorkspaces] = useState<{ id: string; name: string }[]>([]);
+  const [activeWorkspace, setActiveWorkspace] = useState('pharma-brain.db');
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.getWorkspaces().then(res => {
+        setWorkspaces(res.workspaces);
+        setActiveWorkspace(res.activeWorkspace);
+      });
+    }
+  }, []);
+
+  const handleWorkspaceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    if (window.electronAPI) {
+      const res = await window.electronAPI.switchWorkspace(id);
+      if (res.success) {
+        setActiveWorkspace(id);
+        useCardStore.getState().loadCards();
+      } else {
+        alert("Erreur lors du changement d'espace: " + res.error);
+      }
+    }
+  };
+
   // Count due cards for the review badge
   const dueCount = useMemo(() => cards.filter(c => {
     if (!c.progress?.dueDate) return false;
@@ -101,30 +126,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
         
       >
         {/* Header */}
-        <div
-          className="flex items-center border-b border-slate-200 dark:border-slate-800 min-h-[56px] shrink-0" style={{
-  justifyContent: shouldCollapseSidebar ? 'center' : 'space-between',
-  padding: shouldCollapseSidebar ? '16px 0 12px' : '16px 12px 12px'
-}}
-        >
-          {!shouldCollapseSidebar && (
-            <img src="/Logo-linear.svg" alt="Extnd" className="h-7 w-auto ml-1"  />
-          )}
-          <button
-            className="workspace-btn rounded-[10px]"
-            
-            onClick={() => {
-              if (shouldCollapseSidebar) {
-                setSidebarCollapsed(false);
-              } else {
-                setSidebarCollapsed(true);
-                setSidebarOpen(false);
-              }
-            }}
-            title={shouldCollapseSidebar ? 'Ouvrir le menu' : 'Réduire le menu'}
+        <div className="flex flex-col border-b border-slate-200 dark:border-slate-800 shrink-0">
+          <div
+            className="flex items-center min-h-[56px]" style={{
+    justifyContent: shouldCollapseSidebar ? 'center' : 'space-between',
+    padding: shouldCollapseSidebar ? '16px 0 12px' : '16px 12px 12px'
+  }}
           >
-            {shouldCollapseSidebar ? <List size={18} weight="bold" /> : <ArrowLeft size={16} />}
-          </button>
+            {!shouldCollapseSidebar && (
+              <img src="/Logo-linear.svg" alt="Extnd" className="h-7 w-auto ml-1"  />
+            )}
+            <button
+              className="workspace-btn rounded-[10px]"
+              
+              onClick={() => {
+                if (shouldCollapseSidebar) {
+                  setSidebarCollapsed(false);
+                } else {
+                  setSidebarCollapsed(true);
+                  setSidebarOpen(false);
+                }
+              }}
+              title={shouldCollapseSidebar ? 'Ouvrir le menu' : 'Réduire le menu'}
+            >
+              {shouldCollapseSidebar ? <List size={18} weight="bold" /> : <ArrowLeft size={16} />}
+            </button>
+          </div>
+          
+          {/* Workspace Selector */}
+          {!shouldCollapseSidebar && workspaces.length > 1 && window.electronAPI && (
+            <div className="px-3 pb-3">
+              <select 
+                value={activeWorkspace}
+                onChange={handleWorkspaceChange}
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] cursor-pointer"
+              >
+                {workspaces.map(ws => (
+                  <option key={ws.id} value={ws.id}>{ws.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Nav */}

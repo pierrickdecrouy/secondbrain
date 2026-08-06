@@ -1,5 +1,8 @@
 // UUID generation natively with fallback
 
+export type AppSection = 'dashboard' | 'cards' | 'courses' | 'network' | 'review' | 'settings' | 'stats' | 'add';
+export type CategoryType = 'drug' | 'patho' | 'physio' | 'data';
+export type AddDataMode = 'none' | 'create' | 'edit' | 'import';
 export const CARD_TYPES = ['drug', 'patho', 'physio', 'data'] as const;
 export type CardType = typeof CARD_TYPES[number] | (string & {});
 export type NodeType = 'course' | 'concept' | 'flashcard';
@@ -14,6 +17,8 @@ export interface CardHistory {
         subtitle?: { old: string; new: string };
         content?: { old: string; new: string };
         details?: { old: string; new: string };
+        tags?: { old: string[]; new: string[] };
+        manualConnections?: { old: string[]; new: string[] };
     };
 }
 
@@ -105,8 +110,8 @@ declare global {
       loadAbbreviations: () => Promise<Record<string, string[]>>;
       saveAbbreviations: (abbreviations: Record<string, string[]>) => Promise<void>;
       startPdfImport?: (paths: string[]) => void;
-      onPdfProgress?: (callback: (data: any) => void) => void;
-      onPdfDone?: (callback: (data: any) => void) => void;
+      onPdfProgress?: (callback: (data: unknown) => void) => void;
+      onPdfDone?: (callback: (data: unknown) => void) => void;
       onPdfError?: (callback: (error: string) => void) => void;
     };
   }
