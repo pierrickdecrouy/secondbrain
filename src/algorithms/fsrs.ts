@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { fsrs, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs';
 import type { Card as FSRSCard } from 'ts-fsrs';
 import type { UserCardProgress } from '../types';
@@ -114,9 +113,7 @@ export function calculateFsrsProgress(
         nextCard.due = newDue;
     }
 
-    // ts-fsrs types do not explicitly expose learning_steps on the public interface depending on version
-    // but it is on the card object.
-    const learningSteps = (nextCard as unknown).learning_steps ?? 0;
+    const learningSteps = (nextCard as { learning_steps?: number }).learning_steps ?? 0;
 
     return {
         status: stateToStatus(nextCard.state),

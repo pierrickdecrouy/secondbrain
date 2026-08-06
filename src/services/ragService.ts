@@ -1,8 +1,7 @@
-// @ts-nocheck
 import { semanticSearch } from '../semanticSearch';
 import type { Card } from '../types';
 import { streamLLMResponse, type ChatMessage } from './llmService';
-import type { LlmConfig } from '../store/useUIStore';
+import type { LlmConfig } from '../types';
 
 export async function askEXTNDBot(
   query: string,

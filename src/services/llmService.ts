@@ -1,5 +1,4 @@
-// @ts-nocheck
-import type { LlmConfig } from '../store/useUIStore';
+import type { LlmConfig } from '../types';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';

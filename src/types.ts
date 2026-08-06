@@ -95,6 +95,11 @@ export interface PausedTask {
     timestamp: number;
 }
 
+export interface LlmConfig {
+    provider: 'openai' | 'gemini';
+    apiKey: string;
+}
+
 declare global {
   interface Window {
     electronAPI?: {
