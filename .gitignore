@@ -28,3 +28,6 @@ dist-ssr
 
 # Build output
 release
+
+IngestionSQL/uploads/
+IngestionSQL/outputs/
