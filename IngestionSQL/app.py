@@ -3,6 +3,7 @@ import sys
 import uuid
 import threading
 import queue
+import shutil
 
 # Contournement agressif pour le crash Protobuf sur Python 3.14
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
@@ -19,9 +20,30 @@ app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1 Go max au lieu de 50 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
-# Purge uploads folder on startup
-for f in os.listdir(app.config['UPLOAD_FOLDER']):
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+# Purge uploads folder every 7 launches
+count_file = os.path.join(os.path.dirname(__file__), 'run_count.txt')
+run_count = 0
+if os.path.exists(count_file):
+    try:
+        with open(count_file, 'r') as f:
+            run_count = int(f.read().strip())
+    except Exception:
+        pass
+
+run_count += 1
+
+if run_count % 7 == 0:
+    try:
+        shutil.rmtree(app.config['UPLOAD_FOLDER'])
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except Exception as e:
+        print(f"Failed to purge uploads folder: {e}")
+
+try:
+    with open(count_file, 'w') as f:
+        f.write(str(run_count))
+except Exception:
+    pass
 
 # Simple in-memory task tracking
 tasks = {}
@@ -83,15 +105,7 @@ def worker_loop():
             tasks[task_id]['message'] = 'Erreur lors du traitement'
             
         finally:
-            # Purge the uploaded files for this task to save space and protect privacy
-            for file_path in file_paths:
-                try:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                except Exception as e:
-                    print(f"Failed to delete {file_path}: {e}")
-
-        task_queue.task_done()
+            task_queue.task_done()
 
 # Start background worker thread
 threading.Thread(target=worker_loop, daemon=True).start()
