@@ -1,16 +1,23 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useUIStore } from '../store/useUIStore';
+import { useNavigationStore } from '../store/useNavigationStore';
 import { useNavigate } from 'react-router-dom';
 
-import type { AppSection } from './useCurrentSection';
+import type { AppSection } from '../types';
 
 export function useNavigation() {
     const { setSidebarOpen, setViewMode, viewMode } = useUIStore();
-
-    const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-    const [pendingClusterReview, setPendingClusterReview] = useState(false);
-    const [networkPanelPinned, setNetworkPanelPinned] = useState(false);
-    const [pinnedCardId, setPinnedCardId] = useState<string | null>(null);
+    
+    const {
+        selectedCardId,
+        setSelectedCardId,
+        pendingClusterReview,
+        setPendingClusterReview,
+        networkPanelPinned,
+        setNetworkPanelPinned,
+        pinnedCardId,
+        setPinnedCardId
+    } = useNavigationStore();
 
     const navigate = useNavigate();
 
@@ -37,17 +44,17 @@ export function useNavigation() {
         // Always clear pinned cards when changing tabs
         setNetworkPanelPinned(false);
         setPinnedCardId(null);
-    }, [viewMode, navigate, setSidebarOpen, setViewMode]);
+    }, [viewMode, navigate, setSidebarOpen, setViewMode, setSelectedCardId, setNetworkPanelPinned, setPinnedCardId]);
 
     const startClusterReviewMode = useCallback(() => {
         navigate('/network');
         setViewMode('network');
         setPendingClusterReview(true);
-    }, [navigate, setViewMode]);
+    }, [navigate, setViewMode, setPendingClusterReview]);
 
     const cancelClusterReviewMode = useCallback(() => {
         setPendingClusterReview(false);
-    }, []);
+    }, [setPendingClusterReview]);
 
     return {
         selectedCardId,

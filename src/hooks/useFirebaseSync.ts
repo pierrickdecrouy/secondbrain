@@ -9,6 +9,7 @@ import {
 import { db, prepareForFirebase } from '../lib/firebase';
 import { useCardStore } from '../store/useCardStore';
 import { useAuth } from '../context/AuthContext';
+import { getOfflineCards } from '../storage';
 import type { Card } from '../types';
 
 import { toast } from '../store/useToastStore';
@@ -48,7 +49,7 @@ export const useFirebaseSync = () => {
                     lastMigrationUid = user.uid;
                 }
                 
-                const offlineCards = localCards.filter(c => c.ownerUid === null || c.ownerUid === undefined);
+                const offlineCards = await getOfflineCards();
                 let migratedCount = 0;
                 
                 if (offlineCards.length > 0 && !sessionStorage.getItem('extnd_ignore_offline')) {
@@ -99,6 +100,7 @@ export const useFirebaseSync = () => {
                 }
                 useUIStore.getState().setSyncStatus('synced');
             } catch (error) {
+                console.error("🔥 Firebase Sync Error:", error);
                 useUIStore.getState().setSyncStatus('error');
                 toast.error('Erreur de synchronisation Firebase', 0, {
                     label: 'Réessayer',
@@ -126,17 +128,17 @@ export const useFirebaseSync = () => {
                             if ((data.updatedAt || 0) > (currentCards[existsIndex].updatedAt || 0)) {
                                 const newCards = [...currentCards];
                                 newCards[existsIndex] = data;
-                                // C-3 fix: skipSave=true — Firebase is the source of truth here,
-                                // saving back to IndexedDB would cause a write→snapshot→write loop.
-                                setCards(newCards, true);
+                                // C-3 fix: skipSave=false — Firebase changes MUST be saved locally
+                                // to persist when offline.
+                                setCards(newCards, false);
                                 toast.info('Une version plus récente a été restaurée depuis le serveur.');
                             }
                         } else {
-                            setCards([...currentCards, data], true); // C-3 fix: skipSave=true
+                            setCards([...currentCards, data], false);
                         }
                     }
                     if (change.type === 'removed') {
-                        setCards(currentCards.filter(c => c.id !== data.id), true); // C-3 fix: skipSave=true
+                        setCards(currentCards.filter(c => c.id !== data.id), false);
                     }
                 });
             });

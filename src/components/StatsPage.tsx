@@ -144,7 +144,7 @@ export const StatsPage: React.FC = () => {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-[#09090b] px-4 sm:px-8 py-8 flex flex-col">
+        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-[#09090b] px-4 sm:px-8 pt-8 pb-[calc(1rem+68px+env(safe-area-inset-bottom))] md:pb-8 flex flex-col">
             <style>
                 {`
                 /* Overrides for react-calendar-heatmap */
@@ -252,7 +252,7 @@ export const StatsPage: React.FC = () => {
                             {/* Forecast Chart */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col h-[350px]">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Prévisions (7 jours)</h3>
-                                <div className="flex-1 min-h-0 w-full">
+                                <div className="flex-1 min-h-[200px] w-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={forecastData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
@@ -268,8 +268,8 @@ export const StatsPage: React.FC = () => {
                             {/* Category Pie Chart */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col h-[350px]">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Répartition par Catégorie</h3>
-                                <div className="flex-1 min-h-0 w-full flex flex-col sm:flex-row items-center gap-6">
-                                    <div className="flex-1 min-w-0 h-full w-full">
+                                <div className="flex-1 min-h-[200px] w-full flex flex-col sm:flex-row items-center gap-6">
+                                    <div className="flex-1 min-w-0 min-h-[200px] h-full w-full">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie

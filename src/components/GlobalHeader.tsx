@@ -58,10 +58,10 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
     }, [isHomeSection]);
 
     return (
-        <header className={`app-drag-region flex items-center justify-center pb-5 pt-8 lg:pt-10 min-h-[88px] shrink-0 w-full ${isProfileMenuOpen ? 'z-[1500]' : 'z-50'} ${isHomeSection ? 'absolute top-0 left-0' : 'relative'}`}>
-            <div className="w-full px-8 sm:px-12 flex items-center justify-between max-w-[1400px] mx-auto mt-2" >
+        <header className={`app-drag-region flex items-center justify-center pb-3 md:pb-5 pt-4 md:pt-8 lg:pt-10 min-h-[64px] md:min-h-[88px] shrink-0 w-full ${isProfileMenuOpen ? 'z-[1500]' : 'z-50'} ${isHomeSection ? 'absolute top-0 left-0' : 'relative'}`}>
+            <div className="w-full px-4 md:px-8 sm:px-12 flex items-center justify-between max-w-[1400px] mx-auto mt-2" >
             <div className={`flex items-center overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                isHomeSection ? 'max-w-[200px] opacity-100 mr-6' : (sidebarOpen ? 'max-w-0 opacity-0 ml-0 mr-0' : 'max-w-[180px] opacity-100 -ml-8 sm:-ml-12 mr-4')
+                isHomeSection ? 'max-w-[200px] opacity-100 mr-6' : (sidebarOpen ? 'max-w-0 opacity-0 ml-0 mr-0' : 'max-w-[180px] opacity-100 ml-0 md:-ml-4 mr-2 md:mr-4')
             }`}>
                 <button
                     className="app-no-drag p-0 bg-transparent border-none cursor-pointer shrink-0"
@@ -76,10 +76,9 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     aria-label="Aller au tableau de bord"
                 >
                     <img 
-                        src={isHomeSection ? "/Logo-vertical.svg" : "/Logo-linear.svg"} 
+                        src="/Logo-vertical.svg" 
                         alt="Extnd" 
-                        className="transition-all duration-300 hover:opacity-80"
-                        style={isHomeSection ? { height: '100px', marginLeft: '24px', marginTop: '24px' } : { height: '38px' }}
+                        className={`transition-all duration-300 hover:opacity-80 ${isHomeSection ? 'h-[45px] md:h-[80px] ml-2 mt-2 md:ml-6 md:mt-6' : 'h-[38px] sm:h-[45px] md:h-[50px] ml-2 sm:ml-4'}`}
                     />
                 </button>
             </div>
@@ -108,13 +107,12 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                 </div>
             )}
 
-            <div className="app-no-drag flex items-center gap-5 ml-auto">
+            <div className="app-no-drag flex items-center gap-3 sm:gap-5 ml-auto">
                 
                 {user && (
                     <div 
-                        className="flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        className={`flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ${isHomeSection ? 'mt-4 md:mt-6' : ''}`}
                         title={syncStatus === 'synced' ? 'Synchronisé avec le cloud' : syncStatus === 'pending' ? 'Synchronisation en cours...' : 'Erreur de synchronisation'}
-                        style={isHomeSection ? { marginTop: '24px' } : {}}
                     >
                         {syncStatus === 'synced' && <CloudCheck size={18} weight="bold" className="text-emerald-500" />}
                         {syncStatus === 'pending' && <CloudArrowUp size={18} weight="bold" className="animate-pulse text-blue-500" />}
@@ -122,13 +120,12 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                     </div>
                 )}
 
-                <div style={isHomeSection ? { marginTop: '24px', marginLeft: '12px' } : { marginLeft: '8px' }}>
+                <div className={`${isHomeSection ? 'mt-4 md:mt-6 ml-1 md:ml-3' : 'ml-1 md:ml-2'}`}>
                     <PomodoroTimer />
                 </div>
 
                 <div 
-                    className={`relative transition-all duration-300 ${!isHomeSection ? '-mr-8 sm:-mr-24' : ''}`}
-                    style={isHomeSection ? { marginRight: '24px', marginTop: '24px' } : { marginLeft: '8px' }}
+                    className={`relative transition-all duration-300 ${!isHomeSection ? '-mr-2 sm:-mr-8 md:-mr-24' : ''} ${isHomeSection ? 'mr-4 mt-4 md:mr-6 md:mt-6' : 'ml-1 md:ml-2'}`}
                 >
                     <button 
                         className={`p-0 bg-transparent cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${isProfileMenuOpen ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-white dark:ring-offset-[#09090b] scale-95' : 'ring-2 ring-transparent scale-100 hover:ring-slate-200 dark:hover:ring-white/20'}`}
@@ -140,7 +137,8 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                             config={avatarConfig}
                             userName={userName}
                             photoURL={user?.photoURL}
-                            style={isHomeSection ? { width: '48px', height: '48px', fontSize: '20px' } : { width: '48px', height: '48px', fontSize: '18px' }}
+                            style={{ fontSize: '18px' }}
+                            className="w-[36px] h-[36px] md:!w-[48px] md:!h-[48px] md:!text-[20px]"
                         />
                     </button>
                     {isProfileMenuOpen && (
@@ -149,7 +147,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
                                 aria-hidden="true"
                                 onClick={() => setProfileMenuOpen(false)}></div>
                             <div 
-                                className="absolute right-0 z-[1100] animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-200 ease-out top-[calc(100%+12px)] w-[380px] rounded-[24px] overflow-hidden flex flex-col bg-white dark:bg-[#0f1420] border border-slate-200 dark:border-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] origin-top-right"
+                                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:absolute sm:top-[calc(100%+12px)] sm:left-auto sm:right-0 sm:translate-x-0 sm:translate-y-0 z-[1100] animate-in fade-in zoom-in-95 duration-200 ease-out w-[calc(100vw-32px)] sm:w-[380px] max-w-[380px] rounded-[24px] overflow-hidden flex flex-col bg-white dark:bg-[#0f1420] border border-slate-200 dark:border-slate-800 shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] origin-center sm:origin-top-right"
                             >
                                 <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
                                     <div className="flex items-center gap-4" >

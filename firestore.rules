@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
       allow read, delete: if request.auth != null && request.auth.uid == userId;
-      allow create, update: if request.auth != null && request.auth.uid == userId && request.resource.size < 1000000;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
       
       match /cards/{cardId} {
         allow read, delete: if request.auth != null && request.auth.uid == userId;
@@ -19,14 +19,23 @@ service cloud.firestore {
 
         allow create, update: if request.auth != null && 
                               request.auth.uid == userId && 
-                              request.resource.size < 1000000 && 
                               isValidCard();
       }
       
       match /settings/{settingId} {
         allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow create, update: if request.auth != null && request.auth.uid == userId && request.resource.size < 1000000;
+        allow create, update: if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    // ── Whitelist bêta-testeurs ─────────────────────────────────────────────
+    // Un admin crée les documents via la console Firebase.
+    // Les utilisateurs peuvent seulement LIRE leur propre document.
+    match /allowedUsers/{uid} {
+      // Lecture : seulement l'utilisateur concerné
+      allow read: if request.auth != null && request.auth.uid == uid;
+      // Écriture : uniquement via la console Firebase (admin SDK) → interdit côté client
+      allow write: if false;
     }
   }
 }

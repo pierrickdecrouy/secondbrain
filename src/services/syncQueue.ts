@@ -1,6 +1,7 @@
 import type { Card } from '../types';
 import { cardSyncService } from './cardSyncService';
 import { useUIStore } from '../store/useUIStore';
+import { toast } from '../store/useToastStore';
 
 export interface SyncTask {
   id: string; // unique task id
@@ -22,10 +23,11 @@ class SyncQueue {
       // Check queue every 30 seconds
       setInterval(() => this.requestProcessQueue(), 30000);
       this.migrateFromLocalStorage();
+      this.requestProcessQueue();
     }
   }
 
-  private requestProcessQueue() {
+  public requestProcessQueue() {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
       this.processQueue();
@@ -69,8 +71,7 @@ class SyncQueue {
       };
       await db.syncTasks.add(task);
       this.requestProcessQueue();
-    } catch (err) {
-    }
+    } catch (err) { console.error("Ignored error:", err); }
   }
 
   public async enqueueDeleteCard(cardId: string) {
@@ -85,8 +86,7 @@ class SyncQueue {
       };
       await db.syncTasks.add(task);
       this.requestProcessQueue();
-    } catch(err) {
-    }
+    } catch (err) { console.error("Ignored error:", err); }
   }
 
   public async processQueue() {
@@ -98,7 +98,8 @@ class SyncQueue {
     
     try {
       const db = getDB();
-      const queue = await db.syncTasks.orderBy('timestamp').toArray();
+      const unsortedQueue = await db.syncTasks.toArray();
+      const queue = unsortedQueue.sort((a, b) => a.timestamp - b.timestamp);
       
       if (queue.length === 0) {
         this.isProcessing = false;
@@ -118,10 +119,18 @@ class SyncQueue {
           
           await db.syncTasks.delete(task.id);
         } catch (err: unknown) {
-          if ((err as Error).message === "CONFLICT_SERVER_NEWER") {
+          const errMsg = (err as Error).message || String(err);
+          const isTerminal = 
+            errMsg === "CONFLICT_SERVER_NEWER" ||
+            errMsg.includes("permission-denied") ||
+            (err as { code?: string }).code === "permission-denied";
+
+          if (isTerminal) {
              await db.syncTasks.delete(task.id);
              continue;
           }
+          console.error("SYNC_ERROR:", err);
+          toast.error("Erreur Sync: " + ((err as Error).message || String(err)));
 
           allSuccess = false;
           task.retryCount++;
@@ -141,8 +150,7 @@ class SyncQueue {
       } else {
         useUIStore.getState().setSyncStatus('error');
       }
-    } catch (err) {
-    } finally {
+    } catch (err) { console.error("Ignored error:", err); } finally {
       this.isProcessing = false;
     }
   }

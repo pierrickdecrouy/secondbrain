@@ -16,8 +16,9 @@ interface AIAssistantProps {
   onClose: () => void;
 }
 
-export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen }) => {
-  useUIStore();
+export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => {
+  const { } = useUIStore();
+
   const { cards } = useCardStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -60,7 +61,6 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen }) => {
         userQuery, 
         cards, 
         messages, // We send previous history minus system prompt
-        (this.state as any).llmConfig, 
         (chunk) => {
           setMessages(prev => {
             const lastMsg = prev[prev.length - 1];
@@ -90,7 +90,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen }) => {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-[420px] max-h-[75vh] min-h-[400px] h-[600px] bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-2xl shadow-[0_16px_64px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_16px_64px_-12px_rgba(0,0,0,0.6)] z-[9999] flex flex-col border border-white/40 dark:border-white/10 rounded-[28px] transform transition-all duration-300 origin-bottom-right animate-in fade-in zoom-in-95">
+    <div className="fixed bottom-[calc(90px+env(safe-area-inset-bottom))] md:bottom-24 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-[420px] max-h-[75vh] min-h-[400px] h-[600px] bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-2xl shadow-[0_16px_64px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_16px_64px_-12px_rgba(0,0,0,0.6)] z-[9999] flex flex-col border border-white/40 dark:border-white/10 rounded-[28px] transform transition-all duration-300 origin-bottom-right animate-in fade-in zoom-in-95">
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
         <div className="flex items-center gap-3">

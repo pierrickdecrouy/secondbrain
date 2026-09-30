@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,23 +18,23 @@ export const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
 
-// Initialize Cloud Firestore with offline persistence
+// Initialize Cloud Firestore with offline persistence + Safari long-polling fallback
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache()
-});
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  experimentalForceLongPolling: true,
+}, "default");
 
 // Helper to remove undefined values before saving to Firestore
 export const prepareForFirebase = <T extends Record<string, any>>(obj: T): T => {
-    const sanitized: Record<string, any> = {};
-    for (const [key, value] of Object.entries(obj)) {
-        if (value === undefined) {
-            continue;
-        }
-        if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-            sanitized[key] = sanitizeForFirebase(value);
-        } else {
-            sanitized[key] = value;
-        }
+    if (obj === null || typeof obj !== 'object' || obj instanceof Date) {
+        return obj;
+    }
+    const sanitized: any = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+        if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+        const value = obj[key];
+        if (value === undefined) continue;
+        sanitized[key] = prepareForFirebase(value);
     }
     return sanitized as T;
 };

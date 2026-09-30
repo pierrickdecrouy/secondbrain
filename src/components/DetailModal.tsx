@@ -151,7 +151,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity z-[100] flex items-center justify-center p-4 sm:p-6 gap-4 sm:gap-8"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity z-[150] flex items-center justify-center p-4 sm:p-6 gap-4 sm:gap-8"
             onClick={handleBackdropClick}
             aria-modal="true"
             role="dialog"

@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ pausedTasks, onResumeTask, onR
       const res = await window.electronAPI.switchWorkspace(id);
       if (res.success) {
         setActiveWorkspace(id);
-        useCardStore.getState().loadCards();
+        useCardStore.getState().reloadFromStorage();
       } else {
         alert("Erreur lors du changement d'espace: " + res.error);
       }

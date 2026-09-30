@@ -163,7 +163,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="w-full max-w-[1600px] mx-auto self-center relative overflow-hidden px-10"
+                        className="w-full max-w-[1600px] mx-auto self-center relative overflow-hidden px-4 md:px-10"
                     >
                         <SearchSynthesis
                             query={searchQuery}
@@ -181,7 +181,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                 )}
                 </AnimatePresence>
 
-                <div className={`w-full px-10 self-center max-w-[1600px] mx-auto flex flex-1 min-h-0 overflow-hidden ${(viewMode === 'split' && !isNetworkOnly) ? 'flex-row gap-0' : 'flex-col gap-8'}`}>
+                <div className={`w-full ${viewMode === 'network' || isNetworkOnly ? 'px-0 md:px-10' : 'px-4 md:px-10'} self-center max-w-[1600px] mx-auto flex flex-1 min-h-0 overflow-hidden ${(viewMode === 'split' && !isNetworkOnly) ? 'flex-row gap-0' : 'flex-col gap-8'}`}>
                     
                     {!isNetworkOnly && (
                         <BrowseMainContent
@@ -204,7 +204,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
                     )}
 
                     {(viewMode === 'split' || viewMode === 'network' || isNetworkOnly) && (
-                        <div className="flex-1 rounded-[16px] overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm mx-10">
+                        <div className="flex-1 md:rounded-[16px] overflow-hidden border-y md:border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-[#111827] relative flex flex-row h-full min-h-0 min-w-0 transition-all duration-300 shadow-sm md:mx-10">
                             <div className="flex-1 relative flex flex-col h-full min-h-0 min-w-0">
                                 {renderNetworkView && renderNetworkView(selectedCardId)}
                             </div>

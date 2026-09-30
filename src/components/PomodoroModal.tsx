@@ -230,8 +230,8 @@ export const PomodoroModal: React.FC = () => {
                     /* ─── TIMER ─── */
                     <div className="flex flex-col items-center">
                         {/* Top bar */}
-                        <div className="flex items-center gap-1 pt-4 px-4 w-full">
-                            <div className="flex-1 flex gap-0.5 p-1 rounded-xl bg-black/5 dark:bg-white/5 mb-12">
+                        <div className="flex items-center gap-2 pt-4 px-4 w-full mb-12">
+                            <div className="flex-1 flex gap-0.5 p-1 rounded-xl bg-black/5 dark:bg-white/5">
                                 <ModeTab label="Focus"  active={mode === 'focus'}      color={modeColors.focus}      onClick={() => switchMode('focus')} />
                                 <ModeTab label="Pause"  active={mode === 'shortBreak'} color={modeColors.shortBreak} onClick={() => switchMode('shortBreak')} />
                                 <ModeTab label="Longue" active={mode === 'longBreak'}  color={modeColors.longBreak}  onClick={() => switchMode('longBreak')} />

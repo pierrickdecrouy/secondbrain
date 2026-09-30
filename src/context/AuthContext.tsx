@@ -14,6 +14,9 @@ import { auth } from '../lib/firebase';
 import { setStorageUid } from '../storage';
 import { useCardStore } from '../store/useCardStore';
 
+import { settingsSyncService } from '../services/settingsSyncService';
+import { syncQueue } from '../services/syncQueue';
+
 interface AuthContextType {
     user: User | null;
     loading: boolean;
@@ -50,8 +53,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setStorageUid(currentUid || null);
                 if (currentUid) {
                     await useCardStore.getState().reloadFromStorage();
+                    settingsSyncService.startSyncListener(currentUid);
+                    syncQueue.requestProcessQueue();
                 } else {
                     useCardStore.getState().clearStore();
+                    settingsSyncService.stopSyncListener();
                 }
             }
 

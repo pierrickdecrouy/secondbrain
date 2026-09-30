@@ -46,6 +46,7 @@ async function initModel() {
 
     try {
         // Try WebGPU first (fastest)
+        // @ts-ignore
         extractor = await pipeline('feature-extraction', MODEL_ID, {
             device: 'webgpu',
 

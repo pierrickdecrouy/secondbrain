@@ -73,7 +73,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
             } else {
                 await signInWithEmail(email, password);
             }
-        } catch (_err) {
+        } catch (err: any) {
             const c = err.code;
             if (c === 'auth/email-already-in-use') setError(t('auth.email_in_use'));
             else if (c === 'auth/invalid-email') setError(t('auth.invalid_email'));
@@ -129,11 +129,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBypass }) => {
                 {/* Logo */}
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}>
                     <motion.img
-                        src="/Logo-linear.svg"
+                        src="/Logo-vertical.svg"
                         alt="Extnd."
                         animate={{ y: [0, -5, 0] }}
                         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                        className="h-[clamp(40px,7vw,60px)] brightness-0 invert opacity-90 block select-none pointer-events-none" 
+                        className="h-[clamp(45px,10vw,65px)] brightness-0 invert opacity-90 block select-none pointer-events-none" 
                     />
                 </motion.div>
 

@@ -110,8 +110,8 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
     const hasEnoughForQuiz = totalFlashcards >= 5;
 
     return (
-        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-slate-950 px-8 py-5 flex flex-col" >
-            <div className="max-w-6xl w-full mx-auto flex flex-col flex-1 min-h-0 gap-4" >
+        <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-slate-950 px-4 md:px-8 py-5 flex flex-col pb-[calc(1rem+68px+env(safe-area-inset-bottom))] md:pb-5" >
+            <div className="max-w-6xl w-full mx-auto flex flex-col gap-4" >
 
                 {/* Header */}
                 <div className="flex items-center justify-between shrink-0" >
@@ -220,10 +220,10 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                 </div>
                 
                 {/* Secondary Modes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 min-h-0" >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12" >
 
                     {/* ── Mode Par Cours ── */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] p-4 flex flex-col gap-2.5 transition-shadow duration-200" style={{
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[14px] p-4 flex flex-col gap-2.5 transition-shadow duration-200 h-full" style={{
   opacity: coursesWithFlashcards.length > 0 ? 1 : 0.6
 }}>
                         <div>
@@ -369,7 +369,7 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
             {customDeckOpen && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center" >
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"  onClick={() => setCustomDeckOpen(false)} />
-                    <div ref={customDeckModalRef as any} className="relative bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[20px] w-full max-w-[600px] p-8 shadow-xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto" >
+                    <div ref={customDeckModalRef as any} className="relative bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[20px] w-[calc(100%-2rem)] max-w-[600px] p-6 md:p-8 shadow-xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto mx-auto" >
                         <button onClick={() => setCustomDeckOpen(false)} className="absolute top-5 right-5 bg-transparent border-none text-slate-500 dark:text-slate-400 cursor-pointer p-2 rounded-full"  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                             <X size={20} />
                         </button>

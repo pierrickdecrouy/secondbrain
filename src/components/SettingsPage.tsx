@@ -6,6 +6,7 @@ import { DictionaryTab } from './settings/DictionaryTab';
 import { AppearanceTab } from './settings/AppearanceTab';
 import { IntelligenceTab } from './settings/IntelligenceTab';
 import { RevisionTab } from './settings/RevisionTab';
+import { LLMTab } from './settings/LLMTab';
 import { SettingsCard, CardSection, CardBody, FieldLabel, SettingsInput, PrimaryButton, Badge, StatCard } from './settings/SettingsUI';
 import { useUIStore as useUI } from '../store/useUIStore';
 import { saveSettingAsync } from '../persistentSettings';
@@ -13,11 +14,12 @@ import { useAuth } from '../context/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { ArrowSquareOut, CheckCircle, Warning, Timer, Crown, Key, User, MagicWand, Shapes, Palette } from '@phosphor-icons/react';
+import { useLicense, getDaysLeftInTrial } from '../lib/useLicense';
 import { Avatar } from './Avatar';
 import { DynamicIcon } from './DynamicIcon';
 import type { AvatarConfig } from '../store/useUIStore';
 
-export type SettingsTab = 'dictionary' | 'advanced' | 'stats' | 'appearance' | 'data' | 'intelligence' | 'profile' | 'subscription';
+export type SettingsTab = 'dictionary' | 'advanced' | 'stats' | 'appearance' | 'data' | 'intelligence' | 'profile' | 'subscription' | 'llm';
 
 interface SettingsPageProps {
     onClose?: () => void;
@@ -32,7 +34,10 @@ const TAB_LABELS: Record<SettingsTab, string> = {
     intelligence: 'Intelligence IA',
     profile: 'Profil',
     subscription: 'Abonnement',
-}/* ── Profile Tab ─────────────────────────────────────────────────────────── */
+    llm: 'Modèles IA',
+};
+
+/* ── Profile Tab ─────────────────────────────────────────────────────────── */
 const ProfileTab: React.FC = () => {
     const { user } = useAuth();
     const { userName, setUserName, avatarConfig, setAvatarConfig } = useUI();
@@ -280,134 +285,53 @@ const StatsTab: React.FC = () => (
 );
 
 
-/* ── License / Subscription Tab ──────────────────────────────────────────── */
-const useLicense = () => ({
-    licenseInfo: { status: 'none', trialEndDate: null, expiresAt: null },
-    activateLicenseKey: async () => false,
-    deactivateLicense: async () => {},
-    isActivating: false,
-    activationError: null
-});
-
+/* ── Access / Subscription Tab ───────────────────────────────────────────── */
 const LicenseTab: React.FC = () => {
-    const { licenseInfo, activateLicenseKey, deactivateLicense, isActivating, activationError } = useLicense();
-    const [licenseKey, setLicenseKey] = useState('');
-    const [activationSuccess, setActivationSuccess] = useState(false);
+    const { licenseInfo, daysLeftInTrial } = useLicense();
+    const { user } = useAuth();
 
-    const handleActivate = async () => {
-        const ok = await activateLicenseKey(licenseKey.trim());
-        if (ok) {
-            setActivationSuccess(true);
-            setLicenseKey('');
-            setTimeout(() => setActivationSuccess(false), 4000);
-        }
-    };
-
-    const statusDisplay = {
-        "active":   { label: 'Active', color: '#10b981', icon: <CheckCircle size={16} weight="fill" /> },
-        trial:    { label: 'Essai gratuit', color: '#6366f1', icon: <Timer size={16} weight="fill" /> },
-        grace:    { label: 'Hors-ligne (cache)', color: '#8b5cf6', icon: <CheckCircle size={16} weight="fill" /> },
-        expired:  { label: 'Expirée', color: '#ef4444', icon: <Warning size={16} weight="fill" /> },
-        invalid:  { label: 'Invalide', color: '#ef4444', icon: <Warning size={16} weight="fill" /> },
-        none:     { label: 'Aucune', color: '#64748b', icon: <Crown size={16} /> },
-        checking: { label: 'Vérification...', color: '#64748b', icon: null },
+    const statusDisplay: Record<string, { label: string; color: string; icon: JSX.Element; desc: string }> = {
+        active:   { label: 'Accès accordé', color: '#10b981', icon: <CheckCircle size={16} weight="fill" />, desc: licenseInfo.note ? `Bêta-testeur (${licenseInfo.note})` : 'Accès bêta actif' },
+        trial:    { label: 'Essai gratuit', color: '#6366f1', icon: <Timer size={16} weight="fill" />, desc: `${daysLeftInTrial ?? 0} jour${(daysLeftInTrial ?? 0) > 1 ? 's' : ''} restant${(daysLeftInTrial ?? 0) > 1 ? 's' : ''}` },
+        none:     { label: 'Accès expiré', color: '#f59e0b', icon: <Crown size={16} />, desc: 'Contactez-nous pour obtenir un accès' },
+        checking: { label: 'Vérification...', color: '#64748b', icon: <Timer size={16} />, desc: '' },
     };
 
     const sd = statusDisplay[licenseInfo.status] ?? statusDisplay.none;
 
     return (
         <div className="flex flex-col gap-5">
-
-            {/* Current status card */}
             <SettingsCard>
-                <CardSection title="Statut de la licence" subtitle="Votre abonnement Extnd." />
+                <CardSection title="Statut d'accès" subtitle="Votre accès à Extnd. Second Brain." />
                 <CardBody>
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-950 rounded-[10px] border border-slate-200 dark:border-slate-700 mb-5">
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-950 rounded-[10px] border border-slate-200 dark:border-slate-700 mb-4">
                         <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: sd.color + '15', color: sd.color }}>
                             {sd.icon}
                         </div>
                         <div>
-                            <div className="text-[15px] font-bold text-slate-900 dark:text-slate-100">Licence {sd.label}</div>
-                            {licenseInfo.planName && <div className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{licenseInfo.planName}</div>}
-                            {licenseInfo.expiresAt && <div className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Expire le {licenseInfo.expiresAt.toLocaleDateString('fr-FR')}</div>}
-                            {licenseInfo.expiresAt === null && licenseInfo.status === 'active' && <div className="text-[12px] text-[#10b981] mt-0.5 font-semibold">∞ Licence à vie</div>}
+                            <div className="text-[15px] font-bold text-slate-900 dark:text-slate-100">{sd.label}</div>
+                            {sd.desc && <div className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{sd.desc}</div>}
+                            {user && <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 font-mono">UID : {user.uid}</div>}
                         </div>
                     </div>
 
-                    {/* Plans */}
-                    <div className="grid grid-cols-3 gap-3 mb-5">
-                        {[
-                            { name: 'Mensuel', price: '5,99 €', per: 'par mois', color: '#14b8a6', popular: false },
-                            { name: 'Annuel', price: '49 €', per: 'par an — économisez 30%', color: '#10b981', popular: true },
-                            { name: 'Vie entière', price: '79 €', per: 'paiement unique', color: '#f59e0b', popular: false },
-                        ].map(plan => (
-                            <div key={plan.name} className="p-4 rounded-[10px] relative" style={{ border: `1.5px solid ${plan.popular ? plan.color : '#e2e8f0'}`, background: plan.popular ? plan.color + '06' : 'transparent' }}>
-                                {plan.popular && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-bold px-2.5 py-[3px] rounded-full" style={{ background: plan.color }}>RECOMMANDÉ</div>}
-                                <div className="text-[13px] font-bold text-slate-900 dark:text-slate-100">{plan.name}</div>
-                                <div className="text-[22px] font-extrabold mt-1.5 mb-0.5" style={{ color: plan.color }}>{plan.price}</div>
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400">{plan.per}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <a
-                        href={import.meta.env.VITE_LEMONSQUEEZY_STORE_URL || "https://extnd.lemonsqueezy.com"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-teal-600 dark:bg-teal-500 text-white font-bold text-sm no-underline"
-                    >
-                        <ArrowSquareOut size={16} /> Acheter sur LemonSqueezy
-                    </a>
-                </CardBody>
-            </SettingsCard>
-
-            {/* Activation */}
-            <SettingsCard>
-                <CardSection title="Activer une clé de licence" subtitle="Entrez la clé reçue par email après achat." />
-                <CardBody>
-                    {activationSuccess && (
-                        <div className="px-4 py-3 bg-emerald-500/10 border border-emerald-500/25 rounded-lg text-emerald-600 font-semibold text-[13px] mb-4 flex items-center gap-2">
-                            <CheckCircle size={16} weight="fill" /> Licence activée avec succès !
-                        </div>
+                    {licenseInfo.status !== 'active' && (
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Pour obtenir un accès bêta, partagez votre UID (affiché ci-dessus) avec l'administrateur de l'application.
+                        </p>
                     )}
-                    {activationError && (
-                        <div className="px-4 py-3 bg-red-500/10 border border-red-500/25 rounded-lg text-red-500 text-[13px] mb-4 flex items-center gap-2">
-                            <Warning size={15} weight="fill" /> {activationError}
-                        </div>
-                    )}
-                    <FieldLabel>Clé de licence</FieldLabel>
-                    <div className="flex gap-2.5 items-center">
-                        <div className="flex-1 flex items-center gap-2.5 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950">
-                            <Key size={16} className="text-slate-500 dark:text-slate-400 shrink-0" />
-                            <input
-                                type="text"
-                                value={licenseKey}
-                                onChange={e => setLicenseKey(e.target.value)}
-                                placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-                                className="border-none bg-transparent outline-none w-full text-[13px] font-mono text-slate-900 dark:text-slate-100"
-                            />
-                        </div>
-                        <PrimaryButton
-                            onClick={handleActivate}
-                            disabled={isActivating || !licenseKey.trim()}
-                            className={`shrink-0 ${isActivating || !licenseKey.trim() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        >
-                            {isActivating ? 'Vérification...' : 'Activer'}
-                        </PrimaryButton>
-                    </div>
-                    {licenseInfo.licenseKey && (
-                        <div className="mt-4 flex items-center justify-between">
-                            <span className="text-[12px] text-slate-500 dark:text-slate-400 font-mono">Clé active : {licenseInfo.licenseKey.slice(0, 8)}••••••••</span>
-                            <button onClick={deactivateLicense} className="text-[12px] text-red-500 bg-transparent border-none cursor-pointer font-medium">
-                                Désactiver
-                            </button>
-                        </div>
+
+                    {licenseInfo.status === 'active' && licenseInfo.grantedAt && (
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400">
+                            Accès accordé le {licenseInfo.grantedAt.toLocaleDateString('fr-FR')}.
+                        </p>
                     )}
                 </CardBody>
             </SettingsCard>
         </div>
     );
 };
+
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
@@ -425,6 +349,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
             case 'profile':      return <ProfileTab />;
             case 'stats':        return <StatsTab />;
             case 'subscription': return <LicenseTab />;
+            case 'llm':          return <LLMTab />;
             default:             return null;
         }
     };

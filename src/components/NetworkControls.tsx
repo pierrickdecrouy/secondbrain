@@ -23,7 +23,7 @@ export function NetworkControls({
 }: NetworkControlsProps) {
     return (
         <div className={`absolute z-40 flex flex-col gap-2 transition-all duration-300 
-            ${pendingClusterReview ? 'bottom-24 right-4 md:right-[390px]' : (hasSelectedNodes ? 'bottom-6 right-4 md:right-[374px]' : 'bottom-6 right-4 md:right-6')}`}>
+            ${pendingClusterReview ? 'bottom-[calc(90px+env(safe-area-inset-bottom))] md:bottom-24 right-4 md:right-[390px]' : (hasSelectedNodes ? 'bottom-[calc(80px+env(safe-area-inset-bottom))] md:bottom-6 right-4 md:right-[374px]' : 'bottom-[calc(80px+env(safe-area-inset-bottom))] md:bottom-6 right-4 md:right-6')}`}>
             <button
                 onClick={handleZoomIn}
                 className={`p-2.5 rounded-xl border backdrop-blur-md transition-all shadow-md cursor-pointer

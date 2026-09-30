@@ -257,8 +257,7 @@ export class VoyVectorStore {
                     this.deserializeShard(data, shardId);
                     return true;
                 }
-            } catch (e) {
-            }
+            } catch (e) { console.error("Ignored error:", e); }
         } else {
             // IndexedDB Fallback for Web
             try {
@@ -268,8 +267,7 @@ export class VoyVectorStore {
                     this.deserializeShard(record.data, shardId);
                     return true;
                 }
-            } catch (e) {
-            }
+            } catch (e) { console.error("Ignored error:", e); }
         }
         
         // If it wasn't found, ensure an empty index exists
@@ -287,15 +285,13 @@ export class VoyVectorStore {
         if (isElectron() && window.electronAPI?.saveVectorIndex) {
             try {
                 await window.electronAPI.saveVectorIndex(data, shardId);
-            } catch (e) {
-            }
+            } catch (e) { console.error("Ignored error:", e); }
         } else {
             // IndexedDB Fallback for Web
             try {
                 const db = getDB();
                 await db.vectorIndices.put({ shardId, data });
-            } catch (e) {
-            }
+            } catch (e) { console.error("Ignored error:", e); }
         }
     }
     

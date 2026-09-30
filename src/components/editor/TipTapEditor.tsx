@@ -125,27 +125,29 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, pla
     
     const lastValueRef = useRef(value);
 
+    const extensions = React.useMemo(() => [
+        StarterKit,
+        Underline,
+        Link.configure({
+            openOnClick: false,
+        }),
+        Placeholder.configure({
+            placeholder,
+            emptyEditorClass: 'is-editor-empty',
+        }),
+        ClozeExtension,
+        Markdown.configure({
+            html: false,
+            tightLists: true,
+            tightListClass: 'tight',
+            bulletListMarker: '-',
+            linkify: true,
+            breaks: true,
+        }),
+    ], [placeholder]);
+
     const editor = useEditor({
-        extensions: [
-            StarterKit,
-            Underline,
-            Link.configure({
-                openOnClick: false,
-            }),
-            Placeholder.configure({
-                placeholder,
-                emptyEditorClass: 'is-editor-empty',
-            }),
-            ClozeExtension,
-            Markdown.configure({
-                html: false,
-                tightLists: true,
-                tightListClass: 'tight',
-                bulletListMarker: '-',
-                linkify: true,
-                breaks: true,
-            }),
-        ],
+        extensions,
         content: value,
         onUpdate: ({ editor }) => {
             // Retrieve markdown

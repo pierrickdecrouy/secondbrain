@@ -130,7 +130,7 @@ describe('FSRS Algorithm', () => {
             clearSrsSettingsCache();
 
             // Create a highly mature progress to ensure normal interval > 14
-            let p: Partial<UserCardProgress> = {
+            const p: Partial<UserCardProgress> = {
                 status: 'review',
                 stability: 100, // Very high stability
                 difficulty: 5,

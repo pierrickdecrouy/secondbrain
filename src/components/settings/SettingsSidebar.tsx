@@ -3,7 +3,7 @@ import type { SettingsTab } from '../SettingsPage';
 import { useUIStore as useUI } from '../../store/useUIStore';
 import { Avatar } from '../Avatar';
 import { 
-    Book, Brain, Palette, Database, Calendar, ChartBar, User, CreditCard
+    Book, Brain, Palette, Database, Calendar, ChartBar, User, CreditCard, Robot
 } from '@phosphor-icons/react';
 
 interface SettingsSidebarProps {
@@ -21,7 +21,7 @@ const NavItem: React.FC<{
 }> = ({ label, icon, isActive, onClick, activeColorClass = 'text-teal-600 dark:text-teal-400', activeBgClass = 'bg-teal-50 dark:bg-teal-500/10' }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 border border-transparent ${
+        className={`w-auto md:w-full flex-shrink-0 flex items-center gap-2 md:gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 border border-transparent ${
             isActive 
                 ? `${activeBgClass} ${activeColorClass} font-bold shadow-sm` 
                 : 'text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
@@ -35,7 +35,7 @@ const NavItem: React.FC<{
 );
 
 const SectionLabel: React.FC<{ label: string }> = ({ label }) => (
-    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 py-2 mt-4 mb-1">
+    <div className="hidden md:block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 py-2 mt-4 mb-1">
         {label}
     </div>
 );
@@ -44,9 +44,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
     const { userName, avatarConfig } = useUI();
 
     return (
-        <aside className="w-[240px] shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col h-full z-10">
+        <aside className="w-full md:w-[240px] shrink-0 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col md:h-full z-20">
             {/* Header */}
-            <div className="h-14 flex items-center gap-3 px-6 border-b border-slate-200 dark:border-slate-700 shrink-0">
+            <div className="h-14 hidden md:flex items-center gap-3 px-6 border-b border-slate-200 dark:border-slate-700 shrink-0">
                 <img src="/Logo-linear.svg" alt="Extnd" className="w-6 h-6 object-contain hidden dark:block" />
                 <img src="/Logo-linear.svg" alt="Extnd" className="w-6 h-6 object-contain block dark:hidden brightness-0" />
                 <div className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight">
@@ -55,7 +55,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
+            <nav className="flex-1 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto px-4 py-2 custom-scrollbar flex flex-row md:flex-col items-center md:items-stretch gap-1 md:gap-0">
                 <SectionLabel label="Contenu" />
                 <NavItem 
                     label="Abréviations" 
@@ -72,6 +72,14 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
                     icon={<Brain size={18} weight={activeTab === 'intelligence' ? 'fill' : 'bold'} />} 
                     activeColorClass="text-purple-600 dark:text-purple-400"
                     activeBgClass="bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20"
+                />
+                <NavItem 
+                    label="Modèles IA" 
+                    isActive={activeTab === 'llm'} 
+                    onClick={() => setActiveTab('llm')} 
+                    icon={<Robot size={18} weight={activeTab === 'llm' ? 'fill' : 'bold'} />} 
+                    activeColorClass="text-emerald-600 dark:text-emerald-400"
+                    activeBgClass="bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20"
                 />
 
                 <SectionLabel label="Application" />
@@ -128,7 +136,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, set
             </nav>
 
             {/* User footer */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            <div className="hidden md:block p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-base shadow-sm shrink-0 overflow-hidden border border-slate-200/50 dark:border-white/10">
                         <Avatar

@@ -13,8 +13,8 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({ card, onClos
     const modalRef = useFocusTrap(true);
     
     return (
-        <div className="modal-overlay z-[1100]" >
-            <div ref={modalRef} className="modal-content flex flex-col p-0 max-w-[600px] max-h-[80vh]" >
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" >
+            <div ref={modalRef} className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col p-0 max-w-[600px] w-full max-h-[80vh]" >
                 <header className="modal-header px-8 py-6 border-b border-slate-200 dark:border-slate-800" >
                     <div className="flex items-center gap-3" >
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center" >

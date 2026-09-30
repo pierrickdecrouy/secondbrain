@@ -1,4 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { motion, useAnimation, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
+import { ChatCircle, Sparkle } from '@phosphor-icons/react';
+import { explainCardConcept } from '../services/llmService';
 import { X, ChartBar, Coffee, Brain, Timer, BookBookmark, Stack, Pill, Heartbeat, Waveform, Database, Tag } from '@phosphor-icons/react';
 import type { Card, CategoryType } from '../types';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -6,8 +9,6 @@ import { calculateFsrsProgress } from '../algorithms/fsrs';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { SessionTimer } from './SessionTimer';
 import { useTheme } from '../context/ThemeContext';
-import { useReviewStore } from '../store/useReviewStore';
-
 
 export type CardMode = 'flashcard' | 'course';
 
@@ -78,6 +79,42 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
     const [index, setIndex] = useState(initialIndex);
     const [isPaused, setIsPaused] = useState(false);
     
+    // Swipe Logic
+    const x = useMotionValue(0);
+    const rotate = useTransform(x, [-200, 200], [-10, 10]);
+    const controls = useAnimation();
+    
+    const handleDragEnd = async (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        const threshold = 100;
+        if (info.offset.x > threshold) {
+            await controls.start({ x: 500, opacity: 0, transition: { duration: 0.2 } });
+            handleRate(3);
+            x.set(0);
+            controls.set({ x: 0, opacity: 1 });
+        } else if (info.offset.x < -threshold) {
+            await controls.start({ x: -500, opacity: 0, transition: { duration: 0.2 } });
+            handleRate(1);
+            x.set(0);
+            controls.set({ x: 0, opacity: 1 });
+        } else {
+            controls.start({ x: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 20 } });
+        }
+    };
+    
+    const handleExplain = async () => {
+        if (!card) return;
+        setIsAiLoading(true);
+        try {
+            const explanation = await explainCardConcept(card.title, card.content);
+            setAiExplanation(explanation);
+        } catch (err) {
+            setAiExplanation("Impossible de générer une explication pour le moment.");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
+    
     const [showEasyButton, setShowEasyButton] = useState(false);
     
     useEffect(() => {
@@ -87,16 +124,19 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                 const settings = JSON.parse(raw);
                 setShowEasyButton(!!settings.showEasyButton);
             }
-        } catch (e) {}
+        } catch (e) { console.error("Ignored error:", e); }
     }, []);
 
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
     const [showStats, setShowStats] = useState(false);
+    const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Reset state on new card
     useEffect(() => {
         setIsAnswerRevealed(false);
         setShowStats(false);
+        setAiExplanation(null);
     }, [index]);
 
     const card = cards[index];
@@ -218,7 +258,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
 
                 <div className="relative z-10 flex flex-col h-full overflow-hidden rounded-3xl">
                     {/* Header Toolbar */}
-                    <div className={`flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 z-10`}>
+                    <div className={`flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 dark:border-slate-800 z-10`}>
                         <div className="flex items-center gap-3">
                             <div className={`${theme.text}`}>
                                 <Brain size={26} weight="duotone" />
@@ -336,7 +376,13 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                 </button>
                             </div>
                         ) : (
-                            <div className={`flex-1 flex flex-col max-w-4xl w-full mx-auto justify-center ${!isCourseType ? 'items-center' : ''} px-4 sm:px-12`}>
+                            <motion.div 
+                                drag={shouldReveal && !isCourseType ? "x" : false}
+                                dragConstraints={{ left: 0, right: 0 }}
+                                onDragEnd={handleDragEnd}
+                                style={{ x, rotate }}
+                                animate={controls}
+                                className={`flex-1 flex flex-col max-w-4xl w-full mx-auto justify-center ${!isCourseType ? 'items-center' : ''} px-4 sm:px-12 cursor-grab active:cursor-grabbing`}>
                                 {/* Top Tag (Absolute in Top Corner) */}
                                 <div className="absolute top-6 left-6 md:top-8 md:left-10">
                                     <span className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[13px] font-extrabold tracking-[0.15em] uppercase shadow-sm border ${theme.tag}`}>
@@ -360,8 +406,8 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                     )}
                                     
                                     {card.details && (
-                                        <div className={`p-10 sm:p-12 rounded-[32px] border bg-slate-50 border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/50 mb-16 shadow-sm`}>
-                                            <div className={`text-sm uppercase font-extrabold tracking-[0.2em] mb-8 flex items-center gap-3 text-emerald-600 dark:text-emerald-400`}>
+                                        <div className={`p-6 sm:p-12 rounded-3xl sm:rounded-[32px] border bg-slate-50 border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/50 mb-8 sm:mb-16 shadow-sm`}>
+                                            <div className={`text-sm uppercase font-extrabold tracking-[0.2em] mb-4 sm:mb-8 flex items-center gap-3 text-emerald-600 dark:text-emerald-400`}>
                                                 <Brain size={26} weight="duotone" />
                                                 Détails de la réponse
                                             </div>
@@ -389,8 +435,32 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Gemini AI Explanation */}
+                                    <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700/50 flex flex-col items-center">
+                                        {!aiExplanation && !isAiLoading ? (
+                                            <button onClick={handleExplain} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 rounded-xl font-semibold transition-colors outline-none cursor-pointer">
+                                                <Sparkle size={18} weight="duotone" />
+                                                Explique-moi avec l'IA
+                                            </button>
+                                        ) : isAiLoading ? (
+                                            <div className="flex items-center gap-2 text-indigo-500 font-medium">
+                                                <Sparkle size={18} className="animate-pulse" weight="duotone" />
+                                                Analyse en cours par Gemini Nano...
+                                            </div>
+                                        ) : (
+                                            <div className="w-full p-6 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl text-left">
+                                                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold mb-3 uppercase tracking-wider text-xs">
+                                                    <Sparkle size={16} weight="duotone" /> Explication IA
+                                                </div>
+                                                <div className="prose prose-sm dark:prose-invert max-w-none text-indigo-900 dark:text-indigo-100">
+                                                    <MarkdownRenderer content={aiExplanation || ''} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
                     </div>
 
@@ -445,12 +515,12 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                             return (
                                                 <button
                                                     key={action.rating}
-                                                    className={`flex-1 flex flex-col items-center justify-center py-5 px-4 sm:px-6 rounded-2xl transition-all duration-300 active:scale-[0.98] outline-none cursor-pointer ${getActionClass(action.rating)}`}
+                                                    className={`flex-1 flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0 py-3 sm:py-5 px-4 sm:px-6 rounded-xl sm:rounded-2xl transition-all duration-300 active:scale-[0.98] outline-none cursor-pointer ${getActionClass(action.rating)}`}
                                                     onClick={() => handleRate(action.rating)}
                                                 >
-                                                    <div className="text-[16px] font-bold mb-1.5">{action.label}</div>
-                                                    <div className="text-[13px] font-semibold opacity-80">
-                                                        {nextIntervals[action.rating]}
+                                                    <div className="text-[14px] sm:text-[16px] font-bold sm:mb-1.5">{action.label}</div>
+                                                    <div className="text-[12px] sm:text-[13px] font-semibold opacity-80">
+                                                        ({nextIntervals[action.rating]})
                                                     </div>
                                                 </button>
                                             );

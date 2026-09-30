@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Brain, Lightning, ShieldWarning, Trash } from '@phosphor-icons/react';
 import { getDashboardStats, resetFeedback, type DashboardStats } from '../../linkFeedback';
 import { SettingsCard, CardSection, CardBody, StatCard, DangerButton } from './SettingsUI';
+import { MEDICAL_ABBREVIATIONS } from '../../medicalAbbreviations';
+import { loadCustomAbbreviations } from '../../storage';
 
 export const IntelligenceTab: React.FC = () => {
     const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
+    const [customAbbrCount, setCustomAbbrCount] = useState(0);
 
     useEffect(() => {
         setDashStats(getDashboardStats());
+        const custom = loadCustomAbbreviations();
+        setCustomAbbrCount(Object.keys(custom).length);
     }, []);
 
     if (!dashStats) return null;
@@ -58,10 +63,29 @@ export const IntelligenceTab: React.FC = () => {
                 <StatCard label="Taux d'acceptation" value={`${dashStats.acceptanceRate}%`} color="#8b5cf6" />
             </div>
 
-            {/* Patterns + type-pair */}
+            {/* Semantic Knowledge */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SettingsCard>
-                    <CardSection title="Patterns appris" icon={<Brain size={18} weight="duotone" />} />
+                    <CardSection title="Dictionnaire Sémantique" subtitle="Base de connaissances des acronymes médicaux." icon={<Brain size={18} weight="duotone" />} />
+                    <CardBody className="flex flex-col">
+                        <div className="flex items-center justify-between py-3.5 border-b border-slate-200 dark:border-slate-700">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Abréviations natives (médicales)</span>
+                            <span className="text-sm font-bold px-2.5 py-0.5 rounded-md bg-teal-50 dark:bg-teal-500/10 text-teal-600">{Object.keys(MEDICAL_ABBREVIATIONS).length}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-3.5 border-b border-slate-200 dark:border-slate-700">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Abréviations personnalisées</span>
+                            <span className="text-sm font-bold px-2.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-500/10 text-purple-600">{customAbbrCount}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-3.5">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Total termes reconnus</span>
+                            <span className="text-sm font-bold px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600">{Object.keys(MEDICAL_ABBREVIATIONS).length + customAbbrCount}</span>
+                        </div>
+                    </CardBody>
+                </SettingsCard>
+            
+                {/* Patterns + type-pair */}
+                <SettingsCard>
+                    <CardSection title="Patterns appris" subtitle="Liens validés ou rejetés par vos soins." icon={<Lightning size={18} weight="duotone" />} />
                     <CardBody className="flex flex-col">
                         {[
                             { label: 'Positifs (boosts)', value: dashStats.positivePatternCount, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },

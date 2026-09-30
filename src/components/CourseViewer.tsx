@@ -7,7 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { useCardStore } from '../store/useCardStore';
 import { useTheme } from '../context/ThemeContext';
-import DOMPurify from 'dompurify';
+import { safeHtml, sanitizeHtml } from '../utils/sanitize';
 import { toast } from 'react-hot-toast';
 
 interface CourseViewerProps {
@@ -470,7 +470,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                         </div>
                                         <div className="m-0 mb-2 text-[1.05rem]" >
                                             {fc.format === 'cloze' ? (
-                                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((fc.content || '').replace(/\{([^}]+)\}/g, '<strong>___________</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong>___________</strong>')) }} />
+                                                <span dangerouslySetInnerHTML={safeHtml((fc.content || '').replace(/\{([^}]+)\}/g, '<strong>___________</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong>___________</strong>'))} />
                                             ) : (
                                                 fc.title
                                             )}
@@ -490,7 +490,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                                         </div>
                                         <div className="text-[#333] text-[1.05rem]" >
                                             {fc.format === 'cloze' ? (
-                                                <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((fc.content || '').replace(/\{([^}]+)\}/g, '<strong style="color: black; text-decoration: underline">$1</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong style="color: black; text-decoration: underline">$1</strong>')) }} />
+                                                <span dangerouslySetInnerHTML={safeHtml((fc.content || '').replace(/\{([^}]+)\}/g, '<strong style="color: black; text-decoration: underline">$1</strong>').replace(/\|\|([^|]+)\|\|/g, '<strong style="color: black; text-decoration: underline">$1</strong>'))} />
                                             ) : (
                                                 <MarkdownRenderer content={fc.details || ''} onInternalLinkClick={handleInternalLinkClick} />
                                             )}

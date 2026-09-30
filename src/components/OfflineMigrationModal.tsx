@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useUIStore } from '../store/useUIStore';
 import { useAuth } from '../context/AuthContext';
 import { useCardStore } from '../store/useCardStore';
-import { writeBatch, doc } from 'firebase/firestore';
-import { db, prepareForFirebase } from '../lib/firebase';
+import { cardSyncService } from '../services/cardSyncService';
+import { clearOfflineCards } from '../storage';
 import { toast } from '../store/useToastStore';
 import { CloudArrowUp, X } from '@phosphor-icons/react';
 import type { Card } from '../types';
@@ -21,7 +21,6 @@ export const OfflineMigrationModal: React.FC = () => {
     const handleAdopt = async () => {
         setIsMigrating(true);
         try {
-            const batch = writeBatch(db);
             const mergedCards = [...cards];
             let migratedCount = 0;
             
@@ -29,12 +28,12 @@ export const OfflineMigrationModal: React.FC = () => {
                 const adopted: Card = { ...localCard, ownerUid: user.uid };
                 const idx = mergedCards.findIndex(c => c.id === adopted.id);
                 if (idx >= 0) mergedCards[idx] = adopted;
-                const cardRef = doc(db, `users/${user.uid}/cards`, adopted.id);
-                batch.set(cardRef, prepareForFirebase(adopted));
+                cardSyncService.saveCard(adopted);
                 migratedCount++;
             }
             
-            await batch.commit();
+            await clearOfflineCards();
+            
             setCards(mergedCards, false);
             toast.success(`✓ ${migratedCount} fiche${migratedCount > 1 ? 's' : ''} hors-ligne migrée${migratedCount > 1 ? 's' : ''} vers votre compte.`);
             setPendingOfflineCards(null);

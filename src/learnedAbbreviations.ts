@@ -6,7 +6,7 @@
 import type { Card } from './types';
 
 // Learned abbreviations storage (merged with static dictionary)
-let learnedAbbreviations: Map<string, Set<string>> = new Map();
+const learnedAbbreviations: Map<string, Set<string>> = new Map();
 
 // Static dictionary of common medical abbreviations (French)
 const STATIC_ABBREVIATIONS: Record<string, string[]> = {

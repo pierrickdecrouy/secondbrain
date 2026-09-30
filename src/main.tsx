@@ -17,7 +17,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { AuthProvider } from './context/AuthContext';
 
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

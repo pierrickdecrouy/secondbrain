@@ -2,21 +2,38 @@ import type { Card } from './types';
 import { semanticSearch, isSemanticSearchReady } from './semanticSearch';
 import { expandMedicalQuery } from './medicalAbbreviations';
 
-// Legacy functions for compatibility (no-op since FTS5 handles indexing via SQLite triggers)
-export function rebuildIndex(_cards: Card[]): void {
-    // No-op
+import FlexSearch from 'flexsearch';
+
+// Create a FlexSearch Document index for the Web fallback
+const fallbackIndex = new FlexSearch.Document({
+    document: {
+        id: 'id',
+        index: ['title', 'subtitle', 'content', 'tags_joined'],
+        store: ['content'] // Store content to generate snippets
+    },
+    tokenize: 'forward'
+});
+
+export function rebuildIndex(cards: Card[]): void {
+    cards.forEach(card => updateIndex(card));
 }
 
-export function addToIndex(_card: Card): void {
-    // No-op
+export function addToIndex(card: Card): void {
+    updateIndex(card);
 }
 
-export function updateIndex(_card: Card): void {
-    // No-op
+export function updateIndex(card: Card): void {
+    fallbackIndex.update({
+        id: card.id,
+        title: card.title || '',
+        subtitle: card.subtitle || '',
+        content: card.content || '',
+        tags_joined: (card.tags || []).join(' ')
+    });
 }
 
-export function removeFromIndex(_cardId: string): void {
-    // No-op
+export function removeFromIndex(cardId: string): void {
+    fallbackIndex.remove(cardId);
 }
 
 export interface FTSResult {
@@ -24,8 +41,28 @@ export interface FTSResult {
     highlight: string;
 }
 
+function generateSnippet(content: string, query: string): string {
+    if (!content || !query) return '';
+    const lowerContent = content.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const index = lowerContent.indexOf(lowerQuery);
+    
+    if (index === -1) return content.substring(0, 64) + '...';
+    
+    const start = Math.max(0, index - 30);
+    const end = Math.min(content.length, index + query.length + 30);
+    
+    let snippet = content.substring(start, end);
+    if (start > 0) snippet = '...' + snippet;
+    if (end < content.length) snippet = snippet + '...';
+    
+    // Highlight (naive)
+    const regex = new RegExp(`(${query})`, 'gi');
+    return snippet.replace(regex, '<b>$1</b>');
+}
+
 /**
- * Fast Lexical Search using SQLite FTS5.
+ * Fast Lexical Search using SQLite FTS5 (Electron) or FlexSearch (Web Fallback).
  * Returns both the ID and a highlighted snippet of the match.
  */
 export async function fastLexicalSearch(query: string, limit = 50): Promise<FTSResult[]> {
@@ -35,10 +72,29 @@ export async function fastLexicalSearch(query: string, limit = 50): Promise<FTSR
         try {
             return await window.electronAPI.searchCardsFTS(query, limit);
         } catch (e) {
-            return [];
+            console.warn('Electron FTS failed, falling back to FlexSearch', e);
         }
     }
-    return [];
+    
+    // Web Fallback using FlexSearch
+    const results = fallbackIndex.search(query, limit, { enrich: true });
+    
+    // FlexSearch document search returns an array of results per indexed field.
+    // E.g. [{ field: 'title', result: [{id, doc}, ...] }, ...]
+    const uniqueMatches = new Map<string, FTSResult>();
+    
+    results.forEach((fieldResult: any) => {
+        fieldResult.result.forEach((doc: any) => {
+            if (!uniqueMatches.has(doc.id)) {
+                uniqueMatches.set(doc.id, {
+                    id: doc.id.toString(),
+                    highlight: generateSnippet(doc.doc?.content || '', query)
+                });
+            }
+        });
+    });
+    
+    return Array.from(uniqueMatches.values()).slice(0, limit);
 }
 
 /**

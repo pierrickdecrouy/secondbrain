@@ -97,28 +97,30 @@ export const CourseEditor: React.FC<CourseEditorProps> = ({ value, onChange, exi
     const [showCardSelector, setShowCardSelector] = useState(false);
     const [cardSearch, setCardSearch] = useState('');
     const selectorRef = useRef<HTMLDivElement>(null);
+    const extensions = React.useMemo(() => [
+        StarterKit,
+        Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded' } }),
+        Placeholder.configure({ placeholder: 'Commencez à rédiger votre cours...' }),
+        Table.configure({ resizable: true }),
+        TableRow,
+        TableHeader,
+        TableCell,
+        Link.configure({ openOnClick: false }),
+        Markdown,
+        MedicalAlert,
+        CardSuggestionPlugin.configure({
+            suggestion: getSuggestionOptions(existingCards),
+        }),
+        ClozeExtension,
+    ], [existingCards]);
+
     const editor = useEditor({
         editorProps: {
             attributes: {
                 class: 'prose dark:prose-invert prose-indigo max-w-3xl mx-auto focus:outline-none min-h-full'
             }
         },
-        extensions: [
-            StarterKit,
-            Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded' } }),
-            Placeholder.configure({ placeholder: 'Commencez à rédiger votre cours...' }),
-            Table.configure({ resizable: true }),
-            TableRow,
-            TableHeader,
-            TableCell,
-            Link.configure({ openOnClick: false }),
-            Markdown,
-            MedicalAlert,
-            CardSuggestionPlugin.configure({
-                suggestion: getSuggestionOptions(existingCards),
-            }),
-            ClozeExtension,
-        ],
+        extensions,
         content: value,
         onUpdate: ({ editor }) => {
             // We save as Markdown by default to keep DB clean, 

@@ -35,8 +35,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     removeSetting: (key) => ipcRenderer.invoke('remove-setting', key),
 
     // Vector Index
-    loadVectorIndex: (shardId?: string) => ipcRenderer.invoke('load-vector-index', shardId),
-    saveVectorIndex: (buffer: Uint8Array, shardId?: string) => ipcRenderer.invoke('save-vector-index', buffer, shardId),
+    loadVectorIndex: (shardId) => ipcRenderer.invoke('load-vector-index', shardId),
+    saveVectorIndex: (buffer, shardId) => ipcRenderer.invoke('save-vector-index', buffer, shardId),
 
     // AI Model Management
     checkModelExists: (filename) => ipcRenderer.invoke('check-model-exists', filename),

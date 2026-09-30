@@ -36,7 +36,7 @@ export function generateSearchSynthesis(
 
     if (relevantCards.length === 0) return null;
 
-    let sortedCards = [...relevantCards];
+    const sortedCards = [...relevantCards];
     const exactMatchIndex = sortedCards.findIndex(c => c.title.toLowerCase() === normalizedQuery);
 
     if (exactMatchIndex !== -1) {
@@ -87,7 +87,7 @@ export function generateSearchSynthesis(
 
     const topCards = sortedCards.slice(0, 6);
 
-    let points: { text: string; source: { id: string; title: string; type: string } }[] = [];
+    const points: { text: string; source: { id: string; title: string; type: string } }[] = [];
 
     // Inject Graph-RAG Direct Link Point FIRST if found
     if (directLinkReason && directLinkSource) {

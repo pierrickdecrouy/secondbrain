@@ -48,7 +48,7 @@ interface AppLayoutProps {
         
         {/* Sidebar Container */}
         <div 
-          className={`relative flex-shrink-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-[100] ${
+          className={`hidden md:block relative flex-shrink-0 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-[100] ${
               isHomeSection ? 'w-0' : 'w-[104px]'
           }`}
         >
@@ -233,6 +233,42 @@ interface AppLayoutProps {
           {children}
         </div>
       </main>
+
+      {/* Bottom Navigation Bar for Mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/80 dark:bg-[#18181b]/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-white/10 z-[1200] flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
+        {navItems.map(item => {
+          const isActive = activeSection === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                onNavigate(item.id as AppSection);
+                useUIStore.getState().setProfileMenuOpen(false);
+              }}
+              className="relative flex flex-col items-center justify-center w-full h-full border-none bg-transparent cursor-pointer outline-none"
+            >
+              <div className={`transition-all duration-300 ${isActive ? 'text-slate-900 dark:text-white -translate-y-1' : 'text-slate-500 dark:text-slate-400'}`}>
+                {item.icon}
+              </div>
+              <span className={`text-[10px] font-semibold transition-all duration-300 absolute bottom-1.5 ${isActive ? 'text-slate-900 dark:text-white opacity-100 translate-y-0' : 'text-slate-500 dark:text-slate-400 opacity-0 translate-y-1'}`}>
+                {item.id === 'cards' ? 'Fiches' : item.id === 'courses' ? 'Cours' : item.id === 'network' ? 'Graphe' : item.id === 'review' ? 'Révision' : 'Stats'}
+              </span>
+              
+              {/* Active Dot */}
+              {isActive && (
+                <div className="absolute top-1.5 w-1 h-1 rounded-full bg-slate-900 dark:bg-white" />
+              )}
+
+              {/* Due Badge for Mobile Review Tab */}
+              {item.id === 'review' && dueCount > 0 && (
+                <span className="absolute top-2 right-1/2 translate-x-3 flex items-center justify-center h-4 min-w-[16px] px-1 text-[9px] rounded-full bg-indigo-500 text-white font-extrabold shadow-sm border-2 border-white dark:border-[#18181b]">
+                  {dueCount > 99 ? '99+' : dueCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }

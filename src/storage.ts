@@ -23,11 +23,11 @@ class PharmaBrainDB extends Dexie {
 
     constructor(dbName: string) {
         super(dbName);
-        this.version(3).stores({
+        this.version(4).stores({
             cards: 'id, type', // Primary key and indexed props
             settings: 'key',
             vectorIndices: 'shardId',
-            syncTasks: 'id'
+            syncTasks: 'id, timestamp'
         });
     }
 }
@@ -50,6 +50,23 @@ export function setStorageUid(uid: string | null) {
         console.error("Erreur d'ouverture DB:", e);
         toast.error('Erreur d\'ouverture de la base de données locale.');
     });
+}
+
+export async function getOfflineCards(): Promise<Card[]> {
+    if (isElectron()) return []; // Not implemented for electron in this context
+    const offlineDb = new PharmaBrainDB('PharmaBrainDB_offline');
+    await offlineDb.open();
+    const cards = await offlineDb.cards.toArray();
+    offlineDb.close();
+    return cards;
+}
+
+export async function clearOfflineCards(): Promise<void> {
+    if (isElectron()) return;
+    const offlineDb = new PharmaBrainDB('PharmaBrainDB_offline');
+    await offlineDb.open();
+    await offlineDb.cards.clear();
+    offlineDb.close();
 }
 
 // Convert HTML to plain text/Markdown

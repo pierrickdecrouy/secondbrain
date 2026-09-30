@@ -377,8 +377,8 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({
     }
 
     return (
-      <div className="flex-1 overflow-y-auto">
-        <main className="max-w-7xl mx-auto px-6 py-8">
+      <div className="flex-1 overflow-y-auto w-full h-full pb-[calc(1rem+68px+env(safe-area-inset-bottom))] md:pb-0">
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
           
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">

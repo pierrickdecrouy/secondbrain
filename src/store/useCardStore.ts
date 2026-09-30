@@ -9,6 +9,7 @@ import { CardSchema } from '../schema';
 import { auth, db } from '../lib/firebase';
 import { useUIStore } from './useUIStore';
 import { cardSyncService } from '../services/cardSyncService';
+import { extractKeywordsAsync } from '../algorithms/keywordExtractor';
 
 interface CardState {
   cards: Card[];
@@ -30,6 +31,7 @@ interface CardState {
   reloadFromStorage: () => Promise<void>;
   loadDemoData: () => Promise<void>;
   clearStore: () => void;
+  mergeRemoteCards: (remoteCards: Card[], deletedIds: string[]) => void;
 }
 
 export const useCardStore = create<CardState>((set, get) => ({
@@ -45,9 +47,56 @@ export const useCardStore = create<CardState>((set, get) => ({
     set((state) => {
       const newCards = typeof cardsOrUpdater === 'function' ? cardsOrUpdater(state.cards) : cardsOrUpdater;
       if (!skipSave) {
-        saveCardsAsync(newCards).catch(err => toast.error('Erreur lors de la sauvegarde locale.'));
+        saveCardsAsync(newCards).catch(() => toast.error('Erreur lors de la sauvegarde locale.'));
       }
       return { cards: newCards };
+    });
+  },
+
+  mergeRemoteCards: (remoteCards, deletedIds) => {
+    set((state) => {
+      const cardMap = new Map(state.cards.map(c => [c.id, c]));
+      let hasChanges = false;
+      
+      // Handle deletions
+      for (const id of deletedIds) {
+        if (cardMap.has(id)) {
+          cardMap.delete(id);
+          removeFromIndex(id);
+          hasChanges = true;
+        }
+      }
+
+      // Handle additions/updates
+      for (const remoteCard of remoteCards) {
+        const localCard = cardMap.get(remoteCard.id);
+        
+        if (!localCard) {
+          // New card from remote
+          cardMap.set(remoteCard.id, remoteCard);
+          updateIndex(remoteCard);
+          hasChanges = true;
+        } else if (remoteCard.updatedAt && localCard.updatedAt) {
+          // Both have timestamps, compare
+          if (remoteCard.updatedAt > localCard.updatedAt) {
+            cardMap.set(remoteCard.id, remoteCard);
+            updateIndex(remoteCard);
+            hasChanges = true;
+          }
+        } else if (remoteCard.updatedAt && !localCard.updatedAt) {
+           cardMap.set(remoteCard.id, remoteCard);
+           updateIndex(remoteCard);
+           hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        const newCards = Array.from(cardMap.values());
+        saveCardsAsync(newCards).catch(console.error);
+        return { cards: newCards };
+      }
+      
+      return state;
     });
   },
 
@@ -62,7 +111,8 @@ export const useCardStore = create<CardState>((set, get) => ({
       // If cards are empty here after loading, it means this is truly a fresh DB
       // (db_initialized would have seeded already, so we don't double-seed).
       set({ cards, isLoading: false });
-    } catch (_err) {
+    } catch (err) {
+      console.error("Error reloading cards from storage:", err);
       set({ isLoading: false });
     }
   },
@@ -86,7 +136,8 @@ export const useCardStore = create<CardState>((set, get) => ({
       }
       set({ cards: newCards, isLoading: false });
       toast.success("Cours de démonstration chargé !");
-    } catch (_err) {
+    } catch (err) {
+      console.error("Error loading demo data:", err);
       set({ isLoading: false });
       toast.error("Erreur lors du chargement des données.");
     }
@@ -94,7 +145,7 @@ export const useCardStore = create<CardState>((set, get) => ({
 
   handleSaveCard: (card: Card) => {
     const state = get();
-    let newCards = [...state.cards];
+    const newCards = [...state.cards];
     const existsIndex = newCards.findIndex(c => c.id === card.id);
     
     // Ownership check for existing cards
@@ -113,6 +164,26 @@ export const useCardStore = create<CardState>((set, get) => ({
       ...card,
       ownerUid: auth.currentUser?.uid ?? (existsIndex >= 0 ? newCards[existsIndex].ownerUid : null),
     };
+
+    // --- Robot Bibliothécaire : Extraction automatique des mots-clés ---
+    if (!stampedCard.tags || stampedCard.tags.length === 0) {
+      stampedCard.tags = [];
+      extractKeywordsAsync(stampedCard.title, stampedCard.subtitle, stampedCard.content).then(generatedTags => {
+        if (generatedTags.length > 0) {
+          const currentCards = get().cards;
+          const idx = currentCards.findIndex(c => c.id === stampedCard.id);
+          if (idx >= 0) {
+            const updatedCard = { ...currentCards[idx], tags: generatedTags };
+            const updatedCards = [...currentCards];
+            updatedCards[idx] = updatedCard;
+            set({ cards: updatedCards });
+            saveCardsAsync(updatedCards).catch(console.error);
+            cardSyncService.saveCard(updatedCard);
+            updateIndex(updatedCard);
+          }
+        }
+      });
+    }
 
     if (stampedCard.manualConnections && stampedCard.manualConnections.length > 0) {
       const oldCard = existsIndex >= 0 ? newCards[existsIndex] : null;
@@ -228,6 +299,7 @@ export const useCardStore = create<CardState>((set, get) => ({
       if (result.success) {
         validCards.push(result.data as Card);
       } else {
+        console.error("Invalid card during batch import:", result.error);
       }
     });
 
@@ -258,6 +330,7 @@ export const useCardStore = create<CardState>((set, get) => ({
       batch.commit()
         .then(() => useUIStore.getState().setSyncStatus('synced'))
         .catch(err => {
+          console.error("Batch sync to Firebase failed:", err);
           useUIStore.getState().setSyncStatus('error');
         });
     }

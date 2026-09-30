@@ -52,33 +52,35 @@ export const FullCourseEditor: React.FC<FullCourseEditorProps> = ({
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    const extensions = React.useMemo(() => [
+        StarterKit,
+        Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded' } }),
+        Underline,
+        TextAlign.configure({ types: ['heading', 'paragraph'] }),
+        Image.configure({ inline: true, allowBase64: true }),
+        TextStyle,
+        Color,
+        Placeholder.configure({ placeholder: 'Rédigez le contenu de votre cours ici...' }),
+        Table.configure({ resizable: true }),
+        TableRow,
+        TableHeader,
+        TableCell,
+        Link.configure({ openOnClick: false }),
+        Markdown,
+        MedicalAlert, // Same medical blocks
+        CardSuggestionPlugin.configure({
+            suggestion: getSuggestionOptions(existingCards),
+        }),
+        ClozeExtension,
+    ], [existingCards]);
+
     const editor = useEditor({
         editorProps: {
             attributes: {
                 class: 'prose dark:prose-invert prose-indigo max-w-none focus:outline-none min-h-full'
             }
         },
-        extensions: [
-            StarterKit,
-            Highlight.configure({ HTMLAttributes: { class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded' } }),
-            Underline,
-            TextAlign.configure({ types: ['heading', 'paragraph'] }),
-            Image.configure({ inline: true, allowBase64: true }),
-            TextStyle,
-            Color,
-            Placeholder.configure({ placeholder: 'Rédigez le contenu de votre cours ici...' }),
-            Table.configure({ resizable: true }),
-            TableRow,
-            TableHeader,
-            TableCell,
-            Link.configure({ openOnClick: false }),
-            Markdown,
-            MedicalAlert, // Same medical blocks
-            CardSuggestionPlugin.configure({
-                suggestion: getSuggestionOptions(existingCards),
-            }),
-            ClozeExtension,
-        ],
+        extensions,
         content: course.details || course.content || '',
     });
 

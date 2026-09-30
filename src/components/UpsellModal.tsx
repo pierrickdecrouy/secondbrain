@@ -26,9 +26,9 @@ const FEATURE_LABELS: Record<string, { title: string; desc: string; icon: string
         icon: '⚙️',
     },
     default: {
-        title: 'Fonctionnalité Premium',
-        desc: 'Connectez-vous pour profiter de cette fonctionnalité et bien plus encore.',
-        icon: '✨',
+        title: 'Accès Bêta Restreint',
+        desc: 'Cette fonctionnalité est réservée aux utilisateurs ayant un accès bêta actif. Contactez l\'administrateur pour obtenir un accès.',
+        icon: '🔒',
     },
 };
 
@@ -76,21 +76,13 @@ export const UpsellModal: React.FC<UpsellModalProps> = ({ isOpen, onClose, onSig
 
                         {/* CTA */}
                         <motion.button
-                            onClick={onSignIn}
+                            onClick={onClose}
                             whileHover={{ scale: 1.02, boxShadow: '0 0 32px rgba(16,185,129,0.4)' }}
                             whileTap={{ scale: 0.97 }}
                             className="w-full text-white border-none rounded-[14px] p-3.5 text-[0.95rem] font-bold cursor-pointer font-inherit shadow-[0_4px_20px_rgba(16,185,129,0.3)] mb-3 bg-gradient-to-br from-emerald-500 to-emerald-600"
-                            
                         >
-                            Créer un compte gratuit
+                            Compris
                         </motion.button>
-
-                        <button
-                            onClick={onClose}
-                            className="bg-transparent border-none text-white/30 text-[0.8rem] cursor-pointer font-inherit hover:text-white/50 transition-colors"
-                        >
-                            Continuer sans compte
-                        </button>
                     </motion.div>
                 </>
             )}

@@ -7,7 +7,6 @@ export async function askEXTNDBot(
   query: string,
   allCards: Card[],
   chatHistory: ChatMessage[],
-  config: LlmConfig,
   onChunk: (chunk: string) => void
 ): Promise<void> {
   // 1. Retrouver les fiches les plus pertinentes sémantiquement
@@ -30,34 +29,9 @@ export async function askEXTNDBot(
   }
   
   // 2. Extraire le texte de ces fiches
-  const contextCards = matchingIds
+    const contextCards = matchingIds
     .map(id => allCards.find(c => c.id === id))
     .filter((c): c is Card => c !== undefined);
-
-  // Si pas de clé API (Mode Hors-Ligne / Moteur Sémantique)
-  if (!config.apiKey) {
-    if (contextCards.length === 0) {
-      onChunk("Aucune fiche ne semble correspondre à votre requête.");
-      return;
-    }
-    
-    let response = "*(Mode Hors-Ligne)*\n\nVoici les fiches les plus pertinentes trouvées pour votre recherche :\n\n";
-    for (const card of contextCards) {
-      response += `### ${card.title}\n`;
-      // Extract a small snippet
-      const content = card.content ? card.content.substring(0, 150).replace(/\n/g, ' ') + '...' : 'Aucun contenu';
-      response += `> ${content}\n\n`;
-    }
-    response += "---\n*Astuce: Ajoutez une clé API OpenAI ou Gemini dans les paramètres pour discuter avec ces fiches.*";
-    
-    // Simulate streaming for better UX
-    const chunks = response.match(/.{1,10}/g) || [response];
-    for (const chunk of chunks) {
-      onChunk(chunk);
-      await new Promise(r => setTimeout(r, 15));
-    }
-    return;
-  }
   
   // 3. Mode LLM / RAG classique
   const contextText = contextCards.length > 0 
@@ -85,5 +59,5 @@ Question : ${query}`;
     { role: 'user', content: userPrompt }
   ];
   
-  await streamLLMResponse(messages, config, onChunk);
+  await streamLLMResponse(messages, onChunk);
 }

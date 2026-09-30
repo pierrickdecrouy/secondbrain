@@ -34,7 +34,7 @@ export const ToastContainer: React.FC = () => {
 
   return (
     <div
-      className="toastcontainer-style-1" 
+      className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-[9999] flex flex-col gap-3 pointer-events-none" 
       aria-live="polite"
       aria-label="Notifications"
     >
@@ -44,13 +44,15 @@ export const ToastContainer: React.FC = () => {
           <div
             key={t.id}
             role="status"
-            className="toastcontainer-style-2" style={{
-  background: style.bg,
-  boxShadow: `0 8px 24px ${style.border.replace('0.3', '0.4')}`
-}}
+            className="pointer-events-auto flex items-center gap-3 px-4 py-3 min-w-[280px] max-w-sm rounded-xl text-white font-medium shadow-xl border border-white/10" 
+            style={{
+              background: style.bg,
+              boxShadow: `0 8px 24px ${style.border.replace('0.3', '0.4')}`,
+              animation: 'toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}
           >
             {style.icon}
-            <span className="toastcontainer-style-3" >{t.message}</span>
+            <span className="flex-1 text-sm leading-snug">{t.message}</span>
             {t.action && (
               <button
                 onClick={(e) => {
@@ -58,9 +60,7 @@ export const ToastContainer: React.FC = () => {
                   t.action!.onClick();
                   dismiss(t.id);
                 }}
-                className="toastcontainer-style-4" 
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                className="ml-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 transition-colors" 
               >
                 {t.action.label}
               </button>
@@ -68,7 +68,7 @@ export const ToastContainer: React.FC = () => {
             <button
               onClick={() => dismiss(t.id)}
               aria-label="Fermer la notification"
-              className="toastcontainer-style-5" 
+              className="ml-1 p-1 rounded-full hover:bg-white/20 transition-colors shrink-0" 
             >
               <X size={14} weight="bold" />
             </button>

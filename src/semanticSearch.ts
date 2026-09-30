@@ -6,6 +6,7 @@
 import type { Card } from "./types";
 import { vectorStore } from "./embeddings/VoyVectorStore";
 import { toast } from "./store/useToastStore";
+import { idleManager } from "./services/idleManager";
 
 // Worker instance
 let embeddingWorker: Worker | null = null;
@@ -122,6 +123,7 @@ export function initSemanticSearch(
 
   // Handle worker-level errors (e.g., network issues, module load failures)
   embeddingWorker.onerror = (err) => {
+    console.error("Embedding worker error:", err);
     // Mark as -1 to indicate failure (UI can show "IA offline")
     modelLoadProgress = -1;
     onProgressCallback?.(-1);
@@ -185,7 +187,7 @@ function scheduleSave() {
   saveTimeout = setTimeout(() => {
     vectorStore
       .save()
-      .catch((err) => toast.error('Erreur lors de la sauvegarde des embeddings.'));
+      .catch(() => toast.error('Erreur lors de la sauvegarde des embeddings.'));
     saveTimeout = null;
   }, DEBOUNCE_DELAY_MS);
 }
@@ -200,6 +202,7 @@ export function buildCardEmbeddings(
       await processCardEmbeddings(cards, forceUpdate);
     })
     .catch((err) => {
+      console.error("Indexing error:", err);
     });
 
   return indexingQueue;
@@ -240,6 +243,9 @@ async function processCardEmbeddings(
   const cardMap = new Map(cards.map((c) => [c.id, c]));
 
   for (let i = 0; i < chunks.length; i++) {
+    // --- Garde-Fou : Pause si l'utilisateur est actif ---
+    await idleManager.waitUntilIdle();
+
     const chunk = chunks[i];
 
     // MiniLM-L12-v2 is symmetric, no prefix needed
@@ -280,7 +286,8 @@ async function processCardEmbeddings(
             vectorStore.add(entries);
             // Trigger debounced save instead of immediate save
             scheduleSave();
-          } catch (_err) {
+          } catch (err) {
+            console.error("Vectorstore add error:", err);
           }
           resolve();
         },
@@ -312,7 +319,7 @@ async function processCardEmbeddings(
   // Force a final save at the end of the batch
   if (saveTimeout) {
     clearTimeout(saveTimeout);
-    vectorStore.saveAllLoadedShards().catch((err) => toast.error('Erreur lors de la sauvegarde des fragments (shards).'));
+    vectorStore.saveAllLoadedShards().catch(() => toast.error('Erreur lors de la sauvegarde des fragments (shards).'));
     saveTimeout = null;
   }
 
@@ -349,6 +356,7 @@ export async function semanticSearch(
 
     return results.map((r) => r.id);
   } catch (error) {
+    console.error("Semantic search error:", error);
     return [];
   }
 }
@@ -439,6 +447,7 @@ export async function computePrecisionGraph(
         }
       });
     } catch (e) {
+      console.error("Semantic search neighbor error:", e);
     }
 
     // Collect candidates via Keyword Search (if function provided)
@@ -569,7 +578,7 @@ export async function computePrecisionGraph(
   }
 
   // Generate Clique Links for each group
-  for (const [_, memberIds] of groupMap.entries()) {
+  for (const memberIds of groupMap.values()) {
     if (memberIds.length < 2) continue;
 
     // Create links between all pairs in the group

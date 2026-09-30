@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useCardStore as useCards } from '../store/useCardStore';
 import { useUIStore as useUI } from '../store/useUIStore';
 import { useDueCards } from '../hooks/useDueCards';
-import type { AppSection } from '../App';
+import type { AppSection } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { Plus, Command, MagnifyingGlass, Brain, ShareNetwork, BookOpen, ArrowRight, Sparkle } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -94,7 +94,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                 style={{ backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)', backgroundSize: '32px 32px' }}
             />
 
-            <main className="relative flex-1 flex flex-col max-w-4xl mx-auto w-full px-8 py-16 justify-center gap-10">
+            <main className="relative flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 md:px-8 pt-32 pb-24 md:py-16 justify-start md:justify-center gap-6 md:gap-10">
 
                 {/* ── Welcome ── */}
                 <motion.div
@@ -103,15 +103,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     className="flex flex-col gap-2"
                 >
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-semibold mb-1">
-                        <Sparkle size={16} weight="fill" />
-                        <span>Tableau de bord</span>
-                    </div>
-                    <h1 className="text-4xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight leading-tight">
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight leading-tight">
                         {getGreeting()},{' '}
                         <span className="text-indigo-600 dark:text-indigo-400">{userName || 'Bienvenue'}</span>
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-lg font-normal">
+                    <p className="text-slate-500 dark:text-slate-400 text-base md:text-lg font-normal">
                         Que souhaitez-vous explorer ou réviser aujourd'hui ?
                     </p>
                 </motion.div>

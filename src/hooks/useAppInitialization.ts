@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCardStore } from '../store/useCardStore';
 import { loadCardsAsync, saveCardsAsync } from '../storage';
-import { initialCards } from '../data';
+
 import { initSemanticSearch, buildCardEmbeddings } from '../semanticSearch';
 import { loadFeedback } from '../linkFeedback';
 import { loadSettingAsync, saveSettingAsync } from '../persistentSettings';
@@ -13,24 +13,6 @@ type Workspace = { id: string; name: string; createdAt: number; updatedAt: numbe
 const WORKSPACES_KEY = 'pharmabrain_workspaces_v1';
 const ACTIVE_WORKSPACE_KEY = 'pharmabrain_active_workspace_v1';
 const DEFAULT_WORKSPACE_ID = 'workspace-default';
-const INITIAL_LOAD_SEED_COUNT = 6;
-
-function buildWorkspaceSeedCards(workspaceId: string, limit: number): Card[] {
-    const seeds = initialCards.slice(0, Math.min(limit, initialCards.length));
-    const seedIds = new Set(seeds.map(card => card.id));
-    const now = Date.now();
-  
-    return seeds.map((card) => ({
-      ...card,
-      id: `${workspaceId}-${card.id}`,
-      workspaceId,
-      createdAt: now,
-      updatedAt: now,
-      manualConnections: card.manualConnections
-        ?.filter(targetId => seedIds.has(targetId))
-        .map(targetId => `${workspaceId}-${targetId}`)
-    }));
-}
 
 export function useAppInitialization() {
     const { cards, setIsLoading, setCards } = useCardStore();
@@ -94,14 +76,8 @@ export function useAppInitialization() {
 
                 let finalCards: Card[] = migratedCards;
 
-                if (finalCards.length === 0) {
-                    finalCards = buildWorkspaceSeedCards(activeWorkspace, INITIAL_LOAD_SEED_COUNT);
-                    await saveCardsAsync(finalCards);
-                }
-
                 setCards(finalCards, true);
-            } catch (e) {
-            } finally {
+            } catch (e) { console.error("Ignored error:", e); } finally {
                 setIsLoading(false);
             }
         };

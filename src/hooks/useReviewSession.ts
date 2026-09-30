@@ -1,12 +1,11 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import type { Card } from '../types';
-import { useUIStore } from '../store/useUIStore';
+import { useReviewStore } from '../store/useReviewStore';
 import { auth } from '../lib/firebase';
 import { loadSrsSettings } from '../components/settings/RevisionTab';
 
 export function useReviewSession(cards: Card[]) {
-    // Removed setActiveSection from useUIStore
-    const [reviewSession, setReviewSession] = useState<{ cardIds: string[]; title: string; initialIndex?: number } | null>(null);
+    const { reviewSession, setReviewSession } = useReviewStore();
 
     const reviewSessionCards = useMemo(() => {
         if (!reviewSession) return [];
@@ -72,7 +71,13 @@ export function useReviewSession(cards: Card[]) {
     }, [cards]);
 
     const startCourseReview = useCallback((courseId: string, title: string) => {
-        const flashcards = cards.filter(c => c.nodeType === 'flashcard' && c.parentId === courseId);
+        const getAllDescendantIds = (parentId: string): string[] => {
+            const children = cards.filter(c => c.parentId === parentId);
+            return [parentId, ...children.flatMap(c => getAllDescendantIds(c.id))];
+        };
+        const courseIds = getAllDescendantIds(courseId);
+        
+        const flashcards = cards.filter(c => c.nodeType === 'flashcard' && c.parentId && courseIds.includes(c.parentId));
         if (flashcards.length === 0) return;
         // Prioritize due cards first, then new ones
         const shuffled = [...flashcards].sort((a, b) => {

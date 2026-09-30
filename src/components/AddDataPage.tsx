@@ -116,12 +116,12 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
         <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#09090b] text-slate-800 dark:text-slate-100 font-sans">
             
             {/* TOP HEADER */}
-            <header className="h-[72px] bg-transparent flex items-center justify-between px-10 z-40 shrink-0 transition-all relative">
+            <header className="h-[72px] bg-transparent flex items-center justify-between px-4 md:px-10 z-40 shrink-0 transition-all relative">
                 
                 <div className="w-1/4">
                     <button onClick={handleBack} className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 text-sm font-bold transition-colors group bg-transparent border-none outline-none cursor-pointer p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
                         <CaretLeft size={18} weight="bold" className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
-                        <span>Retour au deck</span>
+                        <span className="hidden md:inline">Retour au deck</span>
                     </button>
                 </div>
 
@@ -131,12 +131,12 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                         
                         <button 
                             onClick={() => setActiveTab('concept')}
-                            className={`flex items-center space-x-2.5 px-4 py-1.5 rounded-xl transition-all duration-200 border-none outline-none cursor-pointer ${
+                            className={`flex items-center space-x-2.5 px-3 md:px-4 py-1.5 rounded-xl transition-all duration-200 border-none outline-none cursor-pointer ${
                                 activeTab === 'concept' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-600' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
                             }`}
                         >
                             <FileText size={16} weight={activeTab === 'concept' ? 'fill' : 'bold'} className={activeTab === 'concept' ? 'text-amber-500' : 'text-slate-400'} />
-                            <div className="flex flex-col items-start text-[13px] font-bold leading-tight">
+                            <div className="hidden md:flex flex-col items-start text-[13px] font-bold leading-tight">
                                 <span>Nouveau</span>
                                 <span>Concept</span>
                             </div>
@@ -144,12 +144,12 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                         
                         <button 
                             onClick={() => setActiveTab('flashcard')}
-                            className={`flex items-center space-x-2.5 px-4 py-1.5 rounded-xl transition-all duration-200 border-none outline-none cursor-pointer ${
+                            className={`flex items-center space-x-2.5 px-3 md:px-4 py-1.5 rounded-xl transition-all duration-200 border-none outline-none cursor-pointer ${
                                 activeTab === 'flashcard' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-600' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
                             }`}
                         >
                             <Stack size={16} weight={activeTab === 'flashcard' ? 'fill' : 'bold'} className={activeTab === 'flashcard' ? 'text-blue-500' : 'text-slate-400'}/>
-                            <div className="flex flex-col items-start text-[13px] font-bold leading-tight">
+                            <div className="hidden md:flex flex-col items-start text-[13px] font-bold leading-tight">
                                 <span>Nouvelle</span>
                                 <span>Flashcard</span>
                             </div>
@@ -159,12 +159,12 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                         
                         <button 
                             onClick={() => setActiveTab('import')}
-                            className={`flex items-center space-x-2.5 px-4 py-1.5 rounded-xl transition-all duration-200 border-none outline-none cursor-pointer ${
+                            className={`flex items-center space-x-2.5 px-3 md:px-4 py-1.5 rounded-xl transition-all duration-200 border-none outline-none cursor-pointer ${
                                 activeTab === 'import' ? 'bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-500/20 shadow-sm' : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5 border-transparent'
                             }`}
                         >
                             <UploadSimple size={16} weight={activeTab === 'import' ? 'fill' : 'bold'} className={activeTab === 'import' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}/>
-                            <div className="flex flex-col items-start text-[13px] font-bold leading-tight">
+                            <div className="hidden md:flex flex-col items-start text-[13px] font-bold leading-tight">
                                 <span>Import</span>
                                 <span>Massif</span>
                             </div>
@@ -182,10 +182,10 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                             <button 
                                 onClick={handleSave}
                                 disabled={!title.trim()}
-                                className="flex items-center space-x-2 bg-[#818CF8] hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 border-none outline-none cursor-pointer"
+                                className="flex items-center space-x-2 bg-[#818CF8] hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 md:px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 border-none outline-none cursor-pointer"
                             >
                                 <FloppyDisk size={16} weight="bold" />
-                                <span>Enregistrer</span>
+                                <span className="hidden md:inline">Enregistrer</span>
                             </button>
                         </>
                     )}
@@ -198,7 +198,7 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                     <div className="max-w-3xl mx-auto w-full flex flex-col pt-16 lg:pt-24 pb-32 px-8 min-h-full relative">
                         
                         {/* Métadonnées (Top Tags) */}
-                        <div className="flex items-center space-x-3 mb-8">
+                        <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3 mb-6 md:mb-8 w-full">
                             <Dropdown
                                 value={selectedType}
                                 onChange={(v) => setSelectedType(v as CardType)}
@@ -284,7 +284,7 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
             
             {/* FOOTER TAGS (Seulement visible si pas import) */}
             {activeTab !== 'import' && (
-                <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-800 p-4 shrink-0 flex justify-center z-30 relative">
+                <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-800 p-4 shrink-0 flex justify-center z-30 relative pb-[calc(1rem+68px+env(safe-area-inset-bottom))] md:pb-4">
                     <div className="w-full max-w-4xl flex items-center rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
                         <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2.5 border-r border-slate-200 dark:border-slate-700 flex items-center space-x-2 text-slate-500 dark:text-slate-400 text-xs font-bold tracking-wider shrink-0">
                             <Info size={14} className="rotate-180" weight="bold" />

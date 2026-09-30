@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 
 import React, { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
@@ -93,7 +93,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
     // Auto-resize for when NetworkView is in a split pane (Mixte mode)
-    const containerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null!);
     const { dimensions, isFullscreen, toggleFullscreen } = useNetworkDimensions(containerRef, fgRef);
 
     const finalWidth = width || dimensions.width;
@@ -200,8 +200,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         // D3 might mutate links/nodes into complex objects, so we extract only what the worker needs
         const safeNodes = structuralData.nodes.map(n => ({ id: n.id, subtitle: n.subtitle, tags: n.tags }));
         const safeLinks = structuralData.links.map(l => ({
-            source: linkEndpointId(l.source as any),
-            target: linkEndpointId(l.target as any),
+            source: linkEndpointId(l.source as unknown as string),
+            target: linkEndpointId(l.target as unknown as string),
             value: l.value
         }));
 
@@ -244,12 +244,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 if (use3D) {
                     // 3D camera positioning
                     const distance = 80;
-                    const distRatio = 1 + distance / Math.hypot(targetNode.x || 1, targetNode.y || 1, (targetNode as any).z || 1);
+                    const distRatio = 1 + distance / Math.hypot(targetNode.x || 1, targetNode.y || 1, (targetNode as GraphNode & { z?: number }).z || 1);
                     fgRef.current.cameraPosition(
                         { 
                             x: targetNode.x * distRatio, 
                             y: targetNode.y * distRatio, 
-                            z: ((targetNode as any).z || 0) * distRatio 
+                            z: ((targetNode as GraphNode & { z?: number }).z || 0) * distRatio 
                         },
                         targetNode, // lookAt
                         1000  // duration ms
@@ -302,25 +302,31 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
     // Physics Engine Tuning
     useEffect(() => {
-        if (!use3D && fgRef.current) {
-            // Physics: Add gravity to pull isolated nodes/clusters to center
-            fgRef.current.d3Force('x', forceX(0).strength(0.08));
-            fgRef.current.d3Force('y', forceY(0).strength(0.08));
-
-            (fgRef.current.d3Force('charge') as any).strength(-80); // Less repulsion
-            (fgRef.current.d3Force('center') as any).strength(0.6); // Strong centering
-            (fgRef.current.d3Force('link') as any).distance(40); // Shorter links
-            fgRef.current.d3ReheatSimulation();
-        } else if (use3D && fgRef.current) {
-            // 3D physics tuning
+        const timer = setTimeout(() => {
             try {
-                (fgRef.current.d3Force('charge') as any)?.strength(-60);
-                (fgRef.current.d3Force('link') as any)?.distance(50);
-                fgRef.current.d3ReheatSimulation?.();
-            } catch {
-                // ForceGraph3D may not be mounted yet, ignore
+                if (!use3D && fgRef.current && (fgRef.current as any).d3Force) {
+                    const fg = fgRef.current as any;
+                    // Physics: Add gravity to pull isolated nodes/clusters to center
+                    fg.d3Force('x', forceX(0).strength(0.08));
+                    fg.d3Force('y', forceY(0).strength(0.08));
+
+                    fg.d3Force('charge')?.strength(-80); // Less repulsion
+                    fg.d3Force('center')?.strength(0.6); // Strong centering
+                    fg.d3Force('link')?.distance(40); // Shorter links
+                    fg.d3ReheatSimulation?.();
+                } else if (use3D && fgRef.current && (fgRef.current as any).d3Force) {
+                    const fg = fgRef.current as any;
+                    // 3D physics tuning
+                    fg.d3Force('charge')?.strength(-60);
+                    fg.d3Force('link')?.distance(50);
+                    fg.d3ReheatSimulation?.();
+                }
+            } catch (err) {
+                console.warn("D3 Physics tuning skipped due to unmount or graph not ready:", err);
             }
-        }
+        }, 50);
+
+        return () => clearTimeout(timer);
     }, [fgRef, graphData, use3D]);
 
     if (isLoading && graphData.nodes.length === 0) {
@@ -461,27 +467,30 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                         width={finalWidth}
                         height={finalHeight}
                         graphData={structuralData as { nodes: GraphNode[], links: GraphLink[] }}
-                        nodeLabel={(node: any) => node.name}
-                        nodeColor={(node: any) => get3DNodeColor(node)}
-                        nodeVal={(node: any) => {
-                            const base = Math.max(1, Math.min(node.val || 1, 4));
-                            return hoverNode?.id === node.id ? base * 2 : base;
+                        nodeLabel={(node: unknown) => (node as GraphNode).name}
+                        nodeColor={(node: unknown) => get3DNodeColor(node as GraphNode)}
+                        nodeVal={(node: unknown) => {
+                            const graphNode = node as GraphNode & { val?: number };
+                            const base = Math.max(1, Math.min(graphNode.val || 1, 4));
+                            return hoverNode?.id === graphNode.id ? base * 2 : base;
                         }}
                         nodeOpacity={0.9}
-                        linkColor={(link: any) => get3DLinkColor(link)}
+                        linkColor={(link: unknown) => get3DLinkColor(link as GraphLink)}
                         linkOpacity={0.6}
-                        linkWidth={(link: any) => {
-                            const src = linkEndpointId(link.source);
-                            const tgt = linkEndpointId(link.target);
+                        linkWidth={(link: unknown) => {
+                            const graphLink = link as GraphLink;
+                            const src = linkEndpointId(graphLink.source);
+                            const tgt = linkEndpointId(graphLink.target);
                             const linkKey = [src, tgt].sort().join('-');
                             if (pathLinks.has(linkKey)) return 3;
                             if (hoverNode && (src === hoverNode.id || tgt === hoverNode.id)) return 2;
                             return 1;
                         }}
-                        onNodeHover={(node: any) => {
-                            setHoverNode(node || null);
+                        onNodeHover={(node: unknown) => {
+                            setHoverNode((node as Node) || null);
                             document.body.style.cursor = node ? 'pointer' : 'default';
                         }}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         onNodeClick={handleGraphNodeClick as any}
                         onBackgroundClick={() => {
                             setSelectedNodes(new Set());
@@ -502,8 +511,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     height={finalHeight}
                     graphData={structuralData as { nodes: GraphNode[], links: GraphLink[] }}
                     nodeLabel="name"
-                    nodeCanvasObject={nodePaint}
-                    linkCanvasObject={linkPaint}
+                    nodeCanvasObject={nodePaint as any}
+                    linkCanvasObject={linkPaint as any}
 
                     cooldownTicks={100}
                     cooldownTime={3000}
@@ -511,13 +520,14 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                     d3VelocityDecay={0.3}
                     warmupTicks={50}
 
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onNodeHover={(node: any) => {
-                        setHoverNode(node || null);
+                    onNodeHover={(node: unknown) => {
+                        setHoverNode((node as Node) || null);
                         document.body.style.cursor = node ? 'pointer' : 'default';
                     }}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onLinkHover={handleLinkHover as any}
 
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onNodeClick={handleGraphNodeClick as any}
 
                     onBackgroundClick={() => {
@@ -532,9 +542,9 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
 
             {/* Top-Centered Minimalist Link Tooltip (Sober Redesign) */}
             {hoverLink && (
-                <div className="absolute bottom-6 left-6 z-50 pointer-events-auto">
+                <div className="absolute bottom-[calc(80px+env(safe-area-inset-bottom))] md:bottom-6 left-4 md:left-6 z-50 pointer-events-auto">
                     <NetworkTooltip
-                        link={hoverLink as unknown}
+                        link={hoverLink as any}
                         onReportIncorrect={
                             (hoverLink.type === 'semantic' || hoverLink.type === 'hybrid' || hoverLink.type === 'rrf' || !hoverLink.type) && onSuppressConnections
                                 ? () => {

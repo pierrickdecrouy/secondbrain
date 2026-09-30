@@ -107,6 +107,8 @@ declare global {
       loadCards: () => Promise<Card[]>;
       saveCards: (cards: Card[]) => Promise<void>;
       searchCardsFTS: (query: string, limit?: number) => Promise<{id: string, highlight: string}[]>;
+      getWorkspaces: () => Promise<{ workspaces: { id: string; name: string }[]; activeWorkspace: string }>;
+      switchWorkspace: (id: string) => Promise<{ success: boolean; error?: string }>;
       loadSetting: <T>(key: string) => Promise<T | undefined>;
       saveSetting: <T>(key: string, value: T) => Promise<void>;
       removeSetting: (key: string) => Promise<void>;
