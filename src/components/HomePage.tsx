@@ -4,7 +4,7 @@ import { useUIStore as useUI } from '../store/useUIStore';
 import { useDueCards } from '../hooks/useDueCards';
 import type { AppSection } from '../types';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, Command, MagnifyingGlass, Brain, ShareNetwork, BookOpen, ArrowRight, Sparkle } from '@phosphor-icons/react';
+import { Plus, Command, MagnifyingGlass, Brain, ShareNetwork, BookOpen, ArrowRight } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EmptyState } from './EmptyState';
 
@@ -22,7 +22,7 @@ const SEARCH_PLACEHOLDERS = [
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => {
     const { cards, isLoading } = useCards();
-    const { userName, setOmniboxOpen } = useUI();
+    const { userName, setOmniboxOpen, syncStatus, pendingSyncTasks } = useUI();
     const { totalToReview } = useDueCards(cards);
     const { getCategoryColor } = useTheme();
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -51,14 +51,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
         {
             id: 'review',
             icon: <Brain size={24} weight="duotone" />,
-            iconBg: 'bg-indigo-50 dark:bg-indigo-500/10',
-            iconColor: 'text-indigo-600 dark:text-indigo-400',
+            iconBg: 'bg-emerald-50 dark:bg-emerald-500/10',
+            iconColor: 'text-emerald-600 dark:text-emerald-400',
             title: 'Sessions',
             subtitle: totalToReview > 0 ? `${totalToReview} cartes en attente` : 'À jour ✓',
-            subtitleColor: totalToReview > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400',
+            subtitleColor: totalToReview > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-600 dark:text-emerald-400',
             description: "L'algorithme FSRS a sélectionné les cartes optimales pour aujourd'hui.",
             cta: totalToReview > 0 ? 'Commencer' : 'Explorer',
-            ctaStyle: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-500/20',
+            ctaStyle: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-500/20',
+            priority: 0,
         },
         {
             id: 'courses',
@@ -71,6 +72,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
             description: 'Naviguez dans vos fiches de cours et supports documentaires structurés.',
             cta: 'Lire',
             ctaStyle: 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 shadow-sm',
+            priority: 1,
         },
         {
             id: 'network',
@@ -83,8 +85,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
             description: 'Explorez visuellement les liens sémantiques entre vos différentes fiches.',
             cta: 'Explorer',
             ctaStyle: 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 shadow-sm',
+            priority: 2,
         },
-    ];
+    ].sort((a, b) => a.priority - b.priority);
 
     return (
         <div className="w-full h-full overflow-y-auto flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -110,6 +113,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddCard }) => 
                     <p className="text-slate-500 dark:text-slate-400 text-base md:text-lg font-normal">
                         Que souhaitez-vous explorer ou réviser aujourd'hui ?
                     </p>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.02, duration: 0.25 }}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-2"
+                >
+                    <div className="rounded-xl border border-emerald-200/70 dark:border-emerald-500/20 bg-emerald-50/70 dark:bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                        {totalToReview > 0 ? `${totalToReview} à réviser aujourd’hui` : 'Aucune carte en retard'}
+                    </div>
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        {cards.length} contenus au total
+                    </div>
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        {syncStatus === 'synced' ? 'Synchronisé' : syncStatus === 'pending' ? `Synchronisation (${pendingSyncTasks})` : 'Synchronisation en échec'}
+                    </div>
                 </motion.div>
 
                 {/* ── Search Omnibox ── */}
