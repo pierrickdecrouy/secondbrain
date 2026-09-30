@@ -131,6 +131,8 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
     const [showStats, setShowStats] = useState(false);
     const [aiExplanation, setAiExplanation] = useState<string | null>(null);
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const [sessionCompleted, setSessionCompleted] = useState(false);
+    const [reviewedCount, setReviewedCount] = useState(0);
 
     // Reset state on new card
     useEffect(() => {
@@ -179,15 +181,16 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
     }, [card, isCourseType]);
 
     const handleRate = useCallback((rating: 1 | 2 | 3 | 4) => {
-        if (!card || !shouldReveal) return;
+        if (!card || !shouldReveal || sessionCompleted) return;
         onRate(card.id, rating);
+        setReviewedCount(prev => prev + 1);
         if (index < cards.length - 1) {
             setIndex(prev => prev + 1);
             setIsAnswerRevealed(false);
         } else {
-            handleClose();
+            setSessionCompleted(true);
         }
-    }, [card, index, cards.length, onRate, shouldReveal, handleClose]);
+    }, [card, index, cards.length, onRate, shouldReveal, sessionCompleted]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -203,6 +206,9 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
             if (e.key === 'Escape') {
                 handleClose();
                 e.stopPropagation();
+            } else if (sessionCompleted && (e.key === 'Enter' || e.key === ' ')) {
+                handleClose();
+                e.preventDefault();
             } else if (e.key === ' ' || e.key === 'Enter') {
                 if (!shouldReveal) {
                     setIsAnswerRevealed(true);
@@ -217,10 +223,26 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleRate, shouldReveal, handleClose, isPaused, isCourseType, showEasyButton]);
+    }, [handleRate, shouldReveal, handleClose, isPaused, isCourseType, showEasyButton, sessionCompleted]);
 
     const modalRef = useFocusTrap(true);
 
+    if (cards.length === 0) {
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6" aria-modal="true" role="dialog">
+                <div className="w-full max-w-xl rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center shadow-2xl">
+                    <h2 className="m-0 text-2xl font-bold text-slate-900 dark:text-white">Aucune carte à réviser</h2>
+                    <p className="mt-3 mb-6 text-slate-500 dark:text-slate-400">Votre session est vide. Revenez à l’espace de révision pour relancer une session.</p>
+                    <button
+                        onClick={handleClose}
+                        className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold border-none cursor-pointer"
+                    >
+                        Retour
+                    </button>
+                </div>
+            </div>
+        );
+    }
     if (!card) return null;
 
     const qualityScore = card.progress?.difficulty ? (10 - card.progress.difficulty) * 10 : 50;
@@ -325,7 +347,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     </div>
 
                     {/* Main Content Area */}
-                    <div className={`flex-1 relative flex flex-col w-full h-full z-10 ${isCourseType ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
+                    <div className={`flex-1 relative flex flex-col w-full h-full z-10 ${isCourseType ? 'overflow-y-auto custom-scrollbar' : 'overflow-y-auto custom-scrollbar'}`}>
                         {isPaused ? (
                             <div className="flex-1 flex flex-col items-center justify-center text-center py-10 px-4 overflow-y-auto custom-scrollbar">
                                 <div className={`w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-6 shadow-sm`}>
@@ -375,6 +397,21 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                     Reprendre la révision
                                 </button>
                             </div>
+                        ) : sessionCompleted ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-10">
+                                <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mb-6">
+                                    <Brain size={40} className="text-emerald-600 dark:text-emerald-400" weight="duotone" />
+                                </div>
+                                <h3 className="m-0 text-3xl font-extrabold text-slate-900 dark:text-white">Session terminée</h3>
+                                <p className="mt-3 mb-1 text-slate-600 dark:text-slate-300 font-semibold">{reviewedCount} carte{reviewedCount > 1 ? 's' : ''} évaluée{reviewedCount > 1 ? 's' : ''}</p>
+                                <p className="mt-0 mb-8 text-slate-500 dark:text-slate-400">Excellent travail. Vous pouvez fermer cette session ou en démarrer une autre.</p>
+                                <button
+                                    onClick={handleClose}
+                                    className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold border-none cursor-pointer"
+                                >
+                                    Fermer la session
+                                </button>
+                            </div>
                         ) : (
                             <motion.div 
                                 drag={shouldReveal && !isCourseType ? "x" : false}
@@ -382,7 +419,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                 onDragEnd={handleDragEnd}
                                 style={{ x, rotate }}
                                 animate={controls}
-                                className={`flex-1 flex flex-col max-w-4xl w-full mx-auto justify-center ${!isCourseType ? 'items-center' : ''} px-4 sm:px-12 cursor-grab active:cursor-grabbing`}>
+                                className={`flex-1 flex flex-col max-w-4xl w-full mx-auto justify-center ${!isCourseType ? 'items-center' : ''} px-4 sm:px-12 pt-10 pb-8 sm:pb-12 cursor-grab active:cursor-grabbing`}>
                                 {/* Top Tag (Absolute in Top Corner) */}
                                 <div className="absolute top-6 left-6 md:top-8 md:left-10">
                                     <span className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[13px] font-extrabold tracking-[0.15em] uppercase shadow-sm border ${theme.tag}`}>
@@ -491,12 +528,20 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                     )}
 
                     {/* Footer Actions */}
-                    <div className={`flex flex-col items-center justify-center p-6 border-t border-slate-100 bg-white/50 dark:border-slate-800 dark:bg-slate-900/50 backdrop-blur-md z-10`}>
-                        {!shouldReveal && !isPaused ? (
+                    <div className={`flex flex-col items-center justify-center p-4 sm:p-6 border-t border-slate-100 bg-white/80 dark:border-slate-800 dark:bg-slate-900/70 backdrop-blur-md z-10`}>
+                        {sessionCompleted ? (
+                            <button
+                                onClick={handleClose}
+                                className="w-full max-w-md py-3.5 rounded-2xl font-bold text-base bg-emerald-500 hover:bg-emerald-600 text-white border-none cursor-pointer"
+                            >
+                                Quitter la session
+                            </button>
+                        ) : !shouldReveal && !isPaused ? (
                             <div className="flex justify-center">
                                 <button 
                                     onClick={() => setIsAnswerRevealed(true)}
-                                    className={`w-full max-w-md py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 border-none outline-none cursor-pointer bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:text-white dark:shadow-emerald-500/20`}
+                                    aria-label="Révéler la réponse (Entrée)"
+                                    className={`w-full max-w-md py-4 px-6 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 border-none outline-none cursor-pointer bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:text-white dark:shadow-emerald-500/20`}
                                 >
                                     Révéler la réponse
                                 </button>
@@ -515,6 +560,7 @@ export const ReviewSessionModal: React.FC<ReviewSessionModalProps> = ({
                                             return (
                                                 <button
                                                     key={action.rating}
+                                                    aria-label={`${action.label} (touche ${action.rating})`}
                                                     className={`flex-1 flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0 py-3 sm:py-5 px-4 sm:px-6 rounded-xl sm:rounded-2xl transition-all duration-300 active:scale-[0.98] outline-none cursor-pointer ${getActionClass(action.rating)}`}
                                                     onClick={() => handleRate(action.rating)}
                                                 >

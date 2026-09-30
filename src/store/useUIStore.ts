@@ -50,6 +50,12 @@ interface UIState {
 
   syncStatus: SyncStatus;
   setSyncStatus: (status: SyncStatus) => void;
+  lastSyncAt: number | null;
+  setLastSyncAt: (timestamp: number | null) => void;
+  lastSyncError: string | null;
+  setLastSyncError: (message: string | null) => void;
+  pendingSyncTasks: number;
+  setPendingSyncTasks: (count: number) => void;
 
   pendingOfflineCards: Card[] | null;
   setPendingOfflineCards: (cards: Card[] | null) => void;
@@ -111,6 +117,12 @@ export const useUIStore = create<UIState>((set) => ({
 
   syncStatus: 'synced',
   setSyncStatus: (status) => set({ syncStatus: status }),
+  lastSyncAt: null,
+  setLastSyncAt: (timestamp) => set({ lastSyncAt: timestamp }),
+  lastSyncError: null,
+  setLastSyncError: (message) => set({ lastSyncError: message }),
+  pendingSyncTasks: 0,
+  setPendingSyncTasks: (count) => set({ pendingSyncTasks: Math.max(0, count) }),
 
   pendingOfflineCards: null,
   setPendingOfflineCards: (cards) => set({ pendingOfflineCards: cards }),

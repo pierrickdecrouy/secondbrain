@@ -328,10 +328,15 @@ export const useCardStore = create<CardState>((set, get) => ({
         batch.set(ref, stamped);
       });
       batch.commit()
-        .then(() => useUIStore.getState().setSyncStatus('synced'))
+        .then(() => {
+          useUIStore.getState().setSyncStatus('synced');
+          useUIStore.getState().setLastSyncAt(Date.now());
+          useUIStore.getState().setLastSyncError(null);
+        })
         .catch(err => {
           console.error("Batch sync to Firebase failed:", err);
           useUIStore.getState().setSyncStatus('error');
+          useUIStore.getState().setLastSyncError((err as Error).message || 'Erreur de synchronisation');
         });
     }
 

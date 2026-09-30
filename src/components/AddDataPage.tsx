@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     CaretLeft, FileText, Stack, UploadSimple, FloppyDisk,
@@ -8,7 +8,6 @@ import {
 import { toast } from '../store/useToastStore';
 import { TipTapEditor } from './editor/TipTapEditor';
 import { BatchImportContent } from './BatchImportModal';
-import { useTheme } from '../context/ThemeContext';
 import type { Card, CardType, NodeType } from '../types';
 import { generateId } from '../types';
 import { Dropdown } from './ui/Dropdown';
@@ -41,8 +40,15 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
     const [parentCourseId, setParentCourseId] = useState<string>('');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
+    const [titleError, setTitleError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const titleInputRef = useRef<HTMLInputElement>(null);
 
     const handleBack = () => navigate(-1);
+
+    useEffect(() => {
+        titleInputRef.current?.focus();
+    }, [activeTab]);
 
     const courses = useMemo(() => existingCards.filter(c => c.nodeType === 'course'), [existingCards]);
     const selectedCourse = courses.find(c => c.id === parentCourseId);
@@ -68,11 +74,16 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
         }));
     }, [courses]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (isSaving) return;
         if (!title.trim()) {
+            setTitleError('Le titre est requis');
             toast.error('Le titre est requis');
+            titleInputRef.current?.focus();
             return;
         }
+        setTitleError(null);
+        setIsSaving(true);
 
         const newCard: Card = {
             id: generateId(),
@@ -93,8 +104,15 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
             newCard.format = 'q&a'; // basic format
         }
 
-        onSave(newCard);
-        handleBack();
+        try {
+            await Promise.resolve(onSave(newCard));
+            toast.success('Contenu enregistré');
+            handleBack();
+        } catch {
+            toast.error("Impossible d'enregistrer. Réessayez.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -181,11 +199,11 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                             </span>
                             <button 
                                 onClick={handleSave}
-                                disabled={!title.trim()}
+                            disabled={!title.trim() || isSaving}
                                 className="flex items-center space-x-2 bg-[#818CF8] hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 md:px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 border-none outline-none cursor-pointer"
                             >
                                 <FloppyDisk size={16} weight="bold" />
-                                <span className="hidden md:inline">Enregistrer</span>
+                            <span className="hidden md:inline">{isSaving ? 'Enregistrement...' : 'Enregistrer'}</span>
                             </button>
                         </>
                     )}
@@ -246,13 +264,27 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
 
                         {/* Titre et Sous-titre */}
                         <div className="mb-6 flex flex-col space-y-4">
+                            <p className="m-0 text-xs font-semibold uppercase tracking-wider text-indigo-500">
+                                Champ principal requis
+                            </p>
                             <input 
+                                ref={titleInputRef}
                                 type="text" 
                                 placeholder={activeTab === 'flashcard' ? "Question de la flashcard..." : "Titre du concept..."}
                                 value={title}
-                                onChange={e => setTitle(e.target.value)}
+                                onChange={e => {
+                                    setTitle(e.target.value);
+                                    if (titleError && e.target.value.trim()) setTitleError(null);
+                                }}
+                                aria-invalid={!!titleError}
+                                aria-describedby={titleError ? 'title-error' : undefined}
                                 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-700 bg-transparent border-none outline-none w-full leading-tight"
                             />
+                            {titleError && (
+                                <p id="title-error" className="text-sm font-semibold text-red-500 m-0">
+                                    {titleError}
+                                </p>
+                            )}
                             <input 
                                 type="text" 
                                 placeholder="Sous-titre ou contexte (optionnel)..." 
@@ -260,6 +292,9 @@ export const AddDataPage: React.FC<AddDataPageProps> = ({ existingCards = [], on
                                 onChange={e => setSubtitle(e.target.value)}
                                 className="text-xl font-medium text-slate-500 dark:text-slate-400 placeholder-slate-300 dark:placeholder-slate-700 bg-transparent border-none outline-none w-full"
                             />
+                            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                                Le sous-titre, les tags et le lien de cours sont optionnels.
+                            </p>
                         </div>
 
                         {/* Zone de texte principale (Extensible via TipTap) */}

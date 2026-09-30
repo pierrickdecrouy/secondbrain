@@ -11,7 +11,8 @@ import {
     SignOut,
     CloudCheck,
     CloudArrowUp,
-    WarningCircle
+    WarningCircle,
+    ArrowsClockwise
 } from '@phosphor-icons/react';
 import { useTheme } from '../context/ThemeContext';
 import { useUIStore as useUI } from '../store/useUIStore';
@@ -19,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { exportAllData } from '../storage';
 import { PomodoroTimer } from './PomodoroTimer';
 import { Avatar } from './Avatar';
+import { syncQueue } from '../services/syncQueue';
 
 interface GlobalHeaderProps {
     isHomeSection: boolean;
@@ -42,12 +44,16 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
         setOmniboxOpen, 
         userName, 
         syncStatus,
+        lastSyncAt,
+        lastSyncError,
+        pendingSyncTasks,
         sidebarOpen,
         avatarConfig
     } = useUI();
     const { user, signInWithGoogle, logout } = useAuth();
 
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const [nowTs, setNowTs] = useState(() => Date.now());
 
     useEffect(() => {
         if (isHomeSection) return;
@@ -56,6 +62,28 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
         }, 4000);
         return () => clearInterval(interval);
     }, [isHomeSection]);
+
+    useEffect(() => {
+        const interval = setInterval(() => setNowTs(Date.now()), 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const getSyncLabel = () => {
+        if (syncStatus === 'pending') {
+            return pendingSyncTasks > 0
+                ? `Synchronisation en cours (${pendingSyncTasks} en attente)`
+                : 'Synchronisation en cours...';
+        }
+        if (syncStatus === 'error') {
+            return lastSyncError || 'Échec de synchronisation. Cliquez pour réessayer.';
+        }
+        if (!lastSyncAt) return 'Synchronisé avec le cloud';
+        const deltaMinutes = Math.max(0, Math.floor((nowTs - lastSyncAt) / 60000));
+        if (deltaMinutes < 1) return 'Synchronisé à l’instant';
+        if (deltaMinutes < 60) return `Synchronisé il y a ${deltaMinutes} min`;
+        const deltaHours = Math.floor(deltaMinutes / 60);
+        return `Synchronisé il y a ${deltaHours}h`;
+    };
 
     return (
         <header className={`app-drag-region flex items-center justify-center pb-3 md:pb-5 pt-4 md:pt-8 lg:pt-10 min-h-[64px] md:min-h-[88px] shrink-0 w-full ${isProfileMenuOpen ? 'z-[1500]' : 'z-50'} ${isHomeSection ? 'absolute top-0 left-0' : 'relative'}`}>
@@ -110,14 +138,24 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isHomeSection, onNav
             <div className="app-no-drag flex items-center gap-3 sm:gap-5 ml-auto">
                 
                 {user && (
-                    <div 
-                        className={`flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ${isHomeSection ? 'mt-4 md:mt-6' : ''}`}
-                        title={syncStatus === 'synced' ? 'Synchronisé avec le cloud' : syncStatus === 'pending' ? 'Synchronisation en cours...' : 'Erreur de synchronisation'}
+                    <button 
+                        className={`flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors bg-transparent border-none cursor-pointer p-0 ${isHomeSection ? 'mt-4 md:mt-6' : ''}`}
+                        title={syncStatus === 'error' ? 'Réessayer la synchronisation' : getSyncLabel()}
+                        aria-label={getSyncLabel()}
+                        onClick={() => {
+                            if (syncStatus === 'error' || pendingSyncTasks > 0) {
+                                syncQueue.requestProcessQueue();
+                            }
+                        }}
                     >
                         {syncStatus === 'synced' && <CloudCheck size={18} weight="bold" className="text-emerald-500" />}
                         {syncStatus === 'pending' && <CloudArrowUp size={18} weight="bold" className="animate-pulse text-blue-500" />}
                         {syncStatus === 'error' && <WarningCircle size={18} weight="bold" className="text-red-500" />}
-                    </div>
+                        {syncStatus === 'error' && <ArrowsClockwise size={14} className="text-red-500" />}
+                        <span className="hidden md:inline text-xs font-medium text-slate-500 dark:text-slate-400" aria-live="polite">
+                            {getSyncLabel()}
+                        </span>
+                    </button>
                 )}
 
                 <div className={`${isHomeSection ? 'mt-4 md:mt-6 ml-1 md:ml-3' : 'ml-1 md:ml-2'}`}>

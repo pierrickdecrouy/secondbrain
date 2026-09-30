@@ -70,6 +70,9 @@ class SyncQueue {
         timestamp: Date.now()
       };
       await db.syncTasks.add(task);
+      const total = await db.syncTasks.count();
+      useUIStore.getState().setPendingSyncTasks(total);
+      useUIStore.getState().setSyncStatus('pending');
       this.requestProcessQueue();
     } catch (err) { console.error("Ignored error:", err); }
   }
@@ -85,6 +88,9 @@ class SyncQueue {
         timestamp: Date.now()
       };
       await db.syncTasks.add(task);
+      const total = await db.syncTasks.count();
+      useUIStore.getState().setPendingSyncTasks(total);
+      useUIStore.getState().setSyncStatus('pending');
       this.requestProcessQueue();
     } catch (err) { console.error("Ignored error:", err); }
   }
@@ -102,11 +108,14 @@ class SyncQueue {
       const queue = unsortedQueue.sort((a, b) => a.timestamp - b.timestamp);
       
       if (queue.length === 0) {
+        useUIStore.getState().setPendingSyncTasks(0);
         this.isProcessing = false;
         return;
       }
 
       useUIStore.getState().setSyncStatus('pending');
+      useUIStore.getState().setLastSyncError(null);
+      useUIStore.getState().setPendingSyncTasks(queue.length);
       let allSuccess = true;
 
       for (const task of queue) {
@@ -131,6 +140,7 @@ class SyncQueue {
           }
           console.error("SYNC_ERROR:", err);
           toast.error("Erreur Sync: " + ((err as Error).message || String(err)));
+          useUIStore.getState().setLastSyncError((err as Error).message || String(err));
 
           allSuccess = false;
           task.retryCount++;
@@ -145,8 +155,11 @@ class SyncQueue {
       }
 
       const remaining = await db.syncTasks.count();
+      useUIStore.getState().setPendingSyncTasks(remaining);
       if (allSuccess && remaining === 0) {
         useUIStore.getState().setSyncStatus('synced');
+        useUIStore.getState().setLastSyncAt(Date.now());
+        useUIStore.getState().setLastSyncError(null);
       } else {
         useUIStore.getState().setSyncStatus('error');
       }

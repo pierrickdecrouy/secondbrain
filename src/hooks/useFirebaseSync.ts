@@ -31,6 +31,7 @@ export const useFirebaseSync = () => {
 
         const syncInitial = async () => {
             useUIStore.getState().setSyncStatus('pending');
+            useUIStore.getState().setLastSyncError(null);
             try {
                 const snapshot = await getDocs(userCardsRef);
                 const remoteCards: Record<string, Card> = {};
@@ -99,9 +100,12 @@ export const useFirebaseSync = () => {
                     setCards(mergedCards, false);
                 }
                 useUIStore.getState().setSyncStatus('synced');
+                useUIStore.getState().setLastSyncAt(Date.now());
+                useUIStore.getState().setLastSyncError(null);
             } catch (error) {
                 console.error("🔥 Firebase Sync Error:", error);
                 useUIStore.getState().setSyncStatus('error');
+                useUIStore.getState().setLastSyncError((error as Error)?.message || 'Erreur de synchronisation Firebase');
                 toast.error('Erreur de synchronisation Firebase', 0, {
                     label: 'Réessayer',
                     onClick: () => {

@@ -108,6 +108,8 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
 
     const totalFlashcards = allCards.filter(c => c.nodeType === 'flashcard').length;
     const hasEnoughForQuiz = totalFlashcards >= 5;
+    const learningCount = useMemo(() => allCards.filter(c => c.nodeType === 'flashcard' && c.progress?.status === 'learning').length, [allCards]);
+    const masteredCount = useMemo(() => allCards.filter(c => c.nodeType === 'flashcard' && c.progress?.status === 'review' && (c.progress?.stability || 0) >= 15).length, [allCards]);
 
     return (
         <div className="flex-1 overflow-y-auto w-full h-full bg-slate-50 dark:bg-slate-950 px-4 md:px-8 py-5 flex flex-col pb-[calc(1rem+68px+env(safe-area-inset-bottom))] md:pb-5" >
@@ -120,6 +122,21 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                             <h1 className="text-[22px] font-extrabold m-0 tracking-[-0.3px] text-slate-900 dark:text-slate-100" >
                                 Espace de Révision
                             </h1>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="rounded-xl border border-emerald-200/70 dark:border-emerald-500/20 bg-emerald-50/70 dark:bg-emerald-500/10 px-4 py-3">
+                                <p className="m-0 text-xs uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-300">À réviser</p>
+                                <p className="m-0 mt-1 text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">{totalDue}</p>
+                            </div>
+                            <div className="rounded-xl border border-amber-200/70 dark:border-amber-500/20 bg-amber-50/70 dark:bg-amber-500/10 px-4 py-3">
+                                <p className="m-0 text-xs uppercase tracking-wider font-bold text-amber-700 dark:text-amber-300">En apprentissage</p>
+                                <p className="m-0 mt-1 text-2xl font-extrabold text-amber-700 dark:text-amber-300">{learningCount}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
+                                <p className="m-0 text-xs uppercase tracking-wider font-bold text-slate-600 dark:text-slate-300">Maîtrisées</p>
+                                <p className="m-0 mt-1 text-2xl font-extrabold text-slate-800 dark:text-slate-100">{masteredCount}</p>
+                            </div>
                         </div>
 
                     {/* Due counter badge */}
@@ -188,6 +205,11 @@ export const ReviewHubPage: React.FC<ReviewHubPageProps> = ({
                                                             </button>
                                                         ))}
                                                     </div>
+                                                    {fsrsTags.length > 0 && fsrsDueCount === 0 && (
+                                                        <p className="m-0 mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                                                            Aucun élément à réviser avec ces filtres.
+                                                        </p>
+                                                    )}
                                                     <button onClick={() => setFsrsTagPickerOpen(false)} className="mt-1 p-1.5 bg-transparent border-none text-slate-500 dark:text-slate-400 text-[11px] cursor-pointer font-semibold" >
                                                         Fermer
                                                     </button>
